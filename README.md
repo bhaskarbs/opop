@@ -18,3 +18,24 @@ A two-sided job marketplace (candidates + employers) with an internal admin/mode
 We're going local-first: every early step runs entirely on this machine (Vite dev server, Spring Boot on localhost, Postgres in Docker). Cloud infrastructure (GCP/Terraform/Kafka/Elastic) is deferred to a later phase once the app works end-to-end locally.
 
 Each development step lives on its own branch and becomes a pull request. See `docs/DEVELOPMENT_ROADMAP.md` for the full numbered list of steps and the exact prompt to give Claude for each one.
+
+## Running the frontend
+
+The repo root is an npm workspaces project (`frontend/`, with `backend/` to be added later). From the repo root:
+
+```bash
+npm install                # installs all workspace dependencies
+cp frontend/.env.example frontend/.env
+npm run dev --workspace=frontend       # starts the Vite dev server (http://localhost:5173)
+```
+
+Other useful commands, run from the repo root:
+
+```bash
+npm run build --workspace=frontend         # type-check and produce a production build
+npm run lint --workspace=frontend          # ESLint
+npm run format --workspace=frontend        # Prettier (writes)
+npm run format:check --workspace=frontend  # Prettier (check only)
+```
+
+Requires Node 20+. An `.nvmrc` is checked in at the repo root — run `nvm use` before installing if you use `nvm`.

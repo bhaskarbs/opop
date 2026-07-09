@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This repo is currently **pre-implementation**: there is no `frontend/` or `backend/` yet, no build, no
-lint, no test suite, and no package manager files. What exists today is the design mockups, the target
-architecture doc, and a step-by-step roadmap for building the real app on top of them. Don't assume
-tooling exists — check before referencing a command.
+The repo is mid-roadmap: `docs/DEVELOPMENT_ROADMAP.md` Step 1 (frontend scaffold) is done; `backend/` and
+everything from Step 2 onward do not exist yet. Check `docs/DEVELOPMENT_ROADMAP.md` and recent git history
+for which step is current before assuming a piece of tooling or a route exists.
 
 ## What's here
 
+- `frontend/` — React 18 + Vite + TypeScript app (npm workspace). See "Frontend commands" below.
 - `OpenOpportunity job portal/` — static HTML mockups (the visual source of truth for the UI).
 - `docs/OpenOpportunity_Architecture.docx` — full target technical architecture (stack, services, data
   model, auth approach). Read this before making stack/architecture decisions.
@@ -18,6 +18,22 @@ tooling exists — check before referencing a command.
   frontend shell and Phase 1 local backend), each with the exact prompt to expect from the user for that
   step. Check this file to see what step is next and what a step's prompt is scoped to.
 - `README.md` — target stack summary and the local-first build philosophy.
+
+## Frontend commands
+
+Requires Node 20+ (`.nvmrc` at repo root pins `20.20.2`). Root is an npm workspaces project, so run these
+from the repo root, not from inside `frontend/`:
+
+```bash
+npm install
+npm run dev --workspace=frontend           # Vite dev server, http://localhost:5173
+npm run build --workspace=frontend         # tsc -b && vite build
+npm run lint --workspace=frontend          # ESLint (flat config, eslint.config.js)
+npm run format --workspace=frontend        # Prettier — writes
+npm run format:check --workspace=frontend  # Prettier — check only
+```
+
+No test runner is set up yet — don't invent test commands.
 
 ## Reading the mockups
 
