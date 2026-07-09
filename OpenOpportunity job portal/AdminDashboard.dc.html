@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Dashboard" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1280px;margin:0 auto;padding:28px 24px 64px;">
+  <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 20px;">Platform overview</h1>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+        <div style="font-size:13px;color:#8891A0;margin-bottom:6px;">{{ k.label }}</div>
+        <div style="font-size:24px;font-weight:800;color:#14181F;">{{ k.value }}</div>
+        <div style="font-size:12.5px;color:{{ k.trendColor }};margin-top:4px;">{{ k.trend }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ chartCols }};gap:16px;margin-bottom:24px;">
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0;">Applications by path (last 6 months)</h2>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:14px;height:160px;">
+        <sc-for list="{{ months }}" as="m" hint-placeholder-count="6">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;">
+            <div style="display:flex;flex-direction:column;width:100%;gap:2px;height:100%;justify-content:flex-end;">
+              <div style="background:#0F8A6B;border-radius:3px 3px 0 0;height:{{ m.community }}%;"></div>
+              <div style="background:#C2760C;height:{{ m.partnership }}%;"></div>
+              <div style="background:#2451D6;height:{{ m.job }}%;"></div>
+            </div>
+            <div style="font-size:11.5px;color:#8891A0;">{{ m.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:14px;justify-content:center;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5B6472;"><span style="width:10px;height:10px;border-radius:2px;background:#2451D6;"></span>Jobs</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5B6472;"><span style="width:10px;height:10px;border-radius:2px;background:#C2760C;"></span>Partnerships</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5B6472;"><span style="width:10px;height:10px;border-radius:2px;background:#0F8A6B;"></span>Community</div>
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 16px;">Candidate funnel</h2>
+      <sc-for list="{{ funnel }}" as="f" hint-placeholder-count="4">
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#3A414D;margin-bottom:5px;"><span>{{ f.label }}</span><strong style="color:#14181F;">{{ f.value }}</strong></div>
+          <div style="height:8px;background:#F0F2F5;border-radius:999px;overflow:hidden;"><div style="height:100%;width:{{ f.pct }}%;background:#2451D6;border-radius:999px;"></div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0;">Recent company registrations</h2>
+      <a href="#users" style="font-size:13px;font-weight:700;text-decoration:none;">Manage all →</a>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px;">
+        <thead>
+          <tr style="text-align:left;color:#8891A0;font-size:12.5px;text-transform:uppercase;letter-spacing:0.03em;">
+            <th style="padding:0 12px 10px 0;font-weight:600;">Company</th>
+            <th style="padding:0 12px 10px;font-weight:600;">Sector</th>
+            <th style="padding:0 12px 10px;font-weight:600;">CIN</th>
+            <th style="padding:0 12px 10px;font-weight:600;">Registered</th>
+            <th style="padding:0 0 10px;font-weight:600;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ companies }}" as="c" hint-placeholder-count="5">
+            <tr style="border-top:1px solid #F0F1F3;">
+              <td style="padding:12px 12px 12px 0;font-weight:700;color:#14181F;">{{ c.name }}</td>
+              <td style="padding:12px;color:#3A414D;">{{ c.sector }}</td>
+              <td style="padding:12px;color:#8891A0;font-family:monospace;font-size:12.5px;">{{ c.cin }}</td>
+              <td style="padding:12px;color:#8891A0;">{{ c.date }}</td>
+              <td style="padding:12px 0;"><span style="font-size:12px;font-weight:600;color:{{ c.statusColor }};background:{{ c.statusBg }};border-radius:999px;padding:4px 10px;">{{ c.status }}</span></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    return {
+      chartCols: this.state.width < 900 ? '1fr' : '1.4fr 1fr',
+      kpis: [
+        { label: 'Total candidates', value: '84,210', trend: '+1,204 this week', trendColor: '#0F8A6B' },
+        { label: 'Registered companies', value: '2,340', trend: '+38 this week', trendColor: '#0F8A6B' },
+        { label: 'Live job postings', value: '12,406', trend: '+312 this week', trendColor: '#0F8A6B' },
+        { label: 'Partnership matches', value: '3,880', trend: '+94 this week', trendColor: '#0F8A6B' },
+        { label: 'Community sign-ups', value: '9,120', trend: '+210 this week', trendColor: '#0F8A6B' },
+      ],
+      months: [
+        { label: 'Feb', job: 60, partnership: 22, community: 18 },
+        { label: 'Mar', job: 55, partnership: 25, community: 20 },
+        { label: 'Apr', job: 58, partnership: 24, community: 22 },
+        { label: 'May', job: 52, partnership: 28, community: 24 },
+        { label: 'Jun', job: 50, partnership: 30, community: 26 },
+        { label: 'Jul', job: 48, partnership: 30, community: 28 },
+      ],
+      funnel: [
+        { label: 'Registered', value: '84,210', pct: 100 },
+        { label: 'Applied to a job', value: '61,340', pct: 73 },
+        { label: 'Applied for partnership', value: '18,420', pct: 22 },
+        { label: 'Hired or partnered', value: '9,880', pct: 12 },
+      ],
+      companies: [
+        { name: 'Vertex Robotics Pvt. Ltd.', sector: 'Deep Tech', cin: 'U74999KA2021PTC145632', date: 'Jul 6, 2026', status: 'Verified', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Lumen Health Solutions', sector: 'Healthtech', cin: 'U85100MH2020PTC338211', date: 'Jul 5, 2026', status: 'Verified', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Sahaay Finance Ltd.', sector: 'Fintech', cin: 'U65999DL2022PTC401987', date: 'Jul 4, 2026', status: 'Pending review', statusColor: '#B45309', statusBg: '#FFF1DC' },
+        { name: 'Greenline Logistics', sector: 'Climate Tech', cin: 'U60232KA2019PTC121044', date: 'Jul 3, 2026', status: 'Verified', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Northstar EdTech', sector: 'Education', cin: 'U80903TN2023PTC167754', date: 'Jul 2, 2026', status: 'Pending review', statusColor: '#B45309', statusBg: '#FFF1DC' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

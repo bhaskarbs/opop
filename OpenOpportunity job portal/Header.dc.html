@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; }
+    @keyframes oo-fade-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</helmet>
+<header style="position:sticky;top:0;z-index:50;background:#FFFFFF;border-bottom:1px solid #E2E5EA;font-family:'Inter',Helvetica,Arial,sans-serif;">
+  <div style="max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px;">
+    <div style="display:flex;align-items:center;gap:32px;min-width:0;">
+      <a href="#" style="display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;">
+        <span style="width:34px;height:34px;border-radius:9px;background:#2451D6;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="width:12px;height:12px;border-radius:50%;background:#FFFFFF;position:absolute;left:8px;top:8px;"></span>
+          <span style="width:7px;height:7px;border-radius:50%;background:#9DB8F5;position:absolute;right:7px;bottom:7px;"></span>
+        </span>
+        <span style="font-size:19px;font-weight:800;letter-spacing:-0.01em;color:#14181F;">Open<span style="color:#2451D6;">Opportunity</span></span>
+      </a>
+      <nav style="display:{{ navDisplay }};align-items:center;gap:4px;">
+        <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="4">
+          <a href="{{ item.href }}" style="display:inline-flex;align-items:center;padding:8px 14px;border-radius:8px;font-size:14.5px;font-weight:600;text-decoration:none;color:{{ item.color }};background:{{ item.bg }};">{{ item.label }}</a>
+        </sc-for>
+      </nav>
+    </div>
+
+    <div style="display:{{ navDisplay }};align-items:center;gap:12px;flex-shrink:0;">
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <a href="#" style="text-decoration:none;font-size:14.5px;font-weight:600;color:#14181F;padding:9px 16px;border-radius:8px;">Log in</a>
+        <a href="#" style="text-decoration:none;font-size:14.5px;font-weight:700;color:#FFFFFF;background:#2451D6;padding:9px 18px;border-radius:8px;">Register</a>
+      </sc-if>
+      <sc-if value="{{ isLoggedIn }}" hint-placeholder-val="{{ false }}">
+        <button aria-label="Notifications" style="width:38px;height:38px;border-radius:9px;border:1px solid #E2E5EA;background:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6472" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span style="position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:#DC2626;"></span>
+        </button>
+        <button onClick="{{ toggleUserMenu }}" style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid #E2E5EA;border-radius:9px;padding:5px 10px 5px 5px;cursor:pointer;position:relative;">
+          <span style="width:28px;height:28px;border-radius:50%;background:{{ avatarBg }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;">{{ userInitial }}</span>
+          <span style="font-size:14px;font-weight:600;color:#14181F;">{{ userName }}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8891A0" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          <sc-if value="{{ userMenuOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:46px;right:0;background:#FFFFFF;border:1px solid #E2E5EA;border-radius:10px;box-shadow:0 8px 24px rgba(20,24,31,0.12);min-width:200px;padding:6px;animation:oo-fade-in .15s ease-out;text-align:left;">
+              <sc-for list="{{ userMenuItems }}" as="mi" hint-placeholder-count="4">
+                <a href="{{ mi.href }}" style="display:block;padding:9px 12px;border-radius:7px;font-size:14px;font-weight:500;color:#14181F;text-decoration:none;">{{ mi.label }}</a>
+              </sc-for>
+            </div>
+          </sc-if>
+        </button>
+      </sc-if>
+    </div>
+
+    <button onClick="{{ toggleMobileNav }}" aria-label="Menu" style="display:{{ mobileBtnDisplay }};width:38px;height:38px;border-radius:8px;border:1px solid #E2E5EA;background:#FFFFFF;align-items:center;justify-content:center;cursor:pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14181F" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+
+  <sc-if value="{{ mobileNavOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="border-top:1px solid #E2E5EA;padding:12px 20px 18px;">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="4">
+        <a href="{{ item.href }}" style="display:block;padding:11px 6px;font-size:15px;font-weight:600;text-decoration:none;color:#14181F;border-bottom:1px solid #F0F1F3;">{{ item.label }}</a>
+      </sc-for>
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <a href="#" style="flex:1;text-align:center;text-decoration:none;font-size:14.5px;font-weight:600;color:#14181F;padding:10px;border:1px solid #E2E5EA;border-radius:8px;">Log in</a>
+          <a href="#" style="flex:1;text-align:center;text-decoration:none;font-size:14.5px;font-weight:700;color:#FFFFFF;background:#2451D6;padding:10px;border-radius:8px;">Register</a>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+</header>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1280, &quot;height&quot;: 68}, &quot;variant&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;guest&quot;, &quot;options&quot;: [&quot;guest&quot;, &quot;candidate&quot;, &quot;company&quot;, &quot;admin&quot;], &quot;tsType&quot;: &quot;string&quot;}, &quot;activeItem&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;userName&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { userMenuOpen: false, mobileNavOpen: false, width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+
+  NAV_BY_VARIANT = {
+    guest: [
+      { label: 'Find Jobs', href: '#jobs' },
+      { label: 'Startup Partnerships', href: '#partnerships' },
+      { label: 'Community', href: '#community' },
+      { label: 'For Employers', href: '#employers' },
+    ],
+    candidate: [
+      { label: 'Find Jobs', href: '#jobs' },
+      { label: 'Startup Partnerships', href: '#partnerships' },
+      { label: 'Community', href: '#community' },
+      { label: 'Dashboard', href: '#dashboard' },
+    ],
+    company: [
+      { label: 'Post a Job', href: '#post-job' },
+      { label: 'Search Candidates', href: '#search-candidates' },
+      { label: 'Partnership Applicants', href: '#applicants' },
+      { label: 'Seminars & Meetups', href: '#seminars' },
+    ],
+    admin: [
+      { label: 'Dashboard', href: '#dashboard' },
+      { label: 'Reports', href: '#reports' },
+      { label: 'Users', href: '#users' },
+      { label: 'Jobs', href: '#jobs' },
+    ],
+  };
+
+  USER_MENU_BY_VARIANT = {
+    candidate: [
+      { label: 'My Profile', href: '#profile' },
+      { label: 'My Applications', href: '#applications' },
+      { label: 'Mock Interviews', href: '#interviews' },
+      { label: 'Log out', href: '#logout' },
+    ],
+    company: [
+      { label: 'Company Profile', href: '#profile' },
+      { label: 'Job Postings', href: '#postings' },
+      { label: 'Billing', href: '#billing' },
+      { label: 'Log out', href: '#logout' },
+    ],
+    admin: [
+      { label: 'Admin Settings', href: '#settings' },
+      { label: 'Log out', href: '#logout' },
+    ],
+  };
+
+  toggleUserMenu = () => this.setState(s => ({ userMenuOpen: !s.userMenuOpen }));
+  toggleMobileNav = () => this.setState(s => ({ mobileNavOpen: !s.mobileNavOpen }));
+
+  renderVals() {
+    const variant = this.props.variant || 'guest';
+    const activeItem = this.props.activeItem || '';
+    const isGuest = variant === 'guest';
+    const navItems = (this.NAV_BY_VARIANT[variant] || this.NAV_BY_VARIANT.guest).map(it => ({
+      ...it,
+      color: it.label === activeItem ? '#2451D6' : '#14181F',
+      bg: it.label === activeItem ? '#EAF0FE' : 'transparent',
+    }));
+    const userName = this.props.userName || (variant === 'company' ? 'Acme Startup' : variant === 'admin' ? 'Admin' : 'Rohan Mehta');
+    const avatarBg = variant === 'company' ? '#0F8A6B' : variant === 'admin' ? '#14181F' : '#2451D6';
+    return {
+      navItems,
+      isGuest,
+      isLoggedIn: !isGuest,
+      userMenuOpen: this.state.userMenuOpen,
+      mobileNavOpen: this.state.mobileNavOpen,
+      toggleUserMenu: this.toggleUserMenu,
+      toggleMobileNav: this.toggleMobileNav,
+      userMenuItems: this.USER_MENU_BY_VARIANT[variant] || this.USER_MENU_BY_VARIANT.candidate,
+      userName,
+      userInitial: userName.charAt(0).toUpperCase(),
+      avatarBg,
+      navDisplay: this.state.width < 900 ? 'none' : 'flex',
+      mobileBtnDisplay: this.state.width < 900 ? 'flex' : 'none',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Users" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1120px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Company approvals</h1>
+      <p style="font-size:14px;color:#5B6472;margin:0;">Verify company registrations against MCA records before they can post jobs or partnerships.</p>
+    </div>
+    <div style="font-size:13.5px;font-weight:700;color:#B45309;background:#FFF1DC;border-radius:999px;padding:6px 14px;">{{ pendingCount }} pending review</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <sc-for list="{{ companies }}" as="c" hint-placeholder-count="4">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+        <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="display:flex;gap:14px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:{{ c.color }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;">{{ c.initial }}</div>
+            <div>
+              <div style="font-size:15.5px;font-weight:700;color:#14181F;">{{ c.name }}</div>
+              <div style="font-size:13px;color:#5B6472;margin-top:2px;">{{ c.sector }} · {{ c.entityType }} · Submitted {{ c.submitted }}</div>
+            </div>
+          </div>
+          <span style="font-size:12px;font-weight:600;color:{{ c.statusColor }};background:{{ c.statusBg }};border-radius:999px;padding:4px 10px;height:fit-content;white-space:nowrap;">{{ c.status }}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px;background:#F7F8FA;border-radius:10px;padding:16px;">
+          <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">CIN / LLPIN</div><div style="font-size:13px;font-weight:600;color:#14181F;font-family:monospace;">{{ c.cin }}</div></div>
+          <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">GSTIN</div><div style="font-size:13px;font-weight:600;color:#14181F;font-family:monospace;">{{ c.gstin }}</div></div>
+          <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">PAN</div><div style="font-size:13px;font-weight:600;color:#14181F;font-family:monospace;">{{ c.pan }}</div></div>
+          <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Authorized signatory</div><div style="font-size:13px;font-weight:600;color:#14181F;">{{ c.signatory }}</div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2451D6" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <a href="#" style="font-size:13.5px;font-weight:600;text-decoration:none;">Certificate_of_Incorporation.pdf</a>
+        </div>
+
+        <sc-if value="{{ c.flags.length }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+            <sc-for list="{{ c.flags }}" as="f" hint-placeholder-count="1">
+              <span style="font-size:12px;font-weight:600;color:#8A5A0F;background:#FFF6E9;border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:5px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8A5A0F" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+                {{ f }}
+              </span>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ c.isPending }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button onClick="{{ () => approve(c.id) }}" style="border:none;background:#0F8A6B;color:#FFFFFF;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+              Verify & approve
+            </button>
+            <button onClick="{{ () => reject(c.id) }}" style="border:1px solid #FCA5A5;background:#FFFFFF;color:#DC2626;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;">Reject</button>
+            <button style="border:1px solid #E2E5EA;background:#FFFFFF;color:#14181F;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;">Request more info</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ c.isApproved }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:600;color:#0F8A6B;display:flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F8A6B" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            Verified — company can now post jobs and partnerships
+          </div>
+        </sc-if>
+        <sc-if value="{{ c.isRejected }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:600;color:#DC2626;display:flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Rejected — company has been notified
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { decisions: {} };
+
+  RAW = [
+    { id: 'co1', name: 'Sahaay Finance Ltd.', initial: 'S', color: '#C2760C', sector: 'Fintech', entityType: 'Private Limited', submitted: '1 day ago', cin: 'U65999DL2022PTC401987', gstin: '07ABCDE1234F1Z5', pan: 'ABCDE1234F', signatory: 'Priya Nambiar', flags: [] },
+    { id: 'co2', name: 'Northstar EdTech', initial: 'N', color: '#2451D6', sector: 'Education', entityType: 'Private Limited', submitted: '2 days ago', cin: 'U80903TN2023PTC167754', gstin: '33ABCDE5678F1Z2', pan: 'FGHIJ5678K', signatory: 'Arjun Subramaniam', flags: ['GSTIN could not be auto-verified'] },
+    { id: 'co3', name: 'Kinship Consumer', initial: 'K', color: '#0F8A6B', sector: 'D2C', entityType: 'Private Limited', submitted: '3 days ago', cin: 'U74999MH2021PTC298765', gstin: '27KLMNO9012P1Z8', pan: 'KLMNO9012P', signatory: 'Fatima Sheikh', flags: [] },
+    { id: 'co4', name: 'Bharat Retail Tech', initial: 'B', color: '#C2760C', sector: 'Retail Tech', entityType: 'LLP', submitted: '4 days ago', cin: 'AAA-1234', gstin: '06PQRST3456U1Z1', pan: 'PQRST3456U', signatory: 'Devika Menon', flags: ['CIN format does not match LLPIN pattern', 'Registered address unverifiable'] },
+  ];
+
+  approve = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'approved' } }));
+  reject = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'rejected' } }));
+
+  renderVals() {
+    const decisions = this.state.decisions;
+    const companies = this.RAW.map(c => {
+      const d = decisions[c.id];
+      return {
+        ...c,
+        isPending: !d,
+        isApproved: d === 'approved',
+        isRejected: d === 'rejected',
+        status: d === 'approved' ? 'Verified' : d === 'rejected' ? 'Rejected' : 'Pending review',
+        statusColor: d === 'approved' ? '#0F8A6B' : d === 'rejected' ? '#DC2626' : '#B45309',
+        statusBg: d === 'approved' ? '#E7F7F1' : d === 'rejected' ? '#FDECEC' : '#FFF1DC',
+      };
+    });
+    return {
+      approve: this.approve,
+      reject: this.reject,
+      companies,
+      pendingCount: companies.filter(c => c.isPending).length,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

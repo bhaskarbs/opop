@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Startup Partnerships" hint-size="100%,68px"></dc-import>
+
+<div style="background:#FFF6E9;border-bottom:1px solid #FCE3B8;">
+  <div style="max-width:1120px;margin:0 auto;padding:32px 24px;">
+    <span style="font-size:12.5px;font-weight:700;color:#C2760C;background:#FFFFFF;border-radius:999px;padding:5px 12px;">Startup Partnership Ecosystem</span>
+    <h1 style="font-size:26px;font-weight:800;color:#14181F;margin:14px 0 8px;letter-spacing:-0.01em;">Turn your skills into a real partnership</h1>
+    <p style="font-size:15px;color:#5B6472;margin:0;max-width:640px;line-height:1.6;">Haven't landed the job yet? Partner with a startup that needs exactly what you offer — technical or soft skills — and build experience that counts toward the role you actually want.</p>
+  </div>
+</div>
+
+<div style="max-width:1120px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+    <sc-for list="{{ categoryChips }}" as="c" hint-placeholder-count="5">
+      <button style="font-size:13.5px;font-weight:600;color:{{ c.color }};background:{{ c.bg }};border:1px solid {{ c.border }};border-radius:999px;padding:8px 16px;cursor:pointer;">{{ c.label }}</button>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:36px;">
+    <sc-for list="{{ startups }}" as="su" hint-placeholder-count="6">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;display:flex;flex-direction:column;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+          <div style="width:44px;height:44px;border-radius:10px;background:{{ su.color }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;">{{ su.initial }}</div>
+          <div style="min-width:0;">
+            <div style="font-size:15.5px;font-weight:700;color:#14181F;">{{ su.name }}</div>
+            <div style="font-size:12.5px;color:#8891A0;">{{ su.sector }}</div>
+          </div>
+        </div>
+        <p style="font-size:14px;color:#5B6472;line-height:1.55;margin:0 0 14px;flex:1;">{{ su.blurb }}</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
+          <sc-for list="{{ su.tags }}" as="t" hint-placeholder-count="3">
+            <span style="font-size:12px;font-weight:600;color:#C2760C;background:#FFF6E9;border-radius:999px;padding:4px 10px;">{{ t }}</span>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#8891A0;margin-bottom:14px;">
+          <span>{{ su.openRoles }} open roles</span><span>{{ su.stage }}</span>
+        </div>
+        <button onClick="{{ () => openApply(su) }}" style="border:none;background:#14181F;color:#FFFFFF;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;">Apply for partnership</button>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ applyOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(20,24,31,0.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+      <div style="background:#FFFFFF;border-radius:16px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;padding:28px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <h2 style="font-size:19px;font-weight:800;color:#14181F;margin:0;">Apply to partner with {{ activeStartupName }}</h2>
+          <button onClick="{{ closeApply }}" style="border:none;background:none;font-size:20px;color:#8891A0;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <p style="font-size:13.5px;color:#5B6472;margin:0 0 20px;">Startups review resume, life goals, and values alignment before inviting you to a seminar or meetup.</p>
+
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+            <div style="flex:1;height:5px;border-radius:999px;background:{{ s.done }}"></div>
+          </sc-for>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Resume</label>
+          <div style="border:1px dashed #C7CCD6;border-radius:10px;padding:16px;font-size:13.5px;color:#5B6472;text-align:center;">Rohan_Mehta_Resume.pdf attached ✓</div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">What are your life goals?</label>
+          <textarea rows="3" placeholder="e.g. Grow into a product-minded engineering role while contributing to meaningful work..." style="width:100%;border:1px solid #E2E5EA;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">What ethics and work culture matter most to you?</label>
+          <textarea rows="3" placeholder="e.g. Transparency, sustainability, respectful feedback culture..." style="width:100%;border:1px solid #E2E5EA;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+        </div>
+        <div style="margin-bottom:22px;">
+          <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Relevant skills for this partnership</label>
+          <input type="text" placeholder="e.g. React, UI design, stakeholder communication" style="width:100%;border:1px solid #E2E5EA;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;box-sizing:border-box;" />
+        </div>
+        <button style="width:100%;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:13px;font-size:14.5px;font-weight:700;cursor:pointer;">Submit application</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:26px;">
+    <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0 0 16px;">How the partnership ecosystem works</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;">
+      <sc-for list="{{ howItWorks }}" as="h" hint-placeholder-count="4">
+        <div>
+          <div style="width:32px;height:32px;border-radius:8px;background:#EAF0FE;color:#2451D6;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13.5px;margin-bottom:10px;">{{ h.step }}</div>
+          <div style="font-size:14px;font-weight:700;color:#14181F;margin-bottom:4px;">{{ h.title }}</div>
+          <div style="font-size:13px;color:#5B6472;line-height:1.5;">{{ h.desc }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { applyOpen: false, activeStartupName: '' };
+
+  openApply = (su) => this.setState({ applyOpen: true, activeStartupName: su.name });
+  closeApply = () => this.setState({ applyOpen: false });
+
+  renderVals() {
+    const openApply = this.openApply;
+    return {
+      applyOpen: this.state.applyOpen,
+      closeApply: this.closeApply,
+      activeStartupName: this.state.activeStartupName,
+      openApply,
+      categoryChips: [
+        { label: 'All sectors', color: '#FFFFFF', bg: '#14181F', border: '#14181F' },
+        { label: 'Deep Tech', color: '#3A414D', bg: '#FFFFFF', border: '#E2E5EA' },
+        { label: 'Healthtech', color: '#3A414D', bg: '#FFFFFF', border: '#E2E5EA' },
+        { label: 'Fintech', color: '#3A414D', bg: '#FFFFFF', border: '#E2E5EA' },
+        { label: 'Consumer', color: '#3A414D', bg: '#FFFFFF', border: '#E2E5EA' },
+      ],
+      startups: [
+        { name: 'Vertex Robotics', sector: 'Deep Tech · Seed', initial: 'V', color: '#2451D6', blurb: 'Co-build the product MVP — open to partners with embedded systems or hardware QA experience.', tags: ['Hardware', 'QA'], openRoles: 4, stage: 'Seed' },
+        { name: 'Lumen Health', sector: 'Healthtech · Series A', initial: 'L', color: '#0F8A6B', blurb: 'Partners needed across clinical ops, customer success, and growth marketing.', tags: ['Ops', 'CS', 'Marketing'], openRoles: 6, stage: 'Series A' },
+        { name: 'Sahaay Finance', sector: 'Fintech · Pre-seed', initial: 'S', color: '#C2760C', blurb: 'Building rural credit tools — open to sales, outreach, or compliance partners.', tags: ['Sales', 'Compliance'], openRoles: 3, stage: 'Pre-seed' },
+        { name: 'Greenline Logistics', sector: 'Climate Tech · Seed', initial: 'G', color: '#2451D6', blurb: 'Needs a partner to lead operations analytics for its EV fleet dashboard.', tags: ['Analytics', 'Ops'], openRoles: 2, stage: 'Seed' },
+        { name: 'Kinship Consumer', sector: 'D2C · Series A', initial: 'K', color: '#0F8A6B', blurb: 'Open to brand, content, and community partners to grow its D2C wellness line.', tags: ['Content', 'Brand'], openRoles: 5, stage: 'Series A' },
+        { name: 'Northstar EdTech', sector: 'Education · Seed', initial: 'N', color: '#C2760C', blurb: 'Looking for curriculum design and mentorship partners for its skilling platform.', tags: ['Curriculum', 'Mentorship'], openRoles: 3, stage: 'Seed' },
+      ],
+      steps: [{ done: '#2451D6' }, { done: '#E2E5EA' }, { done: '#E2E5EA' }],
+      howItWorks: [
+        { step: '1', title: 'Apply with your profile', desc: 'Resume, life goals, and the values that matter to you.' },
+        { step: '2', title: 'Startup reviews fit', desc: 'They look for skill and cultural alignment, not just a resume.' },
+        { step: '3', title: 'Seminar or meetup', desc: "You'll get an email and WhatsApp invite to meet the team." },
+        { step: '4', title: 'Partner & build experience', desc: 'Work with them and document experience for your future job search.' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

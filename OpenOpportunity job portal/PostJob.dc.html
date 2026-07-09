@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="company" active-item="Post a Job" user-name="Vertex Robotics" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:840px;margin:0 auto;padding:28px 24px 64px;">
+  <h1 style="font-size:20px;font-weight:800;color:#14181F;margin:0 0 4px;">Post a job</h1>
+  <p style="font-size:14px;color:#5B6472;margin:0 0 24px;">Reach candidates directly — and surface your listing to skill-matched partnership and community applicants too.</p>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:32px;margin-bottom:18px;">
+    <h2 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0 0 18px;">Role details</h2>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Job title</label>
+      <input type="text" placeholder="e.g. Senior Frontend Developer" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Employment type</label>
+        <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;color:#14181F;box-sizing:border-box;">
+          <option>Full-time</option>
+          <option>Part-time</option>
+          <option>Contract</option>
+          <option>Internship</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Experience level</label>
+        <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;color:#14181F;box-sizing:border-box;">
+          <option>Entry level</option>
+          <option>Mid level</option>
+          <option>Senior</option>
+          <option>Leadership</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Work mode</label>
+        <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;color:#14181F;box-sizing:border-box;">
+          <option>Remote</option>
+          <option>Hybrid</option>
+          <option>On-site</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Location</label>
+        <input type="text" placeholder="e.g. Bengaluru, India" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Salary range (₹/yr)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" placeholder="Min e.g. 12L" style="flex:1;min-width:0;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+          <input type="text" placeholder="Max e.g. 18L" style="flex:1;min-width:0;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Application deadline</label>
+        <input type="date" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:32px;margin-bottom:18px;">
+    <h2 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0 0 18px;">Description</h2>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">About the role</label>
+      <textarea rows="4" placeholder="Describe the role, team, and what success looks like..." style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Responsibilities</label>
+      <textarea rows="3" placeholder="One per line" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div>
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Requirements</label>
+      <textarea rows="3" placeholder="One per line" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+  </div>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:32px;margin-bottom:18px;">
+    <h2 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0 0 6px;">Required skills</h2>
+    <p style="font-size:13px;color:#8891A0;margin:0 0 14px;">Technical or soft — used to match this role to relevant candidates, and to surface it to skilled partnership/community applicants.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <sc-for list="{{ skills }}" as="s" hint-placeholder-count="4">
+        <span style="font-size:13px;font-weight:600;color:#3A414D;background:#F0F2F5;border-radius:999px;padding:6px 14px;display:flex;align-items:center;gap:6px;">{{ s }} <span style="cursor:pointer;color:#8891A0;">×</span></span>
+      </sc-for>
+    </div>
+    <input type="text" placeholder="Add a skill and press enter" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+  </div>
+
+  <div style="background:#EAF0FE;border-radius:14px;padding:18px 22px;margin-bottom:22px;display:flex;gap:12px;align-items:flex-start;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2451D6" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <div style="font-size:13px;color:#2451D6;line-height:1.55;">Candidates who match these skills but haven't landed similar roles will also see this listing alongside relevant startup partnerships and community opportunities.</div>
+  </div>
+
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+    <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:9px;padding:12px 22px;font-size:14px;font-weight:700;color:#14181F;cursor:pointer;">Save as draft</button>
+    <button style="border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:12px 26px;font-size:14px;font-weight:700;cursor:pointer;">Publish job</button>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      skills: ['React', 'TypeScript', 'UI Systems'],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Community" hint-size="100%,68px"></dc-import>
+
+<div style="background:#0B3B34;">
+  <div style="max-width:1120px;margin:0 auto;padding:44px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px;align-items:center;">
+    <div>
+      <span style="font-size:12.5px;font-weight:700;color:#7FE0C4;background:rgba(127,224,196,0.12);border-radius:999px;padding:5px 12px;">Community Income Ecosystem</span>
+      <h1 style="font-size:27px;font-weight:800;color:#FFFFFF;margin:14px 0 10px;letter-spacing:-0.01em;">Understand income beyond a paycheck</h1>
+      <p style="font-size:15px;color:#B9E9DC;line-height:1.65;margin:0;max-width:460px;">Community roles build soft skills and introduce you to income types you may never have considered — while you keep searching for the job you want.</p>
+    </div>
+    <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:14px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">
+      <div style="text-align:center;color:#7FE0C4;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="#7FE0C4" style="margin-bottom:8px;"><circle cx="12" cy="12" r="11" fill="none" stroke="#7FE0C4" stroke-width="1.5"/><path d="M10 8l6 4-6 4z"/></svg>
+        <div style="font-family:monospace;font-size:12px;">[ video: what is community income? · 4 min ]</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:1120px;margin:0 auto;padding:44px 24px;">
+  <h2 style="font-size:19px;font-weight:700;color:#14181F;margin:0 0 18px;">Learn about different income types</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:44px;">
+    <sc-for list="{{ incomeTypes }}" as="i" hint-placeholder-count="4">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:20px;">
+        <div style="width:38px;height:38px;border-radius:9px;background:#E7F7F1;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F8A6B" stroke-width="2"><path d="{{ i.icon }}"/></svg>
+        </div>
+        <div style="font-size:14.5px;font-weight:700;color:#14181F;margin-bottom:6px;">{{ i.title }}</div>
+        <p style="font-size:13px;color:#5B6472;line-height:1.55;margin:0 0 12px;">{{ i.desc }}</p>
+        <a href="#read" style="font-size:13px;font-weight:700;text-decoration:none;color:#0F8A6B;">Read guide →</a>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ gridCols }};gap:24px;">
+    <div>
+      <h2 style="font-size:19px;font-weight:700;color:#14181F;margin:0 0 18px;">Community opportunities near you</h2>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ opportunities }}" as="o" hint-placeholder-count="3">
+          <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+              <div>
+                <div style="font-size:15px;font-weight:700;color:#14181F;">{{ o.title }}</div>
+                <div style="font-size:13px;color:#5B6472;margin-top:2px;">{{ o.org }} · {{ o.location }}</div>
+              </div>
+              <span style="font-size:12px;font-weight:600;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:4px 10px;height:fit-content;">Builds {{ o.skill }}</span>
+            </div>
+            <p style="font-size:13.5px;color:#5B6472;line-height:1.55;margin:12px 0 14px;">{{ o.desc }}</p>
+            <a href="#interest" style="display:inline-block;text-decoration:none;font-size:13.5px;font-weight:700;color:#FFFFFF;background:#0F8A6B;border-radius:8px;padding:9px 18px;">Show interest</a>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <aside>
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;margin-bottom:16px;">
+        <h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 12px;">Tell us you're interested</h3>
+        <p style="font-size:13px;color:#5B6472;line-height:1.55;margin:0 0 14px;">We'll invite you to the next intro session and match you with a local community role.</p>
+        <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:13.5px;font-family:inherit;color:#14181F;margin-bottom:10px;box-sizing:border-box;">
+          <option>What interests you most?</option>
+          <option>Community income basics</option>
+          <option>Soft-skill building roles</option>
+          <option>Both</option>
+        </select>
+        <button style="width:100%;border:none;background:#0F8A6B;color:#FFFFFF;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;">Notify me</button>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+        <h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 12px;">Guides & reading</h3>
+        <sc-for list="{{ guides }}" as="g" hint-placeholder-count="3">
+          <a href="#read" style="display:block;text-decoration:none;padding:9px 0;border-top:1px solid #F0F1F3;font-size:13.5px;font-weight:600;color:#14181F;">{{ g }}</a>
+        </sc-for>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    return {
+      gridCols: this.state.width < 860 ? '1fr' : 'minmax(0,1fr) 300px',
+      incomeTypes: [
+        { title: 'Active income', desc: 'Trading time and skill directly for pay — most jobs work this way.', icon: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
+        { title: 'Community income', desc: 'Value created and shared through collective, local contribution.', icon: 'M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M9 8a3 3 0 1 0 0 6M17 9a2.5 2.5 0 1 0 0 5M14.5 14.5c2.6.2 4.5 2.4 4.5 5' },
+        { title: 'Passive income', desc: 'Income that continues with limited ongoing active effort.', icon: 'M4 19h16M4 15l4-4 3 3 5-6' },
+        { title: 'Partnership income', desc: 'Value earned by co-building and sharing outcomes with a team.', icon: 'M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+      ],
+      opportunities: [
+        { title: 'Weekly Peer Mentor Circle', org: 'OpenOpportunity Community', location: 'Bengaluru · Online', skill: 'communication', desc: 'Practice interviewing and public speaking with peers in a structured weekly session.' },
+        { title: 'Local Skill Exchange Meetup', org: 'Community Chapter — Pune', location: 'Pune · In-person', skill: 'collaboration', desc: 'Trade skills with neighbors — teach what you know, learn what you need.' },
+        { title: 'Volunteer Coordination Team', org: 'Sahaay Community Fund', location: 'Remote', skill: 'leadership', desc: 'Help organize community events and manage volunteer schedules.' },
+      ],
+      guides: ['What is community income?', 'Active vs. passive income, explained', 'How soft skills transfer to any job'],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

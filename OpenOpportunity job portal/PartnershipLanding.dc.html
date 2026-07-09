@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Startup Partnerships" hint-size="100%,68px"></dc-import>
+
+<div style="background:#FFF6E9;border-bottom:1px solid #FCE3B8;">
+  <div style="max-width:1000px;margin:0 auto;padding:56px 24px 48px;text-align:center;">
+    <span style="font-size:12.5px;font-weight:700;color:#C2760C;background:#FFFFFF;border-radius:999px;padding:5px 12px;">Startup Partnership Ecosystem</span>
+    <h1 style="font-size:clamp(28px,4vw,38px);font-weight:800;color:#14181F;margin:16px 0 12px;letter-spacing:-0.01em;">Work isn't only found in a job listing</h1>
+    <p style="font-size:16px;color:#5B6472;margin:0 auto 28px;max-width:600px;line-height:1.6;">Partner with a startup that needs your skills — technical or soft — and turn real work into experience that counts toward the job you actually want. No specific openings to browse yet; start by understanding how it works.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="#watch" style="text-decoration:none;font-size:14.5px;font-weight:700;color:#FFFFFF;background:#14181F;border-radius:9px;padding:12px 24px;display:inline-flex;align-items:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5v14l11-7z"/></svg>
+        Watch how it works
+      </a>
+      <a href="#interest" style="text-decoration:none;font-size:14.5px;font-weight:700;color:#14181F;background:#FFFFFF;border:1px solid #E2E5EA;border-radius:9px;padding:12px 24px;">Show interest</a>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:1000px;margin:0 auto;padding:48px 24px 0;">
+  <div id="watch" style="background:#101522;border-radius:16px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;margin-bottom:56px;">
+    <div style="text-align:center;color:#7FA0F2;">
+      <div style="width:52px;height:52px;border-radius:50%;background:rgba(127,160,242,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#7FA0F2"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <div style="font-family:monospace;font-size:12.5px;">[ video: how startup partnerships work · 3 min ]</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;max-width:640px;margin:0 auto 32px;">
+    <h2 style="font-size:24px;font-weight:800;color:#14181F;margin:0 0 12px;letter-spacing:-0.01em;">How a partnership works</h2>
+    <p style="font-size:15px;color:#5B6472;margin:0;line-height:1.6;">Every partnership starts the same way, whichever track fits you.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:64px;">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+      <div style="text-align:center;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#FFF1DC;color:#C2760C;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;margin:0 auto 12px;">{{ s.step }}</div>
+        <div style="font-size:14.5px;font-weight:700;color:#14181F;margin-bottom:6px;">{{ s.title }}</div>
+        <div style="font-size:13px;color:#5B6472;line-height:1.55;">{{ s.desc }}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<div style="max-width:1000px;margin:0 auto;padding:0 24px 64px;">
+  <div style="text-align:center;max-width:640px;margin:0 auto 32px;">
+    <h2 style="font-size:24px;font-weight:800;color:#14181F;margin:0 0 12px;letter-spacing:-0.01em;">Choose the track that fits you</h2>
+    <p style="font-size:15px;color:#5B6472;margin:0;line-height:1.6;">Both count as real, documented experience for your future job search.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+    <div style="background:#FFFFFF;border:2px solid #E2E5EA;border-radius:16px;padding:30px;">
+      <div style="width:44px;height:44px;border-radius:10px;background:#EAF0FE;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2451D6" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <span style="font-size:11.5px;font-weight:700;color:#2451D6;background:#EAF0FE;border-radius:999px;padding:3px 10px;">With funding</span>
+      <h3 style="font-size:18px;font-weight:700;color:#14181F;margin:12px 0 8px;">Funded partnership</h3>
+      <p style="font-size:14px;color:#5B6472;line-height:1.6;margin:0 0 18px;">The startup has raised capital and can offer a stipend, revenue share, or equity alongside the work — best if you need the partnership to also support you financially.</p>
+      <a href="#apply-funded" style="display:block;text-align:center;text-decoration:none;font-size:14px;font-weight:700;color:#FFFFFF;background:#2451D6;border-radius:9px;padding:12px;">Apply — with funding</a>
+    </div>
+
+    <div style="background:#FFFFFF;border:2px solid #E2E5EA;border-radius:16px;padding:30px;">
+      <div style="width:44px;height:44px;border-radius:10px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F8A6B" stroke-width="2"><path d="M12 2l3 6 6 1-4.5 4.5L17.5 20 12 17l-5.5 3 1-6.5L3 9l6-1z"/></svg>
+      </div>
+      <span style="font-size:11.5px;font-weight:700;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:3px 10px;">Without funding</span>
+      <h3 style="font-size:18px;font-weight:700;color:#14181F;margin:12px 0 8px;">Early-stage partnership</h3>
+      <p style="font-size:14px;color:#5B6472;line-height:1.6;margin:0 0 18px;">The startup is pre-funding and can't yet pay — you work alongside the founders purely to build real experience, references, and a proven track record for your resume.</p>
+      <a href="#apply-unfunded" style="display:block;text-align:center;text-decoration:none;font-size:14px;font-weight:700;color:#FFFFFF;background:#0F8A6B;border-radius:9px;padding:12px;">Apply — without funding</a>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:1000px;margin:0 auto;padding:0 24px 72px;" id="interest">
+  <div style="background:#0B3B34;border-radius:20px;padding:44px;text-align:center;">
+    <h2 style="font-size:24px;font-weight:800;color:#FFFFFF;margin:0 0 12px;letter-spacing:-0.01em;">Not ready to apply yet?</h2>
+    <p style="font-size:15px;color:#B9E9DC;margin:0 auto 24px;max-width:460px;line-height:1.6;">Tell us you're interested and we'll notify you as soon as a startup matching your skills opens a partnership — funded or not.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:440px;margin:0 auto;">
+      <input type="text" placeholder="Your top skill or interest" style="flex:1;min-width:200px;border:none;border-radius:9px;padding:12px 14px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      <button style="border:none;background:#FFFFFF;color:#0B3B34;border-radius:9px;padding:0 22px;font-size:14px;font-weight:700;cursor:pointer;">Notify me</button>
+    </div>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      steps: [
+        { step: '1', title: 'Share your profile', desc: 'Resume, skills, life goals, and the values that matter to you.' },
+        { step: '2', title: 'Get matched', desc: "We surface startups whose needs fit your skill set — technical or soft." },
+        { step: '3', title: 'Seminar or meetup', desc: "Meet the founders through an email/WhatsApp-invited session." },
+        { step: '4', title: 'Partner & build experience', desc: 'Work together and document real experience for your resume.' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

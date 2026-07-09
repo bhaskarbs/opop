@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Dashboard" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1000px;margin:0 auto;padding:28px 24px 64px;display:grid;grid-template-columns:{{ gridCols }};gap:24px;">
+  <aside style="{{ asideOrder }}">
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;text-align:center;margin-bottom:16px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:#2451D6;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;margin:0 auto 12px;">R</div>
+      <div style="font-size:16px;font-weight:700;color:#14181F;">Rohan Mehta</div>
+      <div style="font-size:13px;color:#8891A0;margin-top:2px;">Frontend Developer · Bengaluru</div>
+      <div style="height:8px;background:#F0F2F5;border-radius:999px;overflow:hidden;margin:16px 0 6px;"><div style="height:100%;width:70%;background:#2451D6;border-radius:999px;"></div></div>
+      <div style="font-size:12.5px;color:#5B6472;">Profile 70% complete</div>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px;">
+      <sc-for list="{{ navSections }}" as="n" hint-placeholder-count="5">
+        <a href="{{ n.href }}" style="display:block;text-decoration:none;font-size:14px;font-weight:600;color:{{ n.color }};background:{{ n.bg }};border-radius:8px;padding:10px 12px;margin-bottom:4px;">{{ n.label }}</a>
+      </sc-for>
+    </div>
+  </aside>
+
+  <main>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:26px;margin-bottom:18px;">
+      <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0 0 16px;">Personal details</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Full name</label><input type="text" value="Rohan Mehta" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" /></div>
+        <div><label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Location</label><input type="text" value="Bengaluru, India" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" /></div>
+        <div><label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Email</label><input type="email" value="rohan@email.com" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" /></div>
+        <div><label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Mobile</label><input type="text" value="+91 98765 43210" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" /></div>
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:26px;margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0;">Resume</h2>
+        <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;color:#14181F;cursor:pointer;">Replace</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;border:1px solid #E2E5EA;border-radius:10px;padding:14px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2451D6" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:#14181F;">Rohan_Mehta_Resume.pdf</div>
+          <div style="font-size:12px;color:#8891A0;">Uploaded Jun 30, 2026 · 412 KB</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:26px;margin-bottom:18px;">
+      <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0 0 6px;">Skills</h2>
+      <p style="font-size:13px;color:#8891A0;margin:0 0 14px;">Technical or soft — these power matches across jobs, partnerships, and community roles.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <sc-for list="{{ skills }}" as="s" hint-placeholder-count="6">
+          <span style="font-size:13px;font-weight:600;color:#3A414D;background:#F0F2F5;border-radius:999px;padding:6px 14px;display:flex;align-items:center;gap:6px;">{{ s }} <span style="cursor:pointer;color:#8891A0;">×</span></span>
+        </sc-for>
+      </div>
+      <input type="text" placeholder="Add a skill and press enter" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:26px;">
+      <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0 0 6px;">Life goals & values</h2>
+      <p style="font-size:13px;color:#8891A0;margin:0 0 14px;">Shared with startups when you apply for a partnership.</p>
+      <textarea rows="3" placeholder="What are you working toward?" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;margin-bottom:14px;"></textarea>
+      <textarea rows="3" placeholder="What ethics and work culture matter most to you?" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+      <button style="margin-top:18px;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;">Save changes</button>
+    </div>
+  </main>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    const narrow = this.state.width < 820;
+    return {
+      gridCols: narrow ? '1fr' : '240px minmax(0,1fr)',
+      asideOrder: narrow ? 'order:-1' : '',
+      navSections: [
+        { label: 'Personal details', href: '#personal', color: '#2451D6', bg: '#EAF0FE' },
+        { label: 'Resume', href: '#resume', color: '#14181F', bg: 'transparent' },
+        { label: 'Skills', href: '#skills', color: '#14181F', bg: 'transparent' },
+        { label: 'Life goals & values', href: '#goals', color: '#14181F', bg: 'transparent' },
+        { label: 'Account settings', href: '#account', color: '#14181F', bg: 'transparent' },
+      ],
+      skills: ['React', 'TypeScript', 'UI Systems', 'Communication', 'Mentoring', 'Figma'],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

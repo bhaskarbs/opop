@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Jobs" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1120px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Job approvals</h1>
+      <p style="font-size:14px;color:#5B6472;margin:0;">Review new job, partnership, and community postings before they go live.</p>
+    </div>
+    <div style="font-size:13.5px;font-weight:700;color:#B45309;background:#FFF1DC;border-radius:999px;padding:6px 14px;">{{ pendingCount }} pending review</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <sc-for list="{{ listings }}" as="l" hint-placeholder-count="4">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+        <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+          <div style="display:flex;gap:14px;">
+            <div style="width:42px;height:42px;border-radius:10px;background:{{ l.iconBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ l.iconColor }}" stroke-width="2"><path d="{{ l.icon }}"/></svg>
+            </div>
+            <div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span style="font-size:15.5px;font-weight:700;color:#14181F;">{{ l.title }}</span>
+                <span style="font-size:11px;font-weight:700;color:{{ l.iconColor }};background:{{ l.tagBg }};border-radius:999px;padding:2px 9px;">{{ l.typeLabel }}</span>
+              </div>
+              <div style="font-size:13px;color:#5B6472;margin-top:2px;">{{ l.company }} · {{ l.location }} · Submitted {{ l.submitted }}</div>
+            </div>
+          </div>
+          <span style="font-size:12px;font-weight:600;color:{{ l.statusColor }};background:{{ l.statusBg }};border-radius:999px;padding:4px 10px;height:fit-content;white-space:nowrap;">{{ l.status }}</span>
+        </div>
+
+        <p style="font-size:13.5px;color:#5B6472;line-height:1.6;margin:0 0 12px;">{{ l.summary }}</p>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <sc-for list="{{ l.flags }}" as="f" hint-placeholder-count="2">
+            <span style="font-size:12px;font-weight:600;color:#8A5A0F;background:#FFF6E9;border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8A5A0F" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+              {{ f }}
+            </span>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ l.isPending }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button onClick="{{ () => approve(l.id) }}" style="border:none;background:#0F8A6B;color:#FFFFFF;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+              Approve
+            </button>
+            <button onClick="{{ () => reject(l.id) }}" style="border:1px solid #FCA5A5;background:#FFFFFF;color:#DC2626;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;">Reject</button>
+            <button style="border:1px solid #E2E5EA;background:#FFFFFF;color:#14181F;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;">View full listing</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ l.isApproved }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:600;color:#0F8A6B;display:flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F8A6B" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            Approved — now live on the platform
+          </div>
+        </sc-if>
+        <sc-if value="{{ l.isRejected }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:600;color:#DC2626;display:flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Rejected — company has been notified
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    decisions: {},
+  };
+
+  RAW = [
+    { id: 'j1', title: 'Senior Frontend Developer', company: 'Nimbus Cloud', location: 'Bengaluru · Hybrid', submitted: '2 hours ago', typeLabel: 'Job', iconColor: '#2451D6', iconBg: '#EAF0FE', tagBg: '#EAF0FE', icon: 'M3 7h18v13H3zM3 7l9-4 9 4', summary: 'Senior React role rebuilding the customer analytics dashboard. Salary ₹18L–24L, full-time, hybrid.', flags: [] },
+    { id: 'p1', title: 'Frontend Partner — Product MVP', company: 'Vertex Robotics', location: 'Remote', submitted: '5 hours ago', typeLabel: 'Partnership', iconColor: '#C2760C', iconBg: '#FFF1DC', tagBg: '#FFF6E9', icon: 'M12 2l3 6 6 1-4.5 4.5L17.5 20 12 17l-5.5 3 1-6.5L3 9l6-1z', summary: 'Equity-linked partnership to co-build the product MVP. No stipend disclosed yet — flagged for clarification.', flags: ['Compensation terms unclear'] },
+    { id: 'c1', title: 'Peer Mentor Circle — Tech Careers', company: 'OpenOpportunity Community', location: 'Bengaluru · Online', submitted: '1 day ago', typeLabel: 'Community', iconColor: '#0F8A6B', iconBg: '#E1F5EE', tagBg: '#E7F7F1', icon: 'M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M9 8a3 3 0 1 0 0 6M17 9a2.5 2.5 0 1 0 0 5', summary: 'Weekly peer mentoring circle for interview and communication practice — recurring session, no cost to candidates.', flags: [] },
+    { id: 'j2', title: 'React Developer', company: 'Bharat Retail Tech', location: 'Pune · On-site', submitted: '2 days ago', typeLabel: 'Job', iconColor: '#2451D6', iconBg: '#EAF0FE', tagBg: '#EAF0FE', icon: 'M3 7h18v13H3zM3 7l9-4 9 4', summary: 'Duplicate listing detected — same title and description posted twice within 48 hours.', flags: ['Possible duplicate listing'] },
+  ];
+
+  approve = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'approved' } }));
+  reject = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'rejected' } }));
+
+  renderVals() {
+    const decisions = this.state.decisions;
+    const listings = this.RAW.map(l => {
+      const d = decisions[l.id];
+      return {
+        ...l,
+        isPending: !d,
+        isApproved: d === 'approved',
+        isRejected: d === 'rejected',
+        status: d === 'approved' ? 'Approved' : d === 'rejected' ? 'Rejected' : 'Pending review',
+        statusColor: d === 'approved' ? '#0F8A6B' : d === 'rejected' ? '#DC2626' : '#B45309',
+        statusBg: d === 'approved' ? '#E7F7F1' : d === 'rejected' ? '#FDECEC' : '#FFF1DC',
+      };
+    });
+    return {
+      approve: this.approve,
+      reject: this.reject,
+      listings,
+      pendingCount: listings.filter(l => l.isPending).length,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

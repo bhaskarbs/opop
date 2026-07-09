@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Reports" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1280px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Reports</h1>
+      <p style="font-size:14px;color:#5B6472;margin:0;">Platform performance across candidates, employers, partnerships, and community.</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <select style="border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;color:#14181F;background:#FFFFFF;">
+        <option>Last 30 days</option>
+        <option>Last 90 days</option>
+        <option>Last 6 months</option>
+        <option>Year to date</option>
+      </select>
+      <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;color:#14181F;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#14181F" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;border-bottom:1px solid #E2E5EA;">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+      <button onClick="{{ () => setTab(t.key) }}" style="border:none;background:none;padding:10px 4px;margin-right:22px;font-size:14px;font-weight:700;color:{{ t.color }};border-bottom:2px solid {{ t.border }};cursor:pointer;">{{ t.label }}</button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ isCandidates }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+      <sc-for list="{{ candidateKpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+          <div style="font-size:13px;color:#8891A0;margin-bottom:6px;">{{ k.label }}</div>
+          <div style="font-size:22px;font-weight:800;color:#14181F;">{{ k.value }}</div>
+          <div style="font-size:12.5px;color:{{ k.trendColor }};margin-top:4px;">{{ k.trend }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 16px;">Candidates by outcome</h2>
+      <sc-for list="{{ candidateOutcomes }}" as="o" hint-placeholder-count="4">
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#3A414D;margin-bottom:5px;"><span>{{ o.label }}</span><strong style="color:#14181F;">{{ o.value }}</strong></div>
+          <div style="height:8px;background:#F0F2F5;border-radius:999px;overflow:hidden;"><div style="height:100%;width:{{ o.pct }}%;background:{{ o.color }};border-radius:999px;"></div></div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isEmployers }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+      <sc-for list="{{ employerKpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+          <div style="font-size:13px;color:#8891A0;margin-bottom:6px;">{{ k.label }}</div>
+          <div style="font-size:22px;font-weight:800;color:#14181F;">{{ k.value }}</div>
+          <div style="font-size:12.5px;color:{{ k.trendColor }};margin-top:4px;">{{ k.trend }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 16px;">Top hiring sectors</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead>
+          <tr style="text-align:left;color:#8891A0;font-size:12px;text-transform:uppercase;">
+            <th style="padding:0 12px 10px 0;font-weight:600;">Sector</th>
+            <th style="padding:0 12px 10px;font-weight:600;">Open jobs</th>
+            <th style="padding:0 12px 10px;font-weight:600;">Applications</th>
+            <th style="padding:0;font-weight:600;">Fill rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ sectors }}" as="s" hint-placeholder-count="5">
+            <tr style="border-top:1px solid #F0F1F3;">
+              <td style="padding:12px 12px 12px 0;font-weight:700;color:#14181F;">{{ s.sector }}</td>
+              <td style="padding:12px;color:#3A414D;">{{ s.openJobs }}</td>
+              <td style="padding:12px;color:#3A414D;">{{ s.applications }}</td>
+              <td style="padding:12px 0;color:#0F8A6B;font-weight:700;">{{ s.fillRate }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isPartnerships }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+      <sc-for list="{{ partnershipKpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+          <div style="font-size:13px;color:#8891A0;margin-bottom:6px;">{{ k.label }}</div>
+          <div style="font-size:22px;font-weight:800;color:#14181F;">{{ k.value }}</div>
+          <div style="font-size:12.5px;color:{{ k.trendColor }};margin-top:4px;">{{ k.trend }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 16px;">Partnerships by track</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:13.5px;font-weight:700;color:#2451D6;">Funded</span><span style="font-size:13px;color:#8891A0;">2,140 (55%)</span>
+          </div>
+          <div style="height:10px;background:#F0F2F5;border-radius:999px;overflow:hidden;"><div style="height:100%;width:55%;background:#2451D6;border-radius:999px;"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:13.5px;font-weight:700;color:#0F8A6B;">Without funding</span><span style="font-size:13px;color:#8891A0;">1,740 (45%)</span>
+          </div>
+          <div style="height:10px;background:#F0F2F5;border-radius:999px;overflow:hidden;"><div style="height:100%;width:45%;background:#0F8A6B;border-radius:999px;"></div></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isCommunity }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+      <sc-for list="{{ communityKpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+          <div style="font-size:13px;color:#8891A0;margin-bottom:6px;">{{ k.label }}</div>
+          <div style="font-size:22px;font-weight:800;color:#14181F;">{{ k.value }}</div>
+          <div style="font-size:12.5px;color:{{ k.trendColor }};margin-top:4px;">{{ k.trend }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 16px;">Top community sessions attended</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead>
+          <tr style="text-align:left;color:#8891A0;font-size:12px;text-transform:uppercase;">
+            <th style="padding:0 12px 10px 0;font-weight:600;">Session</th>
+            <th style="padding:0 12px 10px;font-weight:600;">Attendees</th>
+            <th style="padding:0;font-weight:600;">Avg. rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ sessions }}" as="s" hint-placeholder-count="4">
+            <tr style="border-top:1px solid #F0F1F3;">
+              <td style="padding:12px 12px 12px 0;font-weight:700;color:#14181F;">{{ s.name }}</td>
+              <td style="padding:12px;color:#3A414D;">{{ s.attendees }}</td>
+              <td style="padding:12px 0;color:#0F8A6B;font-weight:700;">{{ s.rating }} ★</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isFinancial }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+      <sc-for list="{{ financialKpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+          <div style="font-size:13px;color:#8891A0;margin-bottom:6px;">{{ k.label }}</div>
+          <div style="font-size:22px;font-weight:800;color:#14181F;">{{ k.value }}</div>
+          <div style="font-size:12.5px;color:{{ k.trendColor }};margin-top:4px;">{{ k.trend }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <h2 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 16px;">Revenue by source</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead>
+          <tr style="text-align:left;color:#8891A0;font-size:12px;text-transform:uppercase;">
+            <th style="padding:0 12px 10px 0;font-weight:600;">Source</th>
+            <th style="padding:0 12px 10px;font-weight:600;">This month</th>
+            <th style="padding:0;font-weight:600;">Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ revenue }}" as="r" hint-placeholder-count="4">
+            <tr style="border-top:1px solid #F0F1F3;">
+              <td style="padding:12px 12px 12px 0;font-weight:700;color:#14181F;">{{ r.source }}</td>
+              <td style="padding:12px;color:#3A414D;">{{ r.amount }}</td>
+              <td style="padding:12px 0;color:#3A414D;">{{ r.share }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-if>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'candidates' };
+  setTab = (key) => this.setState({ tab: key });
+
+  renderVals() {
+    const tab = this.state.tab;
+    const TABS = [
+      { key: 'candidates', label: 'Candidates' },
+      { key: 'employers', label: 'Employers & Jobs' },
+      { key: 'partnerships', label: 'Partnerships' },
+      { key: 'community', label: 'Community' },
+      { key: 'financial', label: 'Financial' },
+    ];
+    return {
+      setTab: this.setTab,
+      tabs: TABS.map(t => ({
+        ...t,
+        color: t.key === tab ? '#14181F' : '#8891A0',
+        border: t.key === tab ? '#2451D6' : 'transparent',
+      })),
+      isCandidates: tab === 'candidates',
+      isEmployers: tab === 'employers',
+      isPartnerships: tab === 'partnerships',
+      isCommunity: tab === 'community',
+      isFinancial: tab === 'financial',
+
+      candidateKpis: [
+        { label: 'Total registered', value: '84,210', trend: '+1,204 this period', trendColor: '#0F8A6B' },
+        { label: 'Active job seekers', value: '52,340', trend: '+890 this period', trendColor: '#0F8A6B' },
+        { label: 'Resumes uploaded', value: '79,880', trend: '95% of registered', trendColor: '#8891A0' },
+        { label: 'Mock interviews taken', value: '18,210', trend: '+2,110 this period', trendColor: '#0F8A6B' },
+      ],
+      candidateOutcomes: [
+        { label: 'Hired via job listing', value: '9,880', pct: 100, color: '#2451D6' },
+        { label: 'Entered a partnership', value: '4,120', pct: 42, color: '#C2760C' },
+        { label: 'Joined a community role', value: '3,340', pct: 34, color: '#0F8A6B' },
+        { label: 'Still searching', value: '38,900', pct: 74, color: '#8891A0' },
+      ],
+
+      employerKpis: [
+        { label: 'Registered companies', value: '2,340', trend: '+38 this period', trendColor: '#0F8A6B' },
+        { label: 'Verified companies', value: '2,110', trend: '90% verified', trendColor: '#8891A0' },
+        { label: 'Live job postings', value: '12,406', trend: '+312 this period', trendColor: '#0F8A6B' },
+        { label: 'Avg. time to fill', value: '18 days', trend: '-2 days vs last period', trendColor: '#0F8A6B' },
+      ],
+      sectors: [
+        { sector: 'Technology', openJobs: 4820, applications: '210,400', fillRate: '68%' },
+        { sector: 'Healthtech', openJobs: 1240, applications: '58,200', fillRate: '61%' },
+        { sector: 'Fintech', openJobs: 980, applications: '44,100', fillRate: '57%' },
+        { sector: 'Retail & E-commerce', openJobs: 1560, applications: '72,300', fillRate: '64%' },
+        { sector: 'Education', openJobs: 640, applications: '25,900', fillRate: '52%' },
+      ],
+
+      partnershipKpis: [
+        { label: 'Total partnership matches', value: '3,880', trend: '+94 this period', trendColor: '#0F8A6B' },
+        { label: 'Startups offering partnerships', value: '860', trend: '+22 this period', trendColor: '#0F8A6B' },
+        { label: 'Seminars held', value: '146', trend: '+18 this period', trendColor: '#0F8A6B' },
+        { label: 'Avg. partnership duration', value: '4.2 months', trend: 'Stable', trendColor: '#8891A0' },
+      ],
+
+      communityKpis: [
+        { label: 'Community sign-ups', value: '9,120', trend: '+210 this period', trendColor: '#0F8A6B' },
+        { label: 'Sessions run', value: '340', trend: '+28 this period', trendColor: '#0F8A6B' },
+        { label: 'Avg. attendance rate', value: '78%', trend: '+4pts vs last period', trendColor: '#0F8A6B' },
+        { label: 'Income-type guides read', value: '21,400', trend: '+1,890 this period', trendColor: '#0F8A6B' },
+      ],
+      sessions: [
+        { name: 'Peer Mentor Circle — Tech Careers', attendees: 640, rating: '4.8' },
+        { name: 'Local Skill Exchange Meetup — Pune', attendees: 480, rating: '4.6' },
+        { name: 'Volunteer Coordination Orientation', attendees: 310, rating: '4.7' },
+        { name: 'Community Income Explainer Session', attendees: 890, rating: '4.9' },
+      ],
+
+      financialKpis: [
+        { label: 'Total revenue (period)', value: '₹1.82 Cr', trend: '+12% vs last period', trendColor: '#0F8A6B' },
+        { label: 'Job posting fees', value: '₹1.10 Cr', trend: '60% of revenue', trendColor: '#8891A0' },
+        { label: 'Featured listings', value: '₹48.6 L', trend: '27% of revenue', trendColor: '#8891A0' },
+        { label: 'Candidate search subscriptions', value: '₹23.4 L', trend: '13% of revenue', trendColor: '#8891A0' },
+      ],
+      revenue: [
+        { source: 'Job posting fees', amount: '₹1.10 Cr', share: '60%' },
+        { source: 'Featured / premium listings', amount: '₹48.6 L', share: '27%' },
+        { source: 'Candidate search subscriptions', amount: '₹23.4 L', share: '13%' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Users" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1280px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Users</h1>
+      <p style="font-size:14px;color:#5B6472;margin:0;">Manage candidates and company accounts across the platform.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+      <button onClick="{{ () => setTab(t.key) }}" style="border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.color }};border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:600;cursor:pointer;">{{ t.label }}</button>
+    </sc-for>
+  </div>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;">
+    <div style="flex:2;min-width:220px;display:flex;align-items:center;gap:10px;border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8891A0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" placeholder="Search by name or email" style="border:none;outline:none;font-size:13.5px;width:100%;font-family:inherit;color:#14181F;" />
+    </div>
+    <select style="border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;color:#14181F;">
+      <option>All statuses</option>
+      <option>Active</option>
+      <option>Suspended</option>
+      <option>Pending verification</option>
+    </select>
+  </div>
+
+  <sc-if value="{{ isCandidates }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ candidates }}" as="c" hint-placeholder-count="6">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+            <span style="width:34px;height:34px;border-radius:50%;background:{{ c.color }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">{{ c.initial }}</span>
+            <div style="min-width:0;">
+              <div style="font-weight:700;color:#14181F;font-size:14.5px;">{{ c.name }}</div>
+              <div style="font-size:13px;color:#5B6472;">{{ c.email }} · {{ c.focus }} · Joined {{ c.joined }}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:12px;font-weight:600;color:{{ c.statusColor }};background:{{ c.statusBg }};border-radius:999px;padding:4px 10px;white-space:nowrap;">{{ c.status }}</span>
+            <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:700;color:#14181F;cursor:pointer;">Manage</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isCompanies }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ companies }}" as="c" hint-placeholder-count="6">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="min-width:0;">
+            <div style="font-weight:700;color:#14181F;font-size:14.5px;">{{ c.name }}</div>
+            <div style="font-size:13px;color:#5B6472;">{{ c.sector }} · <span style="font-family:monospace;font-size:12.5px;">{{ c.cin }}</span> · Registered {{ c.date }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:12px;font-weight:600;color:{{ c.statusColor }};background:{{ c.statusBg }};border-radius:999px;padding:4px 10px;white-space:nowrap;">{{ c.status }}</span>
+            <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:700;color:#14181F;cursor:pointer;">Manage</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'candidates' };
+  setTab = (key) => this.setState({ tab: key });
+
+  renderVals() {
+    const tab = this.state.tab;
+    return {
+      setTab: this.setTab,
+      isCandidates: tab === 'candidates',
+      isCompanies: tab === 'companies',
+      tabs: [
+        { key: 'candidates', label: 'Candidates', border: tab === 'candidates' ? '#14181F' : '#E2E5EA', bg: tab === 'candidates' ? '#14181F' : '#FFFFFF', color: tab === 'candidates' ? '#FFFFFF' : '#3A414D' },
+        { key: 'companies', label: 'Companies', border: tab === 'companies' ? '#14181F' : '#E2E5EA', bg: tab === 'companies' ? '#14181F' : '#FFFFFF', color: tab === 'companies' ? '#FFFFFF' : '#3A414D' },
+      ],
+      candidates: [
+        { name: 'Rohan Mehta', initial: 'R', color: '#2451D6', email: 'rohan@email.com', focus: 'Jobs + Partnership', joined: 'Jun 12, 2026', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Anita Sharma', initial: 'A', color: '#0F8A6B', email: 'anita@email.com', focus: 'Jobs', joined: 'May 28, 2026', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Karan Patel', initial: 'K', color: '#C2760C', email: 'karan@email.com', focus: 'Community', joined: 'May 20, 2026', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Meera Iyer', initial: 'M', color: '#2451D6', email: 'meera@email.com', focus: 'Partnership', joined: 'Apr 30, 2026', status: 'Pending verification', statusColor: '#B45309', statusBg: '#FFF1DC' },
+        { name: 'Vikram Rao', initial: 'V', color: '#0F8A6B', email: 'vikram@email.com', focus: 'Jobs', joined: 'Apr 14, 2026', status: 'Suspended', statusColor: '#DC2626', statusBg: '#FDECEC' },
+        { name: 'Divya Nair', initial: 'D', color: '#C2760C', email: 'divya@email.com', focus: 'Jobs + Community', joined: 'Mar 22, 2026', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+      ],
+      companies: [
+        { name: 'Vertex Robotics Pvt. Ltd.', sector: 'Deep Tech', cin: 'U74999KA2021PTC145632', date: 'Jul 6, 2026', status: 'Verified', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Lumen Health Solutions', sector: 'Healthtech', cin: 'U85100MH2020PTC338211', date: 'Jul 5, 2026', status: 'Verified', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Sahaay Finance Ltd.', sector: 'Fintech', cin: 'U65999DL2022PTC401987', date: 'Jul 4, 2026', status: 'Pending review', statusColor: '#B45309', statusBg: '#FFF1DC' },
+        { name: 'Greenline Logistics', sector: 'Climate Tech', cin: 'U60232KA2019PTC121044', date: 'Jul 3, 2026', status: 'Verified', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Northstar EdTech', sector: 'Education', cin: 'U80903TN2023PTC167754', date: 'Jul 2, 2026', status: 'Pending review', statusColor: '#B45309', statusBg: '#FFF1DC' },
+        { name: 'Kinship Consumer', sector: 'D2C', cin: 'U74999MH2021PTC298765', date: 'Jun 28, 2026', status: 'Suspended', statusColor: '#DC2626', statusBg: '#FDECEC' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="guest" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:760px;margin:0 auto;padding:40px 24px 64px;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <span style="font-size:12.5px;font-weight:700;color:#2451D6;background:#EAF0FE;border-radius:999px;padding:5px 12px;">For Employers</span>
+    <h1 style="font-size:23px;font-weight:800;color:#14181F;margin:14px 0 6px;">Register your company</h1>
+    <p style="font-size:14px;color:#5B6472;margin:0;">Verified as per Indian company law before you can post jobs or offer partnerships.</p>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:28px;">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+      <div style="flex:1;text-align:center;">
+        <div style="height:5px;border-radius:999px;background:{{ s.color }};margin-bottom:8px;"></div>
+        <div style="font-size:12px;font-weight:600;color:{{ s.textColor }};">{{ s.label }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:32px;">
+    <h2 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0 0 18px;">Company details</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Registered company name</label>
+        <input type="text" placeholder="Vertex Robotics Pvt. Ltd." style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Entity type</label>
+        <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;color:#14181F;box-sizing:border-box;">
+          <option>Private Limited Company</option>
+          <option>Limited Liability Partnership (LLP)</option>
+          <option>Partnership Firm</option>
+          <option>Sole Proprietorship</option>
+          <option>Public Limited Company</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">CIN / LLPIN</label>
+        <input type="text" placeholder="U74999KA2021PTC145632" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">GSTIN</label>
+        <input type="text" placeholder="29ABCDE1234F1Z5" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">PAN</label>
+        <input type="text" placeholder="ABCDE1234F" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Industry / sector</label>
+        <input type="text" placeholder="Deep Tech, Healthtech, Fintech…" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Registered office address</label>
+      <textarea rows="2" placeholder="Street, city, state, PIN code" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Authorized signatory name</label>
+        <input type="text" placeholder="Full name" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Work email</label>
+        <input type="email" placeholder="founder@company.com" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:22px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:8px;">Certificate of incorporation</label>
+      <div style="border:1.5px dashed #C7CCD6;border-radius:12px;padding:24px;text-align:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8891A0" stroke-width="1.8" style="margin-bottom:8px;"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg>
+        <div style="font-size:13.5px;font-weight:600;color:#14181F;margin-bottom:2px;">Upload PDF for verification</div>
+        <div style="font-size:12.5px;color:#8891A0;">Reviewed by our compliance team within 24–48 hours</div>
+      </div>
+    </div>
+
+    <div style="background:#FFF6E9;border:1px solid #FCE3B8;border-radius:10px;padding:14px 16px;font-size:13px;color:#8A5A0F;line-height:1.55;margin-bottom:22px;">
+      All company data is verified against MCA (Ministry of Corporate Affairs) records before job or partnership postings go live, in accordance with Indian company law.
+    </div>
+
+    <button style="width:100%;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:13px;font-size:14.5px;font-weight:700;cursor:pointer;">Submit for verification</button>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      steps: [
+        { label: 'Company details', color: '#2451D6', textColor: '#14181F' },
+        { label: 'Document upload', color: '#E2E5EA', textColor: '#8891A0' },
+        { label: 'Verification', color: '#E2E5EA', textColor: '#8891A0' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

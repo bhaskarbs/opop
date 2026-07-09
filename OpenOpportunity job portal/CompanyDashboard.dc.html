@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="company" active-item="Post a Job" user-name="Vertex Robotics" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1280px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Employer dashboard</h1>
+      <div style="font-size:14px;color:#5B6472;">Vertex Robotics · Deep Tech · Seed stage</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a href="#search-candidates" style="text-decoration:none;font-size:13.5px;font-weight:700;color:#14181F;border:1px solid #E2E5EA;background:#FFFFFF;border-radius:8px;padding:10px 18px;">Search candidates</a>
+      <a href="#post-job" style="text-decoration:none;font-size:13.5px;font-weight:700;color:#FFFFFF;background:#2451D6;border-radius:8px;padding:10px 18px;">+ Post a job</a>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+        <div style="font-size:13px;color:#8891A0;margin-bottom:6px;">{{ k.label }}</div>
+        <div style="font-size:24px;font-weight:800;color:#14181F;">{{ k.value }}</div>
+        <div style="font-size:12.5px;color:{{ k.trendColor }};margin-top:4px;">{{ k.trend }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ mainCols }};gap:20px;">
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0;">Active job postings</h2>
+        <a href="#postings" style="font-size:13px;font-weight:700;text-decoration:none;">Manage all →</a>
+      </div>
+      <sc-for list="{{ jobPostings }}" as="j" hint-placeholder-count="3">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #F0F1F3;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:14.5px;font-weight:700;color:#14181F;">{{ j.title }}</div>
+            <div style="font-size:12.5px;color:#8891A0;margin-top:2px;">{{ j.applicants }} applicants · Posted {{ j.posted }}</div>
+          </div>
+          <span style="font-size:12px;font-weight:600;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:4px 10px;">{{ j.status }}</span>
+        </div>
+      </sc-for>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:26px 0 16px;">
+        <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0;">Partnership applicants</h2>
+        <a href="#applicants" style="font-size:13px;font-weight:700;text-decoration:none;">View all →</a>
+      </div>
+      <sc-for list="{{ applicants }}" as="a" hint-placeholder-count="3">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-top:1px solid #F0F1F3;flex-wrap:wrap;">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#EAF0FE;color:#2451D6;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">{{ a.initial }}</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#14181F;">{{ a.name }}</div>
+              <div style="font-size:12.5px;color:#8891A0;">{{ a.skills }}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;color:#14181F;cursor:pointer;">View profile</button>
+            <button style="border:none;background:#14181F;color:#FFFFFF;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">Invite to seminar</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <aside>
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;margin-bottom:16px;">
+        <h3 style="font-size:14.5px;font-weight:700;color:#14181F;margin:0 0 12px;">Upcoming seminars & meetups</h3>
+        <sc-for list="{{ seminars }}" as="s" hint-placeholder-count="2">
+          <div style="padding:10px 0;border-top:1px solid #F0F1F3;">
+            <div style="font-size:13.5px;font-weight:700;color:#14181F;">{{ s.title }}</div>
+            <div style="font-size:12.5px;color:#8891A0;margin-top:2px;">{{ s.date }} · {{ s.invited }} invited</div>
+          </div>
+        </sc-for>
+        <button style="width:100%;margin-top:12px;border:1px dashed #C7CCD6;background:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;color:#2451D6;cursor:pointer;">+ Schedule new seminar</button>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+        <h3 style="font-size:14.5px;font-weight:700;color:#14181F;margin:0 0 12px;">Notifications sent</h3>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#5B6472;padding:8px 0;border-top:1px solid #F0F1F3;"><span>Email</span><strong style="color:#14181F;">1,204</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#5B6472;padding:8px 0;border-top:1px solid #F0F1F3;"><span>WhatsApp</span><strong style="color:#14181F;">860</strong></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    return {
+      mainCols: this.state.width < 900 ? '1fr' : 'minmax(0,1fr) 300px',
+      kpis: [
+        { label: 'Active job postings', value: '6', trend: '+2 this month', trendColor: '#0F8A6B' },
+        { label: 'Total applicants', value: '412', trend: '+58 this week', trendColor: '#0F8A6B' },
+        { label: 'Partnership applicants', value: '87', trend: '+12 this week', trendColor: '#0F8A6B' },
+        { label: 'Seminar RSVPs', value: '34', trend: 'Next: Jul 14', trendColor: '#8891A0' },
+      ],
+      jobPostings: [
+        { title: 'Frontend Engineer', applicants: 128, posted: '3 days ago', status: 'Active' },
+        { title: 'Product Designer', applicants: 74, posted: '1 week ago', status: 'Active' },
+        { title: 'Hardware QA Lead', applicants: 41, posted: '2 weeks ago', status: 'Active' },
+      ],
+      applicants: [
+        { name: 'Rohan Mehta', initial: 'R', skills: 'React · UI Systems · 5 yrs' },
+        { name: 'Anita Sharma', initial: 'A', skills: 'QA · Embedded · 3 yrs' },
+        { name: 'Karan Patel', initial: 'K', skills: 'Customer Success · 4 yrs' },
+      ],
+      seminars: [
+        { title: 'Partner intro session — Frontend', date: 'Jul 14, 4:00 PM', invited: 22 },
+        { title: 'Hardware QA meetup', date: 'Jul 21, 11:00 AM', invited: 12 },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

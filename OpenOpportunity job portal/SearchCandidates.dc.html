@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="company" active-item="Search Candidates" user-name="Vertex Robotics" hint-size="100%,68px"></dc-import>
+
+<div style="background:#FFFFFF;border-bottom:1px solid #E2E5EA;">
+  <div style="max-width:1280px;margin:0 auto;padding:20px 24px;display:flex;gap:10px;flex-wrap:wrap;">
+    <div style="flex:2;min-width:220px;display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #E2E5EA;border-radius:9px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8891A0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" placeholder="Search by skill, title, or keyword" style="border:none;outline:none;font-size:14.5px;width:100%;font-family:inherit;color:#14181F;" />
+    </div>
+    <button style="background:#14181F;color:#FFFFFF;border:none;border-radius:9px;padding:0 26px;font-size:14.5px;font-weight:700;cursor:pointer;min-height:44px;">Search</button>
+  </div>
+</div>
+
+<div style="max-width:1280px;margin:0 auto;padding:28px 24px 64px;display:grid;grid-template-columns:{{ gridCols }};gap:24px;">
+  <aside style="{{ asideStyle }}">
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:20px;position:sticky;top:88px;">
+      <div style="font-size:15px;font-weight:700;color:#14181F;margin-bottom:16px;">Filters</div>
+      <div style="margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#14181F;margin-bottom:10px;">Looking for</div>
+        <sc-for list="{{ intentFilters }}" as="f" hint-placeholder-count="3">
+          <label style="display:flex;align-items:center;gap:9px;font-size:14px;color:#3A414D;margin-bottom:9px;cursor:pointer;"><input type="checkbox" checked="{{ f.checked }}" style="width:16px;height:16px;accent-color:#2451D6;" />{{ f.label }}</label>
+        </sc-for>
+      </div>
+      <div style="margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#14181F;margin-bottom:10px;">Experience</div>
+        <sc-for list="{{ expFilters }}" as="f" hint-placeholder-count="4">
+          <label style="display:flex;align-items:center;gap:9px;font-size:14px;color:#3A414D;margin-bottom:9px;cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:#2451D6;" />{{ f }}</label>
+        </sc-for>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#14181F;margin-bottom:10px;">Location</div>
+        <input type="text" placeholder="City or remote" style="width:100%;border:1px solid #E2E5EA;border-radius:8px;padding:9px 10px;font-size:13.5px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div style="font-size:15px;color:#5B6472;margin-bottom:16px;">Showing <strong style="color:#14181F;">1,240</strong> candidates matching frontend skills</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ candidates }}" as="c" hint-placeholder-count="5">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div style="display:flex;gap:14px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:{{ c.color }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">{{ c.initial }}</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#14181F;">{{ c.name }}</div>
+              <div style="font-size:13px;color:#5B6472;margin-top:2px;">{{ c.title }} · {{ c.location }} · {{ c.years }} yrs experience</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+                <sc-for list="{{ c.skills }}" as="s" hint-placeholder-count="3">
+                  <span style="font-size:12px;font-weight:600;color:#3A414D;background:#F0F2F5;border-radius:999px;padding:4px 10px;">{{ s }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+            <span style="font-size:11.5px;font-weight:700;color:{{ c.intentColor }};background:{{ c.intentBg }};border-radius:999px;padding:4px 10px;">{{ c.intent }}</span>
+            <div style="display:flex;gap:8px;">
+              <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;color:#14181F;cursor:pointer;">View profile</button>
+              <button style="border:none;background:#14181F;color:#FFFFFF;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">Contact</button>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </main>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    const narrow = this.state.width < 860;
+    return {
+      gridCols: narrow ? '1fr' : '260px 1fr',
+      asideStyle: narrow ? 'display:none' : '',
+      intentFilters: [
+        { label: 'Open to jobs', checked: true },
+        { label: 'Open to partnership', checked: false },
+        { label: 'Open to community roles', checked: false },
+      ],
+      expFilters: ['0-2 yrs', '3-5 yrs', '5-8 yrs', '8+ yrs'],
+      candidates: [
+        { name: 'Rohan Mehta', initial: 'R', color: '#2451D6', title: 'Frontend Developer', location: 'Bengaluru', years: 5, skills: ['React', 'TypeScript', 'UI Systems'], intent: 'Open to partnership', intentColor: '#C2760C', intentBg: '#FFF6E9' },
+        { name: 'Anita Sharma', initial: 'A', color: '#0F8A6B', title: 'QA Engineer', location: 'Pune', years: 3, skills: ['Embedded', 'QA Automation'], intent: 'Open to jobs', intentColor: '#2451D6', intentBg: '#EAF0FE' },
+        { name: 'Karan Patel', initial: 'K', color: '#C2760C', title: 'Customer Success', location: 'Remote', years: 4, skills: ['CS', 'Onboarding'], intent: 'Open to jobs', intentColor: '#2451D6', intentBg: '#EAF0FE' },
+        { name: 'Meera Iyer', initial: 'M', color: '#2451D6', title: 'UI/UX Designer', location: 'Hyderabad', years: 6, skills: ['Figma', 'Design Systems'], intent: 'Open to community roles', intentColor: '#0F8A6B', intentBg: '#E7F7F1' },
+        { name: 'Vikram Rao', initial: 'V', color: '#0F8A6B', title: 'Frontend Developer', location: 'Chennai', years: 2, skills: ['Vue', 'JavaScript'], intent: 'Open to partnership', intentColor: '#C2760C', intentBg: '#FFF6E9' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

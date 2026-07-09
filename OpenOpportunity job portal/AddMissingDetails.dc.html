@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Dashboard" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1000px;margin:0 auto;padding:28px 24px 64px;display:grid;grid-template-columns:{{ gridCols }};gap:24px;">
+  <aside style="{{ asideOrder }}">
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;position:sticky;top:88px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:14px;font-weight:700;color:#14181F;">Profile strength</span>
+        <span style="font-size:13px;font-weight:700;color:#2451D6;">{{ pct }}%</span>
+      </div>
+      <div style="height:8px;background:#F0F2F5;border-radius:999px;overflow:hidden;margin-bottom:18px;">
+        <div style="height:100%;width:{{ pct }}%;background:#2451D6;border-radius:999px;transition:width .3s;"></div>
+      </div>
+      <div style="font-size:12.5px;font-weight:700;color:#8891A0;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px;">Still missing</div>
+      <sc-for list="{{ checklist }}" as="c" hint-placeholder-count="4">
+        <a href="{{ c.href }}" style="display:flex;align-items:center;gap:10px;text-decoration:none;padding:9px 0;border-top:1px solid #F0F1F3;">
+          <sc-if value="{{ c.done }}" hint-placeholder-val="{{ false }}">
+            <span style="width:18px;height:18px;border-radius:50%;background:#0F8A6B;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+            </span>
+          </sc-if>
+          <sc-if value="{{ c.notDone }}" hint-placeholder-val="{{ true }}">
+            <span style="width:18px;height:18px;border-radius:50%;border:2px solid #D7DBE2;flex-shrink:0;"></span>
+          </sc-if>
+          <span style="font-size:13.5px;font-weight:600;color:{{ c.textColor }};">{{ c.label }}</span>
+        </a>
+      </sc-for>
+    </div>
+  </aside>
+
+  <main>
+    <h1 style="font-size:20px;font-weight:800;color:#14181F;margin:0 0 4px;">Add missing details</h1>
+    <p style="font-size:14px;color:#5B6472;margin:0 0 24px;">Finish these to unlock better job, partnership, and community matches.</p>
+
+    <div style="background:#FFFFFF;border:2px solid #FCE3B8;border-radius:16px;padding:26px;margin-bottom:18px;position:relative;">
+      <span style="position:absolute;top:20px;right:26px;font-size:11.5px;font-weight:700;color:#C2760C;background:#FFF6E9;border-radius:999px;padding:3px 10px;">Missing</span>
+      <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0 0 6px;">Life goals & values</h2>
+      <p style="font-size:13px;color:#8891A0;margin:0 0 14px;">Shared with startups when you apply for a partnership — helps them assess fit beyond your resume.</p>
+      <textarea rows="3" placeholder="What are you working toward?" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;margin-bottom:14px;"></textarea>
+      <textarea rows="3" placeholder="What ethics and work culture matter most to you?" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+      <button onClick="{{ () => markDone('goals') }}" style="margin-top:16px;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;">Save</button>
+    </div>
+
+    <div style="background:#FFFFFF;border:2px solid #FCE3B8;border-radius:16px;padding:26px;margin-bottom:18px;position:relative;">
+      <span style="position:absolute;top:20px;right:26px;font-size:11.5px;font-weight:700;color:#C2760C;background:#FFF6E9;border-radius:999px;padding:3px 10px;">Missing</span>
+      <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0 0 6px;">Mobile number verification</h2>
+      <p style="font-size:13px;color:#8891A0;margin:0 0 14px;">Verify your number so employers and startups can reach you and you receive OTP logins.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <div style="border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;color:#5B6472;">+91</div>
+        <input type="text" value="98765 43210" style="flex:1;min-width:160px;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+        <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:9px;padding:0 18px;font-size:13.5px;font-weight:700;color:#2451D6;cursor:pointer;">Send OTP</button>
+      </div>
+      <button onClick="{{ () => markDone('mobile') }}" style="border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;">Verify & save</button>
+    </div>
+
+    <div style="background:#FFFFFF;border:2px solid #FCE3B8;border-radius:16px;padding:26px;margin-bottom:18px;position:relative;">
+      <span style="position:absolute;top:20px;right:26px;font-size:11.5px;font-weight:700;color:#C2760C;background:#FFF6E9;border-radius:999px;padding:3px 10px;">Missing</span>
+      <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0 0 6px;">Work preferences</h2>
+      <p style="font-size:13px;color:#8891A0;margin:0 0 14px;">Helps us match jobs, partnerships, and community roles to how you want to work.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Work mode</label>
+          <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;color:#14181F;box-sizing:border-box;">
+            <option>Remote</option><option>Hybrid</option><option>On-site</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Open to</label>
+          <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;color:#14181F;box-sizing:border-box;">
+            <option>Jobs only</option><option>Jobs & partnerships</option><option>Jobs, partnerships & community roles</option>
+          </select>
+        </div>
+      </div>
+      <button onClick="{{ () => markDone('prefs') }}" style="margin-top:16px;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;">Save</button>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:26px;opacity:0.6;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <h2 style="font-size:16px;font-weight:700;color:#14181F;margin:0;">Skills</h2>
+        <span style="font-size:11.5px;font-weight:700;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:3px 10px;">Complete</span>
+      </div>
+      <p style="font-size:13px;color:#8891A0;margin:0;">6 skills added — nice work.</p>
+    </div>
+  </main>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    width: typeof window !== 'undefined' ? window.innerWidth : 1280,
+    done: { personal: true, resume: true, skills: true, goals: false, mobile: false, prefs: false },
+  };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  markDone = (key) => this.setState(s => ({ done: { ...s.done, [key]: true } }));
+
+  renderVals() {
+    const narrow = this.state.width < 820;
+    const d = this.state.done;
+    const items = [
+      { key: 'personal', label: 'Personal details', href: '#personal' },
+      { key: 'resume', label: 'Resume', href: '#resume' },
+      { key: 'skills', label: 'Skills', href: '#skills' },
+      { key: 'goals', label: 'Life goals & values', href: '#goals' },
+      { key: 'mobile', label: 'Mobile verification', href: '#mobile' },
+      { key: 'prefs', label: 'Work preferences', href: '#prefs' },
+    ];
+    const doneCount = items.filter(i => d[i.key]).length;
+    const pct = Math.round((doneCount / items.length) * 100);
+    return {
+      gridCols: narrow ? '1fr' : '260px minmax(0,1fr)',
+      asideOrder: narrow ? 'order:-1' : '',
+      pct,
+      markDone: this.markDone,
+      checklist: items.map(i => ({
+        label: i.label,
+        href: i.href,
+        done: d[i.key],
+        notDone: !d[i.key],
+        textColor: d[i.key] ? '#8891A0' : '#14181F',
+      })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

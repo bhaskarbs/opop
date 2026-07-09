@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Find Jobs" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1120px;margin:0 auto;padding:28px 24px 64px;display:grid;grid-template-columns:{{ mainCol }};gap:24px;">
+  <main>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:28px;margin-bottom:20px;">
+      <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;">
+        <div style="display:flex;gap:16px;">
+          <div style="width:58px;height:58px;border-radius:12px;background:#2451D6;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;flex-shrink:0;">N</div>
+          <div>
+            <h1 style="font-size:23px;font-weight:800;color:#14181F;margin:0 0 6px;letter-spacing:-0.01em;">Senior Frontend Developer</h1>
+            <div style="font-size:15px;color:#5B6472;">Nimbus Cloud · Bengaluru, India · Hybrid</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+              <span style="font-size:12.5px;font-weight:600;color:#3A414D;background:#F0F2F5;border-radius:999px;padding:4px 12px;">Full-time</span>
+              <span style="font-size:12.5px;font-weight:600;color:#3A414D;background:#F0F2F5;border-radius:999px;padding:4px 12px;">5+ years</span>
+              <span style="font-size:12.5px;font-weight:600;color:#3A414D;background:#F0F2F5;border-radius:999px;padding:4px 12px;">₹18L–24L / yr</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+          <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:9px;padding:11px 18px;font-size:14px;font-weight:700;color:#14181F;cursor:pointer;">Save</button>
+          <button style="border:none;background:#2451D6;border-radius:9px;padding:11px 24px;font-size:14px;font-weight:700;color:#FFFFFF;cursor:pointer;">Apply now</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid #F0F1F3;font-size:13.5px;color:#8891A0;">
+        <span>Posted 2 days ago</span><span>·</span><span>412 applicants</span><span>·</span><span>Sourced from OpenOpportunity</span>
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:28px;margin-bottom:20px;">
+      <h2 style="font-size:17px;font-weight:700;color:#14181F;margin:0 0 14px;">About the role</h2>
+      <p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0 0 18px;">Nimbus Cloud is looking for a senior frontend developer to lead the rebuild of its customer-facing analytics dashboard. You'll work closely with product and design to ship performant, accessible interfaces used by thousands of enterprise customers daily.</p>
+      <h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 10px;">Responsibilities</h3>
+      <ul style="font-size:14.5px;color:#3A414D;line-height:1.8;margin:0 0 18px;padding-left:20px;">
+        <li>Own architecture and delivery of core dashboard modules in React/TypeScript</li>
+        <li>Partner with design on a component system used across the product</li>
+        <li>Mentor two mid-level engineers and review code for quality and performance</li>
+      </ul>
+      <h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 10px;">Requirements</h3>
+      <ul style="font-size:14.5px;color:#3A414D;line-height:1.8;margin:0;padding-left:20px;">
+        <li>5+ years building production React applications</li>
+        <li>Strong grasp of TypeScript, performance profiling, and accessibility</li>
+        <li>Experience mentoring or leading a small engineering team</li>
+      </ul>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:28px;">
+      <h2 style="font-size:17px;font-weight:700;color:#14181F;margin:0 0 14px;">About Nimbus Cloud</h2>
+      <p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0;">Nimbus Cloud builds infrastructure monitoring tools for mid-market SaaS companies. 220 employees, Series C, headquartered in Bengaluru with a distributed engineering team.</p>
+    </div>
+  </main>
+
+  <aside style="{{ asideStyle }}">
+    <div style="background:#FFF6E9;border:1px solid #FCE3B8;border-radius:14px;padding:20px;margin-bottom:16px;">
+      <span style="font-size:11.5px;font-weight:700;color:#C2760C;background:#FFFFFF;border-radius:999px;padding:3px 10px;">While you wait</span>
+      <h3 style="font-size:15px;font-weight:700;color:#14181F;margin:12px 0 8px;">Partner with a startup in this space</h3>
+      <p style="font-size:13.5px;color:#5B6472;line-height:1.55;margin:0 0 14px;">Vertex Robotics needs a frontend partner right now — same skill set, real product, counts as experience.</p>
+      <a href="#partnerships" style="display:block;text-align:center;text-decoration:none;font-size:13.5px;font-weight:700;color:#FFFFFF;background:#C2760C;border-radius:8px;padding:10px;">View partnership</a>
+    </div>
+
+    <div style="background:#E7F7F1;border:1px solid #C9EEDF;border-radius:14px;padding:20px;margin-bottom:16px;">
+      <span style="font-size:11.5px;font-weight:700;color:#0F8A6B;background:#FFFFFF;border-radius:999px;padding:3px 10px;">Build soft skills</span>
+      <h3 style="font-size:15px;font-weight:700;color:#14181F;margin:12px 0 8px;">Join a peer mentor circle</h3>
+      <p style="font-size:13.5px;color:#5B6472;line-height:1.55;margin:0 0 14px;">Practice technical communication with peers weekly — useful for interviews like this one.</p>
+      <a href="#community" style="display:block;text-align:center;text-decoration:none;font-size:13.5px;font-weight:700;color:#FFFFFF;background:#0F8A6B;border-radius:8px;padding:10px;">Show interest</a>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:20px;">
+      <h3 style="font-size:14.5px;font-weight:700;color:#14181F;margin:0 0 12px;">Similar jobs</h3>
+      <sc-for list="{{ similarJobs }}" as="j" hint-placeholder-count="3">
+        <a href="#job-detail" style="display:block;text-decoration:none;padding:10px 0;border-top:1px solid #F0F1F3;">
+          <div style="font-size:14px;font-weight:600;color:#14181F;">{{ j.title }}</div>
+          <div style="font-size:12.5px;color:#8891A0;margin-top:2px;">{{ j.company }} · {{ j.salary }}</div>
+        </a>
+      </sc-for>
+    </div>
+  </aside>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    const narrow = this.state.width < 860;
+    return {
+      mainCol: narrow ? '1fr' : 'minmax(0,1fr) 300px',
+      asideStyle: narrow ? 'order:-1' : '',
+      similarJobs: [
+        { title: 'Frontend Engineer', company: 'Skyline Systems', salary: '₹12L–17L' },
+        { title: 'React Developer', company: 'Bharat Retail Tech', salary: '₹9L–14L' },
+        { title: 'UI Engineer (Remote)', company: 'Lumen Health', salary: '₹80/hr' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

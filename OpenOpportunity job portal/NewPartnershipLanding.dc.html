@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Startup Partnerships" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1120px;margin:0 auto;padding:56px 24px;display:grid;grid-template-columns:{{ heroCols }};gap:40px;align-items:center;">
+  <div>
+    <span style="font-size:12.5px;font-weight:700;color:#C2760C;background:#FFF6E9;border-radius:999px;padding:5px 12px;">Startup Partnership Ecosystem</span>
+    <h1 style="font-size:clamp(28px,4vw,40px);font-weight:800;color:#14181F;margin:16px 0 14px;letter-spacing:-0.01em;line-height:1.15;">Turn a startup's needs into your next career move</h1>
+    <p style="font-size:15.5px;color:#5B6472;margin:0 0 26px;line-height:1.6;">There's no list of open roles here yet — this is where you learn how partnerships work, then choose the track that fits: startups with funding to offer, or early-stage ones offering pure experience.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button onClick="{{ openVideo }}" style="border:none;background:#14181F;color:#FFFFFF;border-radius:9px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5v14l11-7z"/></svg>
+        Watch the explainer
+      </button>
+      <a href="#choose-track" style="text-decoration:none;font-size:14px;font-weight:700;color:#14181F;border:1px solid #E2E5EA;background:#FFFFFF;border-radius:9px;padding:12px 22px;">See the two tracks</a>
+    </div>
+  </div>
+  <div onClick="{{ openVideo }}" style="cursor:pointer;background:linear-gradient(135deg,#101522,#1B2130);border-radius:18px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;position:relative;">
+    <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5v14l11-7z"/></svg>
+    </div>
+    <span style="position:absolute;bottom:16px;left:16px;font-size:12px;color:#B4BAC6;font-family:monospace;">3 min · How it works</span>
+  </div>
+</div>
+
+<sc-if value="{{ videoOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;background:rgba(20,24,31,0.75);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+    <div style="background:#101522;border-radius:16px;max-width:800px;width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;">
+      <button onClick="{{ closeVideo }}" style="position:absolute;top:14px;right:14px;border:none;background:rgba(255,255,255,0.12);color:#FFFFFF;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;">×</button>
+      <div style="text-align:center;color:#7FA0F2;font-family:monospace;font-size:12.5px;">[ video: how startup partnerships work · 3 min ]</div>
+    </div>
+  </div>
+</sc-if>
+
+<div style="background:#FFFFFF;border-top:1px solid #E2E5EA;border-bottom:1px solid #E2E5EA;">
+  <div style="max-width:1120px;margin:0 auto;padding:44px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+      <div>
+        <div style="font-size:22px;font-weight:800;color:#E2E5EA;margin-bottom:8px;">{{ s.step }}</div>
+        <div style="font-size:14.5px;font-weight:700;color:#14181F;margin-bottom:6px;">{{ s.title }}</div>
+        <div style="font-size:13px;color:#5B6472;line-height:1.55;">{{ s.desc }}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<div id="choose-track" style="max-width:1120px;margin:0 auto;padding:64px 24px;">
+  <div style="text-align:center;max-width:600px;margin:0 auto 36px;">
+    <h2 style="font-size:26px;font-weight:800;color:#14181F;margin:0 0 12px;letter-spacing:-0.01em;">Two tracks. Both count as real experience.</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:48px;">
+    <div style="border-radius:16px;padding:2px;background:linear-gradient(135deg,#2451D6,#7FA0F2);">
+      <div style="background:#FFFFFF;border-radius:14px;padding:28px;height:100%;box-sizing:border-box;">
+        <span style="font-size:11.5px;font-weight:700;color:#2451D6;background:#EAF0FE;border-radius:999px;padding:3px 10px;">With funding</span>
+        <h3 style="font-size:18px;font-weight:700;color:#14181F;margin:14px 0 8px;">Funded partnership</h3>
+        <p style="font-size:14px;color:#5B6472;line-height:1.6;margin:0 0 20px;">Startups that have raised capital and can offer a stipend, revenue share, or equity for your work.</p>
+        <a href="#apply-funded" style="display:block;text-align:center;text-decoration:none;font-size:14px;font-weight:700;color:#FFFFFF;background:#2451D6;border-radius:9px;padding:12px;">Apply with funding</a>
+      </div>
+    </div>
+    <div style="border-radius:16px;padding:2px;background:linear-gradient(135deg,#0F8A6B,#7FE0C4);">
+      <div style="background:#FFFFFF;border-radius:14px;padding:28px;height:100%;box-sizing:border-box;">
+        <span style="font-size:11.5px;font-weight:700;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:3px 10px;">Without funding</span>
+        <h3 style="font-size:18px;font-weight:700;color:#14181F;margin:14px 0 8px;">Early-stage partnership</h3>
+        <p style="font-size:14px;color:#5B6472;line-height:1.6;margin:0 0 20px;">Pre-funding founders who can't pay yet — you build real, documented experience alongside them.</p>
+        <a href="#apply-unfunded" style="display:block;text-align:center;text-decoration:none;font-size:14px;font-weight:700;color:#FFFFFF;background:#0F8A6B;border-radius:9px;padding:12px;">Apply without funding</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#14181F;border-radius:18px;padding:40px;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#FFFFFF;margin-bottom:6px;">Still deciding which track fits?</div>
+      <div style="font-size:14px;color:#B4BAC6;">Show interest and we'll notify you the moment a matching partnership opens — funded or not.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <input type="text" placeholder="Your top skill" style="border:none;border-radius:9px;padding:12px 14px;font-size:14px;font-family:inherit;width:200px;box-sizing:border-box;" />
+      <button style="border:none;background:#FFFFFF;color:#14181F;border-radius:9px;padding:0 22px;font-size:14px;font-weight:700;cursor:pointer;">Show interest</button>
+    </div>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { videoOpen: false, width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  openVideo = () => this.setState({ videoOpen: true });
+  closeVideo = () => this.setState({ videoOpen: false });
+
+  renderVals() {
+    return {
+      heroCols: this.state.width < 820 ? '1fr' : 'minmax(0,1fr) 420px',
+      videoOpen: this.state.videoOpen,
+      openVideo: this.openVideo,
+      closeVideo: this.closeVideo,
+      steps: [
+        { step: '01', title: 'Share your profile', desc: 'Resume, skills, life goals, and the values that matter to you.' },
+        { step: '02', title: 'Get matched', desc: "We surface startups whose needs fit your skill set." },
+        { step: '03', title: 'Seminar or meetup', desc: "Meet the founders through an invited session." },
+        { step: '04', title: 'Partner & build experience', desc: 'Work together and document it for your resume.' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="guest" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:960px;margin:0 auto;padding:40px 24px 64px;display:grid;grid-template-columns:{{ gridCols }};gap:28px;">
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:32px;">
+    <h1 style="font-size:21px;font-weight:800;color:#14181F;margin:0 0 4px;">Create your candidate profile</h1>
+    <p style="font-size:14px;color:#5B6472;margin:0 0 26px;">One profile — works across jobs, startup partnerships, and community opportunities.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Full name</label>
+        <input type="text" placeholder="Rohan Mehta" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Email</label>
+        <input type="email" placeholder="rohan@email.com" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Mobile number</label>
+        <div style="display:flex;gap:8px;">
+          <div style="border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;color:#5B6472;">+91</div>
+          <input type="text" placeholder="98765 43210" style="flex:1;min-width:0;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Password</label>
+        <input type="password" placeholder="Create a password" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Skills (technical or soft — used to match jobs, partnerships & community roles)</label>
+      <input type="text" placeholder="e.g. React, Communication, Sales, Data Analysis" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit;box-sizing:border-box;" />
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:8px;">Upload resume</label>
+      <div style="border:1.5px dashed #C7CCD6;border-radius:12px;padding:26px;text-align:center;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8891A0" stroke-width="1.8" style="margin-bottom:8px;"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg>
+        <div style="font-size:13.5px;font-weight:600;color:#14181F;margin-bottom:2px;">Drag & drop your resume, or click to browse</div>
+        <div style="font-size:12.5px;color:#8891A0;">PDF or DOCX, up to 5MB</div>
+      </div>
+    </div>
+
+    <label style="display:flex;align-items:flex-start;gap:9px;font-size:13px;color:#5B6472;margin-bottom:22px;line-height:1.5;">
+      <input type="checkbox" style="width:16px;height:16px;accent-color:#2451D6;margin-top:1px;flex-shrink:0;" />
+      I agree to the <a href="#terms" style="text-decoration:none;font-weight:600;">Terms of Service</a> and <a href="#privacy" style="text-decoration:none;font-weight:600;">Privacy Policy</a>.
+    </label>
+
+    <button style="width:100%;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:13px;font-size:14.5px;font-weight:700;cursor:pointer;margin-bottom:16px;">Create account</button>
+    <p style="text-align:center;font-size:13.5px;color:#5B6472;margin:0;">Already have an account? <a href="#login" style="font-weight:700;text-decoration:none;">Log in</a></p>
+  </div>
+
+  <aside style="{{ asideStyle }}">
+    <div style="background:#EAF0FE;border-radius:14px;padding:22px;">
+      <h3 style="font-size:14.5px;font-weight:700;color:#14181F;margin:0 0 12px;">Why one profile works everywhere</h3>
+      <sc-for list="{{ benefits }}" as="b" hint-placeholder-count="3">
+        <div style="display:flex;gap:10px;margin-bottom:14px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#2451D6;margin-top:6px;flex-shrink:0;"></span>
+          <div style="font-size:13.5px;color:#3A414D;line-height:1.55;">{{ b }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;margin-top:16px;">
+      <div style="font-size:13.5px;font-weight:700;color:#14181F;margin-bottom:6px;">Are you hiring instead?</div>
+      <a href="#register-company" style="font-size:13.5px;font-weight:700;text-decoration:none;">Register your company →</a>
+    </div>
+  </aside>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    const narrow = this.state.width < 800;
+    return {
+      gridCols: narrow ? '1fr' : 'minmax(0,1fr) 260px',
+      asideStyle: narrow ? 'order:-1' : '',
+      benefits: [
+        'Apply to jobs directly and via listings we aggregate from other job boards.',
+        "Not landing offers yet? Same profile applies you to startup partnerships.",
+        'Build soft skills through community roles while you keep searching.',
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

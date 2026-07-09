@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>doc-page:not(:defined){visibility:hidden}
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; }
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.75in" hint-size="100%,1100px">
+
+<h1 style="font-size:30px;font-weight:800;color:#14181F;letter-spacing:-0.01em;margin:0 0 4px;">OpenOpportunity — Style Guide</h1>
+<p style="font-size:14px;color:#5B6472;margin:0 0 32px;">v1.0 · July 2026 · shadcn/ui + Tailwind CSS visual language reference for future design updates</p>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">1. Brand principle</h2>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0 0 8px;">OpenOpportunity is a job portal first, but every screen should quietly surface two more doors: startup partnerships and community opportunities. Visually this means: keep the core job-search experience clean and corporate (familiar to Indeed/LinkedIn/Naukri users), and use two consistent accent colors — amber for partnerships, teal for community — so users learn to recognize those paths anywhere on the site.</p>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">2. Color palette</h2>
+
+<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:8px;">
+  <thead><tr style="text-align:left;color:#8891A0;font-size:12px;text-transform:uppercase;"><th style="padding:0 0 8px;">Swatch</th><th style="padding:0 0 8px;">Name</th><th style="padding:0 0 8px;">Hex</th><th style="padding:0 0 8px;">Usage</th></tr></thead>
+  <tbody>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#2451D6;border:1px solid #0000000d;"></span></td><td style="padding:10px 0;font-weight:600;">Primary Blue</td><td style="padding:10px 0;font-family:monospace;">#2451D6</td><td style="padding:10px 0;color:#5B6472;">Primary buttons, links, active nav, brand accent</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#C2760C;"></span></td><td style="padding:10px 0;font-weight:600;">Partnership Amber</td><td style="padding:10px 0;font-family:monospace;">#C2760C</td><td style="padding:10px 0;color:#5B6472;">Startup partnership CTAs, badges, highlights</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#0F8A6B;"></span></td><td style="padding:10px 0;font-weight:600;">Community Teal</td><td style="padding:10px 0;font-family:monospace;">#0F8A6B</td><td style="padding:10px 0;color:#5B6472;">Community opportunity CTAs, badges, highlights</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#14181F;"></span></td><td style="padding:10px 0;font-weight:600;">Ink (text-primary)</td><td style="padding:10px 0;font-family:monospace;">#14181F</td><td style="padding:10px 0;color:#5B6472;">Headings, primary text, dark surfaces</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#5B6472;"></span></td><td style="padding:10px 0;font-weight:600;">Slate (text-secondary)</td><td style="padding:10px 0;font-family:monospace;">#5B6472</td><td style="padding:10px 0;color:#5B6472;">Body copy, descriptions</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#8891A0;"></span></td><td style="padding:10px 0;font-weight:600;">Fog (text-tertiary)</td><td style="padding:10px 0;font-family:monospace;">#8891A0</td><td style="padding:10px 0;color:#5B6472;">Meta text, timestamps, placeholders</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#E2E5EA;"></span></td><td style="padding:10px 0;font-weight:600;">Border</td><td style="padding:10px 0;font-family:monospace;">#E2E5EA</td><td style="padding:10px 0;color:#5B6472;">Card borders, dividers, input borders</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#F7F8FA;border:1px solid #E2E5EA;"></span></td><td style="padding:10px 0;font-weight:600;">Page background</td><td style="padding:10px 0;font-family:monospace;">#F7F8FA</td><td style="padding:10px 0;color:#5B6472;">App background behind white cards</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;"><span style="display:inline-block;width:36px;height:20px;border-radius:4px;background:#FFFFFF;border:1px solid #E2E5EA;"></span></td><td style="padding:10px 0;font-weight:600;">Surface</td><td style="padding:10px 0;font-family:monospace;">#FFFFFF</td><td style="padding:10px 0;color:#5B6472;">Cards, headers, modals</td></tr>
+  </tbody>
+</table>
+<p style="font-size:13px;color:#8891A0;line-height:1.6;margin:8px 0 0;">Tints: Primary tint <span style="font-family:monospace;">#EAF0FE</span> · Amber tint <span style="font-family:monospace;">#FFF6E9</span> · Teal tint <span style="font-family:monospace;">#E7F7F1</span>. Status: Success <span style="font-family:monospace;">#0F8A6B</span> · Warning <span style="font-family:monospace;">#B45309</span> · Danger <span style="font-family:monospace;">#DC2626</span>.</p>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">3. Typography</h2>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0 0 14px;">Typeface: <strong>Inter</strong> throughout (headings 700–800, body 400–500, meta/labels 600). Load from Google Fonts, weights 400/500/600/700/800.</p>
+<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px;">
+  <div style="display:flex;align-items:baseline;gap:16px;border-top:1px solid #EEE;padding-top:10px;"><span style="font-size:12px;color:#8891A0;width:110px;flex-shrink:0;">H1 / 32–52px / 800</span><span style="font-size:32px;font-weight:800;color:#14181F;letter-spacing:-0.02em;">Aa Job title</span></div>
+  <div style="display:flex;align-items:baseline;gap:16px;border-top:1px solid #EEE;padding-top:10px;"><span style="font-size:12px;color:#8891A0;width:110px;flex-shrink:0;">H2 / 22–26px / 800</span><span style="font-size:24px;font-weight:800;color:#14181F;letter-spacing:-0.01em;">Aa Section heading</span></div>
+  <div style="display:flex;align-items:baseline;gap:16px;border-top:1px solid #EEE;padding-top:10px;"><span style="font-size:12px;color:#8891A0;width:110px;flex-shrink:0;">H3 / 15–17px / 700</span><span style="font-size:16px;font-weight:700;color:#14181F;">Aa Card title</span></div>
+  <div style="display:flex;align-items:baseline;gap:16px;border-top:1px solid #EEE;padding-top:10px;"><span style="font-size:12px;color:#8891A0;width:110px;flex-shrink:0;">Body / 14–15px / 400</span><span style="font-size:14.5px;color:#3A414D;">Aa Body copy for descriptions and content</span></div>
+  <div style="display:flex;align-items:baseline;gap:16px;border-top:1px solid #EEE;padding-top:10px;"><span style="font-size:12px;color:#8891A0;width:110px;flex-shrink:0;">Meta / 12–13px / 600</span><span style="font-size:13px;font-weight:600;color:#8891A0;">Aa Timestamps, counts, labels</span></div>
+</div>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">4. Spacing & grid</h2>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0 0 12px;">Spacing scale (px): 4 · 8 · 12 · 16 · 20 · 24 · 32 · 48 · 64. Card padding 20–28px. Section vertical rhythm 56–64px on desktop, 32–40px on mobile.</p>
+<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:16px;">
+  <div style="width:4px;height:4px;background:#2451D6;"></div><div style="width:8px;height:8px;background:#2451D6;"></div><div style="width:12px;height:12px;background:#2451D6;"></div><div style="width:16px;height:16px;background:#2451D6;"></div><div style="width:24px;height:24px;background:#2451D6;"></div><div style="width:32px;height:32px;background:#2451D6;"></div><div style="width:48px;height:48px;background:#2451D6;"></div>
+</div>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0;">Layout container: max-width 1120–1280px, centered, 24px side padding. Grid: <span style="font-family:monospace;font-size:13px;">repeat(auto-fit, minmax(240–300px, 1fr))</span> for card grids so columns collapse automatically on narrow viewports without separate mobile layouts. Two-column pages (content + sidebar) use a 300px fixed sidebar that stacks below content under ~900px.</p>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">5. Border radius & elevation</h2>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0 0 12px;">Radius: buttons/inputs 8–9px · cards 12–16px · pills/badges/avatars 999px (full). Borders: 1px solid <span style="font-family:monospace;">#E2E5EA</span> on all cards and inputs — avoid heavy shadows; use border + very subtle shadow only on hover or elevated surfaces (modals, dropdowns).</p>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">6. Components</h2>
+
+<h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 10px;">Buttons</h3>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+  <span style="display:inline-block;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:10px 20px;font-size:14px;font-weight:700;">Primary</span>
+  <span style="display:inline-block;background:#FFFFFF;color:#14181F;border:1px solid #E2E5EA;border-radius:9px;padding:10px 20px;font-size:14px;font-weight:700;">Secondary</span>
+  <span style="display:inline-block;background:#14181F;color:#FFFFFF;border-radius:9px;padding:10px 20px;font-size:14px;font-weight:700;">Dark / employer</span>
+  <span style="display:inline-block;background:#C2760C;color:#FFFFFF;border-radius:9px;padding:10px 20px;font-size:14px;font-weight:700;">Partnership CTA</span>
+  <span style="display:inline-block;background:#0F8A6B;color:#FFFFFF;border-radius:9px;padding:10px 20px;font-size:14px;font-weight:700;">Community CTA</span>
+</div>
+<p style="font-size:13px;color:#8891A0;margin:0 0 20px;">Sizes: sm 8px/16px padding · md 10px/20px (default) · lg 13px/28px. Never below 44px tap height on touch targets.</p>
+
+<h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 10px;">Badges & tags</h3>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+  <span style="font-size:12px;font-weight:600;color:#3A414D;background:#F0F2F5;border-radius:999px;padding:4px 12px;">Neutral tag</span>
+  <span style="font-size:12px;font-weight:600;color:#2451D6;background:#EAF0FE;border-radius:999px;padding:4px 12px;">Job / primary</span>
+  <span style="font-size:12px;font-weight:600;color:#C2760C;background:#FFF6E9;border-radius:999px;padding:4px 12px;">Partnership</span>
+  <span style="font-size:12px;font-weight:600;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:4px 12px;">Community</span>
+  <span style="font-size:12px;font-weight:600;color:#B45309;background:#FFF1DC;border-radius:999px;padding:4px 12px;">Pending / warning</span>
+</div>
+
+<h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 10px;">Card</h3>
+<div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:20px;max-width:340px;margin-bottom:20px;">
+  <div style="font-size:15px;font-weight:700;color:#14181F;margin-bottom:6px;">Card title</div>
+  <p style="font-size:13.5px;color:#5B6472;line-height:1.55;margin:0;">White surface, 1px border, 12–16px radius, 20–28px padding. Used for job cards, startup cards, dashboard tiles.</p>
+</div>
+
+<h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 10px;">Form field</h3>
+<div style="max-width:340px;margin-bottom:20px;">
+  <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Field label</label>
+  <div style="border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:14px;color:#8891A0;">Placeholder text</div>
+</div>
+
+<h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 10px;">Navigation</h3>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0 0 8px;">Header: sticky, white, 68px tall, 1px bottom border. Wordmark left, nav center-left, auth/profile right. Active nav item gets primary-tint background + primary text. Four role-based nav sets: guest, candidate, employer, admin (see Header component).</p>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0;">Footer: dark ink background (<span style="font-family:monospace;">#101522</span>), 4-column grid (brand, candidate links, employer links, contact), bottom bar with copyright + legal links.</p>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">7. Page templates</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+  <thead><tr style="text-align:left;color:#8891A0;font-size:12px;text-transform:uppercase;"><th style="padding:0 0 8px;">Page</th><th style="padding:0 0 8px;">Layout pattern</th></tr></thead>
+  <tbody>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Landing</td><td style="padding:10px 0;color:#5B6472;">Hero + search → 3-path cards → stat band → startup spotlight grid → community banner → CTA</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Job search / listing</td><td style="padding:10px 0;color:#5B6472;">Search bar → 260px filter sidebar + result list; job/partnership/community cards interleaved by relevance</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Job detail</td><td style="padding:10px 0;color:#5B6472;">Content column + 300px sidebar with partnership & community cross-sell, similar jobs</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Candidate dashboard</td><td style="padding:10px 0;color:#5B6472;">Greeting banner → nudge banner (conditional) → matched jobs/startups → content + sidebar (profile strength, mock interviews, activity)</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Partnerships</td><td style="padding:10px 0;color:#5B6472;">Tinted hero → filter chips → startup card grid → modal apply flow (resume, life goals, ethics, skills)</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Community</td><td style="padding:10px 0;color:#5B6472;">Dark teal hero with video → income-type card grid → opportunities list + interest-form sidebar</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Employer dashboard</td><td style="padding:10px 0;color:#5B6472;">KPI tile row → postings/applicants list + seminar sidebar</td></tr>
+    <tr style="border-top:1px solid #EEE;"><td style="padding:10px 0;font-weight:600;color:#14181F;">Admin dashboard</td><td style="padding:10px 0;color:#5B6472;">KPI tile row → chart + funnel pair → data table</td></tr>
+  </tbody>
+</table>
+
+<h2 style="font-size:19px;font-weight:700;color:#14181F;border-bottom:2px solid #E2E5EA;padding-bottom:8px;margin:36px 0 16px;">8. Responsive rules</h2>
+<p style="font-size:14.5px;color:#3A414D;line-height:1.7;margin:0;">Breakpoint reference: below ~900px, sidebars stack below/above main content and multi-column grids collapse via <span style="font-family:monospace;">auto-fit</span>. Below ~900px, header nav collapses into a hamburger menu. Never drop below 44px touch targets or 24px+ body text on any dense mobile list.</p>
+
+</x-import>
+
+</x-dc>
+</body>
+</html>

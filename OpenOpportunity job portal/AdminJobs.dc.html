@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Jobs" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1280px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Jobs &amp; listings</h1>
+      <p style="font-size:14px;color:#5B6472;margin:0;">Moderate job postings, partnership offers, and community listings.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+      <button onClick="{{ () => setTab(t.key) }}" style="border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.color }};border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:600;cursor:pointer;">{{ t.label }}</button>
+    </sc-for>
+  </div>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;">
+    <div style="flex:2;min-width:220px;display:flex;align-items:center;gap:10px;border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8891A0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" placeholder="Search by title or company" style="border:none;outline:none;font-size:13.5px;width:100%;font-family:inherit;color:#14181F;" />
+    </div>
+    <select style="border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;color:#14181F;">
+      <option>All statuses</option>
+      <option>Active</option>
+      <option>Flagged</option>
+      <option>Expired</option>
+      <option>Removed</option>
+    </select>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <sc-for list="{{ listings }}" as="l" hint-placeholder-count="7">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;gap:14px;align-items:center;min-width:0;">
+          <div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span style="font-size:14.5px;font-weight:700;color:#14181F;">{{ l.jobTitle }}</span>
+              <span style="font-size:11px;font-weight:700;color:{{ l.typeColor }};background:{{ l.typeBg }};border-radius:999px;padding:2px 9px;">{{ l.kind }}</span>
+            </div>
+            <div style="font-size:13px;color:#5B6472;margin-top:2px;">{{ l.company }} · {{ l.applicants }} applicants · Posted {{ l.posted }}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:12px;font-weight:600;color:{{ l.statusColor }};background:{{ l.statusBg }};border-radius:999px;padding:4px 10px;white-space:nowrap;">{{ l.status }}</span>
+          <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:700;color:#14181F;cursor:pointer;">View</button>
+          <button style="border:1px solid #FCA5A5;background:#FFFFFF;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer;">Remove</button>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'all' };
+  setTab = (key) => this.setState({ tab: key });
+
+  RAW = [
+    { jobTitle: 'Senior Frontend Developer', company: 'Nimbus Cloud', kind: 'Job', typeColor: '#2451D6', typeBg: '#EAF0FE', applicants: 412, posted: '2 days ago', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1', cat: 'job' },
+    { jobTitle: 'Frontend Partner — Product MVP', company: 'Vertex Robotics', kind: 'Partnership', typeColor: '#C2760C', typeBg: '#FFF6E9', applicants: 87, posted: '4 days ago', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1', cat: 'partnership' },
+    { jobTitle: 'Peer Mentor Circle — Tech Careers', company: 'OpenOpportunity Community', kind: 'Community', typeColor: '#0F8A6B', typeBg: '#E7F7F1', applicants: 156, posted: '1 week ago', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1', cat: 'community' },
+    { jobTitle: 'React Developer', company: 'Bharat Retail Tech', kind: 'Job', typeColor: '#2451D6', typeBg: '#EAF0FE', applicants: 214, posted: '5 days ago', status: 'Flagged', statusColor: '#B45309', statusBg: '#FFF1DC', cat: 'job' },
+    { jobTitle: 'Growth & Lifecycle Partner', company: 'Lumen Health', kind: 'Partnership', typeColor: '#C2760C', typeBg: '#FFF6E9', applicants: 62, posted: '1 week ago', status: 'Active', statusColor: '#0F8A6B', statusBg: '#E7F7F1', cat: 'partnership' },
+    { jobTitle: 'UI Engineer', company: 'Skyline Systems', kind: 'Job', typeColor: '#2451D6', typeBg: '#EAF0FE', applicants: 98, posted: '2 weeks ago', status: 'Expired', statusColor: '#8891A0', statusBg: '#F0F2F5', cat: 'job' },
+    { jobTitle: 'Volunteer Coordination Team', company: 'Sahaay Community Fund', kind: 'Community', typeColor: '#0F8A6B', typeBg: '#E7F7F1', applicants: 44, posted: '3 weeks ago', status: 'Removed', statusColor: '#DC2626', statusBg: '#FDECEC', cat: 'community' },
+  ];
+
+  renderVals() {
+    const tab = this.state.tab;
+    const listings = this.RAW.filter((item) => tab === 'all' || item.cat === tab);
+    const tabDef = (key, label) => ({
+      key, label,
+      border: tab === key ? '#14181F' : '#E2E5EA',
+      bg: tab === key ? '#14181F' : '#FFFFFF',
+      color: tab === key ? '#FFFFFF' : '#3A414D',
+    });
+    return {
+      setTab: this.setTab,
+      tabs: [
+        tabDef('all', 'All listings'),
+        tabDef('job', 'Jobs'),
+        tabDef('partnership', 'Partnerships'),
+        tabDef('community', 'Community'),
+      ],
+      listings,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

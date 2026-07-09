@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="company" active-item="Seminars & Meetups" user-name="Vertex Robotics" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1120px;margin:0 auto;padding:28px 24px 64px;display:grid;grid-template-columns:{{ gridCols }};gap:24px;">
+  <main>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <h1 style="font-size:20px;font-weight:800;color:#14181F;margin:0 0 4px;">Seminars & meetups</h1>
+        <p style="font-size:14px;color:#5B6472;margin:0;">Invite partnership applicants to meet the team before you decide.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+      <h2 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0;">Upcoming</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
+      <sc-for list="{{ upcoming }}" as="s" hint-placeholder-count="2">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#14181F;">{{ s.title }}</div>
+            <div style="font-size:13px;color:#5B6472;margin-top:2px;">{{ s.date }} · {{ s.mode }}</div>
+            <div style="display:flex;gap:6px;margin-top:10px;">
+              <sc-for list="{{ s.attendees }}" as="a" hint-placeholder-count="4">
+                <span style="width:26px;height:26px;border-radius:50%;background:#EAF0FE;color:#2451D6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">{{ a }}</span>
+              </sc-for>
+              <span style="font-size:12.5px;color:#8891A0;margin-left:4px;line-height:26px;">{{ s.invited }} invited</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;color:#14181F;cursor:pointer;">Manage invites</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <h2 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0 0 14px;">Past sessions</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ past }}" as="s" hint-placeholder-count="2">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;opacity:0.85;">
+          <div>
+            <div style="font-size:14.5px;font-weight:700;color:#14181F;">{{ s.title }}</div>
+            <div style="font-size:13px;color:#5B6472;margin-top:2px;">{{ s.date }} · {{ s.attended }} attended</div>
+          </div>
+          <span style="font-size:12px;font-weight:600;color:#5B6472;background:#F0F2F5;border-radius:999px;padding:4px 10px;height:fit-content;">Completed</span>
+        </div>
+      </sc-for>
+    </div>
+  </main>
+
+  <aside style="{{ asideOrder }}">
+    <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+      <h3 style="font-size:15px;font-weight:700;color:#14181F;margin:0 0 16px;">Schedule a new session</h3>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Title</label>
+        <input type="text" placeholder="e.g. Partner intro session" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:13.5px;font-family:inherit;box-sizing:border-box;" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div><label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Date</label><input type="date" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:9px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;" /></div>
+        <div><label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Time</label><input type="time" style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:9px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;" /></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Mode</label>
+        <select style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:13.5px;font-family:inherit;color:#14181F;box-sizing:border-box;">
+          <option>Online video call</option>
+          <option>In-person meetup</option>
+        </select>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:#14181F;margin-bottom:6px;">Invite applicants</label>
+        <select multiple style="width:100%;border:1px solid #E2E5EA;border-radius:9px;padding:10px 12px;font-size:13.5px;font-family:inherit;color:#14181F;box-sizing:border-box;height:92px;">
+          <option>Rohan Mehta</option>
+          <option>Anita Sharma</option>
+          <option>Karan Patel</option>
+        </select>
+      </div>
+      <div style="background:#EAF0FE;border-radius:9px;padding:12px 14px;font-size:12.5px;color:#2451D6;line-height:1.5;margin-bottom:16px;">Invitees get both an email and a WhatsApp notification automatically.</div>
+      <button style="width:100%;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">Schedule & notify</button>
+    </div>
+  </aside>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { width: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this._onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    const narrow = this.state.width < 880;
+    return {
+      gridCols: narrow ? '1fr' : 'minmax(0,1fr) 300px',
+      asideOrder: narrow ? 'order:-1' : '',
+      upcoming: [
+        { title: 'Partner intro session — Frontend', date: 'Jul 14, 4:00 PM', mode: 'Online video call', attendees: ['R', 'A', 'K'], invited: 22 },
+        { title: 'Hardware QA meetup', date: 'Jul 21, 11:00 AM', mode: 'In-person · Bengaluru office', attendees: ['M', 'V'], invited: 12 },
+      ],
+      past: [
+        { title: 'Founding partner circle — Q2', date: 'Jun 18, 2026', attended: 14 },
+        { title: 'Growth partner intro', date: 'May 30, 2026', attended: 9 },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
