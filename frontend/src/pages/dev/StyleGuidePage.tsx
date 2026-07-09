@@ -15,7 +15,7 @@ const colorSwatches: Array<{ name: string; className: string; hex: string }> = [
   { name: 'Surface', className: 'bg-surface border border-border', hex: '#FFFFFF' },
 ]
 
-const buttonVariants: ButtonVariant[] = ['primary', 'secondary', 'ghost', 'amber', 'teal']
+const buttonVariants: ButtonVariant[] = ['primary', 'secondary', 'ghost', 'amber', 'teal', 'dark']
 
 const spacingScale = [4, 8, 12, 16, 20, 24, 32, 48, 64]
 
