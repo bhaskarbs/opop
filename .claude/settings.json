@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"Reminder: run `nvm ls` and `nvm use v20.20.2` to make sure you are on the pinned Node version for this project.\"}'",
+            "statusMessage": "Checking Node version reminder..."
+          }
+        ]
+      }
+    ]
+  }
+}
