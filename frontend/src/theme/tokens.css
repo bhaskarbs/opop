@@ -59,6 +59,9 @@
   --radius-control: 9px;
   --radius-card: 14px;
 
+  /* Header nav collapses to a hamburger below ~900px (style guide §8) */
+  --breakpoint-header: 56.25rem; /* 900px */
+
   /* Elevation — borders carry most surfaces; shadow is reserved for hover/elevated (modal, dropdown) */
   --shadow-elevated: 0 4px 16px 0 rgb(20 24 31 / 0.08);
 
