@@ -1,30 +1,33 @@
 import type { ReactNode } from 'react'
+import { ROUTES } from '../../routes/paths'
 import { Logo } from './Logo'
+import { RouteLink } from './RouteLink'
 
 interface FooterLink {
   label: string
-  href: string
+  /** Real route path. Omit for links that don't have a page yet — they render inert. */
+  to?: string
 }
 
 const CANDIDATE_LINKS: FooterLink[] = [
-  { label: 'Find Jobs', href: '#jobs' },
-  { label: 'Startup Partnerships', href: '#partnerships' },
-  { label: 'Community Opportunities', href: '#community' },
-  { label: 'Mock Interviews', href: '#interviews' },
-  { label: 'Register / Upload Resume', href: '#register' },
+  { label: 'Find Jobs', to: ROUTES.jobs },
+  { label: 'Startup Partnerships', to: ROUTES.partnerships },
+  { label: 'Community Opportunities', to: ROUTES.community },
+  { label: 'Mock Interviews', to: ROUTES.candidateMockInterview },
+  { label: 'Register / Upload Resume', to: ROUTES.register },
 ]
 
 const EMPLOYER_LINKS: FooterLink[] = [
-  { label: 'Post a Job', href: '#post-job' },
-  { label: 'Search Candidates', href: '#search-candidates' },
-  { label: 'Offer a Partnership', href: '#offer-partnership' },
-  { label: 'Company Registration', href: '#register-company' },
+  { label: 'Post a Job', to: ROUTES.companyPostJob },
+  { label: 'Search Candidates', to: ROUTES.companySearchCandidates },
+  { label: 'Offer a Partnership', to: ROUTES.partnerships },
+  { label: 'Company Registration', to: ROUTES.companyRegister },
 ]
 
 const LEGAL_LINKS: FooterLink[] = [
-  { label: 'Privacy Policy', href: '#privacy' },
-  { label: 'Terms of Service', href: '#terms' },
-  { label: 'Grievance Redressal', href: '#grievance' },
+  { label: 'Privacy Policy' },
+  { label: 'Terms of Service' },
+  { label: 'Grievance Redressal' },
 ]
 
 const SOCIAL_LINKS: Array<{ label: string; href: string; icon: ReactNode }> = [
@@ -73,13 +76,13 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
     <div>
       <FooterHeading>{title}</FooterHeading>
       {links.map((link) => (
-        <a
+        <RouteLink
           key={link.label}
-          href={link.href}
+          to={link.to}
           className="mb-3 block text-sm text-[#B4BAC6] no-underline"
         >
           {link.label}
-        </a>
+        </RouteLink>
       ))}
     </div>
   )
@@ -92,9 +95,9 @@ export function Footer() {
     <footer className="bg-footer text-[#C7CCD6]">
       <div className="mx-auto grid max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-10 px-6 pt-14 pb-8">
         <div>
-          <a href="#" className="mb-3.5 flex items-center gap-2.5 no-underline">
+          <RouteLink to={ROUTES.home} className="mb-3.5 flex items-center gap-2.5 no-underline">
             <Logo context="footer" />
-          </a>
+          </RouteLink>
           <p className="mb-5 max-w-[320px] text-sm leading-[1.6] text-[#9AA1AF]">
             More than a job board — apply for roles, partner with startups, and grow through
             community-based opportunities that count toward the career you actually want.
@@ -151,9 +154,13 @@ export function Footer() {
           </div>
           <div className="flex flex-wrap gap-5">
             {LEGAL_LINKS.map((link) => (
-              <a key={link.label} href={link.href} className="text-[13px] text-fog no-underline">
+              <RouteLink
+                key={link.label}
+                to={link.to}
+                className="text-[13px] text-fog no-underline"
+              >
                 {link.label}
-              </a>
+              </RouteLink>
             ))}
           </div>
         </div>
