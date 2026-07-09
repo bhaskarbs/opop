@@ -1,13 +1,12 @@
 {
   "hooks": {
-    "PreToolUse": [
+    "SessionStart": [
       {
-        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "jq '{hookSpecificOutput: {hookEventName: \"PreToolUse\", updatedInput: {command: (\"export NVM_DIR=$HOME/.nvm; [ -s $NVM_DIR/nvm.sh ] && . $NVM_DIR/nvm.sh >/dev/null 2>&1; nvmrc_path=$(nvm_find_nvmrc 2>/dev/null); [ -n \\\"$nvmrc_path\\\" ] && nvm use >/dev/null 2>&1; \" + .tool_input.command)}}}'",
-            "statusMessage": "Syncing node version to .nvmrc..."
+            "command": "echo '{\"systemMessage\": \"Reminder: run `nvm ls` and `nvm use v20.20.2` to make sure you are on the pinned Node version for this project.\"}'",
+            "statusMessage": "Checking Node version reminder..."
           }
         ]
       }
