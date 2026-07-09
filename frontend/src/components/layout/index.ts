@@ -1,0 +1,3 @@
+export { Header, type HeaderProps, type HeaderVariant } from './Header'
+export { Footer } from './Footer'
+export { Logo, type LogoContext } from './Logo'

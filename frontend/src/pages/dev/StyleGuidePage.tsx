@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Badge, Button, Card, CardDescription, CardTitle, Input, Tag } from '../../components/ui'
 import type { ButtonVariant } from '../../components/ui'
+import { Footer, Header } from '../../components/layout'
 
 const colorSwatches: Array<{ name: string; className: string; hex: string }> = [
   { name: 'Primary Blue', className: 'bg-primary', hex: '#2451D6' },
@@ -113,6 +114,24 @@ function StyleGuidePage() {
       <Section title="Form field">
         <div className="max-w-sm">
           <Input label="Field label" placeholder="Placeholder text" />
+        </div>
+      </Section>
+
+      <Section title="Navigation — Header (guest)">
+        <div className="border border-border">
+          <Header variant="guest" sticky={false} />
+        </div>
+      </Section>
+
+      <Section title="Navigation — Header (candidate, logged in)">
+        <div className="border border-border">
+          <Header variant="candidate" activeItem="Find Jobs" sticky={false} />
+        </div>
+      </Section>
+
+      <Section title="Navigation — Footer">
+        <div className="overflow-hidden rounded-card">
+          <Footer />
         </div>
       </Section>
     </main>
