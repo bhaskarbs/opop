@@ -1,71 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { cn } from '../../lib/cn'
+import { ROUTES } from '../../routes/paths'
+import { AVATAR_BG_CLASS, DEFAULT_USER_NAME, NAV_BY_VARIANT, USER_MENU_BY_VARIANT } from './navData'
 import { Logo } from './Logo'
+import { RouteLink } from './RouteLink'
 
 export type HeaderVariant = 'guest' | 'candidate' | 'company' | 'admin'
-
-interface NavItem {
-  label: string
-  href: string
-}
-
-const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
-  guest: [
-    { label: 'Find Jobs', href: '#jobs' },
-    { label: 'Startup Partnerships', href: '#partnerships' },
-    { label: 'Community', href: '#community' },
-    { label: 'For Employers', href: '#employers' },
-  ],
-  candidate: [
-    { label: 'Find Jobs', href: '#jobs' },
-    { label: 'Startup Partnerships', href: '#partnerships' },
-    { label: 'Community', href: '#community' },
-    { label: 'Dashboard', href: '#dashboard' },
-  ],
-  company: [
-    { label: 'Post a Job', href: '#post-job' },
-    { label: 'Search Candidates', href: '#search-candidates' },
-    { label: 'Partnership Applicants', href: '#applicants' },
-    { label: 'Seminars & Meetups', href: '#seminars' },
-  ],
-  admin: [
-    { label: 'Dashboard', href: '#dashboard' },
-    { label: 'Reports', href: '#reports' },
-    { label: 'Users', href: '#users' },
-    { label: 'Jobs', href: '#jobs' },
-  ],
-}
-
-const USER_MENU_BY_VARIANT: Partial<Record<HeaderVariant, NavItem[]>> = {
-  candidate: [
-    { label: 'My Profile', href: '#profile' },
-    { label: 'My Applications', href: '#applications' },
-    { label: 'Mock Interviews', href: '#interviews' },
-    { label: 'Log out', href: '#logout' },
-  ],
-  company: [
-    { label: 'Company Profile', href: '#profile' },
-    { label: 'Job Postings', href: '#postings' },
-    { label: 'Billing', href: '#billing' },
-    { label: 'Log out', href: '#logout' },
-  ],
-  admin: [
-    { label: 'Admin Settings', href: '#settings' },
-    { label: 'Log out', href: '#logout' },
-  ],
-}
-
-const DEFAULT_USER_NAME: Partial<Record<HeaderVariant, string>> = {
-  candidate: 'Rohan Mehta',
-  company: 'Acme Startup',
-  admin: 'Admin',
-}
-
-const AVATAR_BG_CLASS: Partial<Record<HeaderVariant, string>> = {
-  candidate: 'bg-primary',
-  company: 'bg-teal',
-  admin: 'bg-ink',
-}
 
 export interface HeaderProps {
   variant?: HeaderVariant
@@ -103,23 +44,23 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
     <header className={cn('z-50 border-b border-border bg-surface', sticky && 'sticky top-0')}>
       <div className="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between gap-4 px-6">
         <div className="flex min-w-0 items-center gap-8">
-          <a href="#" className="flex shrink-0 items-center gap-2.5 no-underline">
+          <Link to={ROUTES.home} className="flex shrink-0 items-center gap-2.5 no-underline">
             <Logo context="header" />
-          </a>
+          </Link>
           <nav className="header:flex hidden items-center gap-1">
             {navItems.map((item) => {
               const isActive = item.label === activeItem
               return (
-                <a
+                <RouteLink
                   key={item.label}
-                  href={item.href}
+                  to={item.to}
                   className={cn(
                     'inline-flex items-center rounded-lg px-3.5 py-2 text-[14.5px] font-semibold no-underline',
                     isActive ? 'bg-primary-tint text-primary' : 'text-ink',
                   )}
                 >
                   {item.label}
-                </a>
+                </RouteLink>
               )
             })}
           </nav>
@@ -128,18 +69,18 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
         <div className="header:flex hidden shrink-0 items-center gap-3">
           {isGuest ? (
             <>
-              <a
-                href="#"
+              <Link
+                to={ROUTES.login}
                 className="rounded-lg px-4 py-2.5 text-[14.5px] font-semibold text-ink no-underline"
               >
                 Log in
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to={ROUTES.register}
                 className="rounded-lg bg-primary px-[18px] py-2.5 text-[14.5px] font-bold text-white no-underline"
               >
                 Register
-              </a>
+              </Link>
             </>
           ) : (
             <>
@@ -193,13 +134,13 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
                 {userMenuOpen && (
                   <div className="absolute top-[46px] right-0 min-w-[200px] rounded-[10px] border border-border bg-surface p-1.5 text-left shadow-elevated">
                     {userMenuItems.map((item) => (
-                      <a
+                      <RouteLink
                         key={item.label}
-                        href={item.href}
+                        to={item.to}
                         className="block rounded-md px-3 py-2.5 text-sm font-medium text-ink no-underline"
                       >
                         {item.label}
-                      </a>
+                      </RouteLink>
                     ))}
                   </div>
                 )}
@@ -231,28 +172,28 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
       {mobileNavOpen && (
         <div className="header:hidden border-t border-border px-5 pt-3 pb-[18px]">
           {navItems.map((item) => (
-            <a
+            <RouteLink
               key={item.label}
-              href={item.href}
+              to={item.to}
               className="block border-b border-[#F0F1F3] px-1.5 py-[11px] text-[15px] font-semibold text-ink no-underline"
             >
               {item.label}
-            </a>
+            </RouteLink>
           ))}
           {isGuest && (
             <div className="mt-3.5 flex gap-2.5">
-              <a
-                href="#"
+              <Link
+                to={ROUTES.login}
                 className="flex-1 rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink no-underline"
               >
                 Log in
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to={ROUTES.register}
                 className="flex-1 rounded-lg bg-primary px-2.5 py-2.5 text-center text-[14.5px] font-bold text-white no-underline"
               >
                 Register
-              </a>
+              </Link>
             </div>
           )}
         </div>
