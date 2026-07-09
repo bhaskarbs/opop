@@ -1,0 +1,69 @@
+/*
+ * Design tokens extracted from `OpenOpportunity job portal/StyleGuide.dc.html`.
+ * Source of truth for colors, type scale, spacing, radius, and elevation —
+ * update this file (not component code) when the style guide changes.
+ */
+@theme {
+  /* Brand */
+  --color-primary: #2451d6;
+  --color-primary-tint: #eaf0fe;
+  --color-amber: #c2760c;
+  --color-amber-tint: #fff6e9;
+  --color-teal: #0f8a6b;
+  --color-teal-tint: #e7f7f1;
+
+  /* Text */
+  --color-ink: #14181f;
+  --color-slate: #5b6472;
+  --color-fog: #8891a0;
+
+  /* Surfaces */
+  --color-page: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-border: #e2e5ea;
+  --color-footer: #101522;
+  --color-neutral-tint: #f0f2f5; /* neutral tag background */
+
+  /* Status */
+  --color-success: #0f8a6b;
+  --color-warning: #b45309;
+  --color-warning-tint: #fff1dc;
+  --color-danger: #dc2626;
+
+  /* Type */
+  --font-sans: 'Inter', Helvetica, Arial, sans-serif;
+
+  --text-h1: 2.5rem; /* 40px, style guide range 32–52px */
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h1--font-weight: 800;
+
+  --text-h2: 1.5rem; /* 24px, style guide range 22–26px */
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 800;
+
+  --text-h3: 1rem; /* 16px, style guide range 15–17px */
+  --text-h3--line-height: 1.3;
+  --text-h3--font-weight: 700;
+
+  --text-body: 0.906rem; /* 14.5px, style guide range 14–15px */
+  --text-body--line-height: 1.7;
+  --text-body--font-weight: 400;
+
+  --text-meta: 0.8125rem; /* 13px, style guide range 12–13px */
+  --text-meta--line-height: 1.4;
+  --text-meta--font-weight: 600;
+
+  /* Radius — buttons/inputs 8–9px, cards 12–16px, pills/badges/avatars full */
+  --radius-control: 9px;
+  --radius-card: 14px;
+
+  /* Elevation — borders carry most surfaces; shadow is reserved for hover/elevated (modal, dropdown) */
+  --shadow-elevated: 0 4px 16px 0 rgb(20 24 31 / 0.08);
+
+  /*
+   * Spacing scale (4·8·12·16·20·24·32·48·64px) is intentionally not overridden —
+   * Tailwind's default spacing scale (1=4px … 16=64px) already matches it exactly.
+   */
+}
