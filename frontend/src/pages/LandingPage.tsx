@@ -1,4 +1,4 @@
-import { type FormEvent } from 'react'
+import { type SubmitEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, LinkButton, Tag } from '../components/ui'
 import { ROUTES } from '../routes/paths'
@@ -97,10 +97,16 @@ const STARTUPS = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const [location, setLocation] = useState('')
 
-  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSearchSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    navigate(ROUTES.jobs)
+    const params = new URLSearchParams()
+    if (query.trim()) params.set('q', query.trim())
+    if (location.trim()) params.set('loc', location.trim())
+    const queryString = params.toString()
+    navigate(queryString ? `${ROUTES.jobs}?${queryString}` : ROUTES.jobs)
   }
 
   return (
@@ -141,6 +147,8 @@ export default function LandingPage() {
               </svg>
               <input
                 type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder="Job title, skill, or keyword"
                 className="w-full font-[inherit] text-[15px] text-ink outline-none"
               />
@@ -160,6 +168,8 @@ export default function LandingPage() {
               </svg>
               <input
                 type="text"
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
                 placeholder="City or remote"
                 className="w-full font-[inherit] text-[15px] text-ink outline-none"
               />
@@ -176,7 +186,7 @@ export default function LandingPage() {
             {TRENDING_SKILLS.map((skill) => (
               <Link
                 key={skill}
-                to={ROUTES.jobs}
+                to={`${ROUTES.jobs}?q=${encodeURIComponent(skill)}`}
                 className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-slate no-underline"
               >
                 {skill}
