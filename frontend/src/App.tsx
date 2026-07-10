@@ -1,5 +1,8 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { authApi } from './lib/apiClient'
+import { useAuthStore } from './stores/authStore'
+import { RequireAuth } from './routes/RequireAuth'
 import StyleGuidePage from './pages/dev/StyleGuidePage'
 import LandingPage from './pages/LandingPage'
 import JobSearchPage from './pages/job-search/JobSearchPage'
@@ -30,6 +33,19 @@ const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
 
 function App() {
+  const setSession = useAuthStore((state) => state.setSession)
+  const clearSession = useAuthStore((state) => state.clearSession)
+
+  useEffect(() => {
+    // Silently try to re-establish a session from the httpOnly refresh cookie on load —
+    // the access token itself is never persisted (see authStore), so this is the only
+    // way a session survives a hard page reload.
+    authApi
+      .refresh()
+      .then((response) => setSession(response.accessToken, response.user))
+      .catch(() => clearSession())
+  }, [setSession, clearSession])
+
   return (
     <BrowserRouter>
       <Suspense fallback={null}>
@@ -46,21 +62,27 @@ function App() {
             <Route path="/company/register" element={<CompanyRegisterPage />} />
           </Route>
 
-          <Route element={<AuthenticatedLayout headerVariant="candidate" />}>
-            <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
-            <Route path="/candidate/profile" element={<CandidateProfilePage />} />
-            <Route path="/candidate/profile/add-details" element={<AddMissingDetailsPage />} />
-            <Route path="/candidate/applications" element={<ApplicationsPage />} />
-            <Route path="/candidate/mock-interview" element={<MockInterviewPage />} />
+          <Route element={<RequireAuth role="CANDIDATE" />}>
+            <Route element={<AuthenticatedLayout headerVariant="candidate" />}>
+              <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
+              <Route path="/candidate/profile" element={<CandidateProfilePage />} />
+              <Route path="/candidate/profile/add-details" element={<AddMissingDetailsPage />} />
+              <Route path="/candidate/applications" element={<ApplicationsPage />} />
+              <Route path="/candidate/mock-interview" element={<MockInterviewPage />} />
+            </Route>
           </Route>
 
-          <Route element={<AuthenticatedLayout headerVariant="company" />}>
-            <Route path="/company/dashboard" element={<CompanyDashboardPage />} />
-            <Route path="/company/post-job" element={<PostJobPage />} />
-            <Route path="/company/search-candidates" element={<SearchCandidatesPage />} />
-            <Route path="/company/seminars" element={<SeminarSchedulerPage />} />
+          <Route element={<RequireAuth role="COMPANY" />}>
+            <Route element={<AuthenticatedLayout headerVariant="company" />}>
+              <Route path="/company/dashboard" element={<CompanyDashboardPage />} />
+              <Route path="/company/post-job" element={<PostJobPage />} />
+              <Route path="/company/search-candidates" element={<SearchCandidatesPage />} />
+              <Route path="/company/seminars" element={<SeminarSchedulerPage />} />
+            </Route>
           </Route>
 
+          {/* No admin auth flow exists yet (backend RBAC lands in a later roadmap step) —
+              left unguarded for now, matching current behavior. */}
           <Route element={<AuthenticatedLayout headerVariant="admin" />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/job-approvals" element={<AdminJobApprovalsPage />} />

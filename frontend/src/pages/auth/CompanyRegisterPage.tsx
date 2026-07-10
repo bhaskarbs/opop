@@ -1,9 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { ApiError, authApi } from '../../lib/apiClient'
 import { Button, Input } from '../../components/ui'
 import { ROUTES } from '../../routes/paths'
+import { useAuthStore } from '../../stores/authStore'
 import { FileDropInput } from './shared/FileDropInput'
 
 const ENTITY_TYPES = [
@@ -24,6 +27,7 @@ const companyRegisterSchema = z.object({
   address: z.string().min(10, 'Enter your registered office address'),
   signatoryName: z.string().min(2, "Enter the authorized signatory's name"),
   workEmail: z.string().email('Enter a valid work email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   certificate: z.instanceof(File).optional(),
 })
 
@@ -37,6 +41,8 @@ const STEPS = [
 
 export default function CompanyRegisterPage() {
   const navigate = useNavigate()
+  const setSession = useAuthStore((state) => state.setSession)
+  const [formError, setFormError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -54,12 +60,28 @@ export default function CompanyRegisterPage() {
       address: '',
       signatoryName: '',
       workEmail: '',
+      password: '',
     },
   })
 
-  function onSubmit(values: CompanyRegisterFormValues) {
-    console.log('Company registration submitted:', values)
-    navigate(ROUTES.companyDashboard)
+  async function onSubmit(values: CompanyRegisterFormValues) {
+    setFormError(null)
+    try {
+      // entityType/cin/gstin/pan/industry/address/signatoryName/certificate aren't accepted
+      // by the Auth service (Section 6.1: Auth Service only owns authentication — MCA
+      // verification and richer company profile data are a separate, not-yet-built service),
+      // so only these three fields are sent.
+      const response = await authApi.register({
+        email: values.workEmail,
+        password: values.password,
+        fullName: values.companyName,
+        role: 'company',
+      })
+      setSession(response.accessToken, response.user)
+      navigate(ROUTES.companyDashboard)
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+    }
   }
 
   return (
@@ -181,6 +203,16 @@ export default function CompanyRegisterPage() {
             />
           </div>
 
+          <div className="mb-5">
+            <Input
+              label="Password"
+              type="password"
+              placeholder="Create a password"
+              error={errors.password?.message}
+              {...register('password')}
+            />
+          </div>
+
           <div className="mb-[22px]">
             <Controller
               name="certificate"
@@ -202,6 +234,8 @@ export default function CompanyRegisterPage() {
             All company data is verified against MCA (Ministry of Corporate Affairs) records before
             job or partnership postings go live, in accordance with Indian company law.
           </div>
+
+          {formError && <p className="mb-4 text-[13px] text-danger">{formError}</p>}
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
             Submit for verification
