@@ -17,12 +17,12 @@ export const ROUTES = {
   candidateProfile: '/candidate/profile',
   candidateAddDetails: '/candidate/profile/add-details',
   candidateApplications: '/candidate/applications',
-  candidateSeminars: '/candidate/seminars',
   candidateMockInterview: '/candidate/mock-interview',
 
   companyDashboard: '/company/dashboard',
   companyPostJob: '/company/post-job',
   companySearchCandidates: '/company/search-candidates',
+  companySeminars: '/company/seminars',
 
   adminDashboard: '/admin/dashboard',
   adminJobApprovals: '/admin/job-approvals',

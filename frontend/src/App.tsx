@@ -15,11 +15,11 @@ import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage'
 import CandidateProfilePage from './pages/candidate/CandidateProfilePage'
 import AddMissingDetailsPage from './pages/candidate/AddMissingDetailsPage'
 import ApplicationsPage from './pages/candidate/ApplicationsPage'
-import SeminarSchedulerPage from './pages/candidate/SeminarSchedulerPage'
 import MockInterviewPage from './pages/candidate/MockInterviewPage'
 import CompanyDashboardPage from './pages/company/CompanyDashboardPage'
 import PostJobPage from './pages/company/PostJobPage'
 import SearchCandidatesPage from './pages/company/SearchCandidatesPage'
+import SeminarSchedulerPage from './pages/company/SeminarSchedulerPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminJobApprovalsPage from './pages/admin/AdminJobApprovalsPage'
 import AdminCompanyApprovalsPage from './pages/admin/AdminCompanyApprovalsPage'
@@ -51,7 +51,6 @@ function App() {
             <Route path="/candidate/profile" element={<CandidateProfilePage />} />
             <Route path="/candidate/profile/add-details" element={<AddMissingDetailsPage />} />
             <Route path="/candidate/applications" element={<ApplicationsPage />} />
-            <Route path="/candidate/seminars" element={<SeminarSchedulerPage />} />
             <Route path="/candidate/mock-interview" element={<MockInterviewPage />} />
           </Route>
 
@@ -59,6 +58,7 @@ function App() {
             <Route path="/company/dashboard" element={<CompanyDashboardPage />} />
             <Route path="/company/post-job" element={<PostJobPage />} />
             <Route path="/company/search-candidates" element={<SearchCandidatesPage />} />
+            <Route path="/company/seminars" element={<SeminarSchedulerPage />} />
           </Route>
 
           <Route element={<AuthenticatedLayout headerVariant="admin" />}>

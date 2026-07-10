@@ -163,12 +163,12 @@ export default function CompanyDashboardPage() {
                 </div>
               </div>
             ))}
-            <button
-              type="button"
-              className="mt-3 w-full rounded-lg border border-dashed border-[#C7CCD6] py-2.5 text-[13px] font-bold text-primary"
+            <Link
+              to={ROUTES.companySeminars}
+              className="mt-3 block w-full rounded-lg border border-dashed border-[#C7CCD6] py-2.5 text-center text-[13px] font-bold text-primary no-underline"
             >
               + Schedule new seminar
-            </button>
+            </Link>
           </div>
           <div className="rounded-card border border-border bg-surface p-[22px]">
             <h3 className="mb-3 text-[14.5px] font-bold text-ink">Notifications sent</h3>
