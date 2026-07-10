@@ -39,3 +39,38 @@ npm run format:check --workspace=frontend  # Prettier (check only)
 ```
 
 Requires Node 20+. An `.nvmrc` is checked in at the repo root — run `nvm use` before installing if you use `nvm`.
+
+## Running the backend
+
+Requires Java 21 and Docker (for local Postgres). From the repo root:
+
+```bash
+docker compose up -d                  # starts Postgres 16 on localhost:5432
+cd backend
+./gradlew bootRun                     # starts the API on http://localhost:8080
+```
+
+The `postgres` container is preconfigured with database/user/password all set to `openopportunity`
+(see `docker-compose.yml`). Flyway runs its migrations automatically on startup — there's nothing
+extra to do.
+
+Health check:
+
+```bash
+curl http://localhost:8080/actuator/health   # {"status":"UP"}
+```
+
+Other useful commands, run from `backend/` (Postgres must be running for these, since Flyway/JPA
+need a live connection):
+
+```bash
+./gradlew build   # compiles and runs tests
+./gradlew test    # runs tests only
+```
+
+If port 5432 is already taken by another local Postgres install, either stop that instance or
+change the host-side port in `docker-compose.yml` and `backend/src/main/resources/application.properties`
+to match.
+
+CORS is preconfigured (`app.cors.allowed-origins` in `application.properties`) to allow requests
+from the Vite dev server at `http://localhost:5173`.

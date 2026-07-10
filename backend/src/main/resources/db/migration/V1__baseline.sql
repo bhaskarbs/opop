@@ -1,0 +1,2 @@
+-- Empty baseline migration. Establishes the Flyway schema history table;
+-- later services add their own versioned migrations on top of this.
