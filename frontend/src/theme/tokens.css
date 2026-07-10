@@ -68,6 +68,9 @@
   /* Register page benefits sidebar collapses below ~800px */
   --breakpoint-auth: 50rem; /* 800px */
 
+  /* Candidate profile pages' sidebar collapses below ~820px */
+  --breakpoint-profile: 51.25rem; /* 820px */
+
   /* Elevation — borders carry most surfaces; shadow is reserved for hover/elevated (modal, dropdown) */
   --shadow-elevated: 0 4px 16px 0 rgb(20 24 31 / 0.08);
 
