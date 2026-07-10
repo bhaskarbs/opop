@@ -65,6 +65,9 @@
   /* Job Search filter sidebar collapses below ~860px */
   --breakpoint-search: 53.75rem; /* 860px */
 
+  /* Register page benefits sidebar collapses below ~800px */
+  --breakpoint-auth: 50rem; /* 800px */
+
   /* Elevation — borders carry most surfaces; shadow is reserved for hover/elevated (modal, dropdown) */
   --shadow-elevated: 0 4px 16px 0 rgb(20 24 31 / 0.08);
 
