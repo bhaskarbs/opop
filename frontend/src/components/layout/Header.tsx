@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { authApi } from '../../lib/apiClient'
 import { cn } from '../../lib/cn'
 import { ROUTES } from '../../routes/paths'
+import { useAuthStore } from '../../stores/authStore'
 import { AVATAR_BG_CLASS, DEFAULT_USER_NAME, NAV_BY_VARIANT, USER_MENU_BY_VARIANT } from './navData'
 import { Logo } from './Logo'
 import { RouteLink } from './RouteLink'
@@ -28,6 +30,20 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const clearSession = useAuthStore((state) => state.clearSession)
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // Best-effort — the local session clears regardless, so the UI never gets stuck
+      // "logged in" just because the network call failed.
+    } finally {
+      clearSession()
+      navigate(ROUTES.home)
+    }
+  }
 
   useEffect(() => {
     if (!userMenuOpen) return
@@ -133,15 +149,26 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
                 </button>
                 {userMenuOpen && (
                   <div className="absolute top-[46px] right-0 min-w-[200px] rounded-[10px] border border-border bg-surface p-1.5 text-left shadow-elevated">
-                    {userMenuItems.map((item) => (
-                      <RouteLink
-                        key={item.label}
-                        to={item.to}
-                        className="block rounded-md px-3 py-2.5 text-sm font-medium text-ink no-underline"
-                      >
-                        {item.label}
-                      </RouteLink>
-                    ))}
+                    {userMenuItems.map((item) =>
+                      item.label === 'Log out' ? (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={handleLogout}
+                          className="block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium text-ink"
+                        >
+                          {item.label}
+                        </button>
+                      ) : (
+                        <RouteLink
+                          key={item.label}
+                          to={item.to}
+                          className="block rounded-md px-3 py-2.5 text-sm font-medium text-ink no-underline"
+                        >
+                          {item.label}
+                        </RouteLink>
+                      ),
+                    )}
                   </div>
                 )}
               </div>
@@ -180,7 +207,7 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
               {item.label}
             </RouteLink>
           ))}
-          {isGuest && (
+          {isGuest ? (
             <div className="mt-3.5 flex gap-2.5">
               <Link
                 to={ROUTES.login}
@@ -195,6 +222,14 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
                 Register
               </Link>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-3.5 w-full rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink"
+            >
+              Log out
+            </button>
           )}
         </div>
       )}

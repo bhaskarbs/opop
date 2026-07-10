@@ -1,9 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { ApiError, authApi } from '../../lib/apiClient'
 import { Button, Input } from '../../components/ui'
 import { ROUTES } from '../../routes/paths'
+import { useAuthStore } from '../../stores/authStore'
 import { FileDropInput } from './shared/FileDropInput'
 import { PhoneInput } from './shared/PhoneInput'
 
@@ -32,6 +35,8 @@ const BENEFITS = [
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const setSession = useAuthStore((state) => state.setSession)
+  const [formError, setFormError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -49,9 +54,23 @@ export default function RegisterPage() {
     },
   })
 
-  function onSubmit(values: RegisterFormValues) {
-    console.log('Candidate registration submitted:', values)
-    navigate(ROUTES.candidateDashboard)
+  async function onSubmit(values: RegisterFormValues) {
+    setFormError(null)
+    try {
+      // mobile, skills, and resume aren't accepted by the Auth service (Section 6.1 of the
+      // architecture doc: Auth Service only owns authentication — richer profile data is a
+      // separate, not-yet-built Profile service), so only these three fields are sent.
+      const response = await authApi.register({
+        email: values.email,
+        password: values.password,
+        fullName: values.fullName,
+        role: 'candidate',
+      })
+      setSession(response.accessToken, response.user)
+      navigate(ROUTES.candidateDashboard)
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+    }
   }
 
   return (
@@ -150,6 +169,8 @@ export default function RegisterPage() {
             {errors.agreeTerms && (
               <p className="mb-4 -mt-3 text-[13px] text-danger">{errors.agreeTerms.message}</p>
             )}
+
+            {formError && <p className="mb-4 text-[13px] text-danger">{formError}</p>}
 
             <Button type="submit" disabled={isSubmitting} className="mb-4 w-full">
               Create account
