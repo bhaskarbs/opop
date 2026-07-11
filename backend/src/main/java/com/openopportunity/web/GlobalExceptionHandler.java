@@ -4,6 +4,8 @@ import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.job.exception.JobAccessDeniedException;
+import com.openopportunity.job.exception.JobNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -33,6 +35,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidRegistrationRoleException.class)
     public ResponseEntity<ApiError> handleInvalidRegistrationRole(InvalidRegistrationRoleException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(JobNotFoundException.class)
+    public ResponseEntity<ApiError> handleJobNotFound(JobNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(JobAccessDeniedException.class)
+    public ResponseEntity<ApiError> handleJobAccessDenied(JobAccessDeniedException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

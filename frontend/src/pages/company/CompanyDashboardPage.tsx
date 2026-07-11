@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { jobsApi, type JobSummary } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
-import { useCompanyJobPostingsStore } from '../../stores/companyJobPostingsStore'
 
 const APPLICANTS = [
   { name: 'Rohan Mehta', initial: 'R', skills: 'React · UI Systems · 5 yrs' },
@@ -13,9 +14,32 @@ const SEMINARS = [
   { title: 'Hardware QA meetup', date: 'Jul 21, 11:00 AM', invited: 12 },
 ]
 
+const STATUS_LABELS: Record<JobSummary['status'], string> = {
+  ACTIVE: 'Active',
+  DRAFT: 'Draft',
+  CLOSED: 'Closed',
+}
+
+function formatPostedLabel(createdAt: string): string {
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000)
+  if (days <= 0) return 'today'
+  if (days === 1) return '1 day ago'
+  if (days < 7) return `${days} days ago`
+  const weeks = Math.floor(days / 7)
+  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+}
+
 export default function CompanyDashboardPage() {
-  const postings = useCompanyJobPostingsStore((state) => state.postings)
-  const activeCount = postings.filter((posting) => posting.status === 'Active').length
+  const [postings, setPostings] = useState<JobSummary[]>([])
+
+  useEffect(() => {
+    jobsApi
+      .mine()
+      .then(setPostings)
+      .catch(() => setPostings([]))
+  }, [])
+
+  const activeCount = postings.filter((posting) => posting.status === 'ACTIVE').length
 
   const kpis = [
     {
@@ -95,17 +119,18 @@ export default function CompanyDashboardPage() {
               <div>
                 <div className="text-[14.5px] font-bold text-ink">{posting.title}</div>
                 <div className="mt-0.5 text-[12.5px] text-fog">
-                  {posting.applicants} applicants · Posted {posting.postedLabel}
+                  {posting.applicantCount} applicants · Posted{' '}
+                  {formatPostedLabel(posting.createdAt)}
                 </div>
               </div>
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  posting.status === 'Active'
+                  posting.status === 'ACTIVE'
                     ? 'bg-teal-tint text-teal'
                     : 'bg-neutral-tint text-slate'
                 }`}
               >
-                {posting.status}
+                {STATUS_LABELS[posting.status]}
               </span>
             </div>
           ))}

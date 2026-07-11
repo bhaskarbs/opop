@@ -1,4 +1,4 @@
-import type { ExperienceLevel, Opportunity, WorkMode } from '../../mocks/jobs'
+import { EXPERIENCE_LEVELS, WORK_MODES } from '../../lib/jobEnums'
 import {
   createDefaultFilterState,
   MAX_SALARY_LAKHS,
@@ -6,19 +6,9 @@ import {
   type FilterState,
 } from './filterState'
 
-const TYPE_OPTIONS: Array<{ type: Opportunity['type']; label: string }> = [
-  { type: 'job', label: 'Jobs' },
-  { type: 'partnership', label: 'Startup partnerships' },
-  { type: 'community', label: 'Community opportunities' },
-]
-
-const EXPERIENCE_LEVELS: ExperienceLevel[] = ['Entry level', 'Mid level', 'Senior', 'Leadership']
-const WORK_MODES: WorkMode[] = ['Remote', 'Hybrid', 'On-site']
-
 interface FilterSidebarProps {
   filters: FilterState
   onChange: (filters: FilterState) => void
-  typeCounts: Record<Opportunity['type'], number>
 }
 
 function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
@@ -31,7 +21,7 @@ function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
   return next
 }
 
-export function FilterSidebar({ filters, onChange, typeCounts }: FilterSidebarProps) {
+export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
   return (
     <div className="sticky top-[88px] rounded-card border border-border bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
@@ -43,27 +33,6 @@ export function FilterSidebar({ filters, onChange, typeCounts }: FilterSidebarPr
         >
           Clear all
         </button>
-      </div>
-
-      <div className="mb-5">
-        <div className="mb-2.5 text-[13px] font-bold text-ink">Opportunity type</div>
-        {TYPE_OPTIONS.map((option) => (
-          <label
-            key={option.type}
-            className="mb-2.5 flex cursor-pointer items-center gap-2.5 text-sm text-[#3A414D]"
-          >
-            <input
-              type="checkbox"
-              checked={filters.types.has(option.type)}
-              onChange={() =>
-                onChange({ ...filters, types: toggleInSet(filters.types, option.type) })
-              }
-              className="h-4 w-4 accent-primary"
-            />
-            {option.label}{' '}
-            <span className="text-[12.5px] text-fog">({typeCounts[option.type]})</span>
-          </label>
-        ))}
       </div>
 
       <div className="mb-5">

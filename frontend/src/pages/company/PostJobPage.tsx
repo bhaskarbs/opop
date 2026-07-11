@@ -4,12 +4,17 @@ import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Button, Input } from '../../components/ui'
+import {
+  employmentTypeToBackend,
+  experienceLevelToBackend,
+  workModeToBackend,
+  EMPLOYMENT_TYPES,
+  EXPERIENCE_LEVELS,
+  WORK_MODES,
+} from '../../lib/jobEnums'
+import { ApiError } from '../../lib/apiClient'
+import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
-import { useCompanyJobPostingsStore } from '../../stores/companyJobPostingsStore'
-
-const EMPLOYMENT_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship'] as const
-const EXPERIENCE_LEVELS = ['Entry level', 'Mid level', 'Senior', 'Leadership'] as const
-const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
 
 const postJobSchema = z.object({
   title: z.string().min(2, 'Enter a job title'),
@@ -28,10 +33,41 @@ const postJobSchema = z.object({
 
 type PostJobFormValues = z.infer<typeof postJobSchema>
 
+function parseSalaryLakhs(value: string | undefined): number | null {
+  if (!value) return null
+  const match = value.match(/[\d.]+/)
+  return match ? Number.parseFloat(match[0]) : null
+}
+
+function splitLines(value: string): string[] {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function toJobRequest(values: PostJobFormValues, status: 'ACTIVE' | 'DRAFT'): JobRequestPayload {
+  return {
+    title: values.title,
+    employmentType: employmentTypeToBackend(values.employmentType),
+    experienceLevel: experienceLevelToBackend(values.experienceLevel),
+    workMode: workModeToBackend(values.workMode),
+    location: values.location,
+    salaryMinLakhs: parseSalaryLakhs(values.salaryMin),
+    salaryMaxLakhs: parseSalaryLakhs(values.salaryMax),
+    applicationDeadline: values.deadline || null,
+    aboutRole: values.aboutRole,
+    responsibilities: splitLines(values.responsibilities),
+    requirements: splitLines(values.requirements),
+    skills: values.skills,
+    status,
+  }
+}
+
 export default function PostJobPage() {
   const navigate = useNavigate()
-  const addPosting = useCompanyJobPostingsStore((state) => state.addPosting)
   const [newSkill, setNewSkill] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
 
   const {
     register,
@@ -57,17 +93,29 @@ export default function PostJobPage() {
     },
   })
 
-  function onPublish(values: PostJobFormValues) {
-    console.log('Job published:', values)
-    addPosting(values.title, 'Active')
-    navigate(ROUTES.companyDashboard)
+  async function onPublish(values: PostJobFormValues) {
+    setFormError(null)
+    try {
+      await jobsApi.create(toJobRequest(values, 'ACTIVE'))
+      navigate(ROUTES.companyDashboard)
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+    }
   }
 
-  function onSaveDraft() {
+  async function onSaveDraft() {
+    setFormError(null)
     const values = getValues()
-    console.log('Job saved as draft:', values)
-    addPosting(values.title, 'Draft')
-    navigate(ROUTES.companyDashboard)
+    if (!values.title.trim()) {
+      setFormError('Enter a job title before saving a draft.')
+      return
+    }
+    try {
+      await jobsApi.create(toJobRequest(values, 'DRAFT'))
+      navigate(ROUTES.companyDashboard)
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+    }
   }
 
   return (
@@ -302,6 +350,8 @@ export default function PostJobPage() {
             listing alongside relevant startup partnerships and community opportunities.
           </div>
         </div>
+
+        {formError && <p className="mb-4 text-right text-[13px] text-danger">{formError}</p>}
 
         <div className="flex flex-wrap justify-end gap-2.5">
           <Button type="button" variant="secondary" onClick={onSaveDraft}>

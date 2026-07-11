@@ -1,19 +1,33 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Card } from '../components/ui'
-import { opportunities, type JobListing } from '../mocks/jobs'
+import { jobsApi, type JobDetail, type JobSummary } from '../lib/jobsApi'
+import { workModeFromBackend } from '../lib/jobEnums'
 import { ROUTES } from '../routes/paths'
 
-function findSimilarJobs(current: JobListing, count = 3): JobListing[] {
-  const otherJobs = opportunities.filter(
-    (item): item is JobListing => item.type === 'job' && item.id !== current.id,
-  )
-  const scored = otherJobs
+function formatSalary(minLakhs: number | null, maxLakhs: number | null): string {
+  if (minLakhs == null && maxLakhs == null) return 'Salary not disclosed'
+  if (minLakhs != null && maxLakhs != null) return `₹${minLakhs}L–${maxLakhs}L`
+  return `₹${minLakhs ?? maxLakhs}L`
+}
+
+function formatPostedLabel(createdAt: string): string {
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000)
+  if (days <= 0) return 'Today'
+  if (days === 1) return '1 day ago'
+  if (days < 7) return `${days} days ago`
+  const weeks = Math.floor(days / 7)
+  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+}
+
+function findSimilarJobs(current: JobDetail, allJobs: JobSummary[], count = 3): JobSummary[] {
+  const scored = allJobs
+    .filter((job) => job.id !== current.id)
     .map((job) => ({
       job,
-      sharedTags: job.tags.filter((tag) => current.tags.includes(tag)).length,
+      sharedSkills: job.skills.filter((skill) => current.skills.includes(skill)).length,
     }))
-    .sort((a, b) => b.sharedTags - a.sharedTags)
+    .sort((a, b) => b.sharedSkills - a.sharedSkills)
   return scored.slice(0, count).map((entry) => entry.job)
 }
 
@@ -33,18 +47,53 @@ function NotFound() {
 
 export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>()
-  const job = opportunities.find(
-    (item): item is JobListing => item.type === 'job' && item.id === jobId,
-  )
+
+  const [job, setJob] = useState<JobDetail | null>(null)
+  const [similarJobs, setSimilarJobs] = useState<JobSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
   const [saved, setSaved] = useState(false)
   const [applied, setApplied] = useState(false)
 
-  if (!job) {
+  useEffect(() => {
+    if (!jobId) return
+    let cancelled = false
+
+    async function load() {
+      setLoading(true)
+      setNotFound(false)
+      try {
+        const [detail, allJobs] = await Promise.all([
+          jobsApi.detail(jobId as string),
+          jobsApi.search({ sort: 'newest' }),
+        ])
+        if (cancelled) return
+        setJob(detail)
+        setSimilarJobs(findSimilarJobs(detail, allJobs))
+      } catch {
+        if (!cancelled) setNotFound(true)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [jobId])
+
+  if (loading) {
+    return <main className="mx-auto max-w-[640px] px-6 py-24 text-center text-slate">Loading…</main>
+  }
+
+  if (notFound || !job) {
     return <NotFound />
   }
 
-  const similarJobs = findSimilarJobs(job)
+  const mode = workModeFromBackend(job.workMode)
+  const initial = job.companyName.charAt(0).toUpperCase()
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
@@ -53,29 +102,28 @@ export default function JobDetailPage() {
           <Card className="mb-5 p-7">
             <div className="flex flex-wrap justify-between gap-[18px]">
               <div className="flex gap-4">
-                <div
-                  className={`flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-xl text-xl font-bold text-white ${job.avatarColorClass}`}
-                >
-                  {job.initial}
+                <div className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-xl bg-primary text-xl font-bold text-white">
+                  {initial}
                 </div>
                 <div>
                   <h1 className="mb-1.5 text-[23px] font-extrabold tracking-[-0.01em] text-ink">
                     {job.title}
                   </h1>
                   <div className="text-[15px] text-slate">
-                    {job.company} · {job.location}
+                    {job.companyName} · {job.location} · {mode}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {[...job.tags.filter((tag) => !tag.includes('yrs')), `${job.salary} / yr`].map(
-                      (tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full bg-neutral-tint px-3 py-1 text-[12.5px] font-semibold text-[#3A414D]"
-                        >
-                          {tag}
-                        </span>
-                      ),
-                    )}
+                    {[
+                      ...job.skills,
+                      formatSalary(job.salaryMinLakhs, job.salaryMaxLakhs) + ' / yr',
+                    ].map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-neutral-tint px-3 py-1 text-[12.5px] font-semibold text-[#3A414D]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -98,19 +146,17 @@ export default function JobDetailPage() {
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-2 border-t border-[#F0F1F3] pt-4 text-[13.5px] text-fog">
-              <span>Posted {job.postedLabel}</span>
+              <span>Posted {formatPostedLabel(job.createdAt)}</span>
               <span>·</span>
-              <span>{job.applicants} applicants</span>
+              <span>{job.applicantCount} applicants</span>
               <span>·</span>
-              <span>Sourced from {job.source}</span>
+              <span>Sourced from OpenOpportunity</span>
             </div>
           </Card>
 
           <Card className="mb-5 p-7">
             <h2 className="mb-3.5 text-[17px] font-bold text-ink">About the role</h2>
-            <p className="mb-[18px] text-[14.5px] leading-[1.7] text-[#3A414D]">
-              {job.description}
-            </p>
+            <p className="mb-[18px] text-[14.5px] leading-[1.7] text-[#3A414D]">{job.aboutRole}</p>
             <h3 className="mb-2.5 text-[15px] font-bold text-ink">Responsibilities</h3>
             <ul className="mb-[18px] list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
               {job.responsibilities.map((item) => (
@@ -124,11 +170,6 @@ export default function JobDetailPage() {
               ))}
             </ul>
           </Card>
-
-          <Card className="p-7">
-            <h2 className="mb-3.5 text-[17px] font-bold text-ink">About {job.company}</h2>
-            <p className="text-[14.5px] leading-[1.7] text-[#3A414D]">{job.companyDescription}</p>
-          </Card>
         </div>
 
         <aside className="search:order-none order-first">
@@ -140,8 +181,8 @@ export default function JobDetailPage() {
               Partner with a startup in this space
             </h3>
             <p className="mb-3.5 text-[13.5px] leading-[1.55] text-slate">
-              Vertex Robotics needs a frontend partner right now — same skill set, real product,
-              counts as experience.
+              Startups on OpenOpportunity are looking for partners with similar skills — real
+              product, counts as experience.
             </p>
             <Link
               to={ROUTES.partnerships}
@@ -168,21 +209,24 @@ export default function JobDetailPage() {
             </Link>
           </div>
 
-          <Card className="p-5">
-            <h3 className="mb-3 text-[14.5px] font-bold text-ink">Similar jobs</h3>
-            {similarJobs.map((similar) => (
-              <Link
-                key={similar.id}
-                to={ROUTES.jobDetail(similar.id)}
-                className="block border-t border-[#F0F1F3] py-2.5 no-underline first:border-t-0"
-              >
-                <div className="text-sm font-semibold text-ink">{similar.title}</div>
-                <div className="mt-0.5 text-[12.5px] text-fog">
-                  {similar.company} · {similar.salary}
-                </div>
-              </Link>
-            ))}
-          </Card>
+          {similarJobs.length > 0 && (
+            <Card className="p-5">
+              <h3 className="mb-3 text-[14.5px] font-bold text-ink">Similar jobs</h3>
+              {similarJobs.map((similar) => (
+                <Link
+                  key={similar.id}
+                  to={ROUTES.jobDetail(similar.id)}
+                  className="block border-t border-[#F0F1F3] py-2.5 no-underline first:border-t-0"
+                >
+                  <div className="text-sm font-semibold text-ink">{similar.title}</div>
+                  <div className="mt-0.5 text-[12.5px] text-fog">
+                    {similar.companyName} ·{' '}
+                    {formatSalary(similar.salaryMinLakhs, similar.salaryMaxLakhs)}
+                  </div>
+                </Link>
+              ))}
+            </Card>
+          )}
         </aside>
       </div>
     </main>

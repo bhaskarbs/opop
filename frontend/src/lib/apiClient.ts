@@ -33,7 +33,9 @@ export class ApiError extends Error {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+/** Shared by every API module (see jobsApi.ts) so base URL, credentials, and error parsing
+ * stay consistent in one place. */
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     // Sends and receives the httpOnly refreshToken cookie — required for /refresh and
