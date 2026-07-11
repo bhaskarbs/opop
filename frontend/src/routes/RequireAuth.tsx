@@ -11,7 +11,7 @@ export interface RequireAuthProps {
 const LOGIN_ROUTE_BY_ROLE: Record<UserRole, string> = {
   CANDIDATE: ROUTES.login,
   COMPANY: ROUTES.companyLogin,
-  ADMIN: ROUTES.login,
+  ADMIN: ROUTES.adminLogin,
 }
 
 export function RequireAuth({ role }: RequireAuthProps) {

@@ -46,7 +46,10 @@ function splitLines(value: string): string[] {
     .filter(Boolean)
 }
 
-function toJobRequest(values: PostJobFormValues, status: 'ACTIVE' | 'DRAFT'): JobRequestPayload {
+function toJobRequest(
+  values: PostJobFormValues,
+  status: 'PENDING_APPROVAL' | 'DRAFT',
+): JobRequestPayload {
   return {
     title: values.title,
     employmentType: employmentTypeToBackend(values.employmentType),
@@ -96,7 +99,9 @@ export default function PostJobPage() {
   async function onPublish(values: PostJobFormValues) {
     setFormError(null)
     try {
-      await jobsApi.create(toJobRequest(values, 'ACTIVE'))
+      // Companies can no longer publish straight to ACTIVE — this now goes into the Step 18
+      // admin job-approval queue and only appears live once an admin approves it.
+      await jobsApi.create(toJobRequest(values, 'PENDING_APPROVAL'))
       navigate(ROUTES.companyDashboard)
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')

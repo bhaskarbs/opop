@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.job.EmploymentType;
 import com.openopportunity.job.ExperienceLevel;
@@ -16,6 +17,7 @@ import com.openopportunity.job.dto.JobRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -37,8 +39,39 @@ class ApplicationControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Value("${app.admin.seed-email}")
+    private String adminSeedEmail;
+
+    @Value("${app.admin.seed-password}")
+    private String adminSeedPassword;
+
+    /** The seeded admin account (see AdminSeeder) exists by the time any test runs — it's
+     * created once when the Spring context starts, outside any per-test transaction. */
+    private String adminToken() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest(adminSeedEmail, adminSeedPassword))))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
+    }
+
     private String registerAndGetToken(String email, String fullName, String role) throws Exception {
-        RegisterRequest request = new RegisterRequest(email, "password123", fullName, role);
+        // Company profile fields are required by the backend for role=company and ignored
+        // otherwise, so it's simplest to always supply them here.
+        RegisterRequest request = new RegisterRequest(
+                email,
+                "password123",
+                fullName,
+                role,
+                "Private Limited",
+                "U74999KA2021PTC145632",
+                "29ABCDE1234F1Z5",
+                "ABCDE1234F",
+                "Technology",
+                "123 Test Street, Bengaluru",
+                "Test Signatory");
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -47,6 +80,8 @@ class ApplicationControllerTest {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
     }
 
+    /** Creates a job as PENDING_APPROVAL and immediately has the seeded admin approve it —
+     * companies can no longer set ACTIVE directly (see JobService#requireClientSettableStatus). */
     private String createActiveJob(String companyToken) throws Exception {
         JobRequest request = new JobRequest(
                 "Senior Frontend Developer",
@@ -61,14 +96,18 @@ class ApplicationControllerTest {
                 List.of("Ship features"),
                 List.of("Some experience"),
                 List.of("React"),
-                com.openopportunity.job.JobStatus.ACTIVE);
+                com.openopportunity.job.JobStatus.PENDING_APPROVAL);
         MvcResult result = mockMvc.perform(post("/api/jobs")
                         .header("Authorization", "Bearer " + companyToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();
+        String jobId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(post("/api/jobs/" + jobId + "/approve").header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk());
+        return jobId;
     }
 
     private String applyToJob(String candidateToken, String jobId) throws Exception {

@@ -17,7 +17,17 @@ const SEMINARS = [
 const STATUS_LABELS: Record<JobSummary['status'], string> = {
   ACTIVE: 'Active',
   DRAFT: 'Draft',
+  PENDING_APPROVAL: 'Pending review',
+  REJECTED: 'Rejected',
   CLOSED: 'Closed',
+}
+
+const STATUS_BADGE_CLASSES: Record<JobSummary['status'], string> = {
+  ACTIVE: 'bg-teal-tint text-teal',
+  DRAFT: 'bg-neutral-tint text-slate',
+  PENDING_APPROVAL: 'bg-amber-tint text-amber',
+  REJECTED: 'bg-danger/10 text-danger',
+  CLOSED: 'bg-neutral-tint text-slate',
 }
 
 function formatPostedLabel(createdAt: string): string {
@@ -124,11 +134,7 @@ export default function CompanyDashboardPage() {
                 </div>
               </div>
               <span
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  posting.status === 'ACTIVE'
-                    ? 'bg-teal-tint text-teal'
-                    : 'bg-neutral-tint text-slate'
-                }`}
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE_CLASSES[posting.status]}`}
               >
                 {STATUS_LABELS[posting.status]}
               </span>

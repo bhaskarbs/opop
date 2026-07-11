@@ -1,12 +1,17 @@
 package com.openopportunity.web;
 
-import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
-import com.openopportunity.auth.exception.InvalidCredentialsException;
-import com.openopportunity.auth.exception.InvalidRefreshTokenException;
-import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.admin.exception.AdminUserNotFoundException;
+import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
+import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
+import com.openopportunity.auth.exception.InvalidCredentialsException;
+import com.openopportunity.auth.exception.InvalidRefreshTokenException;
+import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import java.time.Instant;
@@ -40,6 +45,16 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 
+    @ExceptionHandler(IncompleteCompanyProfileException.class)
+    public ResponseEntity<ApiError> handleIncompleteCompanyProfile(IncompleteCompanyProfileException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(SuspendedAccountException.class)
+    public ResponseEntity<ApiError> handleSuspendedAccount(SuspendedAccountException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
+    }
+
     @ExceptionHandler(JobNotFoundException.class)
     public ResponseEntity<ApiError> handleJobNotFound(JobNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
@@ -48,6 +63,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(JobAccessDeniedException.class)
     public ResponseEntity<ApiError> handleJobAccessDenied(JobAccessDeniedException ex) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidJobStatusTransitionException.class)
+    public ResponseEntity<ApiError> handleInvalidJobStatusTransition(InvalidJobStatusTransitionException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(ApplicationNotFoundException.class)
@@ -63,6 +83,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateApplicationException.class)
     public ResponseEntity<ApiError> handleDuplicateApplication(DuplicateApplicationException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(AdminUserNotFoundException.class)
+    public ResponseEntity<ApiError> handleAdminUserNotFound(AdminUserNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyProfileNotFoundException.class)
+    public ResponseEntity<ApiError> handleCompanyProfileNotFound(CompanyProfileNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

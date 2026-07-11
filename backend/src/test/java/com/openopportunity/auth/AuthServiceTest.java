@@ -33,6 +33,9 @@ class AuthServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
+    private CompanyProfileRepository companyProfileRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -42,7 +45,8 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, refreshTokenRepository, passwordEncoder, jwtService, 30);
+        authService = new AuthService(
+                userRepository, refreshTokenRepository, companyProfileRepository, passwordEncoder, jwtService, 30);
     }
 
     @Test

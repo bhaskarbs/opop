@@ -74,3 +74,17 @@ to match.
 
 CORS is preconfigured (`app.cors.allowed-origins` in `application.properties`) to allow requests
 from the Vite dev server at `http://localhost:5173`.
+
+### Admin console access
+
+There's no admin self-registration flow (by design). On first startup the backend seeds one
+admin account if it doesn't already exist yet (see `AdminSeeder` and the `app.admin.seed-*`
+properties in `application.properties`):
+
+```
+email:    admin@openopportunity.com
+password: AdminPass123!
+```
+
+Sign in at `/admin/login` in the frontend. Change these via `APP_ADMIN_SEED_EMAIL` /
+`APP_ADMIN_SEED_PASSWORD` env vars before first startup in any real deployment.
