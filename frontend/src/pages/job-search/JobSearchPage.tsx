@@ -1,80 +1,22 @@
-import { type SubmitEvent, useMemo, useState } from 'react'
+import { type SubmitEvent, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { opportunities, TRENDING_SKILLS, type Opportunity } from '../../mocks/jobs'
+import { TRENDING_SKILLS } from '../../mocks/jobs'
+import { ApiError } from '../../lib/apiClient'
+import { jobsApi } from '../../lib/jobsApi'
+import { experienceLevelToBackend, workModeToBackend } from '../../lib/jobEnums'
 import { FilterSidebar } from './FilterSidebar'
-import { createDefaultFilterState, type FilterState } from './filterState'
+import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './filterState'
 import { ResultCard } from './ResultCard'
+import { toDisplayJob, type DisplayJob } from './jobDisplay'
 
 const PAGE_SIZE = 6
 
-type SortOption = 'relevant' | 'newest' | 'salary' | 'rating'
+type SortOption = 'relevant' | 'newest' | 'salary'
 
 const SORT_LABELS: Record<SortOption, string> = {
   relevant: 'Most relevant',
   newest: 'Newest first',
   salary: 'Salary: high to low',
-  rating: 'Company rating',
-}
-
-function matchesQuery(item: Opportunity, query: string) {
-  const q = query.trim().toLowerCase()
-  if (!q) return true
-  if (item.type === 'job') {
-    return (
-      item.title.toLowerCase().includes(q) ||
-      item.company.toLowerCase().includes(q) ||
-      item.tags.some((tag) => tag.toLowerCase().includes(q))
-    )
-  }
-  if (item.type === 'partnership') {
-    return item.title.toLowerCase().includes(q) || item.company.toLowerCase().includes(q)
-  }
-  return item.title.toLowerCase().includes(q) || item.org.toLowerCase().includes(q)
-}
-
-function matchesLocation(item: Opportunity, location: string) {
-  const loc = location.trim().toLowerCase()
-  if (!loc) return true
-  if (item.type === 'job' || item.type === 'partnership') {
-    return item.location.toLowerCase().includes(loc) || item.mode.toLowerCase().includes(loc)
-  }
-  return true
-}
-
-function matchesFilters(item: Opportunity, filters: FilterState) {
-  if (filters.types.size > 0 && !filters.types.has(item.type)) return false
-  if (filters.levels.size > 0 && item.type === 'job' && !filters.levels.has(item.level))
-    return false
-  if (
-    filters.modes.size > 0 &&
-    (item.type === 'job' || item.type === 'partnership') &&
-    !filters.modes.has(item.mode)
-  ) {
-    return false
-  }
-  if (
-    filters.minSalaryLakhs > 3 &&
-    item.type === 'job' &&
-    item.salaryMaxLakhs < filters.minSalaryLakhs
-  ) {
-    return false
-  }
-  return true
-}
-
-function sortOpportunities(items: Opportunity[], sortBy: SortOption): Opportunity[] {
-  if (sortBy === 'relevant') return items
-  const sorted = [...items]
-  if (sortBy === 'newest') sorted.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo)
-  if (sortBy === 'salary') {
-    sorted.sort((a, b) => {
-      const aSalary = a.type === 'job' ? a.salaryMaxLakhs : -1
-      const bSalary = b.type === 'job' ? b.salaryMaxLakhs : -1
-      return bSalary - aSalary
-    })
-  }
-  if (sortBy === 'rating') sorted.sort((a, b) => b.rating - a.rating)
-  return sorted
 }
 
 export default function JobSearchPage() {
@@ -89,34 +31,46 @@ export default function JobSearchPage() {
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
   const [page, setPage] = useState(1)
 
-  const filteredResults = useMemo(() => {
-    const filtered = opportunities.filter(
-      (item) =>
-        matchesQuery(item, query) &&
-        matchesLocation(item, location) &&
-        matchesFilters(item, filters),
-    )
-    return sortOpportunities(filtered, sortBy)
-  }, [query, location, filters, sortBy])
+  const [jobs, setJobs] = useState<DisplayJob[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const typeCounts = useMemo(() => {
-    return opportunities.reduce(
-      (counts, item) => {
-        counts[item.type] += 1
-        return counts
-      },
-      { job: 0, partnership: 0, community: 0 } as Record<Opportunity['type'], number>,
-    )
-  }, [])
+  useEffect(() => {
+    if (!hasSearched) return
+    const timeoutId = setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      jobsApi
+        .search({
+          q: query.trim() || undefined,
+          location: location.trim() || undefined,
+          level: [...filters.levels].map(experienceLevelToBackend),
+          mode: [...filters.modes].map(workModeToBackend),
+          minSalaryLakhs:
+            filters.minSalaryLakhs > MIN_SALARY_LAKHS ? filters.minSalaryLakhs : undefined,
+          sort: sortBy,
+        })
+        .then((results) => {
+          setJobs(results.map(toDisplayJob))
+          setPage(1)
+        })
+        .catch((caught) => {
+          setError(
+            caught instanceof ApiError ? caught.message : 'Something went wrong loading jobs.',
+          )
+        })
+        .finally(() => setLoading(false))
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [hasSearched, query, location, filters, sortBy])
 
-  const pageCount = Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
-  const pageResults = filteredResults.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const pageResults = jobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   function runSearch() {
     if (query.trim() || location.trim()) {
       setHasSearched(true)
-      setPage(1)
     }
   }
 
@@ -128,12 +82,6 @@ export default function JobSearchPage() {
   function searchTrendingSkill(skill: string) {
     setQuery(skill)
     setHasSearched(true)
-    setPage(1)
-  }
-
-  function handleFilterChange(next: FilterState) {
-    setFilters(next)
-    setPage(1)
   }
 
   return (
@@ -211,8 +159,7 @@ export default function JobSearchPage() {
           </div>
           <h2 className="mb-2 text-[19px] font-extrabold text-ink">Start your search</h2>
           <p className="mb-6 text-[14.5px] leading-[1.6] text-slate">
-            Enter a job title, skill, or keyword above — we'll surface matching jobs, startup
-            partnerships, and community roles together.
+            Enter a job title, skill, or keyword above — we&rsquo;ll surface matching jobs.
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             {TRENDING_SKILLS.map((skill) => (
@@ -230,18 +177,19 @@ export default function JobSearchPage() {
       ) : (
         <div className="search:grid-cols-[260px_1fr] mx-auto grid max-w-[1280px] grid-cols-1 gap-6 px-6 py-7 pb-16">
           <aside className="search:block hidden">
-            <FilterSidebar
-              filters={filters}
-              onChange={handleFilterChange}
-              typeCounts={typeCounts}
-            />
+            <FilterSidebar filters={filters} onChange={setFilters} />
           </aside>
 
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
               <div className="text-[15px] text-slate">
-                Showing <strong className="text-ink">{filteredResults.length}</strong> jobs,
-                partnerships & community roles for you
+                {loading ? (
+                  'Searching…'
+                ) : (
+                  <>
+                    Showing <strong className="text-ink">{jobs.length}</strong> jobs for you
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[13.5px] text-fog">Sort by</span>
@@ -259,15 +207,19 @@ export default function JobSearchPage() {
               </div>
             </div>
 
-            {filteredResults.length === 0 ? (
+            {error ? (
+              <div className="rounded-card border border-danger/30 bg-[#FDECEC] p-10 text-center text-sm text-danger">
+                {error}
+              </div>
+            ) : !loading && jobs.length === 0 ? (
               <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-                No results match your filters. Try clearing some filters or searching a different
+                No jobs match your filters. Try clearing some filters or searching a different
                 keyword.
               </div>
             ) : (
               <div className="flex flex-col gap-3.5">
-                {pageResults.map((item) => (
-                  <ResultCard key={item.id} opportunity={item} />
+                {pageResults.map((job) => (
+                  <ResultCard key={job.id} job={job} />
                 ))}
               </div>
             )}

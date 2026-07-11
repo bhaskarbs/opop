@@ -4,6 +4,7 @@ import com.openopportunity.auth.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,6 +37,19 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/logout")
                         .permitAll()
+                        // /mine must be declared before the general GET /api/jobs/** permitAll
+                        // rule below — authorizeHttpRequests matches in declaration order, and
+                        // /api/jobs/mine would otherwise also match that broader pattern.
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/mine")
+                        .hasRole("COMPANY")
+                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/*")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/jobs")
+                        .hasRole("COMPANY")
+                        .requestMatchers(HttpMethod.PUT, "/api/jobs/*")
+                        .hasRole("COMPANY")
+                        .requestMatchers(HttpMethod.DELETE, "/api/jobs/*")
+                        .hasRole("COMPANY")
                         .anyRequest()
                         .authenticated())
                 // Plain 401 for missing/invalid auth on protected routes, matching REST API
