@@ -8,3 +8,34 @@ variable "region" {
   type        = string
   default     = "us-central1"
 }
+
+variable "backend_image" {
+  description = <<-EOT
+    Full Artifact Registry image reference for the backend, e.g.
+    us-central1-docker.pkg.dev/<project_id>/openopportunity/backend:<tag>.
+    Must already be pushed before the first `terraform apply` — see infra/README.md
+    for the one-time manual build+push (Step 22 automates this via CI).
+  EOT
+  type        = string
+}
+
+variable "admin_seed_email" {
+  description = "Email for the one bootstrap admin account seeded on backend startup."
+  type        = string
+  default     = "admin@openopportunity.com"
+}
+
+variable "frontend_origin" {
+  description = <<-EOT
+    Origin the backend should accept CORS requests from. Placeholder until Step 21
+    stands up the real Cloud Storage/CDN frontend URL and updates this.
+  EOT
+  type        = string
+  default     = "http://localhost:5173"
+}
+
+variable "sql_deletion_protection" {
+  description = "Set false only when you actually intend to let `terraform destroy` drop the database."
+  type        = bool
+  default     = true
+}
