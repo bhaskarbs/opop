@@ -5,6 +5,7 @@ import com.openopportunity.auth.UserRepository;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSummary;
+import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import java.math.BigDecimal;
@@ -61,6 +62,7 @@ public class JobService {
 
     @Transactional
     public JobDetail create(UUID companyId, JobRequest request) {
+        requireClientSettableStatus(request.status());
         User company = userRepository.findById(companyId).orElseThrow();
         Job job = new Job(
                 companyId,
@@ -84,6 +86,7 @@ public class JobService {
 
     @Transactional
     public JobDetail update(UUID id, UUID companyId, JobRequest request) {
+        requireClientSettableStatus(request.status());
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         requireOwner(job, companyId);
         job.update(
@@ -109,6 +112,35 @@ public class JobService {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         requireOwner(job, companyId);
         jobRepository.delete(job);
+    }
+
+    @Transactional(readOnly = true)
+    public List<JobSummary> getPending() {
+        return jobRepository.findByStatusOrderByCreatedAtDesc(JobStatus.PENDING_APPROVAL).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Transactional
+    public JobDetail approve(UUID id) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        job.approve();
+        jobRepository.save(job);
+        return toDetail(job);
+    }
+
+    @Transactional
+    public JobDetail reject(UUID id) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        job.reject();
+        jobRepository.save(job);
+        return toDetail(job);
+    }
+
+    private void requireClientSettableStatus(JobStatus status) {
+        if (status == JobStatus.ACTIVE || status == JobStatus.REJECTED) {
+            throw new InvalidJobStatusTransitionException();
+        }
     }
 
     private void requireOwner(Job job, UUID companyId) {

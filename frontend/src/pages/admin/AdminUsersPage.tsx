@@ -1,175 +1,96 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { ApiError } from '../../lib/apiClient'
+import { adminApi, type AdminUserRole, type AdminUserSummary } from '../../lib/adminApi'
 
 type Tab = 'candidates' | 'companies'
 
-interface CandidateUser {
-  name: string
-  initial: string
-  avatarColorClass: string
-  email: string
-  focus: string
-  joined: string
-  status: 'Active' | 'Pending verification' | 'Suspended'
+const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
+
+function colorForName(name: string): string {
+  const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return AVATAR_COLOR_CLASSES[hash % AVATAR_COLOR_CLASSES.length]
 }
 
-interface CompanyUser {
-  name: string
-  sector: string
-  cin: string
-  date: string
-  status: 'Verified' | 'Pending review' | 'Suspended'
+function formatJoinedLabel(createdAt: string): string {
+  return new Date(createdAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
-const CANDIDATES: CandidateUser[] = [
-  {
-    name: 'Rohan Mehta',
-    initial: 'R',
-    avatarColorClass: 'bg-primary',
-    email: 'rohan@email.com',
-    focus: 'Jobs + Partnership',
-    joined: 'Jun 12, 2026',
-    status: 'Active',
-  },
-  {
-    name: 'Anita Sharma',
-    initial: 'A',
-    avatarColorClass: 'bg-teal',
-    email: 'anita@email.com',
-    focus: 'Jobs',
-    joined: 'May 28, 2026',
-    status: 'Active',
-  },
-  {
-    name: 'Karan Patel',
-    initial: 'K',
-    avatarColorClass: 'bg-amber',
-    email: 'karan@email.com',
-    focus: 'Community',
-    joined: 'May 20, 2026',
-    status: 'Active',
-  },
-  {
-    name: 'Meera Iyer',
-    initial: 'M',
-    avatarColorClass: 'bg-primary',
-    email: 'meera@email.com',
-    focus: 'Partnership',
-    joined: 'Apr 30, 2026',
-    status: 'Pending verification',
-  },
-  {
-    name: 'Vikram Rao',
-    initial: 'V',
-    avatarColorClass: 'bg-teal',
-    email: 'vikram@email.com',
-    focus: 'Jobs',
-    joined: 'Apr 14, 2026',
-    status: 'Suspended',
-  },
-  {
-    name: 'Divya Nair',
-    initial: 'D',
-    avatarColorClass: 'bg-amber',
-    email: 'divya@email.com',
-    focus: 'Jobs + Community',
-    joined: 'Mar 22, 2026',
-    status: 'Active',
-  },
-]
-
-const COMPANIES: CompanyUser[] = [
-  {
-    name: 'Vertex Robotics Pvt. Ltd.',
-    sector: 'Deep Tech',
-    cin: 'U74999KA2021PTC145632',
-    date: 'Jul 6, 2026',
-    status: 'Verified',
-  },
-  {
-    name: 'Lumen Health Solutions',
-    sector: 'Healthtech',
-    cin: 'U85100MH2020PTC338211',
-    date: 'Jul 5, 2026',
-    status: 'Verified',
-  },
-  {
-    name: 'Sahaay Finance Ltd.',
-    sector: 'Fintech',
-    cin: 'U65999DL2022PTC401987',
-    date: 'Jul 4, 2026',
-    status: 'Pending review',
-  },
-  {
-    name: 'Greenline Logistics',
-    sector: 'Climate Tech',
-    cin: 'U60232KA2019PTC121044',
-    date: 'Jul 3, 2026',
-    status: 'Verified',
-  },
-  {
-    name: 'Northstar EdTech',
-    sector: 'Education',
-    cin: 'U80903TN2023PTC167754',
-    date: 'Jul 2, 2026',
-    status: 'Pending review',
-  },
-  {
-    name: 'Kinship Consumer',
-    sector: 'D2C',
-    cin: 'U74999MH2021PTC298765',
-    date: 'Jun 28, 2026',
-    status: 'Suspended',
-  },
-]
-
-const CANDIDATE_STATUS_CLASS: Record<CandidateUser['status'], string> = {
-  Active: 'bg-teal-tint text-teal',
-  'Pending verification': 'bg-amber-tint text-amber',
-  Suspended: 'bg-danger/10 text-danger',
+function displayStatus(user: AdminUserSummary): string {
+  if (user.accountStatus === 'SUSPENDED') return 'Suspended'
+  if (user.role === 'COMPANY') {
+    if (user.verificationStatus === 'VERIFIED') return 'Verified'
+    if (user.verificationStatus === 'REJECTED') return 'Rejected'
+    return 'Pending review'
+  }
+  return 'Active'
 }
 
-const COMPANY_STATUS_CLASS: Record<CompanyUser['status'], string> = {
-  Verified: 'bg-teal-tint text-teal',
-  'Pending review': 'bg-amber-tint text-amber',
-  Suspended: 'bg-danger/10 text-danger',
+function statusClass(status: string): string {
+  if (status === 'Active' || status === 'Verified') return 'bg-teal-tint text-teal'
+  if (status === 'Suspended' || status === 'Rejected') return 'bg-danger/10 text-danger'
+  return 'bg-amber-tint text-amber'
 }
 
 export default function AdminUsersPage() {
   const [tab, setTab] = useState<Tab>('candidates')
   const [query, setQuery] = useState('')
-  const [status, setStatus] = useState('All statuses')
+  const [users, setUsers] = useState<AdminUserSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [actioningId, setActioningId] = useState<string | null>(null)
 
-  const statusOptions =
-    tab === 'candidates'
-      ? ['All statuses', 'Active', 'Pending verification', 'Suspended']
-      : ['All statuses', 'Verified', 'Pending review', 'Suspended']
+  const role: AdminUserRole = tab === 'candidates' ? 'CANDIDATE' : 'COMPANY'
 
-  const filteredCandidates = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return CANDIDATES.filter((candidate) => {
-      if (
-        q &&
-        !candidate.name.toLowerCase().includes(q) &&
-        !candidate.email.toLowerCase().includes(q)
-      )
-        return false
-      if (status !== 'All statuses' && candidate.status !== status) return false
-      return true
-    })
-  }, [query, status])
+  useEffect(() => {
+    let cancelled = false
+    const timeoutId = setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      adminApi
+        .users({ role, q: query.trim() || undefined })
+        .then((result) => {
+          if (!cancelled) setUsers(result)
+        })
+        .catch((caught) => {
+          if (!cancelled) {
+            setError(caught instanceof ApiError ? caught.message : 'Could not load users.')
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(timeoutId)
+    }
+  }, [role, query])
 
-  const filteredCompanies = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return COMPANIES.filter((company) => {
-      if (q && !company.name.toLowerCase().includes(q)) return false
-      if (status !== 'All statuses' && company.status !== status) return false
-      return true
-    })
-  }, [query, status])
+  async function handleToggleStatus(user: AdminUserSummary) {
+    if (user.accountStatus === 'ACTIVE') {
+      if (!window.confirm(`Suspend ${user.fullName}'s account?`)) return
+    }
+    setActioningId(user.id)
+    try {
+      const updated: AdminUserSummary =
+        user.accountStatus === 'ACTIVE'
+          ? await adminApi.suspendUser(user.id)
+          : await adminApi.reactivateUser(user.id)
+      setUsers((prev) => prev.map((existing) => (existing.id === user.id ? updated : existing)))
+    } catch {
+      // Best-effort — the row simply keeps its current status if the call fails.
+    } finally {
+      setActioningId(null)
+    }
+  }
 
   function switchTab(next: Tab) {
     setTab(next)
-    setStatus('All statuses')
+    setQuery('')
   }
 
   return (
@@ -227,92 +148,61 @@ export default function AdminUsersPage() {
             className="w-full text-[13.5px] text-ink outline-none"
           />
         </div>
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          className="rounded-lg border border-border px-3 py-2.5 text-[13.5px] text-ink"
-        >
-          {statusOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {tab === 'candidates' ? (
-        <div className="flex flex-col gap-3">
-          {filteredCandidates.map((candidate) => (
-            <div
-              key={candidate.email}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-5 py-4"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <span
-                  className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white ${candidate.avatarColorClass}`}
-                >
-                  {candidate.initial}
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[14.5px] font-bold text-ink">{candidate.name}</div>
-                  <div className="text-[13px] text-slate">
-                    {candidate.email} · {candidate.focus} · Joined {candidate.joined}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${CANDIDATE_STATUS_CLASS[candidate.status]}`}
-                >
-                  {candidate.status}
-                </span>
-                <button
-                  type="button"
-                  className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
-                >
-                  Manage
-                </button>
-              </div>
-            </div>
-          ))}
-          {filteredCandidates.length === 0 && (
-            <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-              No candidates match your search.
-            </div>
-          )}
+      {error && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
+          Loading…
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {filteredCompanies.map((company) => (
-            <div
-              key={company.name}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-5 py-4"
-            >
-              <div className="min-w-0">
-                <div className="text-[14.5px] font-bold text-ink">{company.name}</div>
-                <div className="text-[13px] text-slate">
-                  {company.sector} · <span className="font-mono text-[12.5px]">{company.cin}</span>{' '}
-                  · Registered {company.date}
+          {users.map((user) => {
+            const status = displayStatus(user)
+            return (
+              <div
+                key={user.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-5 py-4"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white ${colorForName(user.fullName)}`}
+                  >
+                    {user.fullName.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[14.5px] font-bold text-ink">{user.fullName}</div>
+                    <div className="text-[13px] text-slate">
+                      {user.email} · Joined {formatJoinedLabel(user.createdAt)}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${statusClass(status)}`}
+                  >
+                    {status}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={actioningId === user.id}
+                    onClick={() => handleToggleStatus(user)}
+                    className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                  >
+                    {user.accountStatus === 'ACTIVE' ? 'Suspend' : 'Reactivate'}
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${COMPANY_STATUS_CLASS[company.status]}`}
-                >
-                  {company.status}
-                </span>
-                <button
-                  type="button"
-                  className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
-                >
-                  Manage
-                </button>
-              </div>
-            </div>
-          ))}
-          {filteredCompanies.length === 0 && (
+            )
+          })}
+          {users.length === 0 && (
             <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-              No companies match your search.
+              No {tab} match your search.
             </div>
           )}
         </div>

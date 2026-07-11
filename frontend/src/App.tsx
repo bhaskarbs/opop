@@ -14,6 +14,7 @@ import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import CompanyLoginPage from './pages/auth/CompanyLoginPage'
 import CompanyRegisterPage from './pages/auth/CompanyRegisterPage'
+import AdminLoginPage from './pages/auth/AdminLoginPage'
 import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage'
 import CandidateProfilePage from './pages/candidate/CandidateProfilePage'
 import AddMissingDetailsPage from './pages/candidate/AddMissingDetailsPage'
@@ -60,6 +61,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/company/login" element={<CompanyLoginPage />} />
             <Route path="/company/register" element={<CompanyRegisterPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
           </Route>
 
           <Route element={<RequireAuth role="CANDIDATE" />}>
@@ -81,14 +83,14 @@ function App() {
             </Route>
           </Route>
 
-          {/* No admin auth flow exists yet (backend RBAC lands in a later roadmap step) —
-              left unguarded for now, matching current behavior. */}
-          <Route element={<AuthenticatedLayout headerVariant="admin" />}>
-            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/admin/job-approvals" element={<AdminJobApprovalsPage />} />
-            <Route path="/admin/company-approvals" element={<AdminCompanyApprovalsPage />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/admin/reports" element={<AdminReportsPage />} />
+          <Route element={<RequireAuth role="ADMIN" />}>
+            <Route element={<AuthenticatedLayout headerVariant="admin" />}>
+              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin/job-approvals" element={<AdminJobApprovalsPage />} />
+              <Route path="/admin/company-approvals" element={<AdminCompanyApprovalsPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/reports" element={<AdminReportsPage />} />
+            </Route>
           </Route>
 
           <Route path="/dev/style-guide" element={<StyleGuidePage />} />

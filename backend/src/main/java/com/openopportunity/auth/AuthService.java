@@ -5,9 +5,11 @@ import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.dto.UserSummary;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.auth.exception.SuspendedAccountException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,6 +28,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final CompanyProfileRepository companyProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final long refreshTokenExpiryDays;
@@ -34,11 +37,13 @@ public class AuthService {
     public AuthService(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
+            CompanyProfileRepository companyProfileRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.companyProfileRepository = companyProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
@@ -53,9 +58,27 @@ public class AuthService {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyRegisteredException(request.email());
         }
+        if (role == UserRole.COMPANY) {
+            requireCompanyProfileFields(request);
+        }
+
         User user =
                 new User(request.email(), passwordEncoder.encode(request.password()), request.fullName(), role);
         userRepository.save(user);
+
+        if (role == UserRole.COMPANY) {
+            CompanyProfile profile = new CompanyProfile(
+                    user.getId(),
+                    request.entityType(),
+                    request.cin(),
+                    request.gstin(),
+                    request.pan(),
+                    request.industry(),
+                    request.address(),
+                    request.signatoryName());
+            companyProfileRepository.save(profile);
+        }
+
         return issueTokens(user);
     }
 
@@ -64,6 +87,9 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email()).orElseThrow(InvalidCredentialsException::new);
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
+        }
+        if (user.isSuspended()) {
+            throw new SuspendedAccountException();
         }
         return issueTokens(user);
     }
@@ -121,6 +147,23 @@ public class AuthService {
             throw new InvalidRegistrationRoleException(rawRole);
         }
         return role;
+    }
+
+    private void requireCompanyProfileFields(RegisterRequest request) {
+        boolean complete = isNotBlank(request.entityType())
+                && isNotBlank(request.cin())
+                && isNotBlank(request.gstin())
+                && isNotBlank(request.pan())
+                && isNotBlank(request.industry())
+                && isNotBlank(request.address())
+                && isNotBlank(request.signatoryName());
+        if (!complete) {
+            throw new IncompleteCompanyProfileException();
+        }
+    }
+
+    private static boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     private String generateRawToken() {

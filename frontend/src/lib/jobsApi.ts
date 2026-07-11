@@ -4,7 +4,9 @@ import { request } from './apiClient'
 export type BackendEmploymentType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP'
 export type BackendExperienceLevel = 'ENTRY_LEVEL' | 'MID_LEVEL' | 'SENIOR' | 'LEADERSHIP'
 export type BackendWorkMode = 'REMOTE' | 'HYBRID' | 'ON_SITE'
-export type BackendJobStatus = 'ACTIVE' | 'DRAFT' | 'CLOSED'
+// ACTIVE and REJECTED are admin-only transitions (see Step 18's admin job-approval flow) —
+// a company can only ever request DRAFT or PENDING_APPROVAL when creating/updating a job.
+export type BackendJobStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED' | 'CLOSED'
 
 export interface JobSummary {
   id: string

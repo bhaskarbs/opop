@@ -10,6 +10,7 @@ import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
+import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import java.math.BigDecimal;
@@ -61,11 +62,21 @@ class JobServiceTest {
         User company = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
         when(userRepository.findById(companyId)).thenReturn(Optional.of(company));
 
-        JobDetail detail = jobService.create(companyId, sampleRequest(JobStatus.ACTIVE));
+        JobDetail detail = jobService.create(companyId, sampleRequest(JobStatus.PENDING_APPROVAL));
 
         assertThat(detail.companyName()).isEqualTo("Vertex Robotics");
         assertThat(detail.applicantCount()).isZero();
-        assertThat(detail.status()).isEqualTo(JobStatus.ACTIVE);
+        assertThat(detail.status()).isEqualTo(JobStatus.PENDING_APPROVAL);
+    }
+
+    @Test
+    void createRejectsClientSuppliedActiveOrRejectedStatus() {
+        UUID companyId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.ACTIVE)))
+                .isInstanceOf(InvalidJobStatusTransitionException.class);
+        assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.REJECTED)))
+                .isInstanceOf(InvalidJobStatusTransitionException.class);
     }
 
     @Test
@@ -90,7 +101,8 @@ class JobServiceTest {
                 JobStatus.ACTIVE);
         when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.update(job.getId(), otherCompanyId, sampleRequest(JobStatus.ACTIVE)))
+        assertThatThrownBy(() ->
+                        jobService.update(job.getId(), otherCompanyId, sampleRequest(JobStatus.PENDING_APPROVAL)))
                 .isInstanceOf(JobAccessDeniedException.class);
     }
 
@@ -98,7 +110,8 @@ class JobServiceTest {
     void updateRejectsUnknownJob() {
         when(jobRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> jobService.update(UUID.randomUUID(), UUID.randomUUID(), sampleRequest(JobStatus.ACTIVE)))
+        assertThatThrownBy(() -> jobService.update(
+                        UUID.randomUUID(), UUID.randomUUID(), sampleRequest(JobStatus.PENDING_APPROVAL)))
                 .isInstanceOf(JobNotFoundException.class);
     }
 

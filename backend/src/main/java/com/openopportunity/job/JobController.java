@@ -46,6 +46,21 @@ public class JobController {
         return jobService.getMine(currentUserId());
     }
 
+    @GetMapping("/pending")
+    public List<JobSummary> pending() {
+        return jobService.getPending();
+    }
+
+    @PostMapping("/{id}/approve")
+    public JobDetail approve(@PathVariable UUID id) {
+        return jobService.approve(id);
+    }
+
+    @PostMapping("/{id}/reject")
+    public JobDetail reject(@PathVariable UUID id) {
+        return jobService.reject(id);
+    }
+
     @GetMapping("/{id}")
     public JobDetail detail(@PathVariable UUID id) {
         return jobService.getActiveDetail(id);

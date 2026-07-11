@@ -37,11 +37,16 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/logout")
                         .permitAll()
-                        // /mine must be declared before the general GET /api/jobs/** permitAll
-                        // rule below — authorizeHttpRequests matches in declaration order, and
-                        // /api/jobs/mine would otherwise also match that broader pattern.
+                        // /mine and /pending must be declared before the general GET
+                        // /api/jobs/** permitAll rule below — authorizeHttpRequests matches in
+                        // declaration order, and both would otherwise also match that broader
+                        // single-segment pattern.
                         .requestMatchers(HttpMethod.GET, "/api/jobs/mine")
                         .hasRole("COMPANY")
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/pending")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/*/approve", "/api/jobs/*/reject")
+                        .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/*")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/jobs")
@@ -50,6 +55,8 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/*")
                         .hasRole("COMPANY")
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/applications", "/api/applications/*/withdraw")
                         .hasRole("CANDIDATE")
                         .requestMatchers(HttpMethod.GET, "/api/applications/mine")

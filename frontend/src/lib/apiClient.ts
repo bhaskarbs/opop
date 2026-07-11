@@ -68,6 +68,15 @@ export interface RegisterPayload {
   password: string
   fullName: string
   role: 'candidate' | 'company'
+  // Required by the backend when role is 'company' (verified by an admin — see Step 18);
+  // ignored otherwise.
+  entityType?: string
+  cin?: string
+  gstin?: string
+  pan?: string
+  industry?: string
+  address?: string
+  signatoryName?: string
 }
 
 export interface LoginPayload {

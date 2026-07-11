@@ -32,6 +32,10 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_status", nullable = false, length = 10)
+    private AccountStatus accountStatus;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -48,6 +52,7 @@ public class User {
         this.passwordHash = passwordHash;
         this.fullName = fullName;
         this.role = role;
+        this.accountStatus = AccountStatus.ACTIVE;
     }
 
     @PrePersist
@@ -60,6 +65,18 @@ public class User {
     @PreUpdate
     void onUpdate() {
         updatedAt = Instant.now();
+    }
+
+    public boolean isSuspended() {
+        return accountStatus == AccountStatus.SUSPENDED;
+    }
+
+    public void suspend() {
+        this.accountStatus = AccountStatus.SUSPENDED;
+    }
+
+    public void reactivate() {
+        this.accountStatus = AccountStatus.ACTIVE;
     }
 
     public UUID getId() {
@@ -80,6 +97,10 @@ public class User {
 
     public UserRole getRole() {
         return role;
+    }
+
+    public AccountStatus getAccountStatus() {
+        return accountStatus;
     }
 
     public Instant getCreatedAt() {

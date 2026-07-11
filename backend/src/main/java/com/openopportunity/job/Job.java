@@ -73,7 +73,7 @@ public class Job {
     private List<String> skills;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 20)
     private JobStatus status;
 
     @Column(name = "applicant_count", nullable = false)
@@ -151,6 +151,14 @@ public class Job {
         this.requirements = requirements;
         this.skills = skills;
         this.status = status;
+    }
+
+    public void approve() {
+        this.status = JobStatus.ACTIVE;
+    }
+
+    public void reject() {
+        this.status = JobStatus.REJECTED;
     }
 
     public void incrementApplicantCount() {

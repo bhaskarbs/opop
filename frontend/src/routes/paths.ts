@@ -24,6 +24,7 @@ export const ROUTES = {
   companySearchCandidates: '/company/search-candidates',
   companySeminars: '/company/seminars',
 
+  adminLogin: '/admin/login',
   adminDashboard: '/admin/dashboard',
   adminJobApprovals: '/admin/job-approvals',
   adminCompanyApprovals: '/admin/company-approvals',

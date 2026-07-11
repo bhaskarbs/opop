@@ -67,15 +67,21 @@ export default function CompanyRegisterPage() {
   async function onSubmit(values: CompanyRegisterFormValues) {
     setFormError(null)
     try {
-      // entityType/cin/gstin/pan/industry/address/signatoryName/certificate aren't accepted
-      // by the Auth service (Section 6.1: Auth Service only owns authentication — MCA
-      // verification and richer company profile data are a separate, not-yet-built service),
-      // so only these three fields are sent.
+      // certificate (the uploaded PDF) has nowhere to go yet — file upload/storage is a
+      // separate, not-yet-built service — but the rest of these fields now feed the Step 18
+      // admin company-approval queue, so they're sent for real.
       const response = await authApi.register({
         email: values.workEmail,
         password: values.password,
         fullName: values.companyName,
         role: 'company',
+        entityType: values.entityType,
+        cin: values.cin,
+        gstin: values.gstin,
+        pan: values.pan,
+        industry: values.industry,
+        address: values.address,
+        signatoryName: values.signatoryName,
       })
       setSession(response.accessToken, response.user)
       navigate(ROUTES.companyDashboard)

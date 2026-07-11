@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificationExecutor<Job> {
 
     List<Job> findByCompanyIdOrderByCreatedAtDesc(UUID companyId);
+
+    List<Job> findByStatusOrderByCreatedAtDesc(JobStatus status);
 }
