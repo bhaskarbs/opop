@@ -153,6 +153,16 @@ public class Job {
         this.status = status;
     }
 
+    public void incrementApplicantCount() {
+        this.applicantCount++;
+    }
+
+    public void decrementApplicantCount() {
+        if (this.applicantCount > 0) {
+            this.applicantCount--;
+        }
+    }
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();

@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Card } from '../components/ui'
+import { ApiError } from '../lib/apiClient'
+import { applicationsApi } from '../lib/applicationsApi'
 import { jobsApi, type JobDetail, type JobSummary } from '../lib/jobsApi'
 import { workModeFromBackend } from '../lib/jobEnums'
 import { ROUTES } from '../routes/paths'
+import { useAuthStore } from '../stores/authStore'
 
 function formatSalary(minLakhs: number | null, maxLakhs: number | null): string {
   if (minLakhs == null && maxLakhs == null) return 'Salary not disclosed'
@@ -47,6 +50,9 @@ function NotFound() {
 
 export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>()
+  const navigate = useNavigate()
+  const authStatus = useAuthStore((state) => state.status)
+  const user = useAuthStore((state) => state.user)
 
   const [job, setJob] = useState<JobDetail | null>(null)
   const [similarJobs, setSimilarJobs] = useState<JobSummary[]>([])
@@ -54,7 +60,9 @@ export default function JobDetailPage() {
   const [notFound, setNotFound] = useState(false)
 
   const [saved, setSaved] = useState(false)
-  const [applied, setApplied] = useState(false)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [applying, setApplying] = useState(false)
+  const [applyError, setApplyError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!jobId) return
@@ -71,6 +79,15 @@ export default function JobDetailPage() {
         if (cancelled) return
         setJob(detail)
         setSimilarJobs(findSimilarJobs(detail, allJobs))
+
+        if (authStatus === 'authenticated' && user?.role === 'CANDIDATE') {
+          const mine = await applicationsApi.mine()
+          if (cancelled) return
+          const existing = mine.find(
+            (application) => application.jobId === jobId && application.status !== 'WITHDRAWN',
+          )
+          setApplicationId(existing?.id ?? null)
+        }
       } catch {
         if (!cancelled) setNotFound(true)
       } finally {
@@ -82,7 +99,34 @@ export default function JobDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [jobId])
+  }, [jobId, authStatus, user?.role])
+
+  async function handleApplyClick() {
+    if (!job) return
+    if (authStatus !== 'authenticated') {
+      navigate(ROUTES.login)
+      return
+    }
+    setApplyError(null)
+    setApplying(true)
+    try {
+      if (applicationId) {
+        await applicationsApi.withdraw(applicationId)
+        setApplicationId(null)
+        setJob((prev) =>
+          prev ? { ...prev, applicantCount: Math.max(0, prev.applicantCount - 1) } : prev,
+        )
+      } else {
+        const created = await applicationsApi.apply(job.id)
+        setApplicationId(created.id)
+        setJob((prev) => (prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev))
+      }
+    } catch (error) {
+      setApplyError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+    } finally {
+      setApplying(false)
+    }
+  }
 
   if (loading) {
     return <main className="mx-auto max-w-[640px] px-6 py-24 text-center text-slate">Loading…</main>
@@ -137,14 +181,29 @@ export default function JobDetailPage() {
                 </button>
                 <button
                   type="button"
-                  disabled={applied}
-                  onClick={() => setApplied(true)}
-                  className="rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50"
+                  disabled={applying}
+                  onClick={handleApplyClick}
+                  className={
+                    applicationId
+                      ? 'rounded-control border border-border bg-surface px-6 py-2.5 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-60'
+                      : 'rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50'
+                  }
                 >
-                  {applied ? 'Applied ✓' : 'Apply now'}
+                  {applying
+                    ? applicationId
+                      ? 'Withdrawing…'
+                      : 'Applying…'
+                    : applicationId
+                      ? 'Withdraw application'
+                      : 'Apply now'}
                 </button>
               </div>
             </div>
+            {applyError && (
+              <div className="mt-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+                {applyError}
+              </div>
+            )}
             <div className="mt-5 flex flex-wrap gap-2 border-t border-[#F0F1F3] pt-4 text-[13.5px] text-fog">
               <span>Posted {formatPostedLabel(job.createdAt)}</span>
               <span>·</span>

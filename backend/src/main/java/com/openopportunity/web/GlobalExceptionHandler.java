@@ -4,6 +4,9 @@ import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.application.exception.ApplicationAccessDeniedException;
+import com.openopportunity.application.exception.ApplicationNotFoundException;
+import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import java.time.Instant;
@@ -45,6 +48,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(JobAccessDeniedException.class)
     public ResponseEntity<ApiError> handleJobAccessDenied(JobAccessDeniedException ex) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(ApplicationNotFoundException.class)
+    public ResponseEntity<ApiError> handleApplicationNotFound(ApplicationNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(ApplicationAccessDeniedException.class)
+    public ResponseEntity<ApiError> handleApplicationAccessDenied(ApplicationAccessDeniedException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(DuplicateApplicationException.class)
+    public ResponseEntity<ApiError> handleDuplicateApplication(DuplicateApplicationException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
