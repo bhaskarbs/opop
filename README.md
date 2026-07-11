@@ -88,3 +88,9 @@ password: AdminPass123!
 
 Sign in at `/admin/login` in the frontend. Change these via `APP_ADMIN_SEED_EMAIL` /
 `APP_ADMIN_SEED_PASSWORD` env vars before first startup in any real deployment.
+
+## Cloud deploy
+
+Terraform config for a minimal GCP deploy (Cloud Run + Cloud SQL + Cloud Storage/CDN) lives in `infra/` —
+see [`infra/README.md`](infra/README.md) for setup and [`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md)
+("Phase 2 — Cloud infra") for the step-by-step build plan.

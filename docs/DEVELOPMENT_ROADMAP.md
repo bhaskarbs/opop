@@ -155,15 +155,76 @@ git checkout main
 
 ---
 
-## Later phases (revisit once Phase 0–1 are done)
+## Phase 2 — Cloud infra (minimal GCP deploy)
 
-These map to Phases 2–4 in `docs/OpenOpportunity_Architecture.docx` and aren't broken into steps yet
-because priorities may shift once the local app is working:
+The architecture doc's cloud section (Section 9–10: GKE, AlloyDB, Confluent Kafka, Argo CD, multi-region,
+Cloud Armor, Elastic Cloud) is scoped for enterprise scale. This phase deliberately does **not** build
+that yet — it stands up the smallest real GCP footprint that gets the app live on the internet: Cloud Run
+(backend container) + Cloud SQL for Postgres + Cloud Storage/CDN (frontend static build), provisioned with
+Terraform from the start so later phases can extend toward the full target architecture instead of
+rewriting it. GKE, Kafka, Elastic, Argo CD, multi-region, and Cloud Armor stay deferred to a later
+"Hardening / scale-up" phase, revisited only if/when real traffic or requirements demand it.
+
+### One-time GCP setup (do this first, in your own Terminal — not in Claude)
+
+Same reasoning as the git setup at the top of this file: creating a GCP project, enabling billing, and the
+first `terraform apply` all need an interactive login/billing decision only you can make, so they run in
+your Terminal, not Claude's sandbox.
+
+```bash
+# Install the gcloud CLI first if you don't have it: https://cloud.google.com/sdk/docs/install
+gcloud auth login
+gcloud auth application-default login   # lets Terraform use your user credentials locally
+
+# Project id must be globally unique — adjust if taken
+gcloud projects create openopportunity-app --name="OpenOpportunity"
+gcloud config set project openopportunity-app
+
+# List billing accounts and link one (required before any resource can be created)
+gcloud billing accounts list
+gcloud billing projects link openopportunity-app --billing-account=<BILLING_ACCOUNT_ID>
+
+# Minimum APIs needed for Terraform itself to run (Step 19 manages the rest declaratively)
+gcloud services enable cloudresourcemanager.googleapis.com serviceusage.googleapis.com iam.googleapis.com
+
+# GCS bucket to hold Terraform remote state (name must also be globally unique)
+gsutil mb -l us-central1 gs://openopportunity-tfstate
+gsutil versioning set on gs://openopportunity-tfstate
+
+# Install Terraform if you don't have it: https://developer.hashicorp.com/terraform/install
+```
+
+### Step 19 — Terraform foundation
+**Branch:** `feat/19-terraform-foundation`
+**Prompt:**
+> Set up a Terraform root config in `infra/` targeting the Google provider: remote state in the GCS bucket from the one-time setup, provider/version pinning, a `variables.tf` for `project_id`/`region`, and `google_project_service` resources declaratively enabling every API the next steps need (Cloud Run, Cloud SQL, Artifact Registry, Storage, Secret Manager, Compute). No billable compute/data resources yet — this step just proves the Terraform plumbing works end to end against the real project.
+
+### Step 20 — Backend on Cloud Run + Cloud SQL
+**Branch:** `feat/20-backend-cloud-run`
+**Prompt:**
+> Add a production Dockerfile for the Spring Boot backend (multi-stage build). Add Terraform resources for a Cloud SQL for PostgreSQL instance and a Cloud Run service running the backend image, with DB credentials in Secret Manager and the Cloud Run service connecting to Cloud SQL via the Cloud SQL Auth Proxy connector. Flyway migrations should run automatically against Cloud SQL on deploy, same as they do locally against Docker Postgres.
+
+### Step 21 — Frontend static hosting
+**Branch:** `feat/21-frontend-static-hosting`
+**Prompt:**
+> Add Terraform resources for a Cloud Storage bucket serving the Vite production build behind Cloud CDN. Keep the frontend and backend on their separate GCP-issued URLs for now (no custom domain/unified load balancer yet — that's a later step once a domain is in play); update the frontend's API base URL config and the backend CORS allow-list to point at each other's real URLs.
+
+### Step 22 — CI/CD pipeline
+**Branch:** `feat/22-cicd-pipeline`
+**Prompt:**
+> Add a GitHub Actions workflow that on merge to `main`: runs backend tests + frontend build/lint, builds and pushes the backend image to Artifact Registry, runs `terraform apply`, builds the frontend and syncs it to the Cloud Storage bucket, and invalidates the `index.html` CDN cache entry. Use Workload Identity Federation for GitHub Actions → GCP auth (no long-lived service account key checked in anywhere).
+
+---
+
+## Later phases (revisit once Phase 0–2 are done)
+
+These map to the remaining parts of Phases 2–4 in `docs/OpenOpportunity_Architecture.docx` and aren't
+broken into steps yet because priorities may shift once the app is live on minimal infra:
 
 - **Search & i18n** — Elastic Cloud multilingual search, react-i18next, locale routing, RTL support.
 - **Mobile** — pull the frontend into an Nx/Turborepo monorepo, add the React Native app, shared design tokens.
-- **Cloud infra** — Terraform for GCP (GKE, AlloyDB, Memorystore, Cloud Storage/CDN), CI/CD (GitHub Actions, Argo CD/Rollouts).
 - **Analytics** — RudderStack, Kafka, BigQuery/dbt, Looker, PostHog.
-- **Hardening** — multi-region, Cloud Armor, pen testing, observability (Prometheus/Grafana/Sentry).
+- **Hardening / scale-up** — GKE, AlloyDB, Confluent Kafka, Argo CD/Rollouts, multi-region, Cloud Armor,
+  observability (Prometheus/Grafana/Sentry) — the enterprise-scale pieces of Section 9–10 deferred above.
 
 When you're ready for one of these, ask and we'll break it into the same small-step format.
