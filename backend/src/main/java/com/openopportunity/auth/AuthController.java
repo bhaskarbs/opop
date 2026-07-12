@@ -29,14 +29,17 @@ public class AuthController {
     private final AuthService authService;
     private final UserRepository userRepository;
     private final boolean cookieSecure;
+    private final String cookieSameSite;
 
     public AuthController(
             AuthService authService,
             UserRepository userRepository,
-            @Value("${app.security.cookie-secure}") boolean cookieSecure) {
+            @Value("${app.security.cookie-secure}") boolean cookieSecure,
+            @Value("${app.security.cookie-same-site}") String cookieSameSite) {
         this.authService = authService;
         this.userRepository = userRepository;
         this.cookieSecure = cookieSecure;
+        this.cookieSameSite = cookieSameSite;
     }
 
     @PostMapping("/register")
@@ -62,7 +65,7 @@ public class AuthController {
         ResponseCookie expired = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path(REFRESH_COOKIE_PATH)
                 .maxAge(0)
                 .build();
@@ -81,7 +84,7 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, issued.rawRefreshToken())
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path(REFRESH_COOKIE_PATH)
                 .maxAge(issued.refreshTokenExpirySeconds())
                 .build();
