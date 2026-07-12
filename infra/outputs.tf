@@ -8,6 +8,16 @@ output "backend_url" {
   value       = google_cloud_run_v2_service.backend.uri
 }
 
+output "frontend_url" {
+  description = "Public HTTP URL of the deployed frontend (bare IP — no custom domain yet)."
+  value       = local.frontend_origin
+}
+
+output "frontend_bucket" {
+  description = "Cloud Storage bucket name to sync the frontend build into."
+  value       = google_storage_bucket.frontend.name
+}
+
 output "sql_connection_name" {
   description = "Cloud SQL instance connection name (project:region:instance), useful for cloud-sql-proxy/psql access."
   value       = google_sql_database_instance.main.connection_name

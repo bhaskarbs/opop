@@ -31,6 +31,26 @@ terraform apply
 API) and no other changes. The `enabled_apis` output lists what got turned on — check it against
 `gcloud services list --enabled` if you want a second source of truth.
 
+## Frontend deploy (Step 21)
+
+`terraform apply` provisions the bucket/CDN/load balancer but doesn't build or upload the frontend
+itself — Step 22 automates that via CI, but until then it's a manual build+sync, same reasoning as the
+manual backend image push in Step 20:
+
+```bash
+cd infra
+terraform output backend_url    # use this as VITE_API_BASE_URL below
+terraform output frontend_bucket
+
+cd ../frontend
+VITE_API_BASE_URL=<backend_url from above> npm run build --workspace=frontend
+gsutil -m rsync -r -d dist gs://<frontend_bucket from above>
+```
+
+`-d` deletes stale objects in the bucket that are no longer in `dist/` (safe here — the bucket only ever
+holds this build output). Then open `terraform output frontend_url` in a browser — it's a bare IP over
+plain HTTP for now (no custom domain yet, so no managed SSL cert to attach to the load balancer).
+
 ## Day-to-day
 
 ```bash

@@ -25,15 +25,6 @@ variable "admin_seed_email" {
   default     = "admin@openopportunity.com"
 }
 
-variable "frontend_origin" {
-  description = <<-EOT
-    Origin the backend should accept CORS requests from. Placeholder until Step 21
-    stands up the real Cloud Storage/CDN frontend URL and updates this.
-  EOT
-  type        = string
-  default     = "http://localhost:5173"
-}
-
 variable "sql_deletion_protection" {
   description = "Set false only when you actually intend to let `terraform destroy` drop the database."
   type        = bool

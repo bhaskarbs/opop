@@ -72,8 +72,16 @@ resource "google_cloud_run_v2_service" "backend" {
         value = "true"
       }
       env {
+        # Frontend (bare IP, this apply) and backend (*.run.app) are different sites,
+        # so the refresh cookie needs SameSite=None here — see the comment next to
+        # app.security.cookie-same-site in application.properties for why Lax (the
+        # local-dev default) silently breaks cross-site.
+        name  = "APP_SECURITY_COOKIE_SAME_SITE"
+        value = "None"
+      }
+      env {
         name  = "APP_CORS_ALLOWED_ORIGINS"
-        value = var.frontend_origin
+        value = local.frontend_origin
       }
 
       volume_mounts {
