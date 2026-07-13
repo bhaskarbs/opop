@@ -33,17 +33,7 @@ export class ApiError extends Error {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
-/** Shared by every API module (see jobsApi.ts) so base URL, credentials, and error parsing
- * stay consistent in one place. */
-export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    // Sends and receives the httpOnly refreshToken cookie — required for /refresh and
-    // /logout to work, since neither reads the token from anywhere JS can access.
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  })
-
+async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`
     let details: string[] = []
@@ -61,6 +51,35 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     return undefined as T
   }
   return (await response.json()) as T
+}
+
+/** Shared by every API module (see jobsApi.ts) so base URL, credentials, and error parsing
+ * stay consistent in one place. */
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    // Sends and receives the httpOnly refreshToken cookie — required for /refresh and
+    // /logout to work, since neither reads the token from anywhere JS can access.
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+  })
+  return handleResponse<T>(response)
+}
+
+/** Like request(), but for multipart/form-data uploads — deliberately doesn't set a
+ * Content-Type header, so the browser fills in its own multipart boundary. */
+export async function uploadRequest<T>(
+  path: string,
+  formData: FormData,
+  headers: Record<string, string> = {},
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers,
+    body: formData,
+  })
+  return handleResponse<T>(response)
 }
 
 export interface RegisterPayload {

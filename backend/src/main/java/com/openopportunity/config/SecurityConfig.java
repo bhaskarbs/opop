@@ -65,6 +65,8 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers(HttpMethod.GET, "/api/applications/job/*")
                         .hasRole("COMPANY")
+                        .requestMatchers(HttpMethod.POST, "/api/candidate/resume")
+                        .hasRole("CANDIDATE")
                         .anyRequest()
                         .authenticated())
                 // Plain 401 for missing/invalid auth on protected routes, matching REST API
