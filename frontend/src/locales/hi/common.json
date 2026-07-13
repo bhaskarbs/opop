@@ -1,0 +1,9 @@
+{
+  "app": {
+    "name": "OpenOpportunity"
+  },
+  "nav": {
+    "jobs": "नौकरियां खोजें",
+    "login": "लॉग इन करें"
+  }
+}

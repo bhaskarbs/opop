@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
 import { RequireAuth } from './routes/RequireAuth'
+import i18n, { DEFAULT_LANGUAGE, isSupportedLanguage } from './i18n'
 import StyleGuidePage from './pages/dev/StyleGuidePage'
 import LandingPage from './pages/LandingPage'
 import JobSearchPage from './pages/job-search/JobSearchPage'
@@ -33,6 +34,29 @@ import AdminReportsPage from './pages/admin/AdminReportsPage'
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
 
+/** Every route lives under a `/:lang` prefix (see docs/DEVELOPMENT_ROADMAP.md Step 23). An
+ * unrecognized or missing lang segment is treated as a path with no locale at all — e.g.
+ * `/jobs` or `/` — so the redirect re-prepends the default locale onto the real path
+ * (`location.pathname`) rather than the router's parsed `:lang` param, which would otherwise
+ * discard the rest of the URL whenever the first segment isn't a real locale. */
+function LocaleRoot() {
+  const { lang } = useParams()
+  const location = useLocation()
+
+  useEffect(() => {
+    if (isSupportedLanguage(lang)) {
+      i18n.changeLanguage(lang)
+      document.documentElement.lang = lang
+    }
+  }, [lang])
+
+  if (!isSupportedLanguage(lang)) {
+    return <Navigate to={`/${DEFAULT_LANGUAGE}${location.pathname}`} replace />
+  }
+
+  return <Outlet />
+}
+
 function App() {
   const setSession = useAuthStore((state) => state.setSession)
   const clearSession = useAuthStore((state) => state.clearSession)
@@ -51,50 +75,54 @@ function App() {
     <BrowserRouter>
       <Suspense fallback={null}>
         <Routes>
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/jobs" element={<JobSearchPage />} />
-            <Route path="/jobs/:jobId" element={<JobDetailPage />} />
-            <Route path="/partnerships" element={<PartnershipsPage />} />
-            <Route path="/community" element={<CommunityPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/company/login" element={<CompanyLoginPage />} />
-            <Route path="/company/register" element={<CompanyRegisterPage />} />
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-          </Route>
+          <Route path="/" element={<Navigate to={`/${DEFAULT_LANGUAGE}`} replace />} />
 
-          <Route element={<RequireAuth role="CANDIDATE" />}>
-            <Route element={<AuthenticatedLayout headerVariant="candidate" />}>
-              <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
-              <Route path="/candidate/profile" element={<CandidateProfilePage />} />
-              <Route path="/candidate/profile/add-details" element={<AddMissingDetailsPage />} />
-              <Route path="/candidate/applications" element={<ApplicationsPage />} />
-              <Route path="/candidate/mock-interview" element={<MockInterviewPage />} />
+          <Route path="/:lang" element={<LocaleRoot />}>
+            <Route element={<PublicLayout />}>
+              <Route index element={<LandingPage />} />
+              <Route path="jobs" element={<JobSearchPage />} />
+              <Route path="jobs/:jobId" element={<JobDetailPage />} />
+              <Route path="partnerships" element={<PartnershipsPage />} />
+              <Route path="community" element={<CommunityPage />} />
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+              <Route path="company/login" element={<CompanyLoginPage />} />
+              <Route path="company/register" element={<CompanyRegisterPage />} />
+              <Route path="admin/login" element={<AdminLoginPage />} />
             </Route>
-          </Route>
 
-          <Route element={<RequireAuth role="COMPANY" />}>
-            <Route element={<AuthenticatedLayout headerVariant="company" />}>
-              <Route path="/company/dashboard" element={<CompanyDashboardPage />} />
-              <Route path="/company/post-job" element={<PostJobPage />} />
-              <Route path="/company/search-candidates" element={<SearchCandidatesPage />} />
-              <Route path="/company/seminars" element={<SeminarSchedulerPage />} />
+            <Route element={<RequireAuth role="CANDIDATE" />}>
+              <Route element={<AuthenticatedLayout headerVariant="candidate" />}>
+                <Route path="candidate/dashboard" element={<CandidateDashboardPage />} />
+                <Route path="candidate/profile" element={<CandidateProfilePage />} />
+                <Route path="candidate/profile/add-details" element={<AddMissingDetailsPage />} />
+                <Route path="candidate/applications" element={<ApplicationsPage />} />
+                <Route path="candidate/mock-interview" element={<MockInterviewPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route element={<RequireAuth role="ADMIN" />}>
-            <Route element={<AuthenticatedLayout headerVariant="admin" />}>
-              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-              <Route path="/admin/job-approvals" element={<AdminJobApprovalsPage />} />
-              <Route path="/admin/company-approvals" element={<AdminCompanyApprovalsPage />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/reports" element={<AdminReportsPage />} />
+            <Route element={<RequireAuth role="COMPANY" />}>
+              <Route element={<AuthenticatedLayout headerVariant="company" />}>
+                <Route path="company/dashboard" element={<CompanyDashboardPage />} />
+                <Route path="company/post-job" element={<PostJobPage />} />
+                <Route path="company/search-candidates" element={<SearchCandidatesPage />} />
+                <Route path="company/seminars" element={<SeminarSchedulerPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="/dev/style-guide" element={<StyleGuidePage />} />
-          <Route path="*" element={<NotFoundPage />} />
+            <Route element={<RequireAuth role="ADMIN" />}>
+              <Route element={<AuthenticatedLayout headerVariant="admin" />}>
+                <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+                <Route path="admin/job-approvals" element={<AdminJobApprovalsPage />} />
+                <Route path="admin/company-approvals" element={<AdminCompanyApprovalsPage />} />
+                <Route path="admin/users" element={<AdminUsersPage />} />
+                <Route path="admin/reports" element={<AdminReportsPage />} />
+              </Route>
+            </Route>
+
+            <Route path="dev/style-guide" element={<StyleGuidePage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
         </Routes>
       </Suspense>
     </BrowserRouter>

@@ -1,0 +1,9 @@
+{
+  "app": {
+    "name": "OpenOpportunity"
+  },
+  "nav": {
+    "jobs": "Find Jobs",
+    "login": "Log in"
+  }
+}
