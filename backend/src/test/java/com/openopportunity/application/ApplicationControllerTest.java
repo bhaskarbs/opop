@@ -58,8 +58,9 @@ class ApplicationControllerTest {
     }
 
     private String registerAndGetToken(String email, String fullName, String role) throws Exception {
-        // Company profile fields are required by the backend for role=company and ignored
-        // otherwise, so it's simplest to always supply them here.
+        // Company profile fields are required for role=company, mobile/skills for
+        // role=candidate, and both are ignored for whichever role doesn't apply — so it's
+        // simplest to always supply all of them here.
         RegisterRequest request = new RegisterRequest(
                 email,
                 "password123",
@@ -71,7 +72,10 @@ class ApplicationControllerTest {
                 "ABCDE1234F",
                 "Technology",
                 "123 Test Street, Bengaluru",
-                "Test Signatory");
+                "Test Signatory",
+                "9876543210",
+                List.of("React", "TypeScript"),
+                null);
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
