@@ -5,12 +5,14 @@ import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
+import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
@@ -22,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -54,6 +57,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IncompleteCandidateProfileException.class)
     public ResponseEntity<ApiError> handleIncompleteCandidateProfile(IncompleteCandidateProfileException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CandidateProfileNotFoundException.class)
+    public ResponseEntity<ApiError> handleCandidateProfileNotFound(CandidateProfileNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidResumeFileException.class)
+    public ResponseEntity<ApiError> handleInvalidResumeFile(InvalidResumeFileException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        return error(HttpStatus.BAD_REQUEST, "Uploaded file is too large", List.of());
     }
 
     @ExceptionHandler(SuspendedAccountException.class)

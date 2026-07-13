@@ -5,6 +5,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
+import { candidateApi } from '../../lib/candidateApi'
 import { Button, Input } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
@@ -70,6 +71,17 @@ export default function RegisterPage() {
         resumeFileName: values.resume?.name,
       })
       setSession(response.accessToken, response.user)
+
+      if (values.resume) {
+        try {
+          await candidateApi.uploadResume(values.resume)
+        } catch {
+          // Best-effort — the account is already created at this point, so a failed resume
+          // upload shouldn't block the candidate from reaching their dashboard. They can
+          // re-upload later from their profile.
+        }
+      }
+
       navigate(localize(ROUTES.candidateDashboard))
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('errors.generic'))

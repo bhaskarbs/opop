@@ -25,6 +25,9 @@ target/
 .gradle/
 HELP.md
 
+# Local file storage (uploaded resumes etc. — see app.storage.root-dir)
+backend/uploads/
+
 # IDE
 .idea/
 .vscode/

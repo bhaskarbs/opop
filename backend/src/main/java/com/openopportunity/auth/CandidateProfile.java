@@ -33,6 +33,11 @@ public class CandidateProfile {
     @Column(name = "resume_file_name")
     private String resumeFileName;
 
+    // Where FileStorageService actually put the uploaded bytes — null until a resume is
+    // uploaded (resumeFileName may be set from registration before that happens).
+    @Column(name = "resume_storage_key", length = 500)
+    private String resumeStorageKey;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -63,6 +68,11 @@ public class CandidateProfile {
         updatedAt = Instant.now();
     }
 
+    public void updateResume(String resumeFileName, String resumeStorageKey) {
+        this.resumeFileName = resumeFileName;
+        this.resumeStorageKey = resumeStorageKey;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -81,6 +91,10 @@ public class CandidateProfile {
 
     public String getResumeFileName() {
         return resumeFileName;
+    }
+
+    public String getResumeStorageKey() {
+        return resumeStorageKey;
     }
 
     public Instant getCreatedAt() {
