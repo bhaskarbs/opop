@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { Button, Input } from '../../components/ui'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { AuthCard } from './shared/AuthCard'
@@ -17,7 +19,9 @@ const adminLoginSchema = z.object({
 type AdminLoginFormValues = z.infer<typeof adminLoginSchema>
 
 export default function AdminLoginPage() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
+  const localize = useLocalizedPath()
   const setSession = useAuthStore((state) => state.setSession)
   const [formError, setFormError] = useState<string | null>(null)
   const {
@@ -34,13 +38,13 @@ export default function AdminLoginPage() {
     try {
       const response = await authApi.login(values)
       if (response.user.role !== 'ADMIN') {
-        setFormError('This account does not have admin access.')
+        setFormError(t('adminLogin.notAdmin'))
         return
       }
       setSession(response.accessToken, response.user)
-      navigate(ROUTES.adminDashboard)
+      navigate(localize(ROUTES.adminDashboard))
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+      setFormError(error instanceof ApiError ? error.message : t('errors.generic'))
     }
   }
 
@@ -48,16 +52,16 @@ export default function AdminLoginPage() {
     <AuthCard>
       <div className="mb-6 text-center">
         <span className="mb-4 inline-block rounded-full bg-neutral-tint px-3 py-[5px] text-[12.5px] font-bold text-slate">
-          Admin console
+          {t('adminLogin.badge')}
         </span>
-        <h1 className="mb-1.5 text-[22px] font-extrabold text-ink">Admin sign in</h1>
-        <p className="text-sm text-slate">Moderation, approvals, and platform management.</p>
+        <h1 className="mb-1.5 text-[22px] font-extrabold text-ink">{t('adminLogin.title')}</h1>
+        <p className="text-sm text-slate">{t('adminLogin.subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="mb-4">
           <Input
-            label="Email"
+            label={t('fields.email')}
             type="email"
             placeholder="admin@openopportunity.com"
             error={errors.email?.message}
@@ -67,7 +71,7 @@ export default function AdminLoginPage() {
 
         <div className="mb-[18px]">
           <Input
-            label="Password"
+            label={t('fields.password')}
             type="password"
             placeholder="••••••••"
             error={errors.password?.message}
@@ -78,7 +82,7 @@ export default function AdminLoginPage() {
         {formError && <p className="mb-[18px] text-[13px] text-danger">{formError}</p>}
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          Sign in
+          {t('adminLogin.submit')}
         </Button>
       </form>
     </AuthCard>

@@ -60,5 +60,189 @@
       "subtitle": "Create your profile once — it works across jobs, partnerships, and community roles.",
       "button": "Register & upload resume"
     }
+  },
+  "jobSearch": {
+    "startYourSearch": {
+      "title": "Start your search",
+      "description": "Enter a job title, skill, or keyword above — we'll surface matching jobs."
+    },
+    "searching": "Searching…",
+    "showingCount": "Showing {{count}} jobs for you",
+    "sortBy": "Sort by",
+    "sort": {
+      "relevant": "Most relevant",
+      "newest": "Newest first",
+      "salary": "Salary: high to low"
+    },
+    "noResults": "No jobs match your filters. Try clearing some filters or searching a different keyword.",
+    "errorLoading": "Something went wrong loading jobs."
+  },
+  "filters": {
+    "heading": "Filters",
+    "clearAll": "Clear all",
+    "experienceLevel": {
+      "heading": "Experience level",
+      "entry": "Entry level",
+      "mid": "Mid level",
+      "senior": "Senior",
+      "leadership": "Leadership"
+    },
+    "workMode": {
+      "heading": "Work mode",
+      "remote": "Remote",
+      "hybrid": "Hybrid",
+      "onSite": "On-site"
+    },
+    "salaryRange": {
+      "heading": "Salary range (₹/yr)",
+      "min": "Min ₹{{value}}L",
+      "max": "₹40L+"
+    }
+  },
+  "resultCard": {
+    "saved": "Saved",
+    "save": "Save",
+    "applyNow": "Apply now"
+  },
+  "jobDetail": {
+    "notFound": {
+      "title": "Job not found",
+      "description": "This posting may have been removed or the link is incorrect.",
+      "backToSearch": "← Back to Job Search"
+    },
+    "loading": "Loading…",
+    "salaryNotDisclosed": "Salary not disclosed",
+    "postedToday": "Today",
+    "postedOneDayAgo": "1 day ago",
+    "postedDaysAgo": "{{days}} days ago",
+    "postedOneWeekAgo": "1 week ago",
+    "postedWeeksAgo": "{{weeks}} weeks ago",
+    "save": "Save",
+    "saved": "Saved",
+    "applying": "Applying…",
+    "withdrawing": "Withdrawing…",
+    "applyNow": "Apply now",
+    "withdrawApplication": "Withdraw application",
+    "applyError": "Something went wrong. Try again.",
+    "postedPrefix": "Posted {{label}}",
+    "applicantsCount": "{{count}} applicants",
+    "sourcedFrom": "Sourced from OpenOpportunity",
+    "aboutRole": "About the role",
+    "responsibilities": "Responsibilities",
+    "requirements": "Requirements",
+    "sidebar": {
+      "whileYouWait": "While you wait",
+      "partnerHeading": "Partner with a startup in this space",
+      "partnerBody": "Startups on OpenOpportunity are looking for partners with similar skills — real product, counts as experience.",
+      "viewPartnership": "View partnership",
+      "buildSoftSkills": "Build soft skills",
+      "mentorHeading": "Join a peer mentor circle",
+      "mentorBody": "Practice technical communication with peers weekly — useful for interviews like this one.",
+      "showInterest": "Show interest",
+      "similarJobs": "Similar jobs"
+    }
+  },
+  "partnerships": {
+    "badge": "Startup Partnership Ecosystem",
+    "hero": {
+      "title": "Turn a startup's needs into your next career move",
+      "subtitle": "There's no list of open roles here yet — this is where you learn how partnerships work, then choose the track that fits: startups with funding to offer, or early-stage ones offering pure experience.",
+      "watchExplainer": "Watch the explainer",
+      "seeTracks": "See the two tracks",
+      "videoCaption": "3 min · How it works"
+    },
+    "videoModal": {
+      "caption": "[ video: how startup partnerships work · 3 min ]"
+    },
+    "steps": {
+      "share": {
+        "title": "Share your profile",
+        "desc": "Resume, skills, life goals, and the values that matter to you."
+      },
+      "matched": {
+        "title": "Get matched",
+        "desc": "We surface startups whose needs fit your skill set."
+      },
+      "seminar": {
+        "title": "Seminar or meetup",
+        "desc": "Meet the founders through an invited session."
+      },
+      "partner": {
+        "title": "Partner & build experience",
+        "desc": "Work together and document it for your resume."
+      }
+    },
+    "tracks": {
+      "heading": "Two tracks. Both count as real experience.",
+      "funded": {
+        "tag": "With funding",
+        "title": "Funded partnership",
+        "desc": "Startups that have raised capital and can offer a stipend, revenue share, or equity for your work.",
+        "cta": "Apply with funding"
+      },
+      "unfunded": {
+        "tag": "Without funding",
+        "title": "Early-stage partnership",
+        "desc": "Pre-funding founders who can't pay yet — you build real, documented experience alongside them.",
+        "cta": "Apply without funding"
+      }
+    },
+    "cta": {
+      "heading": "Still deciding which track fits?",
+      "body": "Show interest and we'll notify you the moment a matching partnership opens — funded or not.",
+      "thanks": "Thanks — we'll notify you when a matching partnership opens ✓",
+      "placeholder": "Your top skill",
+      "submit": "Show interest"
+    }
+  },
+  "community": {
+    "badge": "Community Income Ecosystem",
+    "hero": {
+      "title": "Understand income beyond a paycheck",
+      "subtitle": "Community roles build soft skills and introduce you to income types you may never have considered — while you keep searching for the job you want.",
+      "videoCaption": "[ video: what is community income? · 4 min ]"
+    },
+    "incomeTypes": {
+      "heading": "Learn about different income types",
+      "readGuide": "Read guide →",
+      "active": {
+        "title": "Active income",
+        "desc": "Trading time and skill directly for pay — most jobs work this way."
+      },
+      "community": {
+        "title": "Community income",
+        "desc": "Value created and shared through collective, local contribution."
+      },
+      "passive": {
+        "title": "Passive income",
+        "desc": "Income that continues with limited ongoing active effort."
+      },
+      "partnership": {
+        "title": "Partnership income",
+        "desc": "Value earned by co-building and sharing outcomes with a team."
+      }
+    },
+    "opportunities": {
+      "heading": "Community opportunities near you",
+      "buildsSkill": "Builds {{skill}}",
+      "interestShared": "Interest shared ✓",
+      "showInterest": "Show interest"
+    },
+    "sidebar": {
+      "tellUsHeading": "Tell us you're interested",
+      "tellUsBody": "We'll invite you to the next intro session and match you with a local community role.",
+      "selectPlaceholder": "What interests you most?",
+      "selectOption1": "Community income basics",
+      "selectOption2": "Soft-skill building roles",
+      "selectOption3": "Both",
+      "onList": "You're on the list ✓",
+      "notifyMe": "Notify me",
+      "guidesHeading": "Guides & reading"
+    },
+    "guides": {
+      "whatIsCommunityIncome": "What is community income?",
+      "activeVsPassive": "Active vs. passive income, explained",
+      "softSkillsTransfer": "How soft skills transfer to any job"
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { type SubmitEvent, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { ApiError } from '../../lib/apiClient'
@@ -13,13 +14,14 @@ const PAGE_SIZE = 6
 
 type SortOption = 'relevant' | 'newest' | 'salary'
 
-const SORT_LABELS: Record<SortOption, string> = {
-  relevant: 'Most relevant',
-  newest: 'Newest first',
-  salary: 'Salary: high to low',
+const SORT_LABEL_KEYS: Record<SortOption, string> = {
+  relevant: 'jobSearch.sort.relevant',
+  newest: 'jobSearch.sort.newest',
+  salary: 'jobSearch.sort.salary',
 }
 
 export default function JobSearchPage() {
+  const { t } = useTranslation('public')
   const [searchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') ?? ''
   const initialLocation = searchParams.get('loc') ?? ''
@@ -55,14 +57,12 @@ export default function JobSearchPage() {
           setPage(1)
         })
         .catch((caught) => {
-          setError(
-            caught instanceof ApiError ? caught.message : 'Something went wrong loading jobs.',
-          )
+          setError(caught instanceof ApiError ? caught.message : t('jobSearch.errorLoading'))
         })
         .finally(() => setLoading(false))
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [hasSearched, query, location, filters, sortBy])
+  }, [hasSearched, query, location, filters, sortBy, t])
 
   const pageCount = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
@@ -108,7 +108,7 @@ export default function JobSearchPage() {
               type="text"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Job title, skill, or keyword"
+              placeholder={t('landing.search.jobPlaceholder')}
               className="w-full text-[14.5px] text-ink outline-none"
             />
           </label>
@@ -129,7 +129,7 @@ export default function JobSearchPage() {
               type="text"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              placeholder="City or remote"
+              placeholder={t('landing.search.locationPlaceholder')}
               className="w-full text-[14.5px] text-ink outline-none"
             />
           </label>
@@ -137,7 +137,7 @@ export default function JobSearchPage() {
             type="submit"
             className="min-h-[44px] rounded-control bg-primary px-[26px] text-[14.5px] font-bold text-white hover:bg-primary/90"
           >
-            Search
+            {t('landing.search.submit')}
           </button>
         </form>
       </div>
@@ -157,9 +157,11 @@ export default function JobSearchPage() {
               <path d="M21 21l-4.3-4.3" />
             </svg>
           </div>
-          <h2 className="mb-2 text-[19px] font-extrabold text-ink">Start your search</h2>
+          <h2 className="mb-2 text-[19px] font-extrabold text-ink">
+            {t('jobSearch.startYourSearch.title')}
+          </h2>
           <p className="mb-6 text-[14.5px] leading-[1.6] text-slate">
-            Enter a job title, skill, or keyword above — we&rsquo;ll surface matching jobs.
+            {t('jobSearch.startYourSearch.description')}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             {TRENDING_SKILLS.map((skill) => (
@@ -183,24 +185,20 @@ export default function JobSearchPage() {
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
               <div className="text-[15px] text-slate">
-                {loading ? (
-                  'Searching…'
-                ) : (
-                  <>
-                    Showing <strong className="text-ink">{jobs.length}</strong> jobs for you
-                  </>
-                )}
+                {loading
+                  ? t('jobSearch.searching')
+                  : t('jobSearch.showingCount', { count: jobs.length })}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[13.5px] text-fog">Sort by</span>
+                <span className="text-[13.5px] text-fog">{t('jobSearch.sortBy')}</span>
                 <select
                   value={sortBy}
                   onChange={(event) => setSortBy(event.target.value as SortOption)}
                   className="rounded-lg border border-border px-2.5 py-2 text-[13.5px] text-ink"
                 >
-                  {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
+                  {(Object.keys(SORT_LABEL_KEYS) as SortOption[]).map((option) => (
                     <option key={option} value={option}>
-                      {SORT_LABELS[option]}
+                      {t(SORT_LABEL_KEYS[option])}
                     </option>
                   ))}
                 </select>
@@ -213,8 +211,7 @@ export default function JobSearchPage() {
               </div>
             ) : !loading && jobs.length === 0 ? (
               <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-                No jobs match your filters. Try clearing some filters or searching a different
-                keyword.
+                {t('jobSearch.noResults')}
               </div>
             ) : (
               <div className="flex flex-col gap-3.5">

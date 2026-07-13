@@ -1,4 +1,10 @@
-import { EXPERIENCE_LEVELS, WORK_MODES } from '../../lib/jobEnums'
+import { useTranslation } from 'react-i18next'
+import {
+  EXPERIENCE_LEVELS,
+  WORK_MODES,
+  type ExperienceLevelLabel,
+  type WorkModeLabel,
+} from '../../lib/jobEnums'
 import {
   createDefaultFilterState,
   MAX_SALARY_LAKHS,
@@ -9,6 +15,21 @@ import {
 interface FilterSidebarProps {
   filters: FilterState
   onChange: (filters: FilterState) => void
+}
+
+// Rendered text only — the literal labels above stay as the actual filter values/backend-mapping
+// keys (see lib/jobEnums.ts) so state and API payloads are unaffected by locale.
+const EXPERIENCE_LEVEL_KEYS: Record<ExperienceLevelLabel, string> = {
+  'Entry level': 'filters.experienceLevel.entry',
+  'Mid level': 'filters.experienceLevel.mid',
+  Senior: 'filters.experienceLevel.senior',
+  Leadership: 'filters.experienceLevel.leadership',
+}
+
+const WORK_MODE_KEYS: Record<WorkModeLabel, string> = {
+  Remote: 'filters.workMode.remote',
+  Hybrid: 'filters.workMode.hybrid',
+  'On-site': 'filters.workMode.onSite',
 }
 
 function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
@@ -22,21 +43,24 @@ function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
 }
 
 export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
+  const { t } = useTranslation('public')
   return (
     <div className="sticky top-[88px] rounded-card border border-border bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-[15px] font-bold text-ink">Filters</span>
+        <span className="text-[15px] font-bold text-ink">{t('filters.heading')}</span>
         <button
           type="button"
           onClick={() => onChange(createDefaultFilterState())}
           className="text-[13px] font-bold text-primary"
         >
-          Clear all
+          {t('filters.clearAll')}
         </button>
       </div>
 
       <div className="mb-5">
-        <div className="mb-2.5 text-[13px] font-bold text-ink">Experience level</div>
+        <div className="mb-2.5 text-[13px] font-bold text-ink">
+          {t('filters.experienceLevel.heading')}
+        </div>
         {EXPERIENCE_LEVELS.map((level) => (
           <label
             key={level}
@@ -48,13 +72,13 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
               onChange={() => onChange({ ...filters, levels: toggleInSet(filters.levels, level) })}
               className="h-4 w-4 accent-primary"
             />
-            {level}
+            {t(EXPERIENCE_LEVEL_KEYS[level])}
           </label>
         ))}
       </div>
 
       <div className="mb-5">
-        <div className="mb-2.5 text-[13px] font-bold text-ink">Work mode</div>
+        <div className="mb-2.5 text-[13px] font-bold text-ink">{t('filters.workMode.heading')}</div>
         {WORK_MODES.map((mode) => (
           <label
             key={mode}
@@ -66,13 +90,15 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
               onChange={() => onChange({ ...filters, modes: toggleInSet(filters.modes, mode) })}
               className="h-4 w-4 accent-primary"
             />
-            {mode}
+            {t(WORK_MODE_KEYS[mode])}
           </label>
         ))}
       </div>
 
       <div>
-        <div className="mb-2.5 text-[13px] font-bold text-ink">Salary range (₹/yr)</div>
+        <div className="mb-2.5 text-[13px] font-bold text-ink">
+          {t('filters.salaryRange.heading')}
+        </div>
         <input
           type="range"
           min={MIN_SALARY_LAKHS}
@@ -85,8 +111,8 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
           <span>₹3L</span>
           <span>
             {filters.minSalaryLakhs >= MAX_SALARY_LAKHS
-              ? '₹40L+'
-              : `Min ₹${filters.minSalaryLakhs}L`}
+              ? t('filters.salaryRange.max')
+              : t('filters.salaryRange.min', { value: filters.minSalaryLakhs })}
           </span>
         </div>
       </div>

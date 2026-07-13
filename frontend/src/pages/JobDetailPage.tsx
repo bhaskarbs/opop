@@ -1,26 +1,33 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Card } from '../components/ui'
+import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
 import { jobsApi, type JobDetail, type JobSummary } from '../lib/jobsApi'
 import { workModeFromBackend } from '../lib/jobEnums'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
+import type { TFunction } from 'i18next'
 
-function formatSalary(minLakhs: number | null, maxLakhs: number | null): string {
-  if (minLakhs == null && maxLakhs == null) return 'Salary not disclosed'
+function formatSalary(
+  t: TFunction<'public'>,
+  minLakhs: number | null,
+  maxLakhs: number | null,
+): string {
+  if (minLakhs == null && maxLakhs == null) return t('jobDetail.salaryNotDisclosed')
   if (minLakhs != null && maxLakhs != null) return `₹${minLakhs}L–${maxLakhs}L`
   return `₹${minLakhs ?? maxLakhs}L`
 }
 
-function formatPostedLabel(createdAt: string): string {
+function formatPostedLabel(t: TFunction<'public'>, createdAt: string): string {
   const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000)
-  if (days <= 0) return 'Today'
-  if (days === 1) return '1 day ago'
-  if (days < 7) return `${days} days ago`
+  if (days <= 0) return t('jobDetail.postedToday')
+  if (days === 1) return t('jobDetail.postedOneDayAgo')
+  if (days < 7) return t('jobDetail.postedDaysAgo', { days })
   const weeks = Math.floor(days / 7)
-  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+  return weeks === 1 ? t('jobDetail.postedOneWeekAgo') : t('jobDetail.postedWeeksAgo', { weeks })
 }
 
 function findSimilarJobs(current: JobDetail, allJobs: JobSummary[], count = 3): JobSummary[] {
@@ -35,20 +42,22 @@ function findSimilarJobs(current: JobDetail, allJobs: JobSummary[], count = 3): 
 }
 
 function NotFound() {
+  const { t } = useTranslation('public')
+  const localize = useLocalizedPath()
   return (
     <main className="mx-auto max-w-[640px] px-6 py-24 text-center">
-      <h1 className="mb-2 text-h2 text-ink">Job not found</h1>
-      <p className="mb-6 text-body text-slate">
-        This posting may have been removed or the link is incorrect.
-      </p>
-      <Link to={ROUTES.jobs} className="text-sm font-bold text-primary no-underline">
-        ← Back to Job Search
+      <h1 className="mb-2 text-h2 text-ink">{t('jobDetail.notFound.title')}</h1>
+      <p className="mb-6 text-body text-slate">{t('jobDetail.notFound.description')}</p>
+      <Link to={localize(ROUTES.jobs)} className="text-sm font-bold text-primary no-underline">
+        {t('jobDetail.notFound.backToSearch')}
       </Link>
     </main>
   )
 }
 
 export default function JobDetailPage() {
+  const { t } = useTranslation('public')
+  const localize = useLocalizedPath()
   const { jobId } = useParams<{ jobId: string }>()
   const navigate = useNavigate()
   const authStatus = useAuthStore((state) => state.status)
@@ -104,7 +113,7 @@ export default function JobDetailPage() {
   async function handleApplyClick() {
     if (!job) return
     if (authStatus !== 'authenticated') {
-      navigate(ROUTES.login)
+      navigate(localize(ROUTES.login))
       return
     }
     setApplyError(null)
@@ -122,14 +131,18 @@ export default function JobDetailPage() {
         setJob((prev) => (prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev))
       }
     } catch (error) {
-      setApplyError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+      setApplyError(error instanceof ApiError ? error.message : t('jobDetail.applyError'))
     } finally {
       setApplying(false)
     }
   }
 
   if (loading) {
-    return <main className="mx-auto max-w-[640px] px-6 py-24 text-center text-slate">Loading…</main>
+    return (
+      <main className="mx-auto max-w-[640px] px-6 py-24 text-center text-slate">
+        {t('jobDetail.loading')}
+      </main>
+    )
   }
 
   if (notFound || !job) {
@@ -159,7 +172,7 @@ export default function JobDetailPage() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {[
                       ...job.skills,
-                      formatSalary(job.salaryMinLakhs, job.salaryMaxLakhs) + ' / yr',
+                      formatSalary(t, job.salaryMinLakhs, job.salaryMaxLakhs) + ' / yr',
                     ].map((tag) => (
                       <span
                         key={tag}
@@ -177,7 +190,7 @@ export default function JobDetailPage() {
                   onClick={() => setSaved((prev) => !prev)}
                   className="rounded-control border border-border bg-surface px-[18px] py-2.5 text-sm font-bold text-ink"
                 >
-                  {saved ? 'Saved' : 'Save'}
+                  {saved ? t('jobDetail.saved') : t('jobDetail.save')}
                 </button>
                 <button
                   type="button"
@@ -191,11 +204,11 @@ export default function JobDetailPage() {
                 >
                   {applying
                     ? applicationId
-                      ? 'Withdrawing…'
-                      : 'Applying…'
+                      ? t('jobDetail.withdrawing')
+                      : t('jobDetail.applying')
                     : applicationId
-                      ? 'Withdraw application'
-                      : 'Apply now'}
+                      ? t('jobDetail.withdrawApplication')
+                      : t('jobDetail.applyNow')}
                 </button>
               </div>
             </div>
@@ -205,24 +218,26 @@ export default function JobDetailPage() {
               </div>
             )}
             <div className="mt-5 flex flex-wrap gap-2 border-t border-[#F0F1F3] pt-4 text-[13.5px] text-fog">
-              <span>Posted {formatPostedLabel(job.createdAt)}</span>
+              <span>{t('jobDetail.postedPrefix', { label: formatPostedLabel(t, job.createdAt) })}</span>
               <span>·</span>
-              <span>{job.applicantCount} applicants</span>
+              <span>{t('jobDetail.applicantsCount', { count: job.applicantCount })}</span>
               <span>·</span>
-              <span>Sourced from OpenOpportunity</span>
+              <span>{t('jobDetail.sourcedFrom')}</span>
             </div>
           </Card>
 
           <Card className="mb-5 p-7">
-            <h2 className="mb-3.5 text-[17px] font-bold text-ink">About the role</h2>
+            <h2 className="mb-3.5 text-[17px] font-bold text-ink">{t('jobDetail.aboutRole')}</h2>
             <p className="mb-[18px] text-[14.5px] leading-[1.7] text-[#3A414D]">{job.aboutRole}</p>
-            <h3 className="mb-2.5 text-[15px] font-bold text-ink">Responsibilities</h3>
+            <h3 className="mb-2.5 text-[15px] font-bold text-ink">
+              {t('jobDetail.responsibilities')}
+            </h3>
             <ul className="mb-[18px] list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
               {job.responsibilities.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            <h3 className="mb-2.5 text-[15px] font-bold text-ink">Requirements</h3>
+            <h3 className="mb-2.5 text-[15px] font-bold text-ink">{t('jobDetail.requirements')}</h3>
             <ul className="list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
               {job.requirements.map((item) => (
                 <li key={item}>{item}</li>
@@ -234,53 +249,55 @@ export default function JobDetailPage() {
         <aside className="search:order-none order-first">
           <div className="mb-4 rounded-card border border-[#FCE3B8] bg-amber-tint p-5">
             <span className="rounded-full bg-surface px-2.5 py-[3px] text-[11.5px] font-bold text-amber">
-              While you wait
+              {t('jobDetail.sidebar.whileYouWait')}
             </span>
             <h3 className="mt-3 mb-2 text-[15px] font-bold text-ink">
-              Partner with a startup in this space
+              {t('jobDetail.sidebar.partnerHeading')}
             </h3>
             <p className="mb-3.5 text-[13.5px] leading-[1.55] text-slate">
-              Startups on OpenOpportunity are looking for partners with similar skills — real
-              product, counts as experience.
+              {t('jobDetail.sidebar.partnerBody')}
             </p>
             <Link
-              to={ROUTES.partnerships}
+              to={localize(ROUTES.partnerships)}
               className="block rounded-lg bg-amber py-2.5 text-center text-[13.5px] font-bold text-white no-underline"
             >
-              View partnership
+              {t('jobDetail.sidebar.viewPartnership')}
             </Link>
           </div>
 
           <div className="mb-4 rounded-card border border-[#C9EEDF] bg-teal-tint p-5">
             <span className="rounded-full bg-surface px-2.5 py-[3px] text-[11.5px] font-bold text-teal">
-              Build soft skills
+              {t('jobDetail.sidebar.buildSoftSkills')}
             </span>
-            <h3 className="mt-3 mb-2 text-[15px] font-bold text-ink">Join a peer mentor circle</h3>
+            <h3 className="mt-3 mb-2 text-[15px] font-bold text-ink">
+              {t('jobDetail.sidebar.mentorHeading')}
+            </h3>
             <p className="mb-3.5 text-[13.5px] leading-[1.55] text-slate">
-              Practice technical communication with peers weekly — useful for interviews like this
-              one.
+              {t('jobDetail.sidebar.mentorBody')}
             </p>
             <Link
-              to={ROUTES.community}
+              to={localize(ROUTES.community)}
               className="block rounded-lg bg-teal py-2.5 text-center text-[13.5px] font-bold text-white no-underline"
             >
-              Show interest
+              {t('jobDetail.sidebar.showInterest')}
             </Link>
           </div>
 
           {similarJobs.length > 0 && (
             <Card className="p-5">
-              <h3 className="mb-3 text-[14.5px] font-bold text-ink">Similar jobs</h3>
+              <h3 className="mb-3 text-[14.5px] font-bold text-ink">
+                {t('jobDetail.sidebar.similarJobs')}
+              </h3>
               {similarJobs.map((similar) => (
                 <Link
                   key={similar.id}
-                  to={ROUTES.jobDetail(similar.id)}
+                  to={localize(ROUTES.jobDetail(similar.id))}
                   className="block border-t border-[#F0F1F3] py-2.5 no-underline first:border-t-0"
                 >
                   <div className="text-sm font-semibold text-ink">{similar.title}</div>
                   <div className="mt-0.5 text-[12.5px] text-fog">
                     {similar.companyName} ·{' '}
-                    {formatSalary(similar.salaryMinLakhs, similar.salaryMaxLakhs)}
+                    {formatSalary(t, similar.salaryMinLakhs, similar.salaryMaxLakhs)}
                   </div>
                 </Link>
               ))}

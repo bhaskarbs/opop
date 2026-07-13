@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 interface Seminar {
   title: string
@@ -36,15 +38,16 @@ const APPLICANTS = ['Rohan Mehta', 'Anita Sharma', 'Karan Patel']
 const LABEL_CLASS = 'mb-1.5 block text-[13px] font-bold text-ink'
 const INPUT_CLASS = 'w-full rounded-[9px] border border-border bg-surface text-ink'
 
-function formatSessionDate(date: string, time: string): string {
-  if (!date) return 'Date TBD'
+function formatSessionDate(t: TFunction<'company'>, locale: string, date: string, time: string): string {
+  if (!date) return t('seminars.dateTbd')
   const parsed = new Date(`${date}T${time || '09:00'}`)
-  const day = parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  const clock = parsed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const day = parsed.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+  const clock = parsed.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
   return `${day}, ${clock}`
 }
 
 export default function SeminarSchedulerPage() {
+  const { t, i18n } = useTranslation('company')
   const [upcoming, setUpcoming] = useState(INITIAL_UPCOMING)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -59,7 +62,7 @@ export default function SeminarSchedulerPage() {
       ...sessions,
       {
         title: title.trim(),
-        dateLabel: formatSessionDate(date, time),
+        dateLabel: formatSessionDate(t, i18n.language, date, time),
         mode,
         attendees: invitees.map((name) => name.charAt(0)),
         invited: invitees.length,
@@ -77,15 +80,13 @@ export default function SeminarSchedulerPage() {
       <main>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-2.5">
           <div>
-            <h1 className="mb-1 text-xl font-extrabold text-ink">Seminars &amp; meetups</h1>
-            <p className="text-sm text-slate">
-              Invite partnership applicants to meet the team before you decide.
-            </p>
+            <h1 className="mb-1 text-xl font-extrabold text-ink">{t('seminars.title')}</h1>
+            <p className="text-sm text-slate">{t('seminars.subtitle')}</p>
           </div>
         </div>
 
         <div className="mb-3.5 flex items-baseline justify-between">
-          <h2 className="text-[15.5px] font-bold text-ink">Upcoming</h2>
+          <h2 className="text-[15.5px] font-bold text-ink">{t('seminars.upcoming')}</h2>
         </div>
         <div className="mb-7 flex flex-col gap-3">
           {upcoming.map((seminar) => (
@@ -108,7 +109,7 @@ export default function SeminarSchedulerPage() {
                     </span>
                   ))}
                   <span className="ml-1 text-[12.5px] leading-[26px] text-fog">
-                    {seminar.invited} invited
+                    {t('seminars.invitedCount', { count: seminar.invited })}
                   </span>
                 </div>
               </div>
@@ -117,14 +118,14 @@ export default function SeminarSchedulerPage() {
                   type="button"
                   className="rounded-lg border border-border bg-surface px-4 py-[9px] text-[13px] font-bold text-ink"
                 >
-                  Manage invites
+                  {t('seminars.manageInvites')}
                 </button>
               </div>
             </div>
           ))}
         </div>
 
-        <h2 className="mb-3.5 text-[15.5px] font-bold text-ink">Past sessions</h2>
+        <h2 className="mb-3.5 text-[15.5px] font-bold text-ink">{t('seminars.pastSessions')}</h2>
         <div className="flex flex-col gap-3">
           {PAST_SESSIONS.map((session) => (
             <div
@@ -134,11 +135,11 @@ export default function SeminarSchedulerPage() {
               <div>
                 <div className="text-[14.5px] font-bold text-ink">{session.title}</div>
                 <div className="mt-0.5 text-[13px] text-slate">
-                  {session.date} · {session.attended} attended
+                  {t('seminars.attendedCount', { date: session.date, count: session.attended })}
                 </div>
               </div>
               <span className="h-fit rounded-full bg-neutral-tint px-2.5 py-1 text-xs font-semibold text-slate">
-                Completed
+                {t('seminars.completed')}
               </span>
             </div>
           ))}
@@ -150,24 +151,24 @@ export default function SeminarSchedulerPage() {
           onSubmit={handleSchedule}
           className="rounded-card border border-border bg-surface p-[22px]"
         >
-          <h3 className="mb-4 text-[15px] font-bold text-ink">Schedule a new session</h3>
+          <h3 className="mb-4 text-[15px] font-bold text-ink">{t('seminars.scheduleNew')}</h3>
           <div className="mb-3.5">
             <label htmlFor="seminar-title" className={LABEL_CLASS}>
-              Title
+              {t('seminars.fields.title')}
             </label>
             <input
               id="seminar-title"
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="e.g. Partner intro session"
+              placeholder={t('seminars.fields.titlePlaceholder')}
               className={`${INPUT_CLASS} px-3 py-2.5 text-[13.5px]`}
             />
           </div>
           <div className="mb-3.5 grid grid-cols-2 gap-2.5">
             <div>
               <label htmlFor="seminar-date" className={LABEL_CLASS}>
-                Date
+                {t('seminars.fields.date')}
               </label>
               <input
                 id="seminar-date"
@@ -179,7 +180,7 @@ export default function SeminarSchedulerPage() {
             </div>
             <div>
               <label htmlFor="seminar-time" className={LABEL_CLASS}>
-                Time
+                {t('seminars.fields.time')}
               </label>
               <input
                 id="seminar-time"
@@ -192,7 +193,7 @@ export default function SeminarSchedulerPage() {
           </div>
           <div className="mb-3.5">
             <label htmlFor="seminar-mode" className={LABEL_CLASS}>
-              Mode
+              {t('seminars.fields.mode')}
             </label>
             <select
               id="seminar-mode"
@@ -200,13 +201,13 @@ export default function SeminarSchedulerPage() {
               onChange={(event) => setMode(event.target.value)}
               className={`${INPUT_CLASS} px-3 py-2.5 text-[13.5px]`}
             >
-              <option>Online video call</option>
-              <option>In-person meetup</option>
+              <option value="Online video call">{t('seminars.modes.onlineVideoCall')}</option>
+              <option value="In-person meetup">{t('seminars.modes.inPersonMeetup')}</option>
             </select>
           </div>
           <div className="mb-[18px]">
             <label htmlFor="seminar-invitees" className={LABEL_CLASS}>
-              Invite applicants
+              {t('seminars.fields.inviteApplicants')}
             </label>
             <select
               id="seminar-invitees"
@@ -223,13 +224,13 @@ export default function SeminarSchedulerPage() {
             </select>
           </div>
           <div className="mb-4 rounded-[9px] bg-primary-tint px-3.5 py-3 text-[12.5px] leading-normal text-primary">
-            Invitees get both an email and a WhatsApp notification automatically.
+            {t('seminars.notifyNotice')}
           </div>
           <button
             type="submit"
             className="w-full rounded-[9px] bg-primary p-3 text-sm font-bold text-white"
           >
-            Schedule &amp; notify
+            {t('seminars.scheduleAndNotify')}
           </button>
         </form>
       </aside>

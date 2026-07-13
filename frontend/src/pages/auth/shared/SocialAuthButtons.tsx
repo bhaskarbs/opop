@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 function GoogleIcon() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24">
@@ -31,11 +33,12 @@ function LinkedInIcon() {
 }
 
 export function SocialAuthButtons() {
+  const { t } = useTranslation('auth')
   return (
     <>
       <div className="mb-[18px] flex items-center gap-2.5">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-[12.5px] text-fog">or continue with</span>
+        <span className="text-[12.5px] text-fog">{t('social.orContinueWith')}</span>
         <div className="h-px flex-1 bg-border" />
       </div>
 
@@ -45,14 +48,14 @@ export function SocialAuthButtons() {
           className="flex items-center justify-center gap-2.5 rounded-control border border-border bg-surface py-2.5 text-sm font-semibold text-ink"
         >
           <GoogleIcon />
-          Continue with Google
+          {t('social.continueWithGoogle')}
         </button>
         <button
           type="button"
           className="flex items-center justify-center gap-2.5 rounded-control border border-border bg-surface py-2.5 text-sm font-semibold text-ink"
         >
           <LinkedInIcon />
-          Continue with LinkedIn
+          {t('social.continueWithLinkedIn')}
         </button>
       </div>
     </>

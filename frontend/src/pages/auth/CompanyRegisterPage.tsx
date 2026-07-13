@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { Button, Input } from '../../components/ui'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { FileDropInput } from './shared/FileDropInput'
@@ -16,6 +18,16 @@ const ENTITY_TYPES = [
   'Sole Proprietorship',
   'Public Limited Company',
 ] as const
+
+// Rendered text only — the literal values above stay as the actual form/backend enum values
+// (see companyRegisterSchema below), same pattern as FilterSidebar's EXPERIENCE_LEVEL_KEYS.
+const ENTITY_TYPE_KEYS: Record<(typeof ENTITY_TYPES)[number], string> = {
+  'Private Limited Company': 'companyRegister.entityTypes.privateLimited',
+  'Limited Liability Partnership (LLP)': 'companyRegister.entityTypes.llp',
+  'Partnership Firm': 'companyRegister.entityTypes.partnershipFirm',
+  'Sole Proprietorship': 'companyRegister.entityTypes.soleProprietorship',
+  'Public Limited Company': 'companyRegister.entityTypes.publicLimited',
+}
 
 const companyRegisterSchema = z.object({
   companyName: z.string().min(2, 'Enter the registered company name'),
@@ -34,13 +46,15 @@ const companyRegisterSchema = z.object({
 type CompanyRegisterFormValues = z.infer<typeof companyRegisterSchema>
 
 const STEPS = [
-  { label: 'Company details', active: true },
-  { label: 'Document upload', active: false },
-  { label: 'Verification', active: false },
+  { labelKey: 'companyRegister.steps.companyDetails', active: true },
+  { labelKey: 'companyRegister.steps.documentUpload', active: false },
+  { labelKey: 'companyRegister.steps.verification', active: false },
 ]
 
 export default function CompanyRegisterPage() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
+  const localize = useLocalizedPath()
   const setSession = useAuthStore((state) => state.setSession)
   const [formError, setFormError] = useState<string | null>(null)
   const {
@@ -84,9 +98,9 @@ export default function CompanyRegisterPage() {
         signatoryName: values.signatoryName,
       })
       setSession(response.accessToken, response.user)
-      navigate(ROUTES.companyDashboard)
+      navigate(localize(ROUTES.companyDashboard))
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+      setFormError(error instanceof ApiError ? error.message : t('errors.generic'))
     }
   }
 
@@ -94,41 +108,43 @@ export default function CompanyRegisterPage() {
     <main className="mx-auto max-w-[760px] px-6 py-10 pb-16">
       <div className="mb-6 text-center">
         <span className="rounded-full bg-primary-tint px-3 py-[5px] text-[12.5px] font-bold text-primary">
-          For Employers
+          {t('companyLogin.badge')}
         </span>
-        <h1 className="mt-3.5 mb-1.5 text-[23px] font-extrabold text-ink">Register your company</h1>
-        <p className="text-sm text-slate">
-          Verified as per Indian company law before you can post jobs or offer partnerships.
-        </p>
+        <h1 className="mt-3.5 mb-1.5 text-[23px] font-extrabold text-ink">
+          {t('companyRegister.title')}
+        </h1>
+        <p className="text-sm text-slate">{t('companyRegister.subtitle')}</p>
       </div>
 
       <div className="mb-7 flex gap-2">
         {STEPS.map((step) => (
-          <div key={step.label} className="flex-1 text-center">
+          <div key={step.labelKey} className="flex-1 text-center">
             <div
               className={`mb-2 h-[5px] rounded-full ${step.active ? 'bg-primary' : 'bg-border'}`}
             />
             <div className={`text-xs font-semibold ${step.active ? 'text-ink' : 'text-fog'}`}>
-              {step.label}
+              {t(step.labelKey)}
             </div>
           </div>
         ))}
       </div>
 
       <div className="rounded-card border border-border bg-surface p-8">
-        <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">Company details</h2>
+        <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">
+          {t('companyRegister.steps.companyDetails')}
+        </h2>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
-              label="Registered company name"
+              label={t('companyRegister.fields.companyName')}
               placeholder="Vertex Robotics Pvt. Ltd."
               error={errors.companyName?.message}
               {...register('companyName')}
             />
             <div className="flex flex-col">
               <label htmlFor="entity-type" className="mb-1.5 text-[13px] font-bold text-ink">
-                Entity type
+                {t('companyRegister.fields.entityType')}
               </label>
               <select
                 id="entity-type"
@@ -137,7 +153,7 @@ export default function CompanyRegisterPage() {
               >
                 {ENTITY_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {t(ENTITY_TYPE_KEYS[type])}
                   </option>
                 ))}
               </select>
@@ -146,13 +162,13 @@ export default function CompanyRegisterPage() {
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
-              label="CIN / LLPIN"
+              label={t('companyRegister.fields.cin')}
               placeholder="U74999KA2021PTC145632"
               error={errors.cin?.message}
               {...register('cin')}
             />
             <Input
-              label="GSTIN"
+              label={t('companyRegister.fields.gstin')}
               placeholder="29ABCDE1234F1Z5"
               error={errors.gstin?.message}
               {...register('gstin')}
@@ -161,13 +177,13 @@ export default function CompanyRegisterPage() {
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
-              label="PAN"
+              label={t('companyRegister.fields.pan')}
               placeholder="ABCDE1234F"
               error={errors.pan?.message}
               {...register('pan')}
             />
             <Input
-              label="Industry / sector"
+              label={t('companyRegister.fields.industry')}
               placeholder="Deep Tech, Healthtech, Fintech…"
               error={errors.industry?.message}
               {...register('industry')}
@@ -179,12 +195,12 @@ export default function CompanyRegisterPage() {
               htmlFor="company-address"
               className="mb-1.5 block text-[13px] font-bold text-ink"
             >
-              Registered office address
+              {t('companyRegister.fields.address')}
             </label>
             <textarea
               id="company-address"
               rows={2}
-              placeholder="Street, city, state, PIN code"
+              placeholder={t('companyRegister.addressPlaceholder')}
               className="w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
               {...register('address')}
             />
@@ -195,13 +211,13 @@ export default function CompanyRegisterPage() {
 
           <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
-              label="Authorized signatory name"
-              placeholder="Full name"
+              label={t('companyRegister.fields.signatoryName')}
+              placeholder={t('companyRegister.fullNamePlaceholder')}
               error={errors.signatoryName?.message}
               {...register('signatoryName')}
             />
             <Input
-              label="Work email"
+              label={t('fields.workEmail')}
               type="email"
               placeholder="founder@company.com"
               error={errors.workEmail?.message}
@@ -211,9 +227,9 @@ export default function CompanyRegisterPage() {
 
           <div className="mb-5">
             <Input
-              label="Password"
+              label={t('fields.password')}
               type="password"
-              placeholder="Create a password"
+              placeholder={t('register.passwordPlaceholder')}
               error={errors.password?.message}
               {...register('password')}
             />
@@ -225,9 +241,9 @@ export default function CompanyRegisterPage() {
               control={control}
               render={({ field }) => (
                 <FileDropInput
-                  label="Certificate of incorporation"
-                  placeholder="Upload PDF for verification"
-                  hint="Reviewed by our compliance team within 24–48 hours"
+                  label={t('companyRegister.certificate.label')}
+                  placeholder={t('companyRegister.certificate.placeholder')}
+                  hint={t('companyRegister.certificate.hint')}
                   accept=".pdf"
                   value={field.value}
                   onChange={field.onChange}
@@ -237,14 +253,13 @@ export default function CompanyRegisterPage() {
           </div>
 
           <div className="mb-[22px] rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] leading-[1.55] text-[#8A5A0F]">
-            All company data is verified against MCA (Ministry of Corporate Affairs) records before
-            job or partnership postings go live, in accordance with Indian company law.
+            {t('companyRegister.mcaNotice')}
           </div>
 
           {formError && <p className="mb-4 text-[13px] text-danger">{formError}</p>}
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            Submit for verification
+            {t('companyRegister.submit')}
           </Button>
         </form>
       </div>

@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { Button, Input } from '../../components/ui'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { AuthCard } from './shared/AuthCard'
@@ -18,7 +20,9 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
+  const localize = useLocalizedPath()
   const setSession = useAuthStore((state) => state.setSession)
   const [formError, setFormError] = useState<string | null>(null)
   const {
@@ -35,25 +39,23 @@ export default function LoginPage() {
     try {
       const response = await authApi.login(values)
       setSession(response.accessToken, response.user)
-      navigate(ROUTES.candidateDashboard)
+      navigate(localize(ROUTES.candidateDashboard))
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+      setFormError(error instanceof ApiError ? error.message : t('errors.generic'))
     }
   }
 
   return (
     <AuthCard>
       <div className="mb-6 text-center">
-        <h1 className="mb-1.5 text-[22px] font-extrabold text-ink">Welcome back</h1>
-        <p className="text-sm text-slate">
-          Log in to see jobs, partnerships, and community roles matched to you.
-        </p>
+        <h1 className="mb-1.5 text-[22px] font-extrabold text-ink">{t('login.title')}</h1>
+        <p className="text-sm text-slate">{t('login.subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="mb-4">
           <Input
-            label="Email"
+            label={t('fields.email')}
             type="email"
             placeholder="rohan@email.com"
             error={errors.email?.message}
@@ -63,7 +65,7 @@ export default function LoginPage() {
 
         <div className="mb-[18px]">
           <Input
-            label="Password"
+            label={t('fields.password')}
             type="password"
             placeholder="••••••••"
             error={errors.password?.message}
@@ -75,7 +77,7 @@ export default function LoginPage() {
               onClick={(event) => event.preventDefault()}
               className="text-[13px] font-semibold text-primary no-underline"
             >
-              Forgot password?
+              {t('login.forgotPassword')}
             </a>
           </div>
         </div>
@@ -83,16 +85,16 @@ export default function LoginPage() {
         {formError && <p className="mb-[18px] text-[13px] text-danger">{formError}</p>}
 
         <Button type="submit" disabled={isSubmitting} className="mb-[18px] w-full">
-          Log in
+          {t('login.submit')}
         </Button>
       </form>
 
       <SocialAuthButtons />
 
       <p className="text-center text-[13.5px] text-slate">
-        New here?{' '}
-        <Link to={ROUTES.register} className="font-bold text-primary no-underline">
-          Create an account
+        {t('login.newHere')}{' '}
+        <Link to={localize(ROUTES.register)} className="font-bold text-primary no-underline">
+          {t('login.createAccount')}
         </Link>
       </p>
     </AuthCard>

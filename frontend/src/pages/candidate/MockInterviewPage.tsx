@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next'
+
+// Mock content, not translated UI copy — same treatment as other mock data elsewhere.
 const RECORDINGS = [
   { title: 'Frontend behavioral round', date: 'Jul 2, 2026', duration: '18:42', questions: 8 },
   { title: 'System design practice', date: 'Jun 24, 2026', duration: '24:10', questions: 6 },
@@ -6,12 +9,11 @@ const RECORDINGS = [
 ]
 
 export default function MockInterviewPage() {
+  const { t } = useTranslation('candidate')
   return (
     <main className="mx-auto max-w-[1120px] px-6 pt-7 pb-16">
-      <h1 className="mb-1 text-xl font-extrabold text-ink">Mock interviews</h1>
-      <p className="mb-6 text-sm text-slate">
-        Practice on camera, then review your recorded sessions anytime.
-      </p>
+      <h1 className="mb-1 text-xl font-extrabold text-ink">{t('mockInterview.title')}</h1>
+      <p className="mb-6 text-sm text-slate">{t('mockInterview.subtitle')}</p>
 
       <div className="mb-9 grid grid-cols-1 gap-6 profile:grid-cols-[minmax(0,1fr)_320px]">
         <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-footer">
@@ -28,12 +30,12 @@ export default function MockInterviewPage() {
               <rect x="2" y="6" width="15" height="12" rx="2" />
               <path d="M17 10l5-3v10l-5-3" />
             </svg>
-            <div className="font-mono text-[12.5px]">[ camera preview ]</div>
+            <div className="font-mono text-[12.5px]">{t('mockInterview.cameraPreview')}</div>
           </div>
           <div className="absolute inset-x-0 bottom-4 flex justify-center gap-3">
             <button
               type="button"
-              aria-label="Toggle microphone"
+              aria-label={t('mockInterview.toggleMic')}
               className="flex h-[46px] w-[46px] items-center justify-center rounded-full bg-white"
             >
               <svg
@@ -50,14 +52,14 @@ export default function MockInterviewPage() {
             </button>
             <button
               type="button"
-              aria-label="Stop recording"
+              aria-label={t('mockInterview.stopRecording')}
               className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-danger"
             >
               <span className="h-[18px] w-[18px] rounded bg-white" />
             </button>
             <button
               type="button"
-              aria-label="Toggle camera"
+              aria-label={t('mockInterview.toggleCamera')}
               className="flex h-[46px] w-[46px] items-center justify-center rounded-full bg-white"
             >
               <svg
@@ -78,7 +80,7 @@ export default function MockInterviewPage() {
         <div>
           <div className="mb-3.5 rounded-card border border-border bg-surface p-5">
             <div className="mb-3 inline-block rounded-full bg-primary-tint px-2.5 py-1 text-xs font-bold text-primary">
-              Question 3 of 8
+              {t('mockInterview.questionProgress', { current: 3, total: 8 })}
             </div>
             <div className="text-[15px] leading-normal font-bold text-ink">
               Tell me about a time you had to debug a difficult production issue. What was your
@@ -97,14 +99,16 @@ export default function MockInterviewPage() {
             type="button"
             className="w-full rounded-[9px] bg-ink py-[11px] text-sm font-bold text-white"
           >
-            Start new session
+            {t('mockInterview.startNewSession')}
           </button>
         </div>
       </div>
 
       <div className="mb-3.5 flex items-baseline justify-between">
-        <h2 className="text-base font-bold text-ink">Recorded logs</h2>
-        <span className="text-[13px] text-fog">{RECORDINGS.length} sessions</span>
+        <h2 className="text-base font-bold text-ink">{t('mockInterview.recordedLogs')}</h2>
+        <span className="text-[13px] text-fog">
+          {t('mockInterview.sessionsCount', { count: RECORDINGS.length })}
+        </span>
       </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
         {RECORDINGS.map((recording) => (
@@ -125,7 +129,10 @@ export default function MockInterviewPage() {
             <div className="p-3.5">
               <div className="mb-0.5 text-sm font-bold text-ink">{recording.title}</div>
               <div className="text-[12.5px] text-fog">
-                {recording.date} · {recording.questions} questions
+                {t('mockInterview.recordingMeta', {
+                  date: recording.date,
+                  count: recording.questions,
+                })}
               </div>
             </div>
           </div>

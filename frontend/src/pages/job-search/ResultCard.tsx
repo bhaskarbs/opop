@@ -1,10 +1,14 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/ui'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
 import type { DisplayJob } from './jobDisplay'
 
 export function ResultCard({ job }: { job: DisplayJob }) {
+  const { t } = useTranslation('public')
+  const localize = useLocalizedPath()
   const [saved, setSaved] = useState(false)
 
   return (
@@ -19,7 +23,7 @@ export function ResultCard({ job }: { job: DisplayJob }) {
           <div className="flex flex-wrap justify-between gap-2.5">
             <div>
               <Link
-                to={ROUTES.jobDetail(job.id)}
+                to={localize(ROUTES.jobDetail(job.id))}
                 className="text-[16.5px] font-bold text-ink no-underline"
               >
                 {job.title}
@@ -33,7 +37,7 @@ export function ResultCard({ job }: { job: DisplayJob }) {
               onClick={() => setSaved((prev) => !prev)}
               className="h-[38px] rounded-lg border border-border bg-surface px-[18px] text-[13.5px] font-bold whitespace-nowrap text-ink"
             >
-              {saved ? 'Saved' : 'Save'}
+              {saved ? t('resultCard.saved') : t('resultCard.save')}
             </button>
           </div>
           <div className="my-3 flex flex-wrap gap-2">
@@ -52,10 +56,10 @@ export function ResultCard({ job }: { job: DisplayJob }) {
               <span className={`font-semibold ${job.sourceColorClass}`}>{job.source}</span>
             </div>
             <Link
-              to={ROUTES.jobDetail(job.id)}
+              to={localize(ROUTES.jobDetail(job.id))}
               className="rounded-lg bg-primary px-[18px] py-2.5 text-[13.5px] font-bold text-white no-underline"
             >
-              Apply now
+              {t('resultCard.applyNow')}
             </Link>
           </div>
         </div>

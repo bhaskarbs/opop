@@ -1,43 +1,61 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 type Tab = 'candidates' | 'employers' | 'partnerships' | 'community' | 'financial'
 
-const TABS: Array<{ key: Tab; label: string }> = [
-  { key: 'candidates', label: 'Candidates' },
-  { key: 'employers', label: 'Employers & Jobs' },
-  { key: 'partnerships', label: 'Partnerships' },
-  { key: 'community', label: 'Community' },
-  { key: 'financial', label: 'Financial' },
+const TABS: Array<{ key: Tab; labelKey: string }> = [
+  { key: 'candidates', labelKey: 'reports.tabs.candidates' },
+  { key: 'employers', labelKey: 'reports.tabs.employers' },
+  { key: 'partnerships', labelKey: 'reports.tabs.partnerships' },
+  { key: 'community', labelKey: 'reports.tabs.community' },
+  { key: 'financial', labelKey: 'reports.tabs.financial' },
 ]
 
 interface Kpi {
-  label: string
+  labelKey: string
   value: string
   trend: string
   trendMuted?: boolean
 }
 
 const CANDIDATE_KPIS: Kpi[] = [
-  { label: 'Total registered', value: '84,210', trend: '+1,204 this period' },
-  { label: 'Active job seekers', value: '52,340', trend: '+890 this period' },
-  { label: 'Resumes uploaded', value: '79,880', trend: '95% of registered', trendMuted: true },
-  { label: 'Mock interviews taken', value: '18,210', trend: '+2,110 this period' },
+  { labelKey: 'reports.candidates.totalRegistered', value: '84,210', trend: '+1,204 this period' },
+  { labelKey: 'reports.candidates.activeJobSeekers', value: '52,340', trend: '+890 this period' },
+  {
+    labelKey: 'reports.candidates.resumesUploaded',
+    value: '79,880',
+    trend: '95% of registered',
+    trendMuted: true,
+  },
+  {
+    labelKey: 'reports.candidates.mockInterviewsTaken',
+    value: '18,210',
+    trend: '+2,110 this period',
+  },
 ]
 
 const CANDIDATE_OUTCOMES = [
-  { label: 'Hired via job listing', value: '9,880', pct: 100, colorClass: 'bg-primary' },
-  { label: 'Entered a partnership', value: '4,120', pct: 42, colorClass: 'bg-amber' },
-  { label: 'Joined a community role', value: '3,340', pct: 34, colorClass: 'bg-teal' },
-  { label: 'Still searching', value: '38,900', pct: 74, colorClass: 'bg-fog' },
+  { labelKey: 'reports.candidates.hiredViaJobListing', value: '9,880', pct: 100, colorClass: 'bg-primary' },
+  { labelKey: 'reports.candidates.enteredPartnership', value: '4,120', pct: 42, colorClass: 'bg-amber' },
+  { labelKey: 'reports.candidates.joinedCommunityRole', value: '3,340', pct: 34, colorClass: 'bg-teal' },
+  { labelKey: 'reports.candidates.stillSearching', value: '38,900', pct: 74, colorClass: 'bg-fog' },
 ]
 
 const EMPLOYER_KPIS: Kpi[] = [
-  { label: 'Registered companies', value: '2,340', trend: '+38 this period' },
-  { label: 'Verified companies', value: '2,110', trend: '90% verified', trendMuted: true },
-  { label: 'Live job postings', value: '12,406', trend: '+312 this period' },
-  { label: 'Avg. time to fill', value: '18 days', trend: '-2 days vs last period' },
+  { labelKey: 'reports.employers.registeredCompanies', value: '2,340', trend: '+38 this period' },
+  {
+    labelKey: 'reports.employers.verifiedCompanies',
+    value: '2,110',
+    trend: '90% verified',
+    trendMuted: true,
+  },
+  { labelKey: 'reports.employers.liveJobPostings', value: '12,406', trend: '+312 this period' },
+  { labelKey: 'reports.employers.avgTimeToFill', value: '18 days', trend: '-2 days vs last period' },
 ]
 
+// Sector/session/revenue-source names are treated like categorical report data, not translated
+// UI copy — same treatment as mock content elsewhere.
 const SECTORS = [
   { sector: 'Technology', openJobs: 4820, applications: '210,400', fillRate: '68%' },
   { sector: 'Healthtech', openJobs: 1240, applications: '58,200', fillRate: '61%' },
@@ -47,22 +65,35 @@ const SECTORS = [
 ]
 
 const PARTNERSHIP_KPIS: Kpi[] = [
-  { label: 'Total partnership matches', value: '3,880', trend: '+94 this period' },
-  { label: 'Startups offering partnerships', value: '860', trend: '+22 this period' },
-  { label: 'Seminars held', value: '146', trend: '+18 this period' },
-  { label: 'Avg. partnership duration', value: '4.2 months', trend: 'Stable', trendMuted: true },
+  {
+    labelKey: 'reports.partnerships.totalPartnershipMatches',
+    value: '3,880',
+    trend: '+94 this period',
+  },
+  {
+    labelKey: 'reports.partnerships.startupsOffering',
+    value: '860',
+    trend: '+22 this period',
+  },
+  { labelKey: 'reports.partnerships.seminarsHeld', value: '146', trend: '+18 this period' },
+  {
+    labelKey: 'reports.partnerships.avgDuration',
+    value: '4.2 months',
+    trend: 'Stable',
+    trendMuted: true,
+  },
 ]
 
 const PARTNERSHIP_TRACKS = [
   {
-    label: 'Funded',
+    labelKey: 'reports.partnerships.funded',
     value: '2,140 (55%)',
     pct: 55,
     colorClass: 'bg-primary',
     textColorClass: 'text-primary',
   },
   {
-    label: 'Without funding',
+    labelKey: 'reports.partnerships.withoutFunding',
     value: '1,740 (45%)',
     pct: 45,
     colorClass: 'bg-teal',
@@ -71,10 +102,18 @@ const PARTNERSHIP_TRACKS = [
 ]
 
 const COMMUNITY_KPIS: Kpi[] = [
-  { label: 'Community sign-ups', value: '9,120', trend: '+210 this period' },
-  { label: 'Sessions run', value: '340', trend: '+28 this period' },
-  { label: 'Avg. attendance rate', value: '78%', trend: '+4pts vs last period' },
-  { label: 'Income-type guides read', value: '21,400', trend: '+1,890 this period' },
+  { labelKey: 'reports.community.signUps', value: '9,120', trend: '+210 this period' },
+  { labelKey: 'reports.community.sessionsRun', value: '340', trend: '+28 this period' },
+  {
+    labelKey: 'reports.community.avgAttendanceRate',
+    value: '78%',
+    trend: '+4pts vs last period',
+  },
+  {
+    labelKey: 'reports.community.incomeTypeGuidesRead',
+    value: '21,400',
+    trend: '+1,890 this period',
+  },
 ]
 
 const SESSIONS = [
@@ -85,11 +124,21 @@ const SESSIONS = [
 ]
 
 const FINANCIAL_KPIS: Kpi[] = [
-  { label: 'Total revenue (period)', value: '₹1.82 Cr', trend: '+12% vs last period' },
-  { label: 'Job posting fees', value: '₹1.10 Cr', trend: '60% of revenue', trendMuted: true },
-  { label: 'Featured listings', value: '₹48.6 L', trend: '27% of revenue', trendMuted: true },
+  { labelKey: 'reports.financial.totalRevenue', value: '₹1.82 Cr', trend: '+12% vs last period' },
   {
-    label: 'Candidate search subscriptions',
+    labelKey: 'reports.financial.jobPostingFees',
+    value: '₹1.10 Cr',
+    trend: '60% of revenue',
+    trendMuted: true,
+  },
+  {
+    labelKey: 'reports.financial.featuredListings',
+    value: '₹48.6 L',
+    trend: '27% of revenue',
+    trendMuted: true,
+  },
+  {
+    labelKey: 'reports.financial.candidateSearchSubscriptions',
     value: '₹23.4 L',
     trend: '13% of revenue',
     trendMuted: true,
@@ -102,15 +151,15 @@ const REVENUE = [
   { source: 'Candidate search subscriptions', amount: '₹23.4 L', share: '13%' },
 ]
 
-function KpiRow({ kpis }: { kpis: Kpi[] }) {
+function KpiRow({ t, kpis }: { t: TFunction<'admin'>; kpis: Kpi[] }) {
   return (
     <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
       {kpis.map((kpi) => (
         <div
-          key={kpi.label}
+          key={kpi.labelKey}
           className="rounded-card border border-border bg-surface px-5 py-[18px]"
         >
-          <div className="mb-1.5 text-[13px] text-fog">{kpi.label}</div>
+          <div className="mb-1.5 text-[13px] text-fog">{t(kpi.labelKey)}</div>
           <div className="text-[22px] font-extrabold text-ink">{kpi.value}</div>
           <div className={`mt-1 text-[12.5px] ${kpi.trendMuted ? 'text-fog' : 'text-teal'}`}>
             {kpi.trend}
@@ -122,23 +171,22 @@ function KpiRow({ kpis }: { kpis: Kpi[] }) {
 }
 
 export default function AdminReportsPage() {
+  const { t } = useTranslation('admin')
   const [tab, setTab] = useState<Tab>('candidates')
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-[22px] font-extrabold text-ink">Reports</h1>
-          <p className="text-sm text-slate">
-            Platform performance across candidates, employers, partnerships, and community.
-          </p>
+          <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('reports.title')}</h1>
+          <p className="text-sm text-slate">{t('reports.subtitle')}</p>
         </div>
         <div className="flex flex-wrap gap-2.5">
           <select className="rounded-lg border border-border bg-surface px-3 py-2.5 text-[13.5px] text-ink">
-            <option>Last 30 days</option>
-            <option>Last 90 days</option>
-            <option>Last 6 months</option>
-            <option>Year to date</option>
+            <option>{t('reports.dateRange.last30Days')}</option>
+            <option>{t('reports.dateRange.last90Days')}</option>
+            <option>{t('reports.dateRange.last6Months')}</option>
+            <option>{t('reports.dateRange.yearToDate')}</option>
           </select>
           <button
             type="button"
@@ -154,35 +202,37 @@ export default function AdminReportsPage() {
             >
               <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
             </svg>
-            Export CSV
+            {t('reports.exportCsv')}
           </button>
         </div>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-5 border-b border-border">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.key}
+            key={tabItem.key}
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => setTab(tabItem.key)}
             className={`border-b-2 py-2.5 text-sm font-bold ${
-              tab === t.key ? 'border-primary text-ink' : 'border-transparent text-fog'
+              tab === tabItem.key ? 'border-primary text-ink' : 'border-transparent text-fog'
             }`}
           >
-            {t.label}
+            {t(tabItem.labelKey)}
           </button>
         ))}
       </div>
 
       {tab === 'candidates' && (
         <>
-          <KpiRow kpis={CANDIDATE_KPIS} />
+          <KpiRow t={t} kpis={CANDIDATE_KPIS} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
-            <h2 className="mb-4 text-[15px] font-bold text-ink">Candidates by outcome</h2>
+            <h2 className="mb-4 text-[15px] font-bold text-ink">
+              {t('reports.candidates.byOutcome')}
+            </h2>
             {CANDIDATE_OUTCOMES.map((outcome) => (
-              <div key={outcome.label} className="mb-3.5">
+              <div key={outcome.labelKey} className="mb-3.5">
                 <div className="mb-1 flex justify-between text-[13px] text-[#3A414D]">
-                  <span>{outcome.label}</span>
+                  <span>{t(outcome.labelKey)}</span>
                   <strong className="text-ink">{outcome.value}</strong>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-neutral-tint">
@@ -199,17 +249,25 @@ export default function AdminReportsPage() {
 
       {tab === 'employers' && (
         <>
-          <KpiRow kpis={EMPLOYER_KPIS} />
+          <KpiRow t={t} kpis={EMPLOYER_KPIS} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
-            <h2 className="mb-4 text-[15px] font-bold text-ink">Top hiring sectors</h2>
+            <h2 className="mb-4 text-[15px] font-bold text-ink">
+              {t('reports.employers.topHiringSectors')}
+            </h2>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] border-collapse text-[13.5px]">
                 <thead>
                   <tr className="text-left text-xs text-fog uppercase">
-                    <th className="py-0 pr-3 pb-2.5 font-semibold">Sector</th>
-                    <th className="px-3 pb-2.5 font-semibold">Open jobs</th>
-                    <th className="px-3 pb-2.5 font-semibold">Applications</th>
-                    <th className="pb-2.5 font-semibold">Fill rate</th>
+                    <th className="py-0 pr-3 pb-2.5 font-semibold">
+                      {t('reports.employers.table.sector')}
+                    </th>
+                    <th className="px-3 pb-2.5 font-semibold">
+                      {t('reports.employers.table.openJobs')}
+                    </th>
+                    <th className="px-3 pb-2.5 font-semibold">
+                      {t('reports.employers.table.applications')}
+                    </th>
+                    <th className="pb-2.5 font-semibold">{t('reports.employers.table.fillRate')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,15 +288,17 @@ export default function AdminReportsPage() {
 
       {tab === 'partnerships' && (
         <>
-          <KpiRow kpis={PARTNERSHIP_KPIS} />
+          <KpiRow t={t} kpis={PARTNERSHIP_KPIS} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
-            <h2 className="mb-4 text-[15px] font-bold text-ink">Partnerships by track</h2>
+            <h2 className="mb-4 text-[15px] font-bold text-ink">
+              {t('reports.partnerships.byTrack')}
+            </h2>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-5">
               {PARTNERSHIP_TRACKS.map((track) => (
-                <div key={track.label}>
+                <div key={track.labelKey}>
                   <div className="mb-2 flex items-center justify-between">
                     <span className={`text-[13.5px] font-bold ${track.textColorClass}`}>
-                      {track.label}
+                      {t(track.labelKey)}
                     </span>
                     <span className="text-[13px] text-fog">{track.value}</span>
                   </div>
@@ -257,16 +317,22 @@ export default function AdminReportsPage() {
 
       {tab === 'community' && (
         <>
-          <KpiRow kpis={COMMUNITY_KPIS} />
+          <KpiRow t={t} kpis={COMMUNITY_KPIS} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
-            <h2 className="mb-4 text-[15px] font-bold text-ink">Top community sessions attended</h2>
+            <h2 className="mb-4 text-[15px] font-bold text-ink">
+              {t('reports.community.topSessions')}
+            </h2>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] border-collapse text-[13.5px]">
                 <thead>
                   <tr className="text-left text-xs text-fog uppercase">
-                    <th className="py-0 pr-3 pb-2.5 font-semibold">Session</th>
-                    <th className="px-3 pb-2.5 font-semibold">Attendees</th>
-                    <th className="pb-2.5 font-semibold">Avg. rating</th>
+                    <th className="py-0 pr-3 pb-2.5 font-semibold">
+                      {t('reports.community.table.session')}
+                    </th>
+                    <th className="px-3 pb-2.5 font-semibold">
+                      {t('reports.community.table.attendees')}
+                    </th>
+                    <th className="pb-2.5 font-semibold">{t('reports.community.table.avgRating')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -286,16 +352,22 @@ export default function AdminReportsPage() {
 
       {tab === 'financial' && (
         <>
-          <KpiRow kpis={FINANCIAL_KPIS} />
+          <KpiRow t={t} kpis={FINANCIAL_KPIS} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
-            <h2 className="mb-4 text-[15px] font-bold text-ink">Revenue by source</h2>
+            <h2 className="mb-4 text-[15px] font-bold text-ink">
+              {t('reports.financial.byRevenue')}
+            </h2>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] border-collapse text-[13.5px]">
                 <thead>
                   <tr className="text-left text-xs text-fog uppercase">
-                    <th className="py-0 pr-3 pb-2.5 font-semibold">Source</th>
-                    <th className="px-3 pb-2.5 font-semibold">This month</th>
-                    <th className="pb-2.5 font-semibold">Share</th>
+                    <th className="py-0 pr-3 pb-2.5 font-semibold">
+                      {t('reports.financial.table.source')}
+                    </th>
+                    <th className="px-3 pb-2.5 font-semibold">
+                      {t('reports.financial.table.thisMonth')}
+                    </th>
+                    <th className="pb-2.5 font-semibold">{t('reports.financial.table.share')}</th>
                   </tr>
                 </thead>
                 <tbody>
