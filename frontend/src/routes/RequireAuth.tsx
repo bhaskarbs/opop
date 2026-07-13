@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import type { UserRole } from '../lib/apiClient'
 import { useAuthStore } from '../stores/authStore'
 import { ROUTES } from './paths'
@@ -18,6 +19,7 @@ export function RequireAuth({ role }: RequireAuthProps) {
   const status = useAuthStore((state) => state.status)
   const user = useAuthStore((state) => state.user)
   const location = useLocation()
+  const localize = useLocalizedPath()
 
   if (status === 'checking') {
     // Still attempting the silent cookie-based refresh (see App.tsx) — render nothing
@@ -26,7 +28,7 @@ export function RequireAuth({ role }: RequireAuthProps) {
   }
 
   if (status !== 'authenticated' || user?.role !== role) {
-    return <Navigate to={LOGIN_ROUTE_BY_ROLE[role]} state={{ from: location }} replace />
+    return <Navigate to={localize(LOGIN_ROUTE_BY_ROLE[role])} state={{ from: location }} replace />
   }
 
   return <Outlet />

@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "jobs": "Find Jobs",
+    "partnerships": "Startup Partnerships",
+    "community": "Community",
+    "forEmployers": "For Employers",
+    "dashboard": "Dashboard",
+    "postJob": "Post a Job",
+    "searchCandidates": "Search Candidates",
+    "partnershipApplicants": "Partnership Applicants",
+    "seminars": "Seminars & Meetups",
+    "reports": "Reports",
+    "users": "Users",
+    "jobsAdmin": "Jobs",
+    "login": "Log in",
+    "register": "Register",
+    "logout": "Log out"
+  },
+  "userMenu": {
+    "myProfile": "My Profile",
+    "myApplications": "My Applications",
+    "mockInterviews": "Mock Interviews",
+    "companyProfile": "Company Profile",
+    "jobPostings": "Job Postings",
+    "billing": "Billing",
+    "adminSettings": "Admin Settings"
+  },
+  "aria": {
+    "notifications": "Notifications",
+    "menu": "Menu"
+  },
+  "tagline": "More than a job board — apply for roles, partner with startups, and grow through community-based opportunities that count toward the career you actually want.",
+  "footer": {
+    "candidates": {
+      "heading": "For Candidates",
+      "findJobs": "Find Jobs",
+      "startupPartnerships": "Startup Partnerships",
+      "communityOpportunities": "Community Opportunities",
+      "mockInterviews": "Mock Interviews",
+      "registerUploadResume": "Register / Upload Resume"
+    },
+    "employers": {
+      "heading": "For Employers",
+      "postJob": "Post a Job",
+      "searchCandidates": "Search Candidates",
+      "offerPartnership": "Offer a Partnership",
+      "companyRegistration": "Company Registration"
+    },
+    "contact": {
+      "heading": "Contact Us",
+      "city": "Bengaluru, Karnataka",
+      "country": "India"
+    },
+    "legal": {
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "grievanceRedressal": "Grievance Redressal"
+    },
+    "copyright": "© {{year}} OpenOpportunity Technologies Pvt. Ltd. All rights reserved."
+  }
+}

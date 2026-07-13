@@ -1,0 +1,64 @@
+{
+  "comingSoon": "Coming soon",
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has moved.",
+    "backHome": "Back to home"
+  },
+  "landing": {
+    "badge": "A job portal that also builds your career path",
+    "hero": {
+      "titleLine1": "Jobs. Startup partnerships.",
+      "titleLine2": "Community income.",
+      "subtitle": "Still searching after years of applications? Every skill you list opens three doors — a job, a partnership with a growing startup, or a community role that builds real-world experience."
+    },
+    "search": {
+      "jobPlaceholder": "Job title, skill, or keyword",
+      "locationPlaceholder": "City or remote",
+      "submit": "Search"
+    },
+    "paths": {
+      "heading": "Three paths, one profile",
+      "subtitle": "Your resume works across all three — every skill you build counts toward the role you actually want.",
+      "jobs": {
+        "title": "Full-time & contract jobs",
+        "description": "Search thousands of roles from direct employers, plus listings aggregated from other job boards across the web.",
+        "link": "Browse jobs →"
+      },
+      "partnerships": {
+        "title": "Startup partnerships",
+        "description": "Not landing the job yet? Partner with a startup that needs your exact skill set and turn it into real, countable experience.",
+        "link": "Explore partnerships →"
+      },
+      "community": {
+        "title": "Community opportunities",
+        "description": "Sharpen soft skills through community roles, and learn how different income types can support you along the way.",
+        "link": "Learn more →"
+      }
+    },
+    "stats": {
+      "liveJobs": "Live job openings",
+      "startups": "Startups offering partnerships",
+      "communitySessions": "Community sessions run",
+      "candidatesWhoFoundPath": "Candidates who found a path"
+    },
+    "startups": {
+      "heading": "Startups offering partnerships",
+      "viewAll": "View all →",
+      "applyForPartnership": "Apply for partnership"
+    },
+    "community": {
+      "badge": "Community income",
+      "heading": "Never heard of community income?",
+      "subtitle": "Watch short videos and read guides on different income types — then tell us you're interested and we'll invite you to the next session.",
+      "watchAndRead": "Watch & read →",
+      "interested": "I'm interested",
+      "videoPlaceholder": "[ intro video: community income explained ]"
+    },
+    "finalCta": {
+      "heading": "Ready to build the career you actually want?",
+      "subtitle": "Create your profile once — it works across jobs, partnerships, and community roles.",
+      "button": "Register & upload resume"
+    }
+  }
+}

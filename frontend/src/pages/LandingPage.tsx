@@ -1,8 +1,12 @@
 import { type SubmitEvent, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, LinkButton, Tag } from '../components/ui'
+import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ROUTES } from '../routes/paths'
 
+// Trending-skill query chips double as literal search terms (see handleSearchSubmit), so — like
+// job/company content elsewhere — they stay in English rather than being translated UI copy.
 const TRENDING_SKILLS = [
   'Frontend Developer',
   'Data Analyst',
@@ -21,10 +25,9 @@ const THREE_PATHS = [
       </>
     ),
     iconColor: '#2451D6',
-    title: 'Full-time & contract jobs',
-    description:
-      'Search thousands of roles from direct employers, plus listings aggregated from other job boards across the web.',
-    linkLabel: 'Browse jobs →',
+    titleKey: 'landing.paths.jobs.title',
+    descriptionKey: 'landing.paths.jobs.description',
+    linkLabelKey: 'landing.paths.jobs.link',
     linkClassName: 'text-primary',
     to: ROUTES.jobs,
   },
@@ -32,10 +35,9 @@ const THREE_PATHS = [
     iconBgClass: 'bg-[#FFF1DC]',
     icon: <path d="M12 2l3 6 6 1-4.5 4.5L17.5 20 12 17l-5.5 3 1-6.5L3 9l6-1z" />,
     iconColor: '#C2760C',
-    title: 'Startup partnerships',
-    description:
-      'Not landing the job yet? Partner with a startup that needs your exact skill set and turn it into real, countable experience.',
-    linkLabel: 'Explore partnerships →',
+    titleKey: 'landing.paths.partnerships.title',
+    descriptionKey: 'landing.paths.partnerships.description',
+    linkLabelKey: 'landing.paths.partnerships.link',
     linkClassName: 'text-amber',
     to: ROUTES.partnerships,
   },
@@ -49,22 +51,23 @@ const THREE_PATHS = [
       </>
     ),
     iconColor: '#0F8A6B',
-    title: 'Community opportunities',
-    description:
-      'Sharpen soft skills through community roles, and learn how different income types can support you along the way.',
-    linkLabel: 'Learn more →',
+    titleKey: 'landing.paths.community.title',
+    descriptionKey: 'landing.paths.community.description',
+    linkLabelKey: 'landing.paths.community.link',
     linkClassName: 'text-teal',
     to: ROUTES.community,
   },
 ]
 
 const STATS = [
-  { value: '12,400+', label: 'Live job openings' },
-  { value: '860+', label: 'Startups offering partnerships' },
-  { value: '340+', label: 'Community sessions run' },
-  { value: '92%', label: 'Candidates who found a path' },
+  { value: '12,400+', labelKey: 'landing.stats.liveJobs' },
+  { value: '860+', labelKey: 'landing.stats.startups' },
+  { value: '340+', labelKey: 'landing.stats.communitySessions' },
+  { value: '92%', labelKey: 'landing.stats.candidatesWhoFoundPath' },
 ]
 
+// Mock startup profiles — treated like company-authored content, not translated UI copy (i18n
+// scope here is static UI text only; job/company content stays as entered).
 const STARTUPS = [
   {
     name: 'Vertex Robotics',
@@ -96,7 +99,9 @@ const STARTUPS = [
 ]
 
 export default function LandingPage() {
+  const { t } = useTranslation('public')
   const navigate = useNavigate()
+  const localize = useLocalizedPath()
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
 
@@ -106,7 +111,7 @@ export default function LandingPage() {
     if (query.trim()) params.set('q', query.trim())
     if (location.trim()) params.set('loc', location.trim())
     const queryString = params.toString()
-    navigate(queryString ? `${ROUTES.jobs}?${queryString}` : ROUTES.jobs)
+    navigate(queryString ? `${localize(ROUTES.jobs)}?${queryString}` : localize(ROUTES.jobs))
   }
 
   return (
@@ -115,17 +120,15 @@ export default function LandingPage() {
       <section className="bg-gradient-to-b from-primary-tint to-page px-6 pt-16 pb-14">
         <div className="mx-auto max-w-[1120px] text-center">
           <div className="mb-[22px] inline-flex items-center gap-1.5 rounded-full border border-[#D8E1FB] bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-primary">
-            A job portal that also builds your career path
+            {t('landing.badge')}
           </div>
           <h1 className="mb-[18px] text-[clamp(32px,5vw,52px)] leading-[1.12] font-extrabold tracking-[-0.02em] text-ink">
-            Jobs. Startup partnerships.
+            {t('landing.hero.titleLine1')}
             <br />
-            Community income.
+            {t('landing.hero.titleLine2')}
           </h1>
           <p className="mx-auto mb-9 max-w-[640px] text-lg leading-[1.6] text-slate">
-            Still searching after years of applications? Every skill you list opens three doors — a
-            job, a partnership with a growing startup, or a community role that builds real-world
-            experience.
+            {t('landing.hero.subtitle')}
           </p>
 
           <form
@@ -149,7 +152,7 @@ export default function LandingPage() {
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Job title, skill, or keyword"
+                placeholder={t('landing.search.jobPlaceholder')}
                 className="w-full font-[inherit] text-[15px] text-ink outline-none"
               />
             </label>
@@ -170,7 +173,7 @@ export default function LandingPage() {
                 type="text"
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
-                placeholder="City or remote"
+                placeholder={t('landing.search.locationPlaceholder')}
                 className="w-full font-[inherit] text-[15px] text-ink outline-none"
               />
             </label>
@@ -178,7 +181,7 @@ export default function LandingPage() {
               type="submit"
               className="min-h-[46px] rounded-control bg-primary px-[26px] text-[15px] font-bold text-white hover:bg-primary/90"
             >
-              Search
+              {t('landing.search.submit')}
             </button>
           </form>
 
@@ -186,7 +189,7 @@ export default function LandingPage() {
             {TRENDING_SKILLS.map((skill) => (
               <Link
                 key={skill}
-                to={`${ROUTES.jobs}?q=${encodeURIComponent(skill)}`}
+                to={`${localize(ROUTES.jobs)}?q=${encodeURIComponent(skill)}`}
                 className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-slate no-underline"
               >
                 {skill}
@@ -200,16 +203,13 @@ export default function LandingPage() {
       <section className="mx-auto max-w-[1120px] px-6 pt-16 pb-4">
         <div className="mx-auto mb-10 max-w-[640px] text-center">
           <h2 className="mb-3 text-[30px] font-extrabold tracking-[-0.01em] text-ink">
-            Three paths, one profile
+            {t('landing.paths.heading')}
           </h2>
-          <p className="text-base leading-[1.6] text-slate">
-            Your resume works across all three — every skill you build counts toward the role you
-            actually want.
-          </p>
+          <p className="text-base leading-[1.6] text-slate">{t('landing.paths.subtitle')}</p>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5">
           {THREE_PATHS.map((path) => (
-            <Card key={path.title} className="p-7">
+            <Card key={path.titleKey} className="p-7">
               <div
                 className={`mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] ${path.iconBgClass}`}
               >
@@ -224,10 +224,13 @@ export default function LandingPage() {
                   {path.icon}
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-bold text-ink">{path.title}</h3>
-              <p className="mb-4 text-[14.5px] leading-[1.6] text-slate">{path.description}</p>
-              <Link to={path.to} className={`text-sm font-bold no-underline ${path.linkClassName}`}>
-                {path.linkLabel}
+              <h3 className="mb-2 text-lg font-bold text-ink">{t(path.titleKey)}</h3>
+              <p className="mb-4 text-[14.5px] leading-[1.6] text-slate">{t(path.descriptionKey)}</p>
+              <Link
+                to={localize(path.to)}
+                className={`text-sm font-bold no-underline ${path.linkClassName}`}
+              >
+                {t(path.linkLabelKey)}
               </Link>
             </Card>
           ))}
@@ -238,9 +241,9 @@ export default function LandingPage() {
       <section className="mt-14 border-t border-b border-border bg-surface">
         <div className="mx-auto grid max-w-[1120px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-6 px-6 py-9 text-center">
           {STATS.map((stat) => (
-            <div key={stat.label}>
+            <div key={stat.labelKey}>
               <div className="text-[30px] font-extrabold text-ink">{stat.value}</div>
-              <div className="mt-1 text-[13.5px] text-slate">{stat.label}</div>
+              <div className="mt-1 text-[13.5px] text-slate">{t(stat.labelKey)}</div>
             </div>
           ))}
         </div>
@@ -250,10 +253,13 @@ export default function LandingPage() {
       <section className="mx-auto max-w-[1120px] px-6 py-16">
         <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-[26px] font-extrabold tracking-[-0.01em] text-ink">
-            Startups offering partnerships
+            {t('landing.startups.heading')}
           </h2>
-          <Link to={ROUTES.partnerships} className="text-sm font-bold text-primary no-underline">
-            View all →
+          <Link
+            to={localize(ROUTES.partnerships)}
+            className="text-sm font-bold text-primary no-underline"
+          >
+            {t('landing.startups.viewAll')}
           </Link>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[18px]">
@@ -278,12 +284,8 @@ export default function LandingPage() {
                   </Tag>
                 ))}
               </div>
-              <LinkButton
-                to={ROUTES.partnerships}
-                variant="dark"
-                className="block w-full text-center"
-              >
-                Apply for partnership
+              <LinkButton to={ROUTES.partnerships} variant="dark" className="block w-full text-center">
+                {t('landing.startups.applyForPartnership')}
               </LinkButton>
             </Card>
           ))}
@@ -295,33 +297,32 @@ export default function LandingPage() {
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-center gap-8 rounded-[20px] bg-[#0B3B34] p-11">
           <div>
             <span className="mb-3.5 inline-block rounded-full bg-[rgba(127,224,196,0.12)] px-3 py-[5px] text-[12.5px] font-bold text-[#7FE0C4]">
-              Community income
+              {t('landing.community.badge')}
             </span>
             <h2 className="mb-3 text-[26px] font-extrabold tracking-[-0.01em] text-white">
-              Never heard of community income?
+              {t('landing.community.heading')}
             </h2>
             <p className="mb-5 max-w-[460px] text-[15px] leading-[1.65] text-[#B9E9DC]">
-              Watch short videos and read guides on different income types — then tell us you're
-              interested and we'll invite you to the next session.
+              {t('landing.community.subtitle')}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                to={ROUTES.community}
+                to={localize(ROUTES.community)}
                 className="rounded-lg bg-white px-5 py-[11px] text-sm font-bold text-[#0B3B34] no-underline"
               >
-                Watch & read →
+                {t('landing.community.watchAndRead')}
               </Link>
               <Link
-                to={ROUTES.community}
+                to={localize(ROUTES.community)}
                 className="rounded-lg border border-[rgba(255,255,255,0.3)] px-5 py-[11px] text-sm font-bold text-white no-underline"
               >
-                I'm interested
+                {t('landing.community.interested')}
               </Link>
             </div>
           </div>
           <div className="flex aspect-video items-center justify-center rounded-card border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)]">
             <div className="text-center font-mono text-[12.5px] text-[#7FE0C4]">
-              [ intro video: community income explained ]
+              {t('landing.community.videoPlaceholder')}
             </div>
           </div>
         </div>
@@ -329,14 +330,10 @@ export default function LandingPage() {
 
       {/* Final CTA */}
       <section className="mx-auto mb-[72px] max-w-[1120px] px-6 text-center">
-        <h2 className="mb-3 text-[26px] font-extrabold text-ink">
-          Ready to build the career you actually want?
-        </h2>
-        <p className="mb-6 text-[15px] text-slate">
-          Create your profile once — it works across jobs, partnerships, and community roles.
-        </p>
+        <h2 className="mb-3 text-[26px] font-extrabold text-ink">{t('landing.finalCta.heading')}</h2>
+        <p className="mb-6 text-[15px] text-slate">{t('landing.finalCta.subtitle')}</p>
         <LinkButton to={ROUTES.register} size="lg" className="text-[15px]">
-          Register & upload resume
+          {t('landing.finalCta.button')}
         </LinkButton>
       </section>
     </main>

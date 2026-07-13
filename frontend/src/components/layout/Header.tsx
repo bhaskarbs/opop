@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { DEFAULT_LANGUAGE, isSupportedLanguage, type SupportedLanguage } from '../../i18n'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { authApi } from '../../lib/apiClient'
 import { cn } from '../../lib/cn'
 import { ROUTES } from '../../routes/paths'
@@ -7,6 +10,25 @@ import { useAuthStore } from '../../stores/authStore'
 import { AVATAR_BG_CLASS, DEFAULT_USER_NAME, NAV_BY_VARIANT, USER_MENU_BY_VARIANT } from './navData'
 import { Logo } from './Logo'
 import { RouteLink } from './RouteLink'
+
+/** Toggles between /en and /hi on the current page, preserving the rest of the path. */
+function LanguageSwitcher({ className }: { className: string }) {
+  const { lang } = useParams()
+  const location = useLocation()
+  const activeLang = isSupportedLanguage(lang) ? lang : DEFAULT_LANGUAGE
+  const otherLang: SupportedLanguage = activeLang === 'hi' ? 'en' : 'hi'
+  const rest = location.pathname.replace(/^\/(en|hi)/, '')
+
+  return (
+    <Link
+      to={`/${otherLang}${rest}${location.search}`}
+      aria-label={otherLang === 'hi' ? 'हिन्दी में बदलें' : 'Switch to English'}
+      className={className}
+    >
+      {otherLang === 'hi' ? 'हिं' : 'EN'}
+    </Link>
+  )
+}
 
 export type HeaderVariant = 'guest' | 'candidate' | 'company' | 'admin'
 
@@ -32,6 +54,8 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
   const userMenuRef = useRef<HTMLDivElement>(null)
   const clearSession = useAuthStore((state) => state.clearSession)
   const navigate = useNavigate()
+  const localize = useLocalizedPath()
+  const { t } = useTranslation('layout')
 
   async function handleLogout() {
     try {
@@ -41,7 +65,7 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
       // "logged in" just because the network call failed.
     } finally {
       clearSession()
-      navigate(ROUTES.home)
+      navigate(localize(ROUTES.home))
     }
   }
 
@@ -60,7 +84,7 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
     <header className={cn('z-50 border-b border-border bg-surface', sticky && 'sticky top-0')}>
       <div className="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between gap-4 px-6">
         <div className="flex min-w-0 items-center gap-8">
-          <Link to={ROUTES.home} className="flex shrink-0 items-center gap-2.5 no-underline">
+          <Link to={localize(ROUTES.home)} className="flex shrink-0 items-center gap-2.5 no-underline">
             <Logo context="header" />
           </Link>
           <nav className="header:flex hidden items-center gap-1">
@@ -75,7 +99,7 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
                     isActive ? 'bg-primary-tint text-primary' : 'text-ink',
                   )}
                 >
-                  {item.label}
+                  {t(item.label)}
                 </RouteLink>
               )
             })}
@@ -83,26 +107,27 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
         </div>
 
         <div className="header:flex hidden shrink-0 items-center gap-3">
+          <LanguageSwitcher className="rounded-lg border border-border px-3 py-2 text-[13px] font-semibold text-ink no-underline" />
           {isGuest ? (
             <>
               <Link
-                to={ROUTES.login}
+                to={localize(ROUTES.login)}
                 className="rounded-lg px-4 py-2.5 text-[14.5px] font-semibold text-ink no-underline"
               >
-                Log in
+                {t('nav.login')}
               </Link>
               <Link
-                to={ROUTES.register}
+                to={localize(ROUTES.register)}
                 className="rounded-lg bg-primary px-[18px] py-2.5 text-[14.5px] font-bold text-white no-underline"
               >
-                Register
+                {t('nav.register')}
               </Link>
             </>
           ) : (
             <>
               <button
                 type="button"
-                aria-label="Notifications"
+                aria-label={t('aria.notifications')}
                 className="relative flex h-[38px] w-[38px] items-center justify-center rounded-control border border-border bg-surface"
               >
                 <svg
@@ -150,14 +175,14 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
                 {userMenuOpen && (
                   <div className="absolute top-[46px] right-0 min-w-[200px] rounded-[10px] border border-border bg-surface p-1.5 text-left shadow-elevated">
                     {userMenuItems.map((item) =>
-                      item.label === 'Log out' ? (
+                      item.label === 'nav.logout' ? (
                         <button
                           key={item.label}
                           type="button"
                           onClick={handleLogout}
                           className="block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium text-ink"
                         >
-                          {item.label}
+                          {t(item.label)}
                         </button>
                       ) : (
                         <RouteLink
@@ -165,7 +190,7 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
                           to={item.to}
                           className="block rounded-md px-3 py-2.5 text-sm font-medium text-ink no-underline"
                         >
-                          {item.label}
+                          {t(item.label)}
                         </RouteLink>
                       ),
                     )}
@@ -179,7 +204,7 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
         <button
           type="button"
           onClick={() => setMobileNavOpen((open) => !open)}
-          aria-label="Menu"
+          aria-label={t('aria.menu')}
           className="header:hidden flex h-[38px] w-[38px] items-center justify-center rounded-lg border border-border bg-surface"
         >
           <svg
@@ -204,22 +229,23 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
               to={item.to}
               className="block border-b border-[#F0F1F3] px-1.5 py-[11px] text-[15px] font-semibold text-ink no-underline"
             >
-              {item.label}
+              {t(item.label)}
             </RouteLink>
           ))}
+          <LanguageSwitcher className="mt-3.5 block w-full rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink no-underline" />
           {isGuest ? (
             <div className="mt-3.5 flex gap-2.5">
               <Link
-                to={ROUTES.login}
+                to={localize(ROUTES.login)}
                 className="flex-1 rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink no-underline"
               >
-                Log in
+                {t('nav.login')}
               </Link>
               <Link
-                to={ROUTES.register}
+                to={localize(ROUTES.register)}
                 className="flex-1 rounded-lg bg-primary px-2.5 py-2.5 text-center text-[14.5px] font-bold text-white no-underline"
               >
-                Register
+                {t('nav.register')}
               </Link>
             </div>
           ) : (
@@ -228,7 +254,7 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
               onClick={handleLogout}
               className="mt-3.5 w-full rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink"
             >
-              Log out
+              {t('nav.logout')}
             </button>
           )}
         </div>
