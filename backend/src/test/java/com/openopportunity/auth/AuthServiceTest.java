@@ -9,10 +9,12 @@ import static org.mockito.Mockito.when;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,9 @@ class AuthServiceTest {
     private CompanyProfileRepository companyProfileRepository;
 
     @Mock
+    private CandidateProfileRepository candidateProfileRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -46,12 +51,36 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(
-                userRepository, refreshTokenRepository, companyProfileRepository, passwordEncoder, jwtService, 30);
+                userRepository,
+                refreshTokenRepository,
+                companyProfileRepository,
+                candidateProfileRepository,
+                passwordEncoder,
+                jwtService,
+                30);
+    }
+
+    private static RegisterRequest candidateRequest() {
+        return new RegisterRequest(
+                "rohan@example.com",
+                "password123",
+                "Rohan Mehta",
+                "candidate",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "9876543210",
+                List.of("React", "TypeScript"),
+                null);
     }
 
     @Test
     void registerCreatesCandidateAndIssuesTokens() {
-        RegisterRequest request = new RegisterRequest("rohan@example.com", "password123", "Rohan Mehta", "candidate");
+        RegisterRequest request = candidateRequest();
         when(userRepository.existsByEmail("rohan@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
         when(jwtService.generateAccessToken(any())).thenReturn("access-token");
@@ -76,6 +105,28 @@ class AuthServiceTest {
         when(userRepository.existsByEmail("rohan@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request)).isInstanceOf(EmailAlreadyRegisteredException.class);
+    }
+
+    @Test
+    void registerRejectsCandidateMissingMobileOrSkills() {
+        RegisterRequest request = new RegisterRequest(
+                "rohan@example.com",
+                "password123",
+                "Rohan Mehta",
+                "candidate",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                null);
+        when(userRepository.existsByEmail("rohan@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.register(request)).isInstanceOf(IncompleteCandidateProfileException.class);
     }
 
     @Test

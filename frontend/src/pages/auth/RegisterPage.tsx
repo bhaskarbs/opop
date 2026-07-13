@@ -57,14 +57,17 @@ export default function RegisterPage() {
   async function onSubmit(values: RegisterFormValues) {
     setFormError(null)
     try {
-      // mobile, skills, and resume aren't accepted by the Auth service (Section 6.1 of the
-      // architecture doc: Auth Service only owns authentication — richer profile data is a
-      // separate, not-yet-built Profile service), so only these three fields are sent.
       const response = await authApi.register({
         email: values.email,
         password: values.password,
         fullName: values.fullName,
         role: 'candidate',
+        mobile: values.mobile,
+        skills: values.skills
+          .split(',')
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+        resumeFileName: values.resume?.name,
       })
       setSession(response.accessToken, response.user)
       navigate(localize(ROUTES.candidateDashboard))

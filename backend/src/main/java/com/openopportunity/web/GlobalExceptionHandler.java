@@ -6,6 +6,7 @@ import com.openopportunity.application.exception.ApplicationAccessDeniedExceptio
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
@@ -47,6 +48,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IncompleteCompanyProfileException.class)
     public ResponseEntity<ApiError> handleIncompleteCompanyProfile(IncompleteCompanyProfileException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(IncompleteCandidateProfileException.class)
+    public ResponseEntity<ApiError> handleIncompleteCandidateProfile(IncompleteCandidateProfileException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 

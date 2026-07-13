@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import jakarta.servlet.http.Cookie;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -42,8 +43,13 @@ class AuthControllerTest {
 
     @Test
     void registerLoginAndAccessProtectedRoute() throws Exception {
-        RegisterRequest register =
-                new RegisterRequest("rohan.controller@example.com", "password123", "Rohan Mehta", "candidate");
+        RegisterRequest register = new RegisterRequest(
+                "rohan.controller@example.com",
+                "password123",
+                "Rohan Mehta",
+                "candidate",
+                "9876543210",
+                List.of("React", "TypeScript"));
 
         MvcResult registerResult = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -79,7 +85,8 @@ class AuthControllerTest {
 
     @Test
     void registerRejectsDuplicateEmail() throws Exception {
-        RegisterRequest register = new RegisterRequest("dup@example.com", "password123", "Rohan Mehta", "candidate");
+        RegisterRequest register = new RegisterRequest(
+                "dup@example.com", "password123", "Rohan Mehta", "candidate", "9876543210", List.of("React"));
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(register)))
@@ -112,8 +119,8 @@ class AuthControllerTest {
 
     @Test
     void loginRejectsWrongPassword() throws Exception {
-        RegisterRequest register =
-                new RegisterRequest("wrongpass@example.com", "password123", "Rohan Mehta", "candidate");
+        RegisterRequest register = new RegisterRequest(
+                "wrongpass@example.com", "password123", "Rohan Mehta", "candidate", "9876543210", List.of("React"));
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(register)))
@@ -128,7 +135,8 @@ class AuthControllerTest {
 
     @Test
     void refreshRotatesTokenAndRejectsReuseOfOldCookie() throws Exception {
-        RegisterRequest register = new RegisterRequest("refresh@example.com", "password123", "Rohan Mehta", "candidate");
+        RegisterRequest register = new RegisterRequest(
+                "refresh@example.com", "password123", "Rohan Mehta", "candidate", "9876543210", List.of("React"));
         MvcResult registerResult = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(register)))
@@ -154,7 +162,8 @@ class AuthControllerTest {
 
     @Test
     void logoutRevokesRefreshToken() throws Exception {
-        RegisterRequest register = new RegisterRequest("logout@example.com", "password123", "Rohan Mehta", "candidate");
+        RegisterRequest register = new RegisterRequest(
+                "logout@example.com", "password123", "Rohan Mehta", "candidate", "9876543210", List.of("React"));
         MvcResult registerResult = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(register)))

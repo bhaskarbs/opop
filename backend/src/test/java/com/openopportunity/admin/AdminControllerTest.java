@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,7 +72,8 @@ class AdminControllerTest {
     }
 
     private String registerCandidate(String email, String fullName) throws Exception {
-        RegisterRequest request = new RegisterRequest(email, "password123", fullName, "candidate");
+        RegisterRequest request = new RegisterRequest(
+                email, "password123", fullName, "candidate", "9876543210", List.of("React", "TypeScript"));
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

@@ -5,6 +5,7 @@ import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.dto.UserSummary;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final CompanyProfileRepository companyProfileRepository;
+    private final CandidateProfileRepository candidateProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final long refreshTokenExpiryDays;
@@ -38,12 +41,14 @@ public class AuthService {
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
             CompanyProfileRepository companyProfileRepository,
+            CandidateProfileRepository candidateProfileRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.companyProfileRepository = companyProfileRepository;
+        this.candidateProfileRepository = candidateProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
@@ -61,6 +66,10 @@ public class AuthService {
         if (role == UserRole.COMPANY) {
             requireCompanyProfileFields(request);
         }
+        List<String> cleanedSkills = role == UserRole.CANDIDATE ? cleanSkills(request.skills()) : null;
+        if (role == UserRole.CANDIDATE) {
+            requireCandidateProfileFields(request, cleanedSkills);
+        }
 
         User user =
                 new User(request.email(), passwordEncoder.encode(request.password()), request.fullName(), role);
@@ -77,6 +86,12 @@ public class AuthService {
                     request.address(),
                     request.signatoryName());
             companyProfileRepository.save(profile);
+        }
+
+        if (role == UserRole.CANDIDATE) {
+            CandidateProfile profile = new CandidateProfile(
+                    user.getId(), request.mobile(), cleanedSkills, request.resumeFileName());
+            candidateProfileRepository.save(profile);
         }
 
         return issueTokens(user);
@@ -160,6 +175,20 @@ public class AuthService {
         if (!complete) {
             throw new IncompleteCompanyProfileException();
         }
+    }
+
+    private void requireCandidateProfileFields(RegisterRequest request, List<String> cleanedSkills) {
+        boolean complete = isNotBlank(request.mobile()) && !cleanedSkills.isEmpty();
+        if (!complete) {
+            throw new IncompleteCandidateProfileException();
+        }
+    }
+
+    private static List<String> cleanSkills(List<String> rawSkills) {
+        if (rawSkills == null) {
+            return List.of();
+        }
+        return rawSkills.stream().map(String::trim).filter(AuthService::isNotBlank).toList();
     }
 
     private static boolean isNotBlank(String value) {

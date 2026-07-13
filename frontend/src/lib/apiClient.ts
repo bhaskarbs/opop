@@ -77,6 +77,12 @@ export interface RegisterPayload {
   industry?: string
   address?: string
   signatoryName?: string
+  // Required by the backend when role is 'candidate' (persisted to candidate_profiles);
+  // ignored otherwise.
+  mobile?: string
+  skills?: string[]
+  // Filename only — no file-storage service exists yet to hold the actual upload.
+  resumeFileName?: string
 }
 
 export interface LoginPayload {
