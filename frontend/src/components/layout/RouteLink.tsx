@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 
 interface RouteLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
   /** Real route path. Omit for links that don't have a page yet — they render inert. */
@@ -9,9 +10,10 @@ interface RouteLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, '
 
 /** Renders a react-router `Link` when `to` is given, otherwise an inert `#` anchor. */
 export function RouteLink({ to, children, ...props }: RouteLinkProps) {
+  const localize = useLocalizedPath()
   if (to) {
     return (
-      <Link to={to} {...props}>
+      <Link to={localize(to)} {...props}>
         {children}
       </Link>
     )

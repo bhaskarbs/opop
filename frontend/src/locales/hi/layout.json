@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "jobs": "नौकरियां खोजें",
+    "partnerships": "स्टार्टअप पार्टनरशिप",
+    "community": "कम्युनिटी",
+    "forEmployers": "नियोक्ताओं के लिए",
+    "dashboard": "डैशबोर्ड",
+    "postJob": "नौकरी पोस्ट करें",
+    "searchCandidates": "उम्मीदवार खोजें",
+    "partnershipApplicants": "पार्टनरशिप आवेदक",
+    "seminars": "सेमिनार और मीटअप",
+    "reports": "रिपोर्ट",
+    "users": "उपयोगकर्ता",
+    "jobsAdmin": "नौकरियां",
+    "login": "लॉग इन करें",
+    "register": "रजिस्टर करें",
+    "logout": "लॉग आउट करें"
+  },
+  "userMenu": {
+    "myProfile": "मेरी प्रोफ़ाइल",
+    "myApplications": "मेरे आवेदन",
+    "mockInterviews": "मॉक इंटरव्यू",
+    "companyProfile": "कंपनी प्रोफ़ाइल",
+    "jobPostings": "नौकरी पोस्टिंग",
+    "billing": "बिलिंग",
+    "adminSettings": "एडमिन सेटिंग्स"
+  },
+  "aria": {
+    "notifications": "सूचनाएं",
+    "menu": "मेनू"
+  },
+  "tagline": "सिर्फ़ एक जॉब बोर्ड से कहीं ज़्यादा — नौकरियों के लिए आवेदन करें, स्टार्टअप्स के साथ पार्टनरशिप करें, और कम्युनिटी-आधारित अवसरों के ज़रिए उस करियर की ओर बढ़ें जो आप वाकई चाहते हैं।",
+  "footer": {
+    "candidates": {
+      "heading": "उम्मीदवारों के लिए",
+      "findJobs": "नौकरियां खोजें",
+      "startupPartnerships": "स्टार्टअप पार्टनरशिप",
+      "communityOpportunities": "कम्युनिटी अवसर",
+      "mockInterviews": "मॉक इंटरव्यू",
+      "registerUploadResume": "रजिस्टर करें / रिज़्यूमे अपलोड करें"
+    },
+    "employers": {
+      "heading": "नियोक्ताओं के लिए",
+      "postJob": "नौकरी पोस्ट करें",
+      "searchCandidates": "उम्मीदवार खोजें",
+      "offerPartnership": "पार्टनरशिप का प्रस्ताव दें",
+      "companyRegistration": "कंपनी पंजीकरण"
+    },
+    "contact": {
+      "heading": "संपर्क करें",
+      "city": "बेंगलुरु, कर्नाटक",
+      "country": "भारत"
+    },
+    "legal": {
+      "privacyPolicy": "गोपनीयता नीति",
+      "termsOfService": "सेवा की शर्तें",
+      "grievanceRedressal": "शिकायत निवारण"
+    },
+    "copyright": "© {{year}} OpenOpportunity Technologies Pvt. Ltd. सर्वाधिकार सुरक्षित।"
+  }
+}

@@ -2,6 +2,8 @@ import { ROUTES } from '../../routes/paths'
 import type { HeaderVariant } from './Header'
 
 export interface NavItem {
+  /** i18n key under the `layout` namespace — Header/Footer render this via `t()`, not as
+   * literal text — see frontend/src/locales/{en,hi}/layout.json. */
   label: string
   /** Real route path. Omit for nav items that don't have a page yet — they render inert. */
   to?: string
@@ -9,50 +11,53 @@ export interface NavItem {
 
 export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
   guest: [
-    { label: 'Find Jobs', to: ROUTES.jobs },
-    { label: 'Startup Partnerships', to: ROUTES.partnerships },
-    { label: 'Community', to: ROUTES.community },
-    { label: 'For Employers' },
+    { label: 'nav.jobs', to: ROUTES.jobs },
+    { label: 'nav.partnerships', to: ROUTES.partnerships },
+    { label: 'nav.community', to: ROUTES.community },
+    { label: 'nav.forEmployers' },
   ],
   candidate: [
-    { label: 'Find Jobs', to: ROUTES.jobs },
-    { label: 'Startup Partnerships', to: ROUTES.partnerships },
-    { label: 'Community', to: ROUTES.community },
-    { label: 'Dashboard', to: ROUTES.candidateDashboard },
+    { label: 'nav.jobs', to: ROUTES.jobs },
+    { label: 'nav.partnerships', to: ROUTES.partnerships },
+    { label: 'nav.community', to: ROUTES.community },
+    { label: 'nav.dashboard', to: ROUTES.candidateDashboard },
   ],
   company: [
-    { label: 'Post a Job', to: ROUTES.companyPostJob },
-    { label: 'Search Candidates', to: ROUTES.companySearchCandidates },
-    { label: 'Partnership Applicants' },
-    { label: 'Seminars & Meetups', to: ROUTES.companySeminars },
+    { label: 'nav.postJob', to: ROUTES.companyPostJob },
+    { label: 'nav.searchCandidates', to: ROUTES.companySearchCandidates },
+    { label: 'nav.partnershipApplicants' },
+    { label: 'nav.seminars', to: ROUTES.companySeminars },
   ],
   admin: [
-    { label: 'Dashboard', to: ROUTES.adminDashboard },
-    { label: 'Reports', to: ROUTES.adminReports },
-    { label: 'Users', to: ROUTES.adminUsers },
-    { label: 'Jobs' },
+    { label: 'nav.dashboard', to: ROUTES.adminDashboard },
+    { label: 'nav.reports', to: ROUTES.adminReports },
+    { label: 'nav.users', to: ROUTES.adminUsers },
+    { label: 'nav.jobsAdmin' },
   ],
 }
 
-/** Looks up which nav item's route matches the current pathname, for active-state highlighting. */
+/** Looks up which nav item's route matches the current pathname, for active-state highlighting.
+ * `pathname` includes the `/:lang` prefix (see App.tsx), which `item.to` never does, so it's
+ * stripped before matching. */
 export function getActiveNavLabel(variant: HeaderVariant, pathname: string): string | undefined {
-  return NAV_BY_VARIANT[variant].find((item) => item.to && pathname.startsWith(item.to))?.label
+  const unprefixed = pathname.replace(/^\/(en|hi)(?=\/|$)/, '') || '/'
+  return NAV_BY_VARIANT[variant].find((item) => item.to && unprefixed.startsWith(item.to))?.label
 }
 
 export const USER_MENU_BY_VARIANT: Partial<Record<HeaderVariant, NavItem[]>> = {
   candidate: [
-    { label: 'My Profile', to: ROUTES.candidateProfile },
-    { label: 'My Applications', to: ROUTES.candidateApplications },
-    { label: 'Mock Interviews', to: ROUTES.candidateMockInterview },
-    { label: 'Log out' },
+    { label: 'userMenu.myProfile', to: ROUTES.candidateProfile },
+    { label: 'userMenu.myApplications', to: ROUTES.candidateApplications },
+    { label: 'userMenu.mockInterviews', to: ROUTES.candidateMockInterview },
+    { label: 'nav.logout' },
   ],
   company: [
-    { label: 'Company Profile' },
-    { label: 'Job Postings' },
-    { label: 'Billing' },
-    { label: 'Log out' },
+    { label: 'userMenu.companyProfile' },
+    { label: 'userMenu.jobPostings' },
+    { label: 'userMenu.billing' },
+    { label: 'nav.logout' },
   ],
-  admin: [{ label: 'Admin Settings' }, { label: 'Log out' }],
+  admin: [{ label: 'userMenu.adminSettings' }, { label: 'nav.logout' }],
 }
 
 export const DEFAULT_USER_NAME: Partial<Record<HeaderVariant, string>> = {
