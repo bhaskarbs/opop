@@ -14,9 +14,11 @@
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "clsx": "^2.1.1",
+    "i18next": "^26.3.6",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.81.0",
+    "react-i18next": "^17.0.9",
     "react-router-dom": "^6.24.1",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3",
