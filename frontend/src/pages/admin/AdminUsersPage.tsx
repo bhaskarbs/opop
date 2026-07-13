@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminUserRole, type AdminUserSummary } from '../../lib/adminApi'
 
@@ -11,14 +12,16 @@ function colorForName(name: string): string {
   return AVATAR_COLOR_CLASSES[hash % AVATAR_COLOR_CLASSES.length]
 }
 
-function formatJoinedLabel(createdAt: string): string {
-  return new Date(createdAt).toLocaleDateString('en-US', {
+function formatJoinedLabel(locale: string, createdAt: string): string {
+  return new Date(createdAt).toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
 }
 
+/** Underlying status literal, used for `statusClass()` color mapping and as the
+ * `USER_STATUS_LABEL_KEYS` lookup key — not rendered directly (see that map for display text). */
 function displayStatus(user: AdminUserSummary): string {
   if (user.accountStatus === 'SUSPENDED') return 'Suspended'
   if (user.role === 'COMPANY') {
@@ -29,6 +32,14 @@ function displayStatus(user: AdminUserSummary): string {
   return 'Active'
 }
 
+const USER_STATUS_LABEL_KEYS: Record<string, string> = {
+  Suspended: 'users.status.suspended',
+  Verified: 'users.status.verified',
+  Rejected: 'users.status.rejected',
+  'Pending review': 'users.status.pendingReview',
+  Active: 'users.status.active',
+}
+
 function statusClass(status: string): string {
   if (status === 'Active' || status === 'Verified') return 'bg-teal-tint text-teal'
   if (status === 'Suspended' || status === 'Rejected') return 'bg-danger/10 text-danger'
@@ -36,6 +47,7 @@ function statusClass(status: string): string {
 }
 
 export default function AdminUsersPage() {
+  const { t, i18n } = useTranslation('admin')
   const [tab, setTab] = useState<Tab>('candidates')
   const [query, setQuery] = useState('')
   const [users, setUsers] = useState<AdminUserSummary[]>([])
@@ -57,7 +69,7 @@ export default function AdminUsersPage() {
         })
         .catch((caught) => {
           if (!cancelled) {
-            setError(caught instanceof ApiError ? caught.message : 'Could not load users.')
+            setError(caught instanceof ApiError ? caught.message : t('users.loadError'))
           }
         })
         .finally(() => {
@@ -68,11 +80,11 @@ export default function AdminUsersPage() {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [role, query])
+  }, [role, query, t])
 
   async function handleToggleStatus(user: AdminUserSummary) {
     if (user.accountStatus === 'ACTIVE') {
-      if (!window.confirm(`Suspend ${user.fullName}'s account?`)) return
+      if (!window.confirm(t('users.confirmSuspend', { name: user.fullName }))) return
     }
     setActioningId(user.id)
     try {
@@ -96,10 +108,8 @@ export default function AdminUsersPage() {
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
       <div className="mb-5">
-        <h1 className="mb-1 text-[22px] font-extrabold text-ink">Users</h1>
-        <p className="text-sm text-slate">
-          Manage candidates and company accounts across the platform.
-        </p>
+        <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('users.title')}</h1>
+        <p className="text-sm text-slate">{t('users.subtitle')}</p>
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -112,7 +122,7 @@ export default function AdminUsersPage() {
               : 'border-border bg-surface text-[#3A414D]'
           }`}
         >
-          Candidates
+          {t('users.tabs.candidates')}
         </button>
         <button
           type="button"
@@ -123,7 +133,7 @@ export default function AdminUsersPage() {
               : 'border-border bg-surface text-[#3A414D]'
           }`}
         >
-          Companies
+          {t('users.tabs.companies')}
         </button>
       </div>
 
@@ -144,7 +154,7 @@ export default function AdminUsersPage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by name or email"
+            placeholder={t('users.searchPlaceholder')}
             className="w-full text-[13.5px] text-ink outline-none"
           />
         </div>
@@ -158,7 +168,7 @@ export default function AdminUsersPage() {
 
       {loading ? (
         <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-          Loading…
+          {t('users.loading')}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -178,7 +188,10 @@ export default function AdminUsersPage() {
                   <div className="min-w-0">
                     <div className="text-[14.5px] font-bold text-ink">{user.fullName}</div>
                     <div className="text-[13px] text-slate">
-                      {user.email} · Joined {formatJoinedLabel(user.createdAt)}
+                      {t('users.joinedMeta', {
+                        email: user.email,
+                        joined: formatJoinedLabel(i18n.language, user.createdAt),
+                      })}
                     </div>
                   </div>
                 </div>
@@ -186,7 +199,7 @@ export default function AdminUsersPage() {
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${statusClass(status)}`}
                   >
-                    {status}
+                    {t(USER_STATUS_LABEL_KEYS[status])}
                   </span>
                   <button
                     type="button"
@@ -194,7 +207,7 @@ export default function AdminUsersPage() {
                     onClick={() => handleToggleStatus(user)}
                     className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
                   >
-                    {user.accountStatus === 'ACTIVE' ? 'Suspend' : 'Reactivate'}
+                    {user.accountStatus === 'ACTIVE' ? t('users.suspend') : t('users.reactivate')}
                   </button>
                 </div>
               </div>
@@ -202,7 +215,7 @@ export default function AdminUsersPage() {
           })}
           {users.length === 0 && (
             <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-              No {tab} match your search.
+              {tab === 'candidates' ? t('users.noneCandidates') : t('users.noneCompanies')}
             </div>
           )}
         </div>

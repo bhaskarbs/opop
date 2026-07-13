@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminCompanyProfileSummary } from '../../lib/adminApi'
 
-function formatSubmittedLabel(submittedAt: string): string {
+function formatSubmittedLabel(t: TFunction<'admin'>, submittedAt: string): string {
   const days = Math.floor((Date.now() - new Date(submittedAt).getTime()) / 86_400_000)
-  if (days <= 0) return 'today'
-  if (days === 1) return '1 day ago'
-  return `${days} days ago`
+  if (days <= 0) return t('companyApprovals.today')
+  if (days === 1) return t('companyApprovals.oneDayAgo')
+  return t('companyApprovals.daysAgo', { days })
 }
 
 export default function AdminCompanyApprovalsPage() {
+  const { t } = useTranslation('admin')
   const [companies, setCompanies] = useState<AdminCompanyProfileSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -24,9 +27,7 @@ export default function AdminCompanyApprovalsPage() {
       })
       .catch((caught) => {
         if (!cancelled) {
-          setError(
-            caught instanceof ApiError ? caught.message : 'Could not load pending companies.',
-          )
+          setError(caught instanceof ApiError ? caught.message : t('companyApprovals.loadError'))
         }
       })
       .finally(() => {
@@ -35,7 +36,7 @@ export default function AdminCompanyApprovalsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [t])
 
   async function handleVerify(userId: string) {
     setActioningId(userId)
@@ -65,13 +66,13 @@ export default function AdminCompanyApprovalsPage() {
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-[22px] font-extrabold text-ink">Company approvals</h1>
-          <p className="text-sm text-slate">
-            Verify company registrations before they can post jobs or partnerships.
-          </p>
+          <h1 className="mb-1 text-[22px] font-extrabold text-ink">
+            {t('companyApprovals.title')}
+          </h1>
+          <p className="text-sm text-slate">{t('companyApprovals.subtitle')}</p>
         </div>
         <div className="rounded-full bg-amber-tint px-3.5 py-1.5 text-[13.5px] font-bold text-amber">
-          {companies.length} pending review
+          {t('companyApprovals.pendingCount', { count: companies.length })}
         </div>
       </div>
 
@@ -83,11 +84,11 @@ export default function AdminCompanyApprovalsPage() {
 
       {loading ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          Loading pending companies…
+          {t('companyApprovals.loading')}
         </div>
       ) : companies.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          No companies are waiting for review.
+          {t('companyApprovals.noneWaiting')}
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">
@@ -104,26 +105,29 @@ export default function AdminCompanyApprovalsPage() {
                   <div>
                     <div className="text-[15.5px] font-bold text-ink">{company.companyName}</div>
                     <div className="mt-0.5 text-[13px] text-slate">
-                      {company.industry} · {company.entityType} · Submitted{' '}
-                      {formatSubmittedLabel(company.submittedAt)}
+                      {t('companyApprovals.companyMeta', {
+                        industry: company.industry,
+                        entityType: company.entityType,
+                        submitted: formatSubmittedLabel(t, company.submittedAt),
+                      })}
                     </div>
                   </div>
                 </div>
                 <span className="h-fit rounded-full bg-amber-tint px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-amber">
-                  Pending review
+                  {t('dashboard.companyStatus.pendingReview')}
                 </span>
               </div>
 
               <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3.5 rounded-[10px] bg-page p-4">
                 <div>
                   <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
-                    CIN
+                    {t('companyApprovals.fields.cin')}
                   </div>
                   <div className="font-mono text-[13px] font-semibold text-ink">{company.cin}</div>
                 </div>
                 <div>
                   <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
-                    GSTIN
+                    {t('companyApprovals.fields.gstin')}
                   </div>
                   <div className="font-mono text-[13px] font-semibold text-ink">
                     {company.gstin}
@@ -131,13 +135,13 @@ export default function AdminCompanyApprovalsPage() {
                 </div>
                 <div>
                   <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
-                    PAN
+                    {t('companyApprovals.fields.pan')}
                   </div>
                   <div className="font-mono text-[13px] font-semibold text-ink">{company.pan}</div>
                 </div>
                 <div>
                   <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
-                    Authorized signatory
+                    {t('companyApprovals.fields.authorizedSignatory')}
                   </div>
                   <div className="text-[13px] font-semibold text-ink">{company.signatoryName}</div>
                 </div>
@@ -160,7 +164,7 @@ export default function AdminCompanyApprovalsPage() {
                   >
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
-                  Verify &amp; approve
+                  {t('companyApprovals.verifyAndApprove')}
                 </button>
                 <button
                   type="button"
@@ -168,7 +172,7 @@ export default function AdminCompanyApprovalsPage() {
                   onClick={() => handleReject(company.userId)}
                   className="rounded-lg border border-[#FCA5A5] bg-surface px-5 py-2.5 text-[13.5px] font-bold text-danger disabled:opacity-60"
                 >
-                  Reject
+                  {t('jobApprovals.reject')}
                 </button>
               </div>
             </div>

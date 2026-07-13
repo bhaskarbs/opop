@@ -1,16 +1,18 @@
 import { type KeyboardEvent, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Card } from '../../components/ui'
 import { candidateProfile, profileCompletionPercent } from '../../mocks/candidateProfile'
 
 const NAV_SECTIONS = [
-  { label: 'Personal details', href: '#personal' },
-  { label: 'Resume', href: '#resume' },
-  { label: 'Skills', href: '#skills' },
-  { label: 'Life goals & values', href: '#goals' },
-  { label: 'Account settings', href: '#account' },
+  { labelKey: 'profile.nav.personalDetails', href: '#personal' },
+  { labelKey: 'profile.nav.resume', href: '#resume' },
+  { labelKey: 'profile.nav.skills', href: '#skills' },
+  { labelKey: 'profile.nav.lifeGoals', href: '#goals' },
+  { labelKey: 'profile.nav.accountSettings', href: '#account' },
 ]
 
 export default function CandidateProfilePage() {
+  const { t } = useTranslation('candidate')
   const completionPercent = profileCompletionPercent(candidateProfile.completedSections)
 
   const [fullName, setFullName] = useState(candidateProfile.name)
@@ -65,18 +67,20 @@ export default function CandidateProfilePage() {
                 style={{ width: `${completionPercent}%` }}
               />
             </div>
-            <div className="text-[12.5px] text-slate">Profile {completionPercent}% complete</div>
+            <div className="text-[12.5px] text-slate">
+              {t('profile.percentComplete', { percent: completionPercent })}
+            </div>
           </Card>
           <Card className="p-[18px]">
             {NAV_SECTIONS.map((section, index) => (
               <a
-                key={section.label}
+                key={section.labelKey}
                 href={section.href}
                 className={`mb-1 block rounded-lg px-3 py-2.5 text-sm font-semibold no-underline ${
                   index === 0 ? 'bg-primary-tint text-primary' : 'text-ink'
                 }`}
               >
-                {section.label}
+                {t(section.labelKey)}
               </a>
             ))}
           </Card>
@@ -84,11 +88,11 @@ export default function CandidateProfilePage() {
 
         <div>
           <Card id="personal" className="mb-[18px] p-[26px]">
-            <h2 className="mb-4 text-base font-bold text-ink">Personal details</h2>
+            <h2 className="mb-4 text-base font-bold text-ink">{t('profile.nav.personalDetails')}</h2>
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div className="flex flex-col">
                 <label htmlFor="fullName" className="mb-1.5 text-[13px] font-bold text-ink">
-                  Full name
+                  {t('profile.fields.fullName')}
                 </label>
                 <input
                   id="fullName"
@@ -99,7 +103,7 @@ export default function CandidateProfilePage() {
               </div>
               <div className="flex flex-col">
                 <label htmlFor="location" className="mb-1.5 text-[13px] font-bold text-ink">
-                  Location
+                  {t('profile.fields.location')}
                 </label>
                 <input
                   id="location"
@@ -110,7 +114,7 @@ export default function CandidateProfilePage() {
               </div>
               <div className="flex flex-col">
                 <label htmlFor="email" className="mb-1.5 text-[13px] font-bold text-ink">
-                  Email
+                  {t('profile.fields.email')}
                 </label>
                 <input
                   id="email"
@@ -122,7 +126,7 @@ export default function CandidateProfilePage() {
               </div>
               <div className="flex flex-col">
                 <label htmlFor="mobile" className="mb-1.5 text-[13px] font-bold text-ink">
-                  Mobile
+                  {t('profile.fields.mobile')}
                 </label>
                 <input
                   id="mobile"
@@ -136,13 +140,13 @@ export default function CandidateProfilePage() {
 
           <Card id="resume" className="mb-[18px] p-[26px]">
             <div className="mb-3.5 flex items-center justify-between">
-              <h2 className="text-base font-bold text-ink">Resume</h2>
+              <h2 className="text-base font-bold text-ink">{t('profile.nav.resume')}</h2>
               <button
                 type="button"
                 onClick={() => resumeInputRef.current?.click()}
                 className="rounded-lg border border-border px-3.5 py-2 text-[13px] font-bold text-ink"
               >
-                Replace
+                {t('profile.replace')}
               </button>
               <input
                 ref={resumeInputRef}
@@ -170,19 +174,18 @@ export default function CandidateProfilePage() {
               <div className="flex-1">
                 <div className="text-sm font-semibold text-ink">{resumeFileName}</div>
                 <div className="text-xs text-fog">
-                  Uploaded {candidateProfile.resumeUploadedLabel} ·{' '}
-                  {candidateProfile.resumeSizeLabel}
+                  {t('profile.resumeUploaded', {
+                    uploaded: candidateProfile.resumeUploadedLabel,
+                    size: candidateProfile.resumeSizeLabel,
+                  })}
                 </div>
               </div>
             </div>
           </Card>
 
           <Card id="skills" className="mb-[18px] p-[26px]">
-            <h2 className="mb-1.5 text-base font-bold text-ink">Skills</h2>
-            <p className="mb-3.5 text-[13px] text-fog">
-              Technical or soft — these power matches across jobs, partnerships, and community
-              roles.
-            </p>
+            <h2 className="mb-1.5 text-base font-bold text-ink">{t('profile.nav.skills')}</h2>
+            <p className="mb-3.5 text-[13px] text-fog">{t('profile.skillsBody')}</p>
             <div className="mb-3.5 flex flex-wrap gap-2">
               {skills.map((skill) => (
                 <span
@@ -193,7 +196,7 @@ export default function CandidateProfilePage() {
                   <button
                     type="button"
                     onClick={() => removeSkill(skill)}
-                    aria-label={`Remove ${skill}`}
+                    aria-label={t('profile.removeSkill', { skill })}
                     className="cursor-pointer text-fog"
                   >
                     ×
@@ -205,35 +208,35 @@ export default function CandidateProfilePage() {
               value={newSkill}
               onChange={(event) => setNewSkill(event.target.value)}
               onKeyDown={addSkill}
-              placeholder="Add a skill and press enter"
+              placeholder={t('profile.addSkillPlaceholder')}
               className="w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
             />
           </Card>
 
           <Card id="goals" className="p-[26px]">
-            <h2 className="mb-1.5 text-base font-bold text-ink">Life goals & values</h2>
-            <p className="mb-3.5 text-[13px] text-fog">
-              Shared with startups when you apply for a partnership.
-            </p>
+            <h2 className="mb-1.5 text-base font-bold text-ink">{t('profile.nav.lifeGoals')}</h2>
+            <p className="mb-3.5 text-[13px] text-fog">{t('profile.lifeGoalsBody')}</p>
             <textarea
               rows={3}
               value={lifeGoals}
               onChange={(event) => setLifeGoals(event.target.value)}
-              placeholder="What are you working toward?"
+              placeholder={t('profile.lifeGoalsPlaceholder')}
               className="mb-3.5 w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
             />
             <textarea
               rows={3}
               value={workCulture}
               onChange={(event) => setWorkCulture(event.target.value)}
-              placeholder="What ethics and work culture matter most to you?"
+              placeholder={t('profile.workCulturePlaceholder')}
               className="w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
             />
             <div className="mt-[18px] flex items-center gap-3">
               <Button type="button" onClick={handleSaveGoals}>
-                Save changes
+                {t('profile.saveChanges')}
               </Button>
-              {savedGoals && <span className="text-sm font-semibold text-teal">Saved ✓</span>}
+              {savedGoals && (
+                <span className="text-sm font-semibold text-teal">{t('profile.saved')}</span>
+              )}
             </div>
           </Card>
         </div>

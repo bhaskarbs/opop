@@ -1,11 +1,15 @@
+import { useTranslation } from 'react-i18next'
+
 const KPIS = [
-  { label: 'Total candidates', value: '84,210', trend: '+1,204 this week' },
-  { label: 'Registered companies', value: '2,340', trend: '+38 this week' },
-  { label: 'Live job postings', value: '12,406', trend: '+312 this week' },
-  { label: 'Partnership matches', value: '3,880', trend: '+94 this week' },
-  { label: 'Community sign-ups', value: '9,120', trend: '+210 this week' },
+  { labelKey: 'dashboard.kpis.totalCandidates', value: '84,210', trend: '+1,204 this week' },
+  { labelKey: 'dashboard.kpis.registeredCompanies', value: '2,340', trend: '+38 this week' },
+  { labelKey: 'dashboard.kpis.liveJobPostings', value: '12,406', trend: '+312 this week' },
+  { labelKey: 'dashboard.kpis.partnershipMatches', value: '3,880', trend: '+94 this week' },
+  { labelKey: 'dashboard.kpis.communitySignUps', value: '9,120', trend: '+210 this week' },
 ]
 
+// Month labels ('Feb', 'Mar', ...) are short calendar abbreviations rendered as chart axis
+// ticks — left as-is rather than localized, same as elsewhere digits/dates aren't translated.
 const MONTHS = [
   { label: 'Feb', job: 60, partnership: 22, community: 18 },
   { label: 'Mar', job: 55, partnership: 25, community: 20 },
@@ -16,12 +20,13 @@ const MONTHS = [
 ]
 
 const FUNNEL = [
-  { label: 'Registered', value: '84,210', pct: 100 },
-  { label: 'Applied to a job', value: '61,340', pct: 73 },
-  { label: 'Applied for partnership', value: '18,420', pct: 22 },
-  { label: 'Hired or partnered', value: '9,880', pct: 12 },
+  { labelKey: 'dashboard.funnel.registered', value: '84,210', pct: 100 },
+  { labelKey: 'dashboard.funnel.appliedToJob', value: '61,340', pct: 73 },
+  { labelKey: 'dashboard.funnel.appliedForPartnership', value: '18,420', pct: 22 },
+  { labelKey: 'dashboard.funnel.hiredOrPartnered', value: '9,880', pct: 12 },
 ]
 
+// Mock content, not translated UI copy — same treatment as mock data elsewhere.
 const COMPANIES = [
   {
     name: 'Vertex Robotics Pvt. Ltd.',
@@ -65,18 +70,24 @@ const STATUS_CLASS = {
   'Pending review': 'bg-amber-tint text-amber',
 }
 
+const STATUS_LABEL_KEYS: Record<keyof typeof STATUS_CLASS, string> = {
+  Verified: 'dashboard.companyStatus.verified',
+  'Pending review': 'dashboard.companyStatus.pendingReview',
+}
+
 export default function AdminDashboardPage() {
+  const { t } = useTranslation('admin')
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
-      <h1 className="mb-5 text-[22px] font-extrabold text-ink">Platform overview</h1>
+      <h1 className="mb-5 text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
         {KPIS.map((kpi) => (
           <div
-            key={kpi.label}
+            key={kpi.labelKey}
             className="rounded-card border border-border bg-surface px-5 py-[18px]"
           >
-            <div className="mb-1.5 text-[13px] text-fog">{kpi.label}</div>
+            <div className="mb-1.5 text-[13px] text-fog">{t(kpi.labelKey)}</div>
             <div className="text-2xl font-extrabold text-ink">{kpi.value}</div>
             <div className="mt-1 text-[12.5px] text-teal">{kpi.trend}</div>
           </div>
@@ -86,7 +97,7 @@ export default function AdminDashboardPage() {
       <div className="header:grid-cols-[1.4fr_1fr] mb-6 grid grid-cols-1 gap-4">
         <div className="rounded-card border border-border bg-surface p-[22px]">
           <h2 className="mb-4 text-[15px] font-bold text-ink">
-            Applications by path (last 6 months)
+            {t('dashboard.applicationsByPath')}
           </h2>
           <div className="flex h-40 items-end gap-3.5">
             {MONTHS.map((month) => (
@@ -109,25 +120,25 @@ export default function AdminDashboardPage() {
           <div className="mt-3.5 flex justify-center gap-4">
             <div className="flex items-center gap-1.5 text-[12.5px] text-slate">
               <span className="h-2.5 w-2.5 rounded-sm bg-primary" />
-              Jobs
+              {t('dashboard.legend.jobs')}
             </div>
             <div className="flex items-center gap-1.5 text-[12.5px] text-slate">
               <span className="h-2.5 w-2.5 rounded-sm bg-amber" />
-              Partnerships
+              {t('dashboard.legend.partnerships')}
             </div>
             <div className="flex items-center gap-1.5 text-[12.5px] text-slate">
               <span className="h-2.5 w-2.5 rounded-sm bg-teal" />
-              Community
+              {t('dashboard.legend.community')}
             </div>
           </div>
         </div>
 
         <div className="rounded-card border border-border bg-surface p-[22px]">
-          <h2 className="mb-4 text-[15px] font-bold text-ink">Candidate funnel</h2>
+          <h2 className="mb-4 text-[15px] font-bold text-ink">{t('dashboard.candidateFunnel')}</h2>
           {FUNNEL.map((stage) => (
-            <div key={stage.label} className="mb-3.5">
+            <div key={stage.labelKey} className="mb-3.5">
               <div className="mb-1 flex justify-between text-[13px] text-[#3A414D]">
-                <span>{stage.label}</span>
+                <span>{t(stage.labelKey)}</span>
                 <strong className="text-ink">{stage.value}</strong>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-neutral-tint">
@@ -143,24 +154,26 @@ export default function AdminDashboardPage() {
 
       <div className="rounded-card border border-border bg-surface p-[22px]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
-          <h2 className="text-[15px] font-bold text-ink">Recent company registrations</h2>
+          <h2 className="text-[15px] font-bold text-ink">
+            {t('dashboard.recentCompanyRegistrations')}
+          </h2>
           <a
             href="#users"
             onClick={(event) => event.preventDefault()}
             className="text-[13px] font-bold text-primary no-underline"
           >
-            Manage all →
+            {t('dashboard.manageAll')}
           </a>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-[13.5px]">
             <thead>
               <tr className="text-left text-[12.5px] tracking-[0.03em] text-fog uppercase">
-                <th className="py-0 pr-3 pb-2.5 font-semibold">Company</th>
-                <th className="px-3 pb-2.5 font-semibold">Sector</th>
-                <th className="px-3 pb-2.5 font-semibold">CIN</th>
-                <th className="px-3 pb-2.5 font-semibold">Registered</th>
-                <th className="pb-2.5 font-semibold">Status</th>
+                <th className="py-0 pr-3 pb-2.5 font-semibold">{t('dashboard.table.company')}</th>
+                <th className="px-3 pb-2.5 font-semibold">{t('dashboard.table.sector')}</th>
+                <th className="px-3 pb-2.5 font-semibold">{t('dashboard.table.cin')}</th>
+                <th className="px-3 pb-2.5 font-semibold">{t('dashboard.table.registered')}</th>
+                <th className="pb-2.5 font-semibold">{t('dashboard.table.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -174,7 +187,7 @@ export default function AdminDashboardPage() {
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_CLASS[company.status]}`}
                     >
-                      {company.status}
+                      {t(STATUS_LABEL_KEYS[company.status])}
                     </span>
                   </td>
                 </tr>

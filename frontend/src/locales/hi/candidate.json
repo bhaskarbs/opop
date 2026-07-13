@@ -1,0 +1,141 @@
+{
+  "dashboard": {
+    "welcomeBack": "वापसी पर स्वागत है, {{name}}",
+    "profileComplete": "आपकी प्रोफ़ाइल {{percent}}% पूरी है — बेहतर मैच पाने के लिए इसे पूरा करें।",
+    "completeProfile": "प्रोफ़ाइल पूरी करें",
+    "nudge": {
+      "title": "बिना ऑफ़र के {{days}} दिन हो गए हैं",
+      "body": "इनकम के प्रकारों पर एक छोटी ट्रेनिंग ने आपके क्षेत्र के उम्मीदवारों को तेज़ी से भूमिका पाने में मदद की है।",
+      "attendTraining": "ट्रेनिंग में शामिल हों",
+      "dismiss": "खारिज करें"
+    },
+    "jobsMatched": "आपके हुनर से मेल खाती नौकरियां",
+    "searchJobs": "नौकरियां खोजें →",
+    "noMatchedJobs": {
+      "title": "अभी आपके हुनर से मेल खाती कोई नौकरी नहीं है",
+      "body": "जैसे ही कोई मिलती-जुलती भूमिका खुलेगी हम आपको सूचित करेंगे। तब तक, नीचे दिए गए स्टार्टअप्स और कम्युनिटी भूमिकाएं अनुभव बनाने में मदद कर सकती हैं।",
+      "broadenSearch": "अपनी खोज व्यापक बनाएं"
+    },
+    "viewJob": "नौकरी देखें",
+    "startupsMatched": "आपके हुनर से मेल खाते स्टार्टअप्स",
+    "seeAll": "सभी देखें →",
+    "applyForPartnership": "पार्टनरशिप के लिए आवेदन करें",
+    "communityBanner": {
+      "title": "कम्युनिटी इनकम के बारे में जिज्ञासा है?",
+      "body": "4 मिनट का समझाने वाला वीडियो देखें, फिर हमें बताएं कि आप रुचि रखते हैं।",
+      "watchNow": "अभी देखें",
+      "interested": "मुझे रुचि है"
+    },
+    "profileStrength": "प्रोफ़ाइल स्ट्रेंथ",
+    "addMissingDetails": "छूटी हुई जानकारी जोड़ें",
+    "mockInterviews": "मॉक इंटरव्यू",
+    "mockInterviewsBody": "कैमरे पर अभ्यास करें और अपने रिकॉर्ड किए गए सेशन कभी भी देखें।",
+    "startMockInterview": "मॉक इंटरव्यू शुरू करें",
+    "watch": "देखें",
+    "applicationActivity": "आवेदन गतिविधि"
+  },
+  "profile": {
+    "percentComplete": "प्रोफ़ाइल {{percent}}% पूरी",
+    "nav": {
+      "personalDetails": "व्यक्तिगत जानकारी",
+      "resume": "रिज़्यूमे",
+      "skills": "हुनर",
+      "lifeGoals": "जीवन के लक्ष्य और मूल्य",
+      "accountSettings": "खाता सेटिंग्स"
+    },
+    "fields": {
+      "fullName": "पूरा नाम",
+      "location": "स्थान",
+      "email": "ईमेल",
+      "mobile": "मोबाइल"
+    },
+    "replace": "बदलें",
+    "resumeUploaded": "{{uploaded}} को अपलोड किया गया · {{size}}",
+    "skillsBody": "तकनीकी या सॉफ्ट — ये नौकरियों, पार्टनरशिप और कम्युनिटी भूमिकाओं से मेल कराने में मदद करते हैं।",
+    "removeSkill": "{{skill}} हटाएं",
+    "addSkillPlaceholder": "एक हुनर जोड़ें और एंटर दबाएं",
+    "lifeGoalsBody": "जब आप पार्टनरशिप के लिए आवेदन करते हैं तो यह स्टार्टअप्स के साथ साझा किया जाता है।",
+    "lifeGoalsPlaceholder": "आप किस दिशा में काम कर रहे हैं?",
+    "workCulturePlaceholder": "आपके लिए कौन सी नैतिकता और वर्क कल्चर सबसे ज़्यादा मायने रखते हैं?",
+    "saveChanges": "बदलाव सेव करें",
+    "saved": "सेव किया गया ✓"
+  },
+  "addDetails": {
+    "checklist": {
+      "personal": "व्यक्तिगत जानकारी",
+      "resume": "रिज़्यूमे",
+      "skills": "हुनर",
+      "goals": "जीवन के लक्ष्य और मूल्य",
+      "mobile": "मोबाइल नंबर सत्यापन",
+      "prefs": "काम की प्राथमिकताएं"
+    },
+    "complete": "पूरा",
+    "missing": "छूटा हुआ",
+    "stillMissing": "अभी भी छूटा हुआ",
+    "title": "छूटी हुई जानकारी जोड़ें",
+    "subtitle": "बेहतर जॉब, पार्टनरशिप और कम्युनिटी मैच पाने के लिए इन्हें पूरा करें।",
+    "goalsDescription": "जब आप पार्टनरशिप के लिए आवेदन करते हैं तो यह स्टार्टअप्स के साथ साझा किया जाता है — इससे उन्हें आपके रिज़्यूमे से परे फिट आंकने में मदद मिलती है।",
+    "save": "सेव करें",
+    "mobileDescription": "अपना नंबर सत्यापित करें ताकि नियोक्ता और स्टार्टअप्स आपसे संपर्क कर सकें और आपको OTP लॉगिन मिल सके।",
+    "sendOtp": "OTP भेजें",
+    "verifyAndSave": "सत्यापित करें और सेव करें",
+    "prefsDescription": "इससे हमें नौकरियों, पार्टनरशिप और कम्युनिटी भूमिकाओं को आपकी पसंद के हिसाब से मैच करने में मदद मिलती है।",
+    "openTo": "इसके लिए तैयार",
+    "openToOptions": {
+      "jobsOnly": "सिर्फ़ नौकरियां",
+      "jobsAndPartnerships": "नौकरियां और पार्टनरशिप",
+      "jobsPartnershipsAndCommunity": "नौकरियां, पार्टनरशिप और कम्युनिटी भूमिकाएं"
+    },
+    "skillsAdded": "{{count}} हुनर जोड़े गए — बढ़िया काम।",
+    "profileComplete": "आपकी प्रोफ़ाइल पूरी हो गई है!",
+    "backToDashboard": "डैशबोर्ड पर वापस जाएं"
+  },
+  "applications": {
+    "type": {
+      "job": "नौकरी",
+      "partnership": "पार्टनरशिप",
+      "community": "कम्युनिटी"
+    },
+    "status": {
+      "interviewScheduled": "इंटरव्यू शेड्यूल किया गया",
+      "underReview": "समीक्षा जारी",
+      "applied": "आवेदन किया गया",
+      "invitedToSession": "सेशन के लिए आमंत्रित",
+      "notSelected": "चयनित नहीं",
+      "seminarInviteSent": "सेमिनार का निमंत्रण भेजा गया",
+      "withdrawn": "वापस लिया गया"
+    },
+    "tabs": {
+      "all": "सभी",
+      "jobs": "नौकरियां",
+      "partnerships": "पार्टनरशिप",
+      "community": "कम्युनिटी"
+    },
+    "appliedToday": "आज",
+    "appliedOneDayAgo": "1 दिन पहले",
+    "appliedDaysAgo": "{{days}} दिन पहले",
+    "appliedOneWeekAgo": "1 हफ़्ते पहले",
+    "appliedWeeksAgo": "{{weeks}} हफ़्ते पहले",
+    "appliedOneMonthAgo": "1 महीने पहले",
+    "appliedMonthsAgo": "{{months}} महीने पहले",
+    "loadError": "आपके आवेदन लोड नहीं हो सके।",
+    "title": "मेरे आवेदन",
+    "subtitle": "हर नौकरी, पार्टनरशिप और कम्युनिटी आवेदन को एक ही जगह ट्रैक करें।",
+    "loading": "आपके आवेदन लोड हो रहे हैं…",
+    "appliedPrefix": "{{org}} · {{applied}} आवेदन किया",
+    "withdraw": "वापस लें"
+  },
+  "mockInterview": {
+    "title": "मॉक इंटरव्यू",
+    "subtitle": "कैमरे पर अभ्यास करें, फिर अपने रिकॉर्ड किए गए सेशन कभी भी देखें।",
+    "cameraPreview": "[ कैमरा प्रीव्यू ]",
+    "toggleMic": "माइक्रोफ़ोन टॉगल करें",
+    "stopRecording": "रिकॉर्डिंग रोकें",
+    "toggleCamera": "कैमरा टॉगल करें",
+    "questionProgress": "सवाल {{current}} / {{total}}",
+    "startNewSession": "नया सेशन शुरू करें",
+    "recordedLogs": "रिकॉर्ड किए गए लॉग",
+    "sessionsCount": "{{count}} सेशन",
+    "recordingMeta": "{{date}} · {{count}} सवाल"
+  }
+}

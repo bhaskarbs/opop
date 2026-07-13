@@ -1,0 +1,116 @@
+{
+  "dashboard": {
+    "status": {
+      "active": "सक्रिय",
+      "draft": "ड्राफ़्ट",
+      "pendingReview": "समीक्षा लंबित",
+      "rejected": "अस्वीकृत",
+      "closed": "बंद"
+    },
+    "postedToday": "आज",
+    "postedOneDayAgo": "1 दिन पहले",
+    "postedDaysAgo": "{{days}} दिन पहले",
+    "postedOneWeekAgo": "1 हफ़्ते पहले",
+    "postedWeeksAgo": "{{weeks}} हफ़्ते पहले",
+    "title": "नियोक्ता डैशबोर्ड",
+    "searchCandidates": "उम्मीदवार खोजें",
+    "postJob": "+ नौकरी पोस्ट करें",
+    "kpis": {
+      "activeJobPostings": "सक्रिय नौकरी पोस्टिंग",
+      "totalApplicants": "कुल आवेदक",
+      "partnershipApplicants": "पार्टनरशिप आवेदक",
+      "seminarRsvps": "सेमिनार RSVP"
+    },
+    "activeJobPostings": "सक्रिय नौकरी पोस्टिंग",
+    "manageAll": "सभी प्रबंधित करें →",
+    "applicantsPosted": "{{count}} आवेदक · {{posted}} पोस्ट किया गया",
+    "partnershipApplicants": "पार्टनरशिप आवेदक",
+    "viewAll": "सभी देखें →",
+    "viewProfile": "प्रोफ़ाइल देखें",
+    "inviteToSeminar": "सेमिनार में आमंत्रित करें",
+    "upcomingSeminars": "आगामी सेमिनार और मीटअप",
+    "seminarInvited": "{{date}} · {{count}} आमंत्रित",
+    "scheduleNewSeminar": "+ नया सेमिनार शेड्यूल करें",
+    "notificationsSent": "भेजी गई सूचनाएं",
+    "email": "ईमेल",
+    "whatsapp": "WhatsApp"
+  },
+  "postJob": {
+    "employmentType": {
+      "fullTime": "पूर्णकालिक",
+      "partTime": "अंशकालिक",
+      "contract": "कॉन्ट्रैक्ट",
+      "internship": "इंटर्नशिप"
+    },
+    "errorGeneric": "कुछ गड़बड़ हो गई। फिर से कोशिश करें।",
+    "errorTitleRequired": "ड्राफ़्ट सेव करने से पहले नौकरी का टाइटल डालें।",
+    "title": "नौकरी पोस्ट करें",
+    "subtitle": "सीधे उम्मीदवारों तक पहुंचें — और अपनी लिस्टिंग को हुनर-मैच किए गए पार्टनरशिप और कम्युनिटी आवेदकों तक भी दिखाएं।",
+    "roleDetails": "भूमिका की जानकारी",
+    "fields": {
+      "jobTitle": "जॉब टाइटल",
+      "employmentType": "एम्प्लॉयमेंट टाइप",
+      "location": "स्थान",
+      "salaryRange": "सैलरी रेंज (₹/वर्ष)",
+      "salaryMinPlaceholder": "न्यूनतम जैसे 12ला.",
+      "salaryMaxPlaceholder": "अधिकतम जैसे 18ला.",
+      "deadline": "आवेदन की अंतिम तिथि",
+      "aboutRolePlaceholder": "भूमिका, टीम, और सफलता कैसी दिखती है इसका वर्णन करें...",
+      "onePerLine": "एक लाइन में एक"
+    },
+    "description": "विवरण",
+    "requiredSkills": "ज़रूरी हुनर",
+    "requiredSkillsBody": "तकनीकी या सॉफ्ट — इस भूमिका को मिलते-जुलते उम्मीदवारों से मैच करने, और इसे कुशल पार्टनरशिप/कम्युनिटी आवेदकों तक दिखाने के लिए उपयोग होते हैं।",
+    "matchNotice": "जिन उम्मीदवारों के हुनर इनसे मेल खाते हैं पर जिन्हें अभी तक मिलती-जुलती भूमिका नहीं मिली है, वे भी इस लिस्टिंग को मिलती-जुलती स्टार्टअप पार्टनरशिप और कम्युनिटी अवसरों के साथ देखेंगे।",
+    "saveDraft": "ड्राफ़्ट के रूप में सेव करें",
+    "publish": "नौकरी पब्लिश करें"
+  },
+  "searchCandidates": {
+    "intent": {
+      "jobs": "नौकरियों के लिए तैयार",
+      "partnership": "पार्टनरशिप के लिए तैयार",
+      "community": "कम्युनिटी भूमिकाओं के लिए तैयार"
+    },
+    "experience": {
+      "heading": "अनुभव",
+      "bucket02": "0-2 वर्ष",
+      "bucket35": "3-5 वर्ष",
+      "bucket58": "5-8 वर्ष",
+      "bucket8plus": "8+ वर्ष"
+    },
+    "candidateMeta": "{{title}} · {{location}} · {{years}} वर्ष का अनुभव",
+    "contacted": "संपर्क किया गया ✓",
+    "contact": "संपर्क करें",
+    "searchPlaceholder": "हुनर, टाइटल, या कीवर्ड से खोजें",
+    "lookingFor": "किसकी तलाश है",
+    "location": "स्थान",
+    "showingCount": "आपके फ़िल्टर से मेल खाते {{count}} उम्मीदवार दिखाए जा रहे हैं",
+    "noResults": "आपके फ़िल्टर से कोई उम्मीदवार मेल नहीं खाता। कुछ फ़िल्टर हटाकर या दूसरा कीवर्ड खोजकर देखें।"
+  },
+  "seminars": {
+    "dateTbd": "तिथि तय नहीं",
+    "title": "सेमिनार और मीटअप",
+    "subtitle": "फ़ैसला लेने से पहले पार्टनरशिप आवेदकों को टीम से मिलने के लिए आमंत्रित करें।",
+    "upcoming": "आगामी",
+    "invitedCount": "{{count}} आमंत्रित",
+    "manageInvites": "आमंत्रण प्रबंधित करें",
+    "pastSessions": "पिछले सेशन",
+    "attendedCount": "{{date}} · {{count}} उपस्थित",
+    "completed": "पूर्ण",
+    "scheduleNew": "नया सेशन शेड्यूल करें",
+    "fields": {
+      "title": "टाइटल",
+      "titlePlaceholder": "जैसे पार्टनर इंट्रो सेशन",
+      "date": "तिथि",
+      "time": "समय",
+      "mode": "मोड",
+      "inviteApplicants": "आवेदकों को आमंत्रित करें"
+    },
+    "modes": {
+      "onlineVideoCall": "ऑनलाइन वीडियो कॉल",
+      "inPersonMeetup": "व्यक्तिगत मीटअप"
+    },
+    "notifyNotice": "आमंत्रित लोगों को स्वतः ईमेल और WhatsApp दोनों सूचनाएं मिलती हैं।",
+    "scheduleAndNotify": "शेड्यूल करें और सूचित करें"
+  }
+}

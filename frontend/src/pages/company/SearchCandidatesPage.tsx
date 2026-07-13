@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { candidates, type Candidate, type CandidateIntent } from '../../mocks/candidates'
 
 const INTENT_OPTIONS: CandidateIntent[] = [
@@ -13,6 +14,20 @@ const INTENT_BADGE_CLASS: Record<CandidateIntent, string> = {
   'Open to jobs': 'bg-primary-tint text-primary',
   'Open to partnership': 'bg-amber-tint text-amber',
   'Open to community roles': 'bg-teal-tint text-teal',
+}
+
+// Rendered text only — the literal intent/bucket values stay as the underlying data (Record
+// keys, Set membership, comparisons against mock candidate data).
+const INTENT_LABEL_KEYS: Record<CandidateIntent, string> = {
+  'Open to jobs': 'searchCandidates.intent.jobs',
+  'Open to partnership': 'searchCandidates.intent.partnership',
+  'Open to community roles': 'searchCandidates.intent.community',
+}
+const EXPERIENCE_BUCKET_KEYS: Record<ExperienceBucket, string> = {
+  '0-2 yrs': 'searchCandidates.experience.bucket02',
+  '3-5 yrs': 'searchCandidates.experience.bucket35',
+  '5-8 yrs': 'searchCandidates.experience.bucket58',
+  '8+ yrs': 'searchCandidates.experience.bucket8plus',
 }
 
 function experienceBucket(years: number): ExperienceBucket {
@@ -41,6 +56,7 @@ function CandidateCard({
   contacted: boolean
   onContact: () => void
 }) {
+  const { t } = useTranslation('company')
   return (
     <div className="flex flex-wrap justify-between gap-4 rounded-card border border-border bg-surface px-5 py-[18px]">
       <div className="flex gap-3.5">
@@ -52,7 +68,11 @@ function CandidateCard({
         <div>
           <div className="text-[15px] font-bold text-ink">{candidate.name}</div>
           <div className="mt-0.5 text-[13px] text-slate">
-            {candidate.title} · {candidate.location} · {candidate.years} yrs experience
+            {t('searchCandidates.candidateMeta', {
+              title: candidate.title,
+              location: candidate.location,
+              years: candidate.years,
+            })}
           </div>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {candidate.skills.map((skill) => (
@@ -70,14 +90,14 @@ function CandidateCard({
         <span
           className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ${INTENT_BADGE_CLASS[candidate.intent]}`}
         >
-          {candidate.intent}
+          {t(INTENT_LABEL_KEYS[candidate.intent])}
         </span>
         <div className="flex gap-2">
           <button
             type="button"
             className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink"
           >
-            View profile
+            {t('dashboard.viewProfile')}
           </button>
           <button
             type="button"
@@ -85,7 +105,7 @@ function CandidateCard({
             onClick={onContact}
             className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:bg-ink/50"
           >
-            {contacted ? 'Contacted ✓' : 'Contact'}
+            {contacted ? t('searchCandidates.contacted') : t('searchCandidates.contact')}
           </button>
         </div>
       </div>
@@ -94,6 +114,7 @@ function CandidateCard({
 }
 
 export default function SearchCandidatesPage() {
+  const { t } = useTranslation('company')
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
   const [intents, setIntents] = useState<Set<CandidateIntent>>(new Set())
@@ -138,7 +159,7 @@ export default function SearchCandidatesPage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by skill, title, or keyword"
+              placeholder={t('searchCandidates.searchPlaceholder')}
               className="w-full text-[14.5px] text-ink outline-none"
             />
           </label>
@@ -146,7 +167,7 @@ export default function SearchCandidatesPage() {
             type="button"
             className="min-h-[44px] rounded-control bg-ink px-[26px] text-[14.5px] font-bold text-white"
           >
-            Search
+            {t('landing.search.submit', { ns: 'public' })}
           </button>
         </div>
       </div>
@@ -154,10 +175,14 @@ export default function SearchCandidatesPage() {
       <div className="search:grid-cols-[260px_1fr] mx-auto grid max-w-[1280px] grid-cols-1 gap-6 px-6 py-7 pb-16">
         <aside className="search:block hidden">
           <div className="sticky top-[88px] rounded-card border border-border bg-surface p-5">
-            <div className="mb-4 text-[15px] font-bold text-ink">Filters</div>
+            <div className="mb-4 text-[15px] font-bold text-ink">
+              {t('public:filters.heading')}
+            </div>
 
             <div className="mb-[18px]">
-              <div className="mb-2.5 text-[13px] font-bold text-ink">Looking for</div>
+              <div className="mb-2.5 text-[13px] font-bold text-ink">
+                {t('searchCandidates.lookingFor')}
+              </div>
               {INTENT_OPTIONS.map((intent) => (
                 <label
                   key={intent}
@@ -169,13 +194,15 @@ export default function SearchCandidatesPage() {
                     onChange={() => setIntents(toggleInSet(intents, intent))}
                     className="h-4 w-4 accent-primary"
                   />
-                  {intent}
+                  {t(INTENT_LABEL_KEYS[intent])}
                 </label>
               ))}
             </div>
 
             <div className="mb-[18px]">
-              <div className="mb-2.5 text-[13px] font-bold text-ink">Experience</div>
+              <div className="mb-2.5 text-[13px] font-bold text-ink">
+                {t('searchCandidates.experience.heading')}
+              </div>
               {EXPERIENCE_BUCKETS.map((bucket) => (
                 <label
                   key={bucket}
@@ -187,17 +214,19 @@ export default function SearchCandidatesPage() {
                     onChange={() => setExperiences(toggleInSet(experiences, bucket))}
                     className="h-4 w-4 accent-primary"
                   />
-                  {bucket}
+                  {t(EXPERIENCE_BUCKET_KEYS[bucket])}
                 </label>
               ))}
             </div>
 
             <div>
-              <div className="mb-2.5 text-[13px] font-bold text-ink">Location</div>
+              <div className="mb-2.5 text-[13px] font-bold text-ink">
+                {t('searchCandidates.location')}
+              </div>
               <input
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
-                placeholder="City or remote"
+                placeholder={t('landing.search.locationPlaceholder', { ns: 'public' })}
                 className="w-full rounded-lg border border-border px-2.5 py-2 text-[13.5px] text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
               />
             </div>
@@ -206,8 +235,7 @@ export default function SearchCandidatesPage() {
 
         <div>
           <div className="mb-4 text-[15px] text-slate">
-            Showing <strong className="text-ink">{filtered.length}</strong> candidates matching your
-            filters
+            {t('searchCandidates.showingCount', { count: filtered.length })}
           </div>
           <div className="flex flex-col gap-3">
             {filtered.map((candidate) => (
@@ -220,8 +248,7 @@ export default function SearchCandidatesPage() {
             ))}
             {filtered.length === 0 && (
               <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-                No candidates match your filters. Try clearing some filters or searching a different
-                keyword.
+                {t('searchCandidates.noResults')}
               </div>
             )}
           </div>

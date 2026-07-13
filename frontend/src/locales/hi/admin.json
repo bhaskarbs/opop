@@ -1,0 +1,173 @@
+{
+  "dashboard": {
+    "title": "प्लेटफ़ॉर्म का अवलोकन",
+    "kpis": {
+      "totalCandidates": "कुल उम्मीदवार",
+      "registeredCompanies": "पंजीकृत कंपनियां",
+      "liveJobPostings": "लाइव नौकरी पोस्टिंग",
+      "partnershipMatches": "पार्टनरशिप मैच",
+      "communitySignUps": "कम्युनिटी साइन-अप"
+    },
+    "applicationsByPath": "पथ के अनुसार आवेदन (पिछले 6 महीने)",
+    "legend": {
+      "jobs": "नौकरियां",
+      "partnerships": "पार्टनरशिप",
+      "community": "कम्युनिटी"
+    },
+    "candidateFunnel": "उम्मीदवार फ़नल",
+    "funnel": {
+      "registered": "पंजीकृत",
+      "appliedToJob": "नौकरी के लिए आवेदन किया",
+      "appliedForPartnership": "पार्टनरशिप के लिए आवेदन किया",
+      "hiredOrPartnered": "नियुक्त या पार्टनर बने"
+    },
+    "recentCompanyRegistrations": "हाल की कंपनी पंजीकरण",
+    "manageAll": "सभी प्रबंधित करें →",
+    "table": {
+      "company": "कंपनी",
+      "sector": "सेक्टर",
+      "cin": "CIN",
+      "registered": "पंजीकृत",
+      "status": "स्थिति"
+    },
+    "companyStatus": {
+      "verified": "सत्यापित",
+      "pendingReview": "समीक्षा लंबित"
+    }
+  },
+  "jobApprovals": {
+    "justNow": "अभी अभी",
+    "minutesAgo": "{{minutes}} मिनट पहले",
+    "oneHourAgo": "1 घंटे पहले",
+    "hoursAgo": "{{hours}} घंटे पहले",
+    "oneDayAgo": "1 दिन पहले",
+    "daysAgo": "{{days}} दिन पहले",
+    "loadError": "लंबित नौकरियां लोड नहीं हो सकीं।",
+    "title": "नौकरी अनुमोदन",
+    "subtitle": "लाइव होने से पहले नई नौकरी पोस्टिंग की समीक्षा करें।",
+    "pendingCount": "{{count}} समीक्षा लंबित",
+    "loading": "लंबित नौकरियां लोड हो रही हैं…",
+    "noneWaiting": "समीक्षा के लिए कोई नौकरी प्रतीक्षा में नहीं है।",
+    "jobMeta": "{{company}} · {{location}} · {{mode}} · {{submitted}} सबमिट किया गया",
+    "approve": "स्वीकृत करें",
+    "reject": "अस्वीकार करें"
+  },
+  "companyApprovals": {
+    "today": "आज",
+    "oneDayAgo": "1 दिन पहले",
+    "daysAgo": "{{days}} दिन पहले",
+    "loadError": "लंबित कंपनियां लोड नहीं हो सकीं।",
+    "title": "कंपनी अनुमोदन",
+    "subtitle": "नौकरी या पार्टनरशिप पोस्ट करने से पहले कंपनी पंजीकरण सत्यापित करें।",
+    "pendingCount": "{{count}} समीक्षा लंबित",
+    "loading": "लंबित कंपनियां लोड हो रही हैं…",
+    "noneWaiting": "समीक्षा के लिए कोई कंपनी प्रतीक्षा में नहीं है।",
+    "companyMeta": "{{industry}} · {{entityType}} · {{submitted}} सबमिट किया गया",
+    "fields": {
+      "cin": "CIN",
+      "gstin": "GSTIN",
+      "pan": "PAN",
+      "authorizedSignatory": "अधिकृत हस्ताक्षरकर्ता"
+    },
+    "verifyAndApprove": "सत्यापित करें और स्वीकृत करें"
+  },
+  "users": {
+    "status": {
+      "suspended": "निलंबित",
+      "verified": "सत्यापित",
+      "rejected": "अस्वीकृत",
+      "pendingReview": "समीक्षा लंबित",
+      "active": "सक्रिय"
+    },
+    "loadError": "उपयोगकर्ता लोड नहीं हो सके।",
+    "confirmSuspend": "क्या {{name}} का खाता निलंबित करें?",
+    "title": "उपयोगकर्ता",
+    "subtitle": "प्लेटफ़ॉर्म पर उम्मीदवार और कंपनी खातों को प्रबंधित करें।",
+    "tabs": {
+      "candidates": "उम्मीदवार",
+      "companies": "कंपनियां"
+    },
+    "searchPlaceholder": "नाम या ईमेल से खोजें",
+    "loading": "लोड हो रहा है…",
+    "joinedMeta": "{{email}} · {{joined}} को शामिल हुए",
+    "suspend": "निलंबित करें",
+    "reactivate": "पुनः सक्रिय करें",
+    "noneCandidates": "आपकी खोज से कोई उम्मीदवार मेल नहीं खाता।",
+    "noneCompanies": "आपकी खोज से कोई कंपनी मेल नहीं खाती।"
+  },
+  "reports": {
+    "tabs": {
+      "candidates": "उम्मीदवार",
+      "employers": "नियोक्ता और नौकरियां",
+      "partnerships": "पार्टनरशिप",
+      "community": "कम्युनिटी",
+      "financial": "वित्तीय"
+    },
+    "title": "रिपोर्ट",
+    "subtitle": "उम्मीदवारों, नियोक्ताओं, पार्टनरशिप और कम्युनिटी में प्लेटफ़ॉर्म का प्रदर्शन।",
+    "dateRange": {
+      "last30Days": "पिछले 30 दिन",
+      "last90Days": "पिछले 90 दिन",
+      "last6Months": "पिछले 6 महीने",
+      "yearToDate": "वर्ष की शुरुआत से अब तक"
+    },
+    "exportCsv": "CSV एक्सपोर्ट करें",
+    "candidates": {
+      "totalRegistered": "कुल पंजीकृत",
+      "activeJobSeekers": "सक्रिय नौकरी खोजने वाले",
+      "resumesUploaded": "अपलोड किए गए रिज़्यूमे",
+      "mockInterviewsTaken": "लिए गए मॉक इंटरव्यू",
+      "hiredViaJobListing": "जॉब लिस्टिंग से नियुक्त",
+      "enteredPartnership": "पार्टनरशिप में शामिल हुए",
+      "joinedCommunityRole": "कम्युनिटी भूमिका में शामिल हुए",
+      "stillSearching": "अभी भी खोज रहे हैं",
+      "byOutcome": "परिणाम के अनुसार उम्मीदवार"
+    },
+    "employers": {
+      "registeredCompanies": "पंजीकृत कंपनियां",
+      "verifiedCompanies": "सत्यापित कंपनियां",
+      "liveJobPostings": "लाइव नौकरी पोस्टिंग",
+      "avgTimeToFill": "औसत भरने का समय",
+      "topHiringSectors": "शीर्ष भर्ती सेक्टर",
+      "table": {
+        "sector": "सेक्टर",
+        "openJobs": "खुली नौकरियां",
+        "applications": "आवेदन",
+        "fillRate": "भरने की दर"
+      }
+    },
+    "partnerships": {
+      "totalPartnershipMatches": "कुल पार्टनरशिप मैच",
+      "startupsOffering": "पार्टनरशिप देने वाले स्टार्टअप्स",
+      "seminarsHeld": "आयोजित सेमिनार",
+      "avgDuration": "औसत पार्टनरशिप अवधि",
+      "funded": "फंडेड",
+      "withoutFunding": "बिना फंडिंग",
+      "byTrack": "ट्रैक के अनुसार पार्टनरशिप"
+    },
+    "community": {
+      "signUps": "कम्युनिटी साइन-अप",
+      "sessionsRun": "आयोजित सेशन",
+      "avgAttendanceRate": "औसत उपस्थिति दर",
+      "incomeTypeGuidesRead": "पढ़ी गई इनकम-टाइप गाइड",
+      "topSessions": "सबसे ज़्यादा उपस्थिति वाले कम्युनिटी सेशन",
+      "table": {
+        "session": "सेशन",
+        "attendees": "उपस्थित",
+        "avgRating": "औसत रेटिंग"
+      }
+    },
+    "financial": {
+      "totalRevenue": "कुल राजस्व (अवधि)",
+      "jobPostingFees": "नौकरी पोस्टिंग शुल्क",
+      "featuredListings": "फ़ीचर्ड लिस्टिंग",
+      "candidateSearchSubscriptions": "उम्मीदवार खोज सब्सक्रिप्शन",
+      "byRevenue": "स्रोत के अनुसार राजस्व",
+      "table": {
+        "source": "स्रोत",
+        "thisMonth": "इस महीने",
+        "share": "हिस्सा"
+      }
+    }
+  }
+}

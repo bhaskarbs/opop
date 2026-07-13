@@ -1,0 +1,141 @@
+{
+  "dashboard": {
+    "welcomeBack": "Welcome back, {{name}}",
+    "profileComplete": "Your profile is {{percent}}% complete — finish it to unlock better matches.",
+    "completeProfile": "Complete profile",
+    "nudge": {
+      "title": "It's been {{days}} days without an offer",
+      "body": "A short training on income types has helped candidates in your field land roles faster.",
+      "attendTraining": "Attend training",
+      "dismiss": "Dismiss"
+    },
+    "jobsMatched": "Jobs matched to your skills",
+    "searchJobs": "Search jobs →",
+    "noMatchedJobs": {
+      "title": "No jobs matching your skills right now",
+      "body": "We'll notify you the moment a matching role opens up. Meanwhile, the startups and community roles below can build experience toward it.",
+      "broadenSearch": "Broaden your search"
+    },
+    "viewJob": "View job",
+    "startupsMatched": "Startups matching your skill set",
+    "seeAll": "See all →",
+    "applyForPartnership": "Apply for partnership",
+    "communityBanner": {
+      "title": "Curious about community income?",
+      "body": "Watch a 4-minute explainer, then tell us you're interested.",
+      "watchNow": "Watch now",
+      "interested": "I'm interested"
+    },
+    "profileStrength": "Profile strength",
+    "addMissingDetails": "Add missing details",
+    "mockInterviews": "Mock interviews",
+    "mockInterviewsBody": "Practice on camera and review your recorded sessions anytime.",
+    "startMockInterview": "Start a mock interview",
+    "watch": "Watch",
+    "applicationActivity": "Application activity"
+  },
+  "profile": {
+    "percentComplete": "Profile {{percent}}% complete",
+    "nav": {
+      "personalDetails": "Personal details",
+      "resume": "Resume",
+      "skills": "Skills",
+      "lifeGoals": "Life goals & values",
+      "accountSettings": "Account settings"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "location": "Location",
+      "email": "Email",
+      "mobile": "Mobile"
+    },
+    "replace": "Replace",
+    "resumeUploaded": "Uploaded {{uploaded}} · {{size}}",
+    "skillsBody": "Technical or soft — these power matches across jobs, partnerships, and community roles.",
+    "removeSkill": "Remove {{skill}}",
+    "addSkillPlaceholder": "Add a skill and press enter",
+    "lifeGoalsBody": "Shared with startups when you apply for a partnership.",
+    "lifeGoalsPlaceholder": "What are you working toward?",
+    "workCulturePlaceholder": "What ethics and work culture matter most to you?",
+    "saveChanges": "Save changes",
+    "saved": "Saved ✓"
+  },
+  "addDetails": {
+    "checklist": {
+      "personal": "Personal details",
+      "resume": "Resume",
+      "skills": "Skills",
+      "goals": "Life goals & values",
+      "mobile": "Mobile number verification",
+      "prefs": "Work preferences"
+    },
+    "complete": "Complete",
+    "missing": "Missing",
+    "stillMissing": "Still missing",
+    "title": "Add missing details",
+    "subtitle": "Finish these to unlock better job, partnership, and community matches.",
+    "goalsDescription": "Shared with startups when you apply for a partnership — helps them assess fit beyond your resume.",
+    "save": "Save",
+    "mobileDescription": "Verify your number so employers and startups can reach you and you receive OTP logins.",
+    "sendOtp": "Send OTP",
+    "verifyAndSave": "Verify & save",
+    "prefsDescription": "Helps us match jobs, partnerships, and community roles to how you want to work.",
+    "openTo": "Open to",
+    "openToOptions": {
+      "jobsOnly": "Jobs only",
+      "jobsAndPartnerships": "Jobs & partnerships",
+      "jobsPartnershipsAndCommunity": "Jobs, partnerships & community roles"
+    },
+    "skillsAdded": "{{count}} skills added — nice work.",
+    "profileComplete": "Your profile is complete!",
+    "backToDashboard": "Back to dashboard"
+  },
+  "applications": {
+    "type": {
+      "job": "Job",
+      "partnership": "Partnership",
+      "community": "Community"
+    },
+    "status": {
+      "interviewScheduled": "Interview scheduled",
+      "underReview": "Under review",
+      "applied": "Applied",
+      "invitedToSession": "Invited to session",
+      "notSelected": "Not selected",
+      "seminarInviteSent": "Seminar invite sent",
+      "withdrawn": "Withdrawn"
+    },
+    "tabs": {
+      "all": "All",
+      "jobs": "Jobs",
+      "partnerships": "Partnerships",
+      "community": "Community"
+    },
+    "appliedToday": "today",
+    "appliedOneDayAgo": "1 day ago",
+    "appliedDaysAgo": "{{days}} days ago",
+    "appliedOneWeekAgo": "1 week ago",
+    "appliedWeeksAgo": "{{weeks}} weeks ago",
+    "appliedOneMonthAgo": "1 month ago",
+    "appliedMonthsAgo": "{{months}} months ago",
+    "loadError": "Could not load your applications.",
+    "title": "My applications",
+    "subtitle": "Track every job, partnership, and community application in one place.",
+    "loading": "Loading your applications…",
+    "appliedPrefix": "{{org}} · Applied {{applied}}",
+    "withdraw": "Withdraw"
+  },
+  "mockInterview": {
+    "title": "Mock interviews",
+    "subtitle": "Practice on camera, then review your recorded sessions anytime.",
+    "cameraPreview": "[ camera preview ]",
+    "toggleMic": "Toggle microphone",
+    "stopRecording": "Stop recording",
+    "toggleCamera": "Toggle camera",
+    "questionProgress": "Question {{current}} of {{total}}",
+    "startNewSession": "Start new session",
+    "recordedLogs": "Recorded logs",
+    "sessionsCount": "{{count}} sessions",
+    "recordingMeta": "{{date}} · {{count}} questions"
+  }
+}

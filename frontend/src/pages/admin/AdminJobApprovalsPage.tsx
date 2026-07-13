@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
 import type { JobSummary } from '../../lib/jobsApi'
 import { workModeFromBackend } from '../../lib/jobEnums'
 
-function formatSubmittedLabel(createdAt: string): string {
+function formatSubmittedLabel(t: TFunction<'admin'>, createdAt: string): string {
   const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000)
-  if (minutes < 60) return minutes <= 1 ? 'just now' : `${minutes} minutes ago`
+  if (minutes < 60) return minutes <= 1 ? t('jobApprovals.justNow') : t('jobApprovals.minutesAgo', { minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`
+  if (hours < 24) return hours === 1 ? t('jobApprovals.oneHourAgo') : t('jobApprovals.hoursAgo', { hours })
   const days = Math.floor(hours / 24)
-  return days === 1 ? '1 day ago' : `${days} days ago`
+  return days === 1 ? t('jobApprovals.oneDayAgo') : t('jobApprovals.daysAgo', { days })
 }
 
 export default function AdminJobApprovalsPage() {
+  const { t } = useTranslation('admin')
   const [jobs, setJobs] = useState<JobSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +31,7 @@ export default function AdminJobApprovalsPage() {
       })
       .catch((caught) => {
         if (!cancelled) {
-          setError(caught instanceof ApiError ? caught.message : 'Could not load pending jobs.')
+          setError(caught instanceof ApiError ? caught.message : t('jobApprovals.loadError'))
         }
       })
       .finally(() => {
@@ -37,7 +40,7 @@ export default function AdminJobApprovalsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [t])
 
   async function handleApprove(jobId: string) {
     setActioningId(jobId)
@@ -67,11 +70,11 @@ export default function AdminJobApprovalsPage() {
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-[22px] font-extrabold text-ink">Job approvals</h1>
-          <p className="text-sm text-slate">Review new job postings before they go live.</p>
+          <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('jobApprovals.title')}</h1>
+          <p className="text-sm text-slate">{t('jobApprovals.subtitle')}</p>
         </div>
         <div className="rounded-full bg-amber-tint px-3.5 py-1.5 text-[13.5px] font-bold text-amber">
-          {jobs.length} pending review
+          {t('jobApprovals.pendingCount', { count: jobs.length })}
         </div>
       </div>
 
@@ -83,11 +86,11 @@ export default function AdminJobApprovalsPage() {
 
       {loading ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          Loading pending jobs…
+          {t('jobApprovals.loading')}
         </div>
       ) : jobs.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          No jobs are waiting for review.
+          {t('jobApprovals.noneWaiting')}
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">
@@ -112,13 +115,17 @@ export default function AdminJobApprovalsPage() {
                       <span className="text-[15.5px] font-bold text-ink">{job.title}</span>
                     </div>
                     <div className="mt-0.5 text-[13px] text-slate">
-                      {job.companyName} · {job.location} · {workModeFromBackend(job.workMode)} ·
-                      Submitted {formatSubmittedLabel(job.createdAt)}
+                      {t('jobApprovals.jobMeta', {
+                        company: job.companyName,
+                        location: job.location,
+                        mode: workModeFromBackend(job.workMode),
+                        submitted: formatSubmittedLabel(t, job.createdAt),
+                      })}
                     </div>
                   </div>
                 </div>
                 <span className="h-fit rounded-full bg-amber-tint px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-amber">
-                  Pending review
+                  {t('dashboard.companyStatus.pendingReview')}
                 </span>
               </div>
 
@@ -152,7 +159,7 @@ export default function AdminJobApprovalsPage() {
                   >
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
-                  Approve
+                  {t('jobApprovals.approve')}
                 </button>
                 <button
                   type="button"
@@ -160,7 +167,7 @@ export default function AdminJobApprovalsPage() {
                   onClick={() => handleReject(job.id)}
                   className="rounded-lg border border-[#FCA5A5] bg-surface px-5 py-2.5 text-[13.5px] font-bold text-danger disabled:opacity-60"
                 >
-                  Reject
+                  {t('jobApprovals.reject')}
                 </button>
               </div>
             </div>

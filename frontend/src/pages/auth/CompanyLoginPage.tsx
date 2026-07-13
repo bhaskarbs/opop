@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { Button, Input } from '../../components/ui'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { AuthCard } from './shared/AuthCard'
@@ -18,7 +20,9 @@ const companyLoginSchema = z.object({
 type CompanyLoginFormValues = z.infer<typeof companyLoginSchema>
 
 export default function CompanyLoginPage() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
+  const localize = useLocalizedPath()
   const setSession = useAuthStore((state) => state.setSession)
   const [formError, setFormError] = useState<string | null>(null)
   const {
@@ -35,9 +39,9 @@ export default function CompanyLoginPage() {
     try {
       const response = await authApi.login({ email: values.workEmail, password: values.password })
       setSession(response.accessToken, response.user)
-      navigate(ROUTES.companyDashboard)
+      navigate(localize(ROUTES.companyDashboard))
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+      setFormError(error instanceof ApiError ? error.message : t('errors.generic'))
     }
   }
 
@@ -45,16 +49,16 @@ export default function CompanyLoginPage() {
     <AuthCard>
       <div className="mb-6 text-center">
         <span className="mb-4 inline-block rounded-full bg-primary-tint px-3 py-[5px] text-[12.5px] font-bold text-primary">
-          For Employers
+          {t('companyLogin.badge')}
         </span>
-        <h1 className="mb-1.5 text-[22px] font-extrabold text-ink">Company login</h1>
-        <p className="text-sm text-slate">Post jobs, offer partnerships, and search candidates.</p>
+        <h1 className="mb-1.5 text-[22px] font-extrabold text-ink">{t('companyLogin.title')}</h1>
+        <p className="text-sm text-slate">{t('companyLogin.subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="mb-4">
           <Input
-            label="Work email"
+            label={t('fields.workEmail')}
             type="email"
             placeholder="you@company.com"
             error={errors.workEmail?.message}
@@ -64,7 +68,7 @@ export default function CompanyLoginPage() {
 
         <div className="mb-[18px]">
           <Input
-            label="Password"
+            label={t('fields.password')}
             type="password"
             placeholder="••••••••"
             error={errors.password?.message}
@@ -76,7 +80,7 @@ export default function CompanyLoginPage() {
               onClick={(event) => event.preventDefault()}
               className="text-[13px] font-semibold text-primary no-underline"
             >
-              Forgot password?
+              {t('login.forgotPassword')}
             </a>
           </div>
         </div>
@@ -84,22 +88,22 @@ export default function CompanyLoginPage() {
         {formError && <p className="mb-[18px] text-[13px] text-danger">{formError}</p>}
 
         <Button type="submit" disabled={isSubmitting} className="mb-[18px] w-full">
-          Log in
+          {t('login.submit')}
         </Button>
       </form>
 
       <SocialAuthButtons />
 
       <p className="mb-2.5 text-center text-[13.5px] text-slate">
-        New employer?{' '}
-        <Link to={ROUTES.companyRegister} className="font-bold text-primary no-underline">
-          Register your company
+        {t('companyLogin.newEmployer')}{' '}
+        <Link to={localize(ROUTES.companyRegister)} className="font-bold text-primary no-underline">
+          {t('companyLogin.registerCompany')}
         </Link>
       </p>
       <p className="text-center text-[13px] text-fog">
-        Looking for a job instead?{' '}
-        <Link to={ROUTES.login} className="font-semibold text-primary no-underline">
-          Candidate login
+        {t('companyLogin.lookingForJob')}{' '}
+        <Link to={localize(ROUTES.login)} className="font-semibold text-primary no-underline">
+          {t('companyLogin.candidateLogin')}
         </Link>
       </p>
     </AuthCard>

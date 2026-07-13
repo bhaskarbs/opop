@@ -1,0 +1,116 @@
+{
+  "dashboard": {
+    "status": {
+      "active": "Active",
+      "draft": "Draft",
+      "pendingReview": "Pending review",
+      "rejected": "Rejected",
+      "closed": "Closed"
+    },
+    "postedToday": "today",
+    "postedOneDayAgo": "1 day ago",
+    "postedDaysAgo": "{{days}} days ago",
+    "postedOneWeekAgo": "1 week ago",
+    "postedWeeksAgo": "{{weeks}} weeks ago",
+    "title": "Employer dashboard",
+    "searchCandidates": "Search candidates",
+    "postJob": "+ Post a job",
+    "kpis": {
+      "activeJobPostings": "Active job postings",
+      "totalApplicants": "Total applicants",
+      "partnershipApplicants": "Partnership applicants",
+      "seminarRsvps": "Seminar RSVPs"
+    },
+    "activeJobPostings": "Active job postings",
+    "manageAll": "Manage all →",
+    "applicantsPosted": "{{count}} applicants · Posted {{posted}}",
+    "partnershipApplicants": "Partnership applicants",
+    "viewAll": "View all →",
+    "viewProfile": "View profile",
+    "inviteToSeminar": "Invite to seminar",
+    "upcomingSeminars": "Upcoming seminars & meetups",
+    "seminarInvited": "{{date}} · {{count}} invited",
+    "scheduleNewSeminar": "+ Schedule new seminar",
+    "notificationsSent": "Notifications sent",
+    "email": "Email",
+    "whatsapp": "WhatsApp"
+  },
+  "postJob": {
+    "employmentType": {
+      "fullTime": "Full-time",
+      "partTime": "Part-time",
+      "contract": "Contract",
+      "internship": "Internship"
+    },
+    "errorGeneric": "Something went wrong. Try again.",
+    "errorTitleRequired": "Enter a job title before saving a draft.",
+    "title": "Post a job",
+    "subtitle": "Reach candidates directly — and surface your listing to skill-matched partnership and community applicants too.",
+    "roleDetails": "Role details",
+    "fields": {
+      "jobTitle": "Job title",
+      "employmentType": "Employment type",
+      "location": "Location",
+      "salaryRange": "Salary range (₹/yr)",
+      "salaryMinPlaceholder": "Min e.g. 12L",
+      "salaryMaxPlaceholder": "Max e.g. 18L",
+      "deadline": "Application deadline",
+      "aboutRolePlaceholder": "Describe the role, team, and what success looks like...",
+      "onePerLine": "One per line"
+    },
+    "description": "Description",
+    "requiredSkills": "Required skills",
+    "requiredSkillsBody": "Technical or soft — used to match this role to relevant candidates, and to surface it to skilled partnership/community applicants.",
+    "matchNotice": "Candidates who match these skills but haven't landed similar roles will also see this listing alongside relevant startup partnerships and community opportunities.",
+    "saveDraft": "Save as draft",
+    "publish": "Publish job"
+  },
+  "searchCandidates": {
+    "intent": {
+      "jobs": "Open to jobs",
+      "partnership": "Open to partnership",
+      "community": "Open to community roles"
+    },
+    "experience": {
+      "heading": "Experience",
+      "bucket02": "0-2 yrs",
+      "bucket35": "3-5 yrs",
+      "bucket58": "5-8 yrs",
+      "bucket8plus": "8+ yrs"
+    },
+    "candidateMeta": "{{title}} · {{location}} · {{years}} yrs experience",
+    "contacted": "Contacted ✓",
+    "contact": "Contact",
+    "searchPlaceholder": "Search by skill, title, or keyword",
+    "lookingFor": "Looking for",
+    "location": "Location",
+    "showingCount": "Showing {{count}} candidates matching your filters",
+    "noResults": "No candidates match your filters. Try clearing some filters or searching a different keyword."
+  },
+  "seminars": {
+    "dateTbd": "Date TBD",
+    "title": "Seminars & meetups",
+    "subtitle": "Invite partnership applicants to meet the team before you decide.",
+    "upcoming": "Upcoming",
+    "invitedCount": "{{count}} invited",
+    "manageInvites": "Manage invites",
+    "pastSessions": "Past sessions",
+    "attendedCount": "{{date}} · {{count}} attended",
+    "completed": "Completed",
+    "scheduleNew": "Schedule a new session",
+    "fields": {
+      "title": "Title",
+      "titlePlaceholder": "e.g. Partner intro session",
+      "date": "Date",
+      "time": "Time",
+      "mode": "Mode",
+      "inviteApplicants": "Invite applicants"
+    },
+    "modes": {
+      "onlineVideoCall": "Online video call",
+      "inPersonMeetup": "In-person meetup"
+    },
+    "notifyNotice": "Invitees get both an email and a WhatsApp notification automatically.",
+    "scheduleAndNotify": "Schedule & notify"
+  }
+}

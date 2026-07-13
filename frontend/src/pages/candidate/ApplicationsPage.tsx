@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { ApiError } from '../../lib/apiClient'
 import {
   applicationsApi,
@@ -59,6 +61,24 @@ const STATUS_CLASSES: Record<ApplicationStatus, string> = {
   Withdrawn: 'bg-neutral-tint text-fog',
 }
 
+// Rendered text only — the literal type/status/tab values stay as the underlying data (Record
+// keys, backend mapping, comparisons), same pattern as FilterSidebar's EXPERIENCE_LEVEL_KEYS.
+const TYPE_LABEL_KEYS: Record<ApplicationType, string> = {
+  Job: 'applications.type.job',
+  Partnership: 'applications.type.partnership',
+  Community: 'applications.type.community',
+}
+
+const STATUS_LABEL_KEYS: Record<ApplicationStatus, string> = {
+  'Interview scheduled': 'applications.status.interviewScheduled',
+  'Under review': 'applications.status.underReview',
+  Applied: 'applications.status.applied',
+  'Invited to session': 'applications.status.invitedToSession',
+  'Not selected': 'applications.status.notSelected',
+  'Seminar invite sent': 'applications.status.seminarInviteSent',
+  Withdrawn: 'applications.status.withdrawn',
+}
+
 const BACKEND_STATUS_LABELS: Record<BackendApplicationStatus, ApplicationStatus> = {
   APPLIED: 'Applied',
   UNDER_REVIEW: 'Under review',
@@ -103,17 +123,21 @@ const MOCK_APPLICATIONS: Application[] = [
   },
 ]
 
-function formatAppliedLabel(appliedAt: string): string {
+function formatAppliedLabel(t: TFunction<'candidate'>, appliedAt: string): string {
   const days = Math.floor((Date.now() - new Date(appliedAt).getTime()) / 86_400_000)
-  if (days <= 0) return 'today'
-  if (days === 1) return '1 day ago'
-  if (days < 7) return `${days} days ago`
+  if (days <= 0) return t('applications.appliedToday')
+  if (days === 1) return t('applications.appliedOneDayAgo')
+  if (days < 7) return t('applications.appliedDaysAgo', { days })
   if (days < 30) {
     const weeks = Math.floor(days / 7)
-    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+    return weeks === 1
+      ? t('applications.appliedOneWeekAgo')
+      : t('applications.appliedWeeksAgo', { weeks })
   }
   const months = Math.floor(days / 30)
-  return months === 1 ? '1 month ago' : `${months} months ago`
+  return months === 1
+    ? t('applications.appliedOneMonthAgo')
+    : t('applications.appliedMonthsAgo', { months })
 }
 
 const TAB_FILTERS = ['All', 'Jobs', 'Partnerships', 'Community'] as const
@@ -125,7 +149,15 @@ const TAB_TO_TYPE: Record<Exclude<TabFilter, 'All'>, ApplicationType> = {
   Community: 'Community',
 }
 
+const TAB_LABEL_KEYS: Record<TabFilter, string> = {
+  All: 'applications.tabs.all',
+  Jobs: 'applications.tabs.jobs',
+  Partnerships: 'applications.tabs.partnerships',
+  Community: 'applications.tabs.community',
+}
+
 export default function ApplicationsPage() {
+  const { t } = useTranslation('candidate')
   const [activeTab, setActiveTab] = useState<TabFilter>('All')
   const [jobApplications, setJobApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
@@ -145,16 +177,14 @@ export default function ApplicationsPage() {
             id: application.id,
             title: application.jobTitle,
             org: application.companyName,
-            applied: formatAppliedLabel(application.appliedAt),
+            applied: formatAppliedLabel(t, application.appliedAt),
             type: 'Job',
             status: BACKEND_STATUS_LABELS[application.status],
           })),
         )
       } catch (caught) {
         if (!cancelled) {
-          setError(
-            caught instanceof ApiError ? caught.message : 'Could not load your applications.',
-          )
+          setError(caught instanceof ApiError ? caught.message : t('applications.loadError'))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -165,7 +195,7 @@ export default function ApplicationsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [t])
 
   async function handleWithdraw(applicationId: string) {
     try {
@@ -194,10 +224,8 @@ export default function ApplicationsPage() {
 
   return (
     <main className="mx-auto max-w-[1000px] px-6 pt-7 pb-16">
-      <h1 className="mb-1 text-xl font-extrabold text-ink">My applications</h1>
-      <p className="mb-5 text-sm text-slate">
-        Track every job, partnership, and community application in one place.
-      </p>
+      <h1 className="mb-1 text-xl font-extrabold text-ink">{t('applications.title')}</h1>
+      <p className="mb-5 text-sm text-slate">{t('applications.subtitle')}</p>
 
       <div className="mb-5 flex flex-wrap gap-2">
         {TAB_FILTERS.map((tab) => (
@@ -211,7 +239,7 @@ export default function ApplicationsPage() {
                 : 'border-border bg-surface text-[#3A414D]'
             }`}
           >
-            {tab} ({tabCount(tab)})
+            {t(TAB_LABEL_KEYS[tab])} ({tabCount(tab)})
           </button>
         ))}
       </div>
@@ -224,7 +252,7 @@ export default function ApplicationsPage() {
 
       {loading ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          Loading your applications…
+          {t('applications.loading')}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -256,11 +284,14 @@ export default function ApplicationsPage() {
                       <span
                         className={`rounded-full px-[9px] py-0.5 text-[11px] font-bold ${typeStyle.tagClass}`}
                       >
-                        {application.type}
+                        {t(TYPE_LABEL_KEYS[application.type])}
                       </span>
                     </div>
                     <div className="mt-0.5 text-[13px] text-slate">
-                      {application.org} · Applied {application.applied}
+                      {t('applications.appliedPrefix', {
+                        org: application.org,
+                        applied: application.applied,
+                      })}
                     </div>
                   </div>
                 </div>
@@ -271,13 +302,13 @@ export default function ApplicationsPage() {
                       onClick={() => handleWithdraw(application.id)}
                       className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
                     >
-                      Withdraw
+                      {t('applications.withdraw')}
                     </button>
                   )}
                   <span
                     className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-bold whitespace-nowrap ${STATUS_CLASSES[application.status]}`}
                   >
-                    {application.status}
+                    {t(STATUS_LABEL_KEYS[application.status])}
                   </span>
                 </div>
               </div>

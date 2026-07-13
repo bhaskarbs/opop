@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { type KeyboardEvent, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Button, Input } from '../../components/ui'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
   employmentTypeToBackend,
   experienceLevelToBackend,
@@ -11,10 +13,33 @@ import {
   EMPLOYMENT_TYPES,
   EXPERIENCE_LEVELS,
   WORK_MODES,
+  type EmploymentTypeLabel,
+  type ExperienceLevelLabel,
+  type WorkModeLabel,
 } from '../../lib/jobEnums'
 import { ApiError } from '../../lib/apiClient'
 import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
+
+// Rendered text only — the underlying enum values stay as-is (see lib/jobEnums.ts). Experience
+// level and work mode reuse the `public` namespace's filter labels rather than duplicating them.
+const EMPLOYMENT_TYPE_KEYS: Record<EmploymentTypeLabel, string> = {
+  'Full-time': 'postJob.employmentType.fullTime',
+  'Part-time': 'postJob.employmentType.partTime',
+  Contract: 'postJob.employmentType.contract',
+  Internship: 'postJob.employmentType.internship',
+}
+const EXPERIENCE_LEVEL_KEYS: Record<ExperienceLevelLabel, string> = {
+  'Entry level': 'public:filters.experienceLevel.entry',
+  'Mid level': 'public:filters.experienceLevel.mid',
+  Senior: 'public:filters.experienceLevel.senior',
+  Leadership: 'public:filters.experienceLevel.leadership',
+}
+const WORK_MODE_KEYS: Record<WorkModeLabel, string> = {
+  Remote: 'public:filters.workMode.remote',
+  Hybrid: 'public:filters.workMode.hybrid',
+  'On-site': 'public:filters.workMode.onSite',
+}
 
 const postJobSchema = z.object({
   title: z.string().min(2, 'Enter a job title'),
@@ -68,7 +93,9 @@ function toJobRequest(
 }
 
 export default function PostJobPage() {
+  const { t } = useTranslation('company')
   const navigate = useNavigate()
+  const localize = useLocalizedPath()
   const [newSkill, setNewSkill] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -102,9 +129,9 @@ export default function PostJobPage() {
       // Companies can no longer publish straight to ACTIVE — this now goes into the Step 18
       // admin job-approval queue and only appears live once an admin approves it.
       await jobsApi.create(toJobRequest(values, 'PENDING_APPROVAL'))
-      navigate(ROUTES.companyDashboard)
+      navigate(localize(ROUTES.companyDashboard))
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+      setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
     }
   }
 
@@ -112,31 +139,28 @@ export default function PostJobPage() {
     setFormError(null)
     const values = getValues()
     if (!values.title.trim()) {
-      setFormError('Enter a job title before saving a draft.')
+      setFormError(t('postJob.errorTitleRequired'))
       return
     }
     try {
       await jobsApi.create(toJobRequest(values, 'DRAFT'))
-      navigate(ROUTES.companyDashboard)
+      navigate(localize(ROUTES.companyDashboard))
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Try again.')
+      setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
     }
   }
 
   return (
     <main className="mx-auto max-w-[840px] px-6 py-7 pb-16">
-      <h1 className="mb-1 text-xl font-extrabold text-ink">Post a job</h1>
-      <p className="mb-6 text-sm text-slate">
-        Reach candidates directly — and surface your listing to skill-matched partnership and
-        community applicants too.
-      </p>
+      <h1 className="mb-1 text-xl font-extrabold text-ink">{t('postJob.title')}</h1>
+      <p className="mb-6 text-sm text-slate">{t('postJob.subtitle')}</p>
 
       <form onSubmit={handleSubmit(onPublish)} noValidate>
         <div className="mb-[18px] rounded-card border border-border bg-surface p-8">
-          <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">Role details</h2>
+          <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">{t('postJob.roleDetails')}</h2>
           <div className="mb-3.5">
             <Input
-              label="Job title"
+              label={t('postJob.fields.jobTitle')}
               placeholder="e.g. Senior Frontend Developer"
               error={errors.title?.message}
               {...register('title')}
@@ -145,7 +169,7 @@ export default function PostJobPage() {
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="flex flex-col">
               <label htmlFor="employmentType" className="mb-1.5 text-[13px] font-bold text-ink">
-                Employment type
+                {t('postJob.fields.employmentType')}
               </label>
               <select
                 id="employmentType"
@@ -154,14 +178,14 @@ export default function PostJobPage() {
               >
                 {EMPLOYMENT_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {t(EMPLOYMENT_TYPE_KEYS[type])}
                   </option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col">
               <label htmlFor="experienceLevel" className="mb-1.5 text-[13px] font-bold text-ink">
-                Experience level
+                {t('public:filters.experienceLevel.heading')}
               </label>
               <select
                 id="experienceLevel"
@@ -170,7 +194,7 @@ export default function PostJobPage() {
               >
                 {EXPERIENCE_LEVELS.map((level) => (
                   <option key={level} value={level}>
-                    {level}
+                    {t(EXPERIENCE_LEVEL_KEYS[level])}
                   </option>
                 ))}
               </select>
@@ -179,7 +203,7 @@ export default function PostJobPage() {
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="flex flex-col">
               <label htmlFor="workMode" className="mb-1.5 text-[13px] font-bold text-ink">
-                Work mode
+                {t('public:filters.workMode.heading')}
               </label>
               <select
                 id="workMode"
@@ -188,13 +212,13 @@ export default function PostJobPage() {
               >
                 {WORK_MODES.map((mode) => (
                   <option key={mode} value={mode}>
-                    {mode}
+                    {t(WORK_MODE_KEYS[mode])}
                   </option>
                 ))}
               </select>
             </div>
             <Input
-              label="Location"
+              label={t('postJob.fields.location')}
               placeholder="e.g. Bengaluru, India"
               error={errors.location?.message}
               {...register('location')}
@@ -202,15 +226,17 @@ export default function PostJobPage() {
           </div>
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="flex flex-col">
-              <label className="mb-1.5 text-[13px] font-bold text-ink">Salary range (₹/yr)</label>
+              <label className="mb-1.5 text-[13px] font-bold text-ink">
+                {t('postJob.fields.salaryRange')}
+              </label>
               <div className="flex gap-2">
                 <input
-                  placeholder="Min e.g. 12L"
+                  placeholder={t('postJob.fields.salaryMinPlaceholder')}
                   className="min-w-0 flex-1 rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
                   {...register('salaryMin')}
                 />
                 <input
-                  placeholder="Max e.g. 18L"
+                  placeholder={t('postJob.fields.salaryMaxPlaceholder')}
                   className="min-w-0 flex-1 rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
                   {...register('salaryMax')}
                 />
@@ -218,7 +244,7 @@ export default function PostJobPage() {
             </div>
             <div className="flex flex-col">
               <label htmlFor="deadline" className="mb-1.5 text-[13px] font-bold text-ink">
-                Application deadline
+                {t('postJob.fields.deadline')}
               </label>
               <input
                 id="deadline"
@@ -231,15 +257,15 @@ export default function PostJobPage() {
         </div>
 
         <div className="mb-[18px] rounded-card border border-border bg-surface p-8">
-          <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">Description</h2>
+          <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">{t('postJob.description')}</h2>
           <div className="mb-3.5">
             <label htmlFor="aboutRole" className="mb-1.5 block text-[13px] font-bold text-ink">
-              About the role
+              {t('public:jobDetail.aboutRole')}
             </label>
             <textarea
               id="aboutRole"
               rows={4}
-              placeholder="Describe the role, team, and what success looks like..."
+              placeholder={t('postJob.fields.aboutRolePlaceholder')}
               className="w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
               {...register('aboutRole')}
             />
@@ -252,12 +278,12 @@ export default function PostJobPage() {
               htmlFor="responsibilities"
               className="mb-1.5 block text-[13px] font-bold text-ink"
             >
-              Responsibilities
+              {t('public:jobDetail.responsibilities')}
             </label>
             <textarea
               id="responsibilities"
               rows={3}
-              placeholder="One per line"
+              placeholder={t('postJob.fields.onePerLine')}
               className="w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
               {...register('responsibilities')}
             />
@@ -267,12 +293,12 @@ export default function PostJobPage() {
           </div>
           <div>
             <label htmlFor="requirements" className="mb-1.5 block text-[13px] font-bold text-ink">
-              Requirements
+              {t('public:jobDetail.requirements')}
             </label>
             <textarea
               id="requirements"
               rows={3}
-              placeholder="One per line"
+              placeholder={t('postJob.fields.onePerLine')}
               className="w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
               {...register('requirements')}
             />
@@ -283,11 +309,8 @@ export default function PostJobPage() {
         </div>
 
         <div className="mb-[18px] rounded-card border border-border bg-surface p-8">
-          <h2 className="mb-1.5 text-[15.5px] font-bold text-ink">Required skills</h2>
-          <p className="mb-3.5 text-[13px] text-fog">
-            Technical or soft — used to match this role to relevant candidates, and to surface it to
-            skilled partnership/community applicants.
-          </p>
+          <h2 className="mb-1.5 text-[15.5px] font-bold text-ink">{t('postJob.requiredSkills')}</h2>
+          <p className="mb-3.5 text-[13px] text-fog">{t('postJob.requiredSkillsBody')}</p>
           <Controller
             name="skills"
             control={control}
@@ -313,7 +336,7 @@ export default function PostJobPage() {
                         <button
                           type="button"
                           onClick={() => field.onChange(field.value.filter((s) => s !== skill))}
-                          aria-label={`Remove ${skill}`}
+                          aria-label={t('candidate:profile.removeSkill', { skill })}
                           className="cursor-pointer text-fog"
                         >
                           ×
@@ -325,7 +348,7 @@ export default function PostJobPage() {
                     value={newSkill}
                     onChange={(event) => setNewSkill(event.target.value)}
                     onKeyDown={addSkill}
-                    placeholder="Add a skill and press enter"
+                    placeholder={t('candidate:profile.addSkillPlaceholder')}
                     className="w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
                   />
                 </>
@@ -350,20 +373,17 @@ export default function PostJobPage() {
             <circle cx="12" cy="12" r="10" />
             <path d="M12 16v-4M12 8h.01" />
           </svg>
-          <div className="text-[13px] leading-[1.55] text-primary">
-            Candidates who match these skills but haven't landed similar roles will also see this
-            listing alongside relevant startup partnerships and community opportunities.
-          </div>
+          <div className="text-[13px] leading-[1.55] text-primary">{t('postJob.matchNotice')}</div>
         </div>
 
         {formError && <p className="mb-4 text-right text-[13px] text-danger">{formError}</p>}
 
         <div className="flex flex-wrap justify-end gap-2.5">
           <Button type="button" variant="secondary" onClick={onSaveDraft}>
-            Save as draft
+            {t('postJob.saveDraft')}
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            Publish job
+            {t('postJob.publish')}
           </Button>
         </div>
       </form>

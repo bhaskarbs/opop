@@ -1,0 +1,173 @@
+{
+  "dashboard": {
+    "title": "Platform overview",
+    "kpis": {
+      "totalCandidates": "Total candidates",
+      "registeredCompanies": "Registered companies",
+      "liveJobPostings": "Live job postings",
+      "partnershipMatches": "Partnership matches",
+      "communitySignUps": "Community sign-ups"
+    },
+    "applicationsByPath": "Applications by path (last 6 months)",
+    "legend": {
+      "jobs": "Jobs",
+      "partnerships": "Partnerships",
+      "community": "Community"
+    },
+    "candidateFunnel": "Candidate funnel",
+    "funnel": {
+      "registered": "Registered",
+      "appliedToJob": "Applied to a job",
+      "appliedForPartnership": "Applied for partnership",
+      "hiredOrPartnered": "Hired or partnered"
+    },
+    "recentCompanyRegistrations": "Recent company registrations",
+    "manageAll": "Manage all →",
+    "table": {
+      "company": "Company",
+      "sector": "Sector",
+      "cin": "CIN",
+      "registered": "Registered",
+      "status": "Status"
+    },
+    "companyStatus": {
+      "verified": "Verified",
+      "pendingReview": "Pending review"
+    }
+  },
+  "jobApprovals": {
+    "justNow": "just now",
+    "minutesAgo": "{{minutes}} minutes ago",
+    "oneHourAgo": "1 hour ago",
+    "hoursAgo": "{{hours}} hours ago",
+    "oneDayAgo": "1 day ago",
+    "daysAgo": "{{days}} days ago",
+    "loadError": "Could not load pending jobs.",
+    "title": "Job approvals",
+    "subtitle": "Review new job postings before they go live.",
+    "pendingCount": "{{count}} pending review",
+    "loading": "Loading pending jobs…",
+    "noneWaiting": "No jobs are waiting for review.",
+    "jobMeta": "{{company}} · {{location}} · {{mode}} · Submitted {{submitted}}",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "companyApprovals": {
+    "today": "today",
+    "oneDayAgo": "1 day ago",
+    "daysAgo": "{{days}} days ago",
+    "loadError": "Could not load pending companies.",
+    "title": "Company approvals",
+    "subtitle": "Verify company registrations before they can post jobs or partnerships.",
+    "pendingCount": "{{count}} pending review",
+    "loading": "Loading pending companies…",
+    "noneWaiting": "No companies are waiting for review.",
+    "companyMeta": "{{industry}} · {{entityType}} · Submitted {{submitted}}",
+    "fields": {
+      "cin": "CIN",
+      "gstin": "GSTIN",
+      "pan": "PAN",
+      "authorizedSignatory": "Authorized signatory"
+    },
+    "verifyAndApprove": "Verify & approve"
+  },
+  "users": {
+    "status": {
+      "suspended": "Suspended",
+      "verified": "Verified",
+      "rejected": "Rejected",
+      "pendingReview": "Pending review",
+      "active": "Active"
+    },
+    "loadError": "Could not load users.",
+    "confirmSuspend": "Suspend {{name}}'s account?",
+    "title": "Users",
+    "subtitle": "Manage candidates and company accounts across the platform.",
+    "tabs": {
+      "candidates": "Candidates",
+      "companies": "Companies"
+    },
+    "searchPlaceholder": "Search by name or email",
+    "loading": "Loading…",
+    "joinedMeta": "{{email}} · Joined {{joined}}",
+    "suspend": "Suspend",
+    "reactivate": "Reactivate",
+    "noneCandidates": "No candidates match your search.",
+    "noneCompanies": "No companies match your search."
+  },
+  "reports": {
+    "tabs": {
+      "candidates": "Candidates",
+      "employers": "Employers & Jobs",
+      "partnerships": "Partnerships",
+      "community": "Community",
+      "financial": "Financial"
+    },
+    "title": "Reports",
+    "subtitle": "Platform performance across candidates, employers, partnerships, and community.",
+    "dateRange": {
+      "last30Days": "Last 30 days",
+      "last90Days": "Last 90 days",
+      "last6Months": "Last 6 months",
+      "yearToDate": "Year to date"
+    },
+    "exportCsv": "Export CSV",
+    "candidates": {
+      "totalRegistered": "Total registered",
+      "activeJobSeekers": "Active job seekers",
+      "resumesUploaded": "Resumes uploaded",
+      "mockInterviewsTaken": "Mock interviews taken",
+      "hiredViaJobListing": "Hired via job listing",
+      "enteredPartnership": "Entered a partnership",
+      "joinedCommunityRole": "Joined a community role",
+      "stillSearching": "Still searching",
+      "byOutcome": "Candidates by outcome"
+    },
+    "employers": {
+      "registeredCompanies": "Registered companies",
+      "verifiedCompanies": "Verified companies",
+      "liveJobPostings": "Live job postings",
+      "avgTimeToFill": "Avg. time to fill",
+      "topHiringSectors": "Top hiring sectors",
+      "table": {
+        "sector": "Sector",
+        "openJobs": "Open jobs",
+        "applications": "Applications",
+        "fillRate": "Fill rate"
+      }
+    },
+    "partnerships": {
+      "totalPartnershipMatches": "Total partnership matches",
+      "startupsOffering": "Startups offering partnerships",
+      "seminarsHeld": "Seminars held",
+      "avgDuration": "Avg. partnership duration",
+      "funded": "Funded",
+      "withoutFunding": "Without funding",
+      "byTrack": "Partnerships by track"
+    },
+    "community": {
+      "signUps": "Community sign-ups",
+      "sessionsRun": "Sessions run",
+      "avgAttendanceRate": "Avg. attendance rate",
+      "incomeTypeGuidesRead": "Income-type guides read",
+      "topSessions": "Top community sessions attended",
+      "table": {
+        "session": "Session",
+        "attendees": "Attendees",
+        "avgRating": "Avg. rating"
+      }
+    },
+    "financial": {
+      "totalRevenue": "Total revenue (period)",
+      "jobPostingFees": "Job posting fees",
+      "featuredListings": "Featured listings",
+      "candidateSearchSubscriptions": "Candidate search subscriptions",
+      "byRevenue": "Revenue by source",
+      "table": {
+        "source": "Source",
+        "thisMonth": "This month",
+        "share": "Share"
+      }
+    }
+  }
+}
