@@ -1,8 +1,36 @@
 import { useAuthStore } from '../stores/authStore'
-import { uploadRequest } from './apiClient'
+import { request, uploadRequest } from './apiClient'
+
+export interface CandidateProfileResponse {
+  fullName: string
+  email: string
+  mobile: string
+  location: string | null
+  title: string | null
+  skills: string[]
+  resumeFileName: string | null
+  resumeUploadedAt: string | null
+  resumeSizeBytes: number | null
+  lifeGoals: string | null
+  workCulture: string | null
+}
 
 export interface ResumeUploadResponse {
   resumeFileName: string
+  resumeUploadedAt: string
+  resumeSizeBytes: number
+}
+
+export interface UpdatePersonalDetailsPayload {
+  fullName: string
+  location: string
+  title: string
+  mobile: string
+}
+
+export interface UpdateGoalsPayload {
+  lifeGoals: string
+  workCulture: string
 }
 
 function authHeaders(): Record<string, string> {
@@ -11,6 +39,25 @@ function authHeaders(): Record<string, string> {
 }
 
 export const candidateApi = {
+  getProfile: () => request<CandidateProfileResponse>('/api/candidate/profile', { headers: authHeaders() }),
+  updatePersonalDetails: (payload: UpdatePersonalDetailsPayload) =>
+    request<CandidateProfileResponse>('/api/candidate/profile/personal', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  updateSkills: (skills: string[]) =>
+    request<CandidateProfileResponse>('/api/candidate/profile/skills', {
+      method: 'PATCH',
+      body: JSON.stringify({ skills }),
+      headers: authHeaders(),
+    }),
+  updateGoals: (payload: UpdateGoalsPayload) =>
+    request<CandidateProfileResponse>('/api/candidate/profile/goals', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
   uploadResume: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)

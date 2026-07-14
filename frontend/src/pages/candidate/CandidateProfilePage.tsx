@@ -1,7 +1,8 @@
-import { type KeyboardEvent, useRef, useState } from 'react'
+import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card } from '../../components/ui'
-import { candidateProfile, profileCompletionPercent } from '../../mocks/candidateProfile'
+import { ApiError } from '../../lib/apiClient'
+import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
 
 const NAV_SECTIONS = [
   { labelKey: 'profile.nav.personalDetails', href: '#personal' },
@@ -11,43 +12,178 @@ const NAV_SECTIONS = [
   { labelKey: 'profile.nav.accountSettings', href: '#account' },
 ]
 
+function completionPercentOf(profile: CandidateProfileResponse): number {
+  // Mirrors the checklist AddMissingDetailsPage shows, minus "work preferences" (that section
+  // lives only on that page, not here) — mobile is always present since registration requires
+  // it, so it counts as complete unconditionally.
+  const checks = [
+    Boolean(profile.location && profile.title),
+    Boolean(profile.resumeFileName),
+    profile.skills.length > 0,
+    Boolean(profile.lifeGoals || profile.workCulture),
+    true,
+  ]
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
 export default function CandidateProfilePage() {
-  const { t } = useTranslation('candidate')
-  const completionPercent = profileCompletionPercent(candidateProfile.completedSections)
+  const { t, i18n } = useTranslation('candidate')
 
-  const [fullName, setFullName] = useState(candidateProfile.name)
-  const [location, setLocation] = useState(candidateProfile.location)
-  const [email, setEmail] = useState(candidateProfile.email)
-  const [mobile, setMobile] = useState(candidateProfile.mobile)
+  const [profile, setProfile] = useState<CandidateProfileResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [resumeFileName, setResumeFileName] = useState(candidateProfile.resumeFileName)
+  const [fullName, setFullName] = useState('')
+  const [location, setLocation] = useState('')
+  const [title, setTitle] = useState('')
+  const [mobile, setMobile] = useState('')
+  const [savingPersonal, setSavingPersonal] = useState(false)
+  const [personalError, setPersonalError] = useState<string | null>(null)
+  const [savedPersonal, setSavedPersonal] = useState(false)
+
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null)
+  const [resumeUploadedAt, setResumeUploadedAt] = useState<string | null>(null)
+  const [resumeSizeBytes, setResumeSizeBytes] = useState<number | null>(null)
+  const [resumeError, setResumeError] = useState<string | null>(null)
   const resumeInputRef = useRef<HTMLInputElement>(null)
 
-  const [skills, setSkills] = useState(candidateProfile.skills)
+  const [skills, setSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState('')
+  const [skillsError, setSkillsError] = useState<string | null>(null)
 
   const [lifeGoals, setLifeGoals] = useState('')
   const [workCulture, setWorkCulture] = useState('')
+  const [savingGoals, setSavingGoals] = useState(false)
+  const [goalsError, setGoalsError] = useState<string | null>(null)
   const [savedGoals, setSavedGoals] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    candidateApi
+      .getProfile()
+      .then((data) => {
+        if (cancelled) return
+        setProfile(data)
+        setFullName(data.fullName)
+        setLocation(data.location ?? '')
+        setTitle(data.title ?? '')
+        setMobile(data.mobile)
+        setResumeFileName(data.resumeFileName)
+        setResumeUploadedAt(data.resumeUploadedAt)
+        setResumeSizeBytes(data.resumeSizeBytes)
+        setSkills(data.skills)
+        setLifeGoals(data.lifeGoals ?? '')
+        setWorkCulture(data.workCulture ?? '')
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setLoadError(error instanceof ApiError ? error.message : t('profile.loadError'))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [t])
+
+  async function handleSavePersonal() {
+    setPersonalError(null)
+    setSavingPersonal(true)
+    try {
+      const updated = await candidateApi.updatePersonalDetails({ fullName, location, title, mobile })
+      setProfile(updated)
+      setSavedPersonal(true)
+      setTimeout(() => setSavedPersonal(false), 2000)
+    } catch (error) {
+      setPersonalError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    } finally {
+      setSavingPersonal(false)
+    }
+  }
+
+  async function handleResumeChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setResumeError(null)
+    try {
+      const uploaded = await candidateApi.uploadResume(file)
+      setResumeFileName(uploaded.resumeFileName)
+      setResumeUploadedAt(uploaded.resumeUploadedAt)
+      setResumeSizeBytes(uploaded.resumeSizeBytes)
+    } catch (error) {
+      setResumeError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    }
+  }
+
+  async function persistSkills(nextSkills: string[]) {
+    const previous = skills
+    setSkills(nextSkills)
+    setSkillsError(null)
+    try {
+      const updated = await candidateApi.updateSkills(nextSkills)
+      setSkills(updated.skills)
+    } catch (error) {
+      setSkills(previous)
+      setSkillsError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    }
+  }
 
   function addSkill(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter') return
     event.preventDefault()
     const trimmed = newSkill.trim()
     if (trimmed && !skills.includes(trimmed)) {
-      setSkills([...skills, trimmed])
+      persistSkills([...skills, trimmed])
     }
     setNewSkill('')
   }
 
   function removeSkill(skill: string) {
-    setSkills(skills.filter((s) => s !== skill))
+    persistSkills(skills.filter((s) => s !== skill))
   }
 
-  function handleSaveGoals() {
-    setSavedGoals(true)
-    setTimeout(() => setSavedGoals(false), 2000)
+  async function handleSaveGoals() {
+    setGoalsError(null)
+    setSavingGoals(true)
+    try {
+      const updated = await candidateApi.updateGoals({ lifeGoals, workCulture })
+      setProfile(updated)
+      setSavedGoals(true)
+      setTimeout(() => setSavedGoals(false), 2000)
+    } catch (error) {
+      setGoalsError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    } finally {
+      setSavingGoals(false)
+    }
   }
+
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-[1000px] px-6 py-7 pb-16 text-center text-sm text-slate">
+        {t('profile.loading')}
+      </main>
+    )
+  }
+
+  if (loadError || !profile) {
+    return (
+      <main className="mx-auto max-w-[1000px] px-6 py-7 pb-16 text-center text-sm text-danger">
+        {loadError ?? t('profile.loadError')}
+      </main>
+    )
+  }
+
+  const completionPercent = completionPercentOf(profile)
+  const initial = fullName.charAt(0).toUpperCase()
 
   return (
     <main className="mx-auto max-w-[1000px] px-6 py-7 pb-16">
@@ -55,11 +191,11 @@ export default function CandidateProfilePage() {
         <aside className="profile:order-none order-first">
           <Card className="mb-4 p-[22px] text-center">
             <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-[22px] font-bold text-white">
-              {candidateProfile.initial}
+              {initial}
             </div>
-            <div className="text-base font-bold text-ink">{candidateProfile.name}</div>
+            <div className="text-base font-bold text-ink">{fullName}</div>
             <div className="mt-0.5 text-[13px] text-fog">
-              {candidateProfile.title} · {candidateProfile.location}
+              {title || location ? `${title}${title && location ? ' · ' : ''}${location}` : null}
             </div>
             <div className="mt-4 mb-1.5 h-2 overflow-hidden rounded-full bg-neutral-tint">
               <div
@@ -119,9 +255,10 @@ export default function CandidateProfilePage() {
                 <input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                  value={profile.email}
+                  disabled
+                  title={t('profile.emailReadOnly')}
+                  className="cursor-not-allowed rounded-control border border-border bg-neutral-tint px-3 py-2.5 text-sm text-fog"
                 />
               </div>
               <div className="flex flex-col">
@@ -135,6 +272,15 @@ export default function CandidateProfilePage() {
                   className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
                 />
               </div>
+            </div>
+            {personalError && <p className="mt-3.5 text-[13px] text-danger">{personalError}</p>}
+            <div className="mt-[18px] flex items-center gap-3">
+              <Button type="button" onClick={handleSavePersonal} disabled={savingPersonal}>
+                {t('profile.saveChanges')}
+              </Button>
+              {savedPersonal && (
+                <span className="text-sm font-semibold text-teal">{t('profile.saved')}</span>
+              )}
             </div>
           </Card>
 
@@ -153,39 +299,48 @@ export default function CandidateProfilePage() {
                 type="file"
                 accept=".pdf,.doc,.docx"
                 className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (file) setResumeFileName(file.name)
-                }}
+                onChange={handleResumeChange}
               />
             </div>
-            <div className="flex items-center gap-3 rounded-xl border border-border p-3.5">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#2451D6"
-                strokeWidth={1.8}
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-              </svg>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-ink">{resumeFileName}</div>
-                <div className="text-xs text-fog">
-                  {t('profile.resumeUploaded', {
-                    uploaded: candidateProfile.resumeUploadedLabel,
-                    size: candidateProfile.resumeSizeLabel,
-                  })}
+            {resumeError && <p className="mb-3.5 text-[13px] text-danger">{resumeError}</p>}
+            {resumeFileName ? (
+              <div className="flex items-center gap-3 rounded-xl border border-border p-3.5">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2451D6"
+                  strokeWidth={1.8}
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-ink">{resumeFileName}</div>
+                  {resumeUploadedAt && resumeSizeBytes != null && (
+                    <div className="text-xs text-fog">
+                      {t('profile.resumeUploaded', {
+                        uploaded: new Date(resumeUploadedAt).toLocaleDateString(i18n.language, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        }),
+                        size: formatFileSize(resumeSizeBytes),
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-[13px] text-fog">{t('profile.noResume')}</p>
+            )}
           </Card>
 
           <Card id="skills" className="mb-[18px] p-[26px]">
             <h2 className="mb-1.5 text-base font-bold text-ink">{t('profile.nav.skills')}</h2>
             <p className="mb-3.5 text-[13px] text-fog">{t('profile.skillsBody')}</p>
+            {skillsError && <p className="mb-3.5 text-[13px] text-danger">{skillsError}</p>}
             <div className="mb-3.5 flex flex-wrap gap-2">
               {skills.map((skill) => (
                 <span
@@ -230,8 +385,9 @@ export default function CandidateProfilePage() {
               placeholder={t('profile.workCulturePlaceholder')}
               className="w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
             />
+            {goalsError && <p className="mt-3.5 text-[13px] text-danger">{goalsError}</p>}
             <div className="mt-[18px] flex items-center gap-3">
-              <Button type="button" onClick={handleSaveGoals}>
+              <Button type="button" onClick={handleSaveGoals} disabled={savingGoals}>
                 {t('profile.saveChanges')}
               </Button>
               {savedGoals && (

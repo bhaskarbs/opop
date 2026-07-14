@@ -1,3 +1,5 @@
 package com.openopportunity.auth.dto;
 
-public record ResumeUploadResponse(String resumeFileName) {}
+import java.time.Instant;
+
+public record ResumeUploadResponse(String resumeFileName, Instant resumeUploadedAt, long resumeSizeBytes) {}

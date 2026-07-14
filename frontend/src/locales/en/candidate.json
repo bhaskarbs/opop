@@ -35,6 +35,11 @@
     "applicationActivity": "Application activity"
   },
   "profile": {
+    "loading": "Loading your profile…",
+    "loadError": "Could not load your profile.",
+    "saveError": "Something went wrong. Try again.",
+    "emailReadOnly": "Email can't be changed here",
+    "noResume": "No resume uploaded yet.",
     "percentComplete": "Profile {{percent}}% complete",
     "nav": {
       "personalDetails": "Personal details",

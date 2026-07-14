@@ -38,6 +38,26 @@ public class CandidateProfile {
     @Column(name = "resume_storage_key", length = 500)
     private String resumeStorageKey;
 
+    @Column(name = "resume_uploaded_at")
+    private Instant resumeUploadedAt;
+
+    @Column(name = "resume_size_bytes")
+    private Long resumeSizeBytes;
+
+    // Filled in from the candidate profile page, not registration — nullable since neither
+    // is collected up front (see RegisterPage).
+    @Column(length = 255)
+    private String location;
+
+    @Column(length = 255)
+    private String title;
+
+    @Column(name = "life_goals", columnDefinition = "text")
+    private String lifeGoals;
+
+    @Column(name = "work_culture", columnDefinition = "text")
+    private String workCulture;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -68,9 +88,27 @@ public class CandidateProfile {
         updatedAt = Instant.now();
     }
 
-    public void updateResume(String resumeFileName, String resumeStorageKey) {
+    public void updateResume(
+            String resumeFileName, String resumeStorageKey, long resumeSizeBytes, Instant resumeUploadedAt) {
         this.resumeFileName = resumeFileName;
         this.resumeStorageKey = resumeStorageKey;
+        this.resumeSizeBytes = resumeSizeBytes;
+        this.resumeUploadedAt = resumeUploadedAt;
+    }
+
+    public void updatePersonalDetails(String location, String title, String mobile) {
+        this.location = location;
+        this.title = title;
+        this.mobile = mobile;
+    }
+
+    public void updateSkills(List<String> skills) {
+        this.skills = skills;
+    }
+
+    public void updateGoals(String lifeGoals, String workCulture) {
+        this.lifeGoals = lifeGoals;
+        this.workCulture = workCulture;
     }
 
     public UUID getId() {
@@ -95,6 +133,30 @@ public class CandidateProfile {
 
     public String getResumeStorageKey() {
         return resumeStorageKey;
+    }
+
+    public Instant getResumeUploadedAt() {
+        return resumeUploadedAt;
+    }
+
+    public Long getResumeSizeBytes() {
+        return resumeSizeBytes;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getLifeGoals() {
+        return lifeGoals;
+    }
+
+    public String getWorkCulture() {
+        return workCulture;
     }
 
     public Instant getCreatedAt() {

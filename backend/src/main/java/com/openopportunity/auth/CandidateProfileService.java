@@ -1,10 +1,16 @@
 package com.openopportunity.auth;
 
+import com.openopportunity.auth.dto.CandidateProfileResponse;
+import com.openopportunity.auth.dto.ResumeUploadResponse;
+import com.openopportunity.auth.dto.UpdateGoalsRequest;
+import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
+import com.openopportunity.auth.dto.UpdateSkillsRequest;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -17,22 +23,56 @@ public class CandidateProfileService {
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".pdf", ".doc", ".docx");
     private static final long MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
 
+    private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final FileStorageService fileStorageService;
 
     public CandidateProfileService(
-            CandidateProfileRepository candidateProfileRepository, FileStorageService fileStorageService) {
+            UserRepository userRepository,
+            CandidateProfileRepository candidateProfileRepository,
+            FileStorageService fileStorageService) {
+        this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.fileStorageService = fileStorageService;
     }
 
-    /** Returns the resume's display filename once it's stored and the profile updated. */
+    @Transactional(readOnly = true)
+    public CandidateProfileResponse getProfile(UUID userId) {
+        return toResponse(userRepository.findById(userId).orElseThrow(), findProfile(userId));
+    }
+
     @Transactional
-    public String uploadResume(UUID userId, MultipartFile file) {
+    public CandidateProfileResponse updatePersonalDetails(UUID userId, UpdatePersonalDetailsRequest request) {
+        User user = userRepository.findById(userId).orElseThrow();
+        user.updateFullName(request.fullName());
+        userRepository.save(user);
+
+        CandidateProfile profile = findProfile(userId);
+        profile.updatePersonalDetails(request.location(), request.title(), request.mobile());
+        candidateProfileRepository.save(profile);
+        return toResponse(user, profile);
+    }
+
+    @Transactional
+    public CandidateProfileResponse updateSkills(UUID userId, UpdateSkillsRequest request) {
+        CandidateProfile profile = findProfile(userId);
+        profile.updateSkills(request.skills());
+        candidateProfileRepository.save(profile);
+        return toResponse(userRepository.findById(userId).orElseThrow(), profile);
+    }
+
+    @Transactional
+    public CandidateProfileResponse updateGoals(UUID userId, UpdateGoalsRequest request) {
+        CandidateProfile profile = findProfile(userId);
+        profile.updateGoals(request.lifeGoals(), request.workCulture());
+        candidateProfileRepository.save(profile);
+        return toResponse(userRepository.findById(userId).orElseThrow(), profile);
+    }
+
+    @Transactional
+    public ResumeUploadResponse uploadResume(UUID userId, MultipartFile file) {
         validate(file);
-        CandidateProfile profile = candidateProfileRepository
-                .findByUserId(userId)
-                .orElseThrow(() -> new CandidateProfileNotFoundException(userId));
+        CandidateProfile profile = findProfile(userId);
 
         String storageKey;
         try {
@@ -41,9 +81,31 @@ public class CandidateProfileService {
             throw new UncheckedIOException("Failed to store resume", ex);
         }
 
-        profile.updateResume(file.getOriginalFilename(), storageKey);
+        Instant uploadedAt = Instant.now();
+        profile.updateResume(file.getOriginalFilename(), storageKey, file.getSize(), uploadedAt);
         candidateProfileRepository.save(profile);
-        return profile.getResumeFileName();
+        return new ResumeUploadResponse(profile.getResumeFileName(), uploadedAt, file.getSize());
+    }
+
+    private CandidateProfile findProfile(UUID userId) {
+        return candidateProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new CandidateProfileNotFoundException(userId));
+    }
+
+    private CandidateProfileResponse toResponse(User user, CandidateProfile profile) {
+        return new CandidateProfileResponse(
+                user.getFullName(),
+                user.getEmail(),
+                profile.getMobile(),
+                profile.getLocation(),
+                profile.getTitle(),
+                profile.getSkills(),
+                profile.getResumeFileName(),
+                profile.getResumeUploadedAt(),
+                profile.getResumeSizeBytes(),
+                profile.getLifeGoals(),
+                profile.getWorkCulture());
     }
 
     private void validate(MultipartFile file) {
