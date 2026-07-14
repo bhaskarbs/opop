@@ -39,9 +39,19 @@ export interface HeaderProps {
   userName?: string
   /** Set to false to render inline instead of `position: sticky` (e.g. in a preview). */
   sticky?: boolean
+  /** Hides the guest Log in/Register CTAs — e.g. on the company login page itself, where
+   * generic candidate auth links are confusing rather than useful. Ignored for non-guest
+   * variants. */
+  showGuestAuthLinks?: boolean
 }
 
-export function Header({ variant = 'guest', activeItem, userName, sticky = true }: HeaderProps) {
+export function Header({
+  variant = 'guest',
+  activeItem,
+  userName,
+  sticky = true,
+  showGuestAuthLinks = true,
+}: HeaderProps) {
   const isGuest = variant === 'guest'
   const navItems = NAV_BY_VARIANT[variant]
   const userMenuItems = USER_MENU_BY_VARIANT[variant] ?? USER_MENU_BY_VARIANT.candidate!
@@ -109,20 +119,22 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
         <div className="header:flex hidden shrink-0 items-center gap-3">
           <LanguageSwitcher className="rounded-lg border border-border px-3 py-2 text-[13px] font-semibold text-ink no-underline" />
           {isGuest ? (
-            <>
-              <Link
-                to={localize(ROUTES.login)}
-                className="rounded-lg px-4 py-2.5 text-[14.5px] font-semibold text-ink no-underline"
-              >
-                {t('nav.login')}
-              </Link>
-              <Link
-                to={localize(ROUTES.register)}
-                className="rounded-lg bg-primary px-[18px] py-2.5 text-[14.5px] font-bold text-white no-underline"
-              >
-                {t('nav.register')}
-              </Link>
-            </>
+            showGuestAuthLinks && (
+              <>
+                <Link
+                  to={localize(ROUTES.login)}
+                  className="rounded-lg px-4 py-2.5 text-[14.5px] font-semibold text-ink no-underline"
+                >
+                  {t('nav.login')}
+                </Link>
+                <Link
+                  to={localize(ROUTES.register)}
+                  className="rounded-lg bg-primary px-[18px] py-2.5 text-[14.5px] font-bold text-white no-underline"
+                >
+                  {t('nav.register')}
+                </Link>
+              </>
+            )
           ) : (
             <>
               <button
@@ -234,20 +246,22 @@ export function Header({ variant = 'guest', activeItem, userName, sticky = true 
           ))}
           <LanguageSwitcher className="mt-3.5 block w-full rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink no-underline" />
           {isGuest ? (
-            <div className="mt-3.5 flex gap-2.5">
-              <Link
-                to={localize(ROUTES.login)}
-                className="flex-1 rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink no-underline"
-              >
-                {t('nav.login')}
-              </Link>
-              <Link
-                to={localize(ROUTES.register)}
-                className="flex-1 rounded-lg bg-primary px-2.5 py-2.5 text-center text-[14.5px] font-bold text-white no-underline"
-              >
-                {t('nav.register')}
-              </Link>
-            </div>
+            showGuestAuthLinks && (
+              <div className="mt-3.5 flex gap-2.5">
+                <Link
+                  to={localize(ROUTES.login)}
+                  className="flex-1 rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink no-underline"
+                >
+                  {t('nav.login')}
+                </Link>
+                <Link
+                  to={localize(ROUTES.register)}
+                  className="flex-1 rounded-lg bg-primary px-2.5 py-2.5 text-center text-[14.5px] font-bold text-white no-underline"
+                >
+                  {t('nav.register')}
+                </Link>
+              </div>
+            )
           ) : (
             <button
               type="button"
