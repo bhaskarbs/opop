@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { GoogleSignInButton } from './GoogleSignInButton'
 
 function GoogleIcon() {
   return (
@@ -32,7 +33,14 @@ function LinkedInIcon() {
   )
 }
 
-export function SocialAuthButtons() {
+export function SocialAuthButtons({
+  onGoogleCredential,
+}: {
+  /** When provided, renders Google's live Sign-In button wired to this callback instead of
+   * the inert placeholder — see GoogleSignInButton. Omit on pages where Google sign-in isn't
+   * wired up yet (e.g. company auth). */
+  onGoogleCredential?: (idToken: string) => void
+}) {
   const { t } = useTranslation('auth')
   return (
     <>
@@ -43,13 +51,17 @@ export function SocialAuthButtons() {
       </div>
 
       <div className="mb-[22px] flex flex-col gap-2.5">
-        <button
-          type="button"
-          className="flex items-center justify-center gap-2.5 rounded-control border border-border bg-surface py-2.5 text-sm font-semibold text-ink"
-        >
-          <GoogleIcon />
-          {t('social.continueWithGoogle')}
-        </button>
+        {onGoogleCredential ? (
+          <GoogleSignInButton onCredential={onGoogleCredential} />
+        ) : (
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2.5 rounded-control border border-border bg-surface py-2.5 text-sm font-semibold text-ink"
+          >
+            <GoogleIcon />
+            {t('social.continueWithGoogle')}
+          </button>
+        )}
         <button
           type="button"
           className="flex items-center justify-center gap-2.5 rounded-control border border-border bg-surface py-2.5 text-sm font-semibold text-ink"

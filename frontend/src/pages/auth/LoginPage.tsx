@@ -45,6 +45,17 @@ export default function LoginPage() {
     }
   }
 
+  async function onGoogleCredential(idToken: string) {
+    setFormError(null)
+    try {
+      const response = await authApi.loginWithGoogle(idToken)
+      setSession(response.accessToken, response.user)
+      navigate(localize(ROUTES.candidateDashboard))
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : t('social.googleSignInFailed'))
+    }
+  }
+
   return (
     <AuthCard>
       <div className="mb-6 text-center">
@@ -89,7 +100,7 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <SocialAuthButtons />
+      <SocialAuthButtons onGoogleCredential={onGoogleCredential} />
 
       <p className="text-center text-[13.5px] text-slate">
         {t('login.newHere')}{' '}
