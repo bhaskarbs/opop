@@ -3,8 +3,15 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { companyApi, type CompanyProfileResponse } from '../../lib/companyApi'
 import { jobsApi, type JobSummary } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
+
+const VERIFICATION_LABEL_KEYS: Record<CompanyProfileResponse['verificationStatus'], string> = {
+  PENDING: 'dashboard.verification.pending',
+  VERIFIED: 'dashboard.verification.verified',
+  REJECTED: 'dashboard.verification.rejected',
+}
 
 // Mock content, not translated UI copy — same treatment as mock data elsewhere.
 const APPLICANTS = [
@@ -46,16 +53,48 @@ function formatPostedLabel(t: TFunction<'company'>, createdAt: string): string {
 export default function CompanyDashboardPage() {
   const { t } = useTranslation('company')
   const localize = useLocalizedPath()
+  const [profile, setProfile] = useState<CompanyProfileResponse | null>(null)
   const [postings, setPostings] = useState<JobSummary[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    jobsApi
-      .mine()
-      .then(setPostings)
-      .catch(() => setPostings([]))
+    let cancelled = false
+    Promise.all([companyApi.getProfile(), jobsApi.mine()])
+      .then(([profileData, postingsData]) => {
+        if (cancelled) return
+        setProfile(profileData)
+        setPostings(postingsData)
+      })
+      .catch(() => {
+        // Best-effort — an empty dashboard is a reasonable fallback rather than blocking the
+        // whole page on either call failing.
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const activeCount = postings.filter((posting) => posting.status === 'ACTIVE').length
+  const totalApplicants = postings.reduce((sum, posting) => sum + posting.applicantCount, 0)
+
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16 text-center text-sm text-slate">
+        {t('dashboard.loading')}
+      </main>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16 text-center text-sm text-danger">
+        {t('dashboard.loadError')}
+      </main>
+    )
+  }
 
   const kpis = [
     {
@@ -66,9 +105,9 @@ export default function CompanyDashboardPage() {
     },
     {
       labelKey: 'dashboard.kpis.totalApplicants',
-      value: '412',
-      trend: '+58 this week',
-      trendColorClass: 'text-teal',
+      value: String(totalApplicants),
+      trend: '',
+      trendColorClass: 'text-fog',
     },
     {
       labelKey: 'dashboard.kpis.partnershipApplicants',
@@ -89,7 +128,22 @@ export default function CompanyDashboardPage() {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
-          <div className="text-sm text-slate">Vertex Robotics · Deep Tech · Seed stage</div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="text-sm text-slate">
+              {profile.companyName} · {profile.industry}
+            </div>
+            {profile.verificationStatus !== 'VERIFIED' && (
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  profile.verificationStatus === 'REJECTED'
+                    ? 'bg-danger/10 text-danger'
+                    : 'bg-amber-tint text-amber'
+                }`}
+              >
+                {t(VERIFICATION_LABEL_KEYS[profile.verificationStatus])}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex gap-2.5">
           <Link
