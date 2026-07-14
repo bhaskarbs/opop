@@ -1,10 +1,18 @@
 package com.openopportunity.auth;
 
+import com.openopportunity.auth.dto.CandidateProfileResponse;
 import com.openopportunity.auth.dto.ResumeUploadResponse;
+import com.openopportunity.auth.dto.UpdateGoalsRequest;
+import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
+import com.openopportunity.auth.dto.UpdateSkillsRequest;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,10 +28,33 @@ public class CandidateProfileController {
         this.candidateProfileService = candidateProfileService;
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<CandidateProfileResponse> getProfile() {
+        return ResponseEntity.ok(candidateProfileService.getProfile(currentUserId()));
+    }
+
+    @PatchMapping("/profile/personal")
+    public ResponseEntity<CandidateProfileResponse> updatePersonalDetails(
+            @Valid @RequestBody UpdatePersonalDetailsRequest request) {
+        return ResponseEntity.ok(candidateProfileService.updatePersonalDetails(currentUserId(), request));
+    }
+
+    @PatchMapping("/profile/skills")
+    public ResponseEntity<CandidateProfileResponse> updateSkills(@Valid @RequestBody UpdateSkillsRequest request) {
+        return ResponseEntity.ok(candidateProfileService.updateSkills(currentUserId(), request));
+    }
+
+    @PatchMapping("/profile/goals")
+    public ResponseEntity<CandidateProfileResponse> updateGoals(@RequestBody UpdateGoalsRequest request) {
+        return ResponseEntity.ok(candidateProfileService.updateGoals(currentUserId(), request));
+    }
+
     @PostMapping("/resume")
     public ResponseEntity<ResumeUploadResponse> uploadResume(@RequestParam("file") MultipartFile file) {
-        UUID userId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String resumeFileName = candidateProfileService.uploadResume(userId, file);
-        return ResponseEntity.ok(new ResumeUploadResponse(resumeFileName));
+        return ResponseEntity.ok(candidateProfileService.uploadResume(currentUserId(), file));
+    }
+
+    private UUID currentUserId() {
+        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }

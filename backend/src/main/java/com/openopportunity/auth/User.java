@@ -79,6 +79,10 @@ public class User {
         this.accountStatus = AccountStatus.ACTIVE;
     }
 
+    public void updateFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
     public UUID getId() {
         return id;
     }

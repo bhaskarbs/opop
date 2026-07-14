@@ -35,6 +35,11 @@
     "applicationActivity": "आवेदन गतिविधि"
   },
   "profile": {
+    "loading": "आपकी प्रोफ़ाइल लोड हो रही है…",
+    "loadError": "आपकी प्रोफ़ाइल लोड नहीं हो सकी।",
+    "saveError": "कुछ गड़बड़ हो गई। फिर से कोशिश करें।",
+    "emailReadOnly": "ईमेल यहां नहीं बदला जा सकता",
+    "noResume": "अभी तक कोई रिज़्यूमे अपलोड नहीं किया गया।",
     "percentComplete": "प्रोफ़ाइल {{percent}}% पूरी",
     "nav": {
       "personalDetails": "व्यक्तिगत जानकारी",
