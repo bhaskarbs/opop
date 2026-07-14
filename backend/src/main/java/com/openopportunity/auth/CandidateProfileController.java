@@ -3,7 +3,9 @@ package com.openopportunity.auth;
 import com.openopportunity.auth.dto.CandidateProfileResponse;
 import com.openopportunity.auth.dto.ResumeUploadResponse;
 import com.openopportunity.auth.dto.UpdateGoalsRequest;
+import com.openopportunity.auth.dto.UpdateMobileRequest;
 import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
+import com.openopportunity.auth.dto.UpdatePreferencesRequest;
 import com.openopportunity.auth.dto.UpdateSkillsRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -47,6 +49,17 @@ public class CandidateProfileController {
     @PatchMapping("/profile/goals")
     public ResponseEntity<CandidateProfileResponse> updateGoals(@RequestBody UpdateGoalsRequest request) {
         return ResponseEntity.ok(candidateProfileService.updateGoals(currentUserId(), request));
+    }
+
+    @PatchMapping("/profile/mobile")
+    public ResponseEntity<CandidateProfileResponse> updateMobile(@Valid @RequestBody UpdateMobileRequest request) {
+        return ResponseEntity.ok(candidateProfileService.updateMobile(currentUserId(), request));
+    }
+
+    @PatchMapping("/profile/preferences")
+    public ResponseEntity<CandidateProfileResponse> updatePreferences(
+            @Valid @RequestBody UpdatePreferencesRequest request) {
+        return ResponseEntity.ok(candidateProfileService.updatePreferences(currentUserId(), request));
     }
 
     @PostMapping("/resume")

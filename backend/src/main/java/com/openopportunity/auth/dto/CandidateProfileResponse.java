@@ -10,6 +10,7 @@ public record CandidateProfileResponse(
         String fullName,
         String email,
         String mobile,
+        boolean mobileVerified,
         String location,
         String title,
         List<String> skills,
@@ -17,4 +18,6 @@ public record CandidateProfileResponse(
         Instant resumeUploadedAt,
         Long resumeSizeBytes,
         String lifeGoals,
-        String workCulture) {}
+        String workCulture,
+        String workModePreference,
+        String openToPreference) {}

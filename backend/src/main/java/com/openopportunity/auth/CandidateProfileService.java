@@ -3,7 +3,9 @@ package com.openopportunity.auth;
 import com.openopportunity.auth.dto.CandidateProfileResponse;
 import com.openopportunity.auth.dto.ResumeUploadResponse;
 import com.openopportunity.auth.dto.UpdateGoalsRequest;
+import com.openopportunity.auth.dto.UpdateMobileRequest;
 import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
+import com.openopportunity.auth.dto.UpdatePreferencesRequest;
 import com.openopportunity.auth.dto.UpdateSkillsRequest;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
@@ -70,6 +72,22 @@ public class CandidateProfileService {
     }
 
     @Transactional
+    public CandidateProfileResponse updateMobile(UUID userId, UpdateMobileRequest request) {
+        CandidateProfile profile = findProfile(userId);
+        profile.verifyMobile(request.mobile());
+        candidateProfileRepository.save(profile);
+        return toResponse(userRepository.findById(userId).orElseThrow(), profile);
+    }
+
+    @Transactional
+    public CandidateProfileResponse updatePreferences(UUID userId, UpdatePreferencesRequest request) {
+        CandidateProfile profile = findProfile(userId);
+        profile.updatePreferences(request.workMode(), request.openTo());
+        candidateProfileRepository.save(profile);
+        return toResponse(userRepository.findById(userId).orElseThrow(), profile);
+    }
+
+    @Transactional
     public ResumeUploadResponse uploadResume(UUID userId, MultipartFile file) {
         validate(file);
         CandidateProfile profile = findProfile(userId);
@@ -98,6 +116,7 @@ public class CandidateProfileService {
                 user.getFullName(),
                 user.getEmail(),
                 profile.getMobile(),
+                profile.isMobileVerified(),
                 profile.getLocation(),
                 profile.getTitle(),
                 profile.getSkills(),
@@ -105,7 +124,9 @@ public class CandidateProfileService {
                 profile.getResumeUploadedAt(),
                 profile.getResumeSizeBytes(),
                 profile.getLifeGoals(),
-                profile.getWorkCulture());
+                profile.getWorkCulture(),
+                profile.getWorkModePreference(),
+                profile.getOpenToPreference());
     }
 
     private void validate(MultipartFile file) {

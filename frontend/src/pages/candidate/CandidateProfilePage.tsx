@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
+import { deriveCompletedSections, profileCompletionPercent } from '../../lib/candidateProfileCompletion'
 
 const NAV_SECTIONS = [
   { labelKey: 'profile.nav.personalDetails', href: '#personal' },
@@ -11,20 +12,6 @@ const NAV_SECTIONS = [
   { labelKey: 'profile.nav.lifeGoals', href: '#goals' },
   { labelKey: 'profile.nav.accountSettings', href: '#account' },
 ]
-
-function completionPercentOf(profile: CandidateProfileResponse): number {
-  // Mirrors the checklist AddMissingDetailsPage shows, minus "work preferences" (that section
-  // lives only on that page, not here) — mobile is always present since registration requires
-  // it, so it counts as complete unconditionally.
-  const checks = [
-    Boolean(profile.location && profile.title),
-    Boolean(profile.resumeFileName),
-    profile.skills.length > 0,
-    Boolean(profile.lifeGoals || profile.workCulture),
-    true,
-  ]
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
-}
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -182,7 +169,7 @@ export default function CandidateProfilePage() {
     )
   }
 
-  const completionPercent = completionPercentOf(profile)
+  const completionPercent = profileCompletionPercent(deriveCompletedSections(profile))
   const initial = fullName.charAt(0).toUpperCase()
 
   return (

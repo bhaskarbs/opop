@@ -5,6 +5,7 @@ export interface CandidateProfileResponse {
   fullName: string
   email: string
   mobile: string
+  mobileVerified: boolean
   location: string | null
   title: string | null
   skills: string[]
@@ -13,6 +14,8 @@ export interface CandidateProfileResponse {
   resumeSizeBytes: number | null
   lifeGoals: string | null
   workCulture: string | null
+  workModePreference: string | null
+  openToPreference: string | null
 }
 
 export interface ResumeUploadResponse {
@@ -31,6 +34,11 @@ export interface UpdatePersonalDetailsPayload {
 export interface UpdateGoalsPayload {
   lifeGoals: string
   workCulture: string
+}
+
+export interface UpdatePreferencesPayload {
+  workMode: string
+  openTo: string
 }
 
 function authHeaders(): Record<string, string> {
@@ -54,6 +62,18 @@ export const candidateApi = {
     }),
   updateGoals: (payload: UpdateGoalsPayload) =>
     request<CandidateProfileResponse>('/api/candidate/profile/goals', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  updateMobile: (mobile: string) =>
+    request<CandidateProfileResponse>('/api/candidate/profile/mobile', {
+      method: 'PATCH',
+      body: JSON.stringify({ mobile }),
+      headers: authHeaders(),
+    }),
+  updatePreferences: (payload: UpdatePreferencesPayload) =>
+    request<CandidateProfileResponse>('/api/candidate/profile/preferences', {
       method: 'PATCH',
       body: JSON.stringify(payload),
       headers: authHeaders(),
