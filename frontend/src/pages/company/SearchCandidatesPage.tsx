@@ -1,50 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { candidates, type Candidate, type CandidateIntent } from '../../mocks/candidates'
+import { ApiError } from '../../lib/apiClient'
+import { companyApi, type CandidateSearchSummary } from '../../lib/companyApi'
 
-const INTENT_OPTIONS: CandidateIntent[] = [
-  'Open to jobs',
-  'Open to partnership',
-  'Open to community roles',
-]
-const EXPERIENCE_BUCKETS = ['0-2 yrs', '3-5 yrs', '5-8 yrs', '8+ yrs'] as const
-type ExperienceBucket = (typeof EXPERIENCE_BUCKETS)[number]
+const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
 
-const INTENT_BADGE_CLASS: Record<CandidateIntent, string> = {
-  'Open to jobs': 'bg-primary-tint text-primary',
-  'Open to partnership': 'bg-amber-tint text-amber',
-  'Open to community roles': 'bg-teal-tint text-teal',
-}
-
-// Rendered text only — the literal intent/bucket values stay as the underlying data (Record
-// keys, Set membership, comparisons against mock candidate data).
-const INTENT_LABEL_KEYS: Record<CandidateIntent, string> = {
-  'Open to jobs': 'searchCandidates.intent.jobs',
-  'Open to partnership': 'searchCandidates.intent.partnership',
-  'Open to community roles': 'searchCandidates.intent.community',
-}
-const EXPERIENCE_BUCKET_KEYS: Record<ExperienceBucket, string> = {
-  '0-2 yrs': 'searchCandidates.experience.bucket02',
-  '3-5 yrs': 'searchCandidates.experience.bucket35',
-  '5-8 yrs': 'searchCandidates.experience.bucket58',
-  '8+ yrs': 'searchCandidates.experience.bucket8plus',
-}
-
-function experienceBucket(years: number): ExperienceBucket {
-  if (years <= 2) return '0-2 yrs'
-  if (years <= 5) return '3-5 yrs'
-  if (years <= 8) return '5-8 yrs'
-  return '8+ yrs'
-}
-
-function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
-  const next = new Set(set)
-  if (next.has(value)) {
-    next.delete(value)
-  } else {
-    next.add(value)
-  }
-  return next
+function colorForName(name: string): string {
+  const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return AVATAR_COLOR_CLASSES[hash % AVATAR_COLOR_CLASSES.length]
 }
 
 function CandidateCard({
@@ -52,28 +15,23 @@ function CandidateCard({
   contacted,
   onContact,
 }: {
-  candidate: Candidate
+  candidate: CandidateSearchSummary
   contacted: boolean
   onContact: () => void
 }) {
   const { t } = useTranslation('company')
+  const meta = [candidate.title, candidate.location].filter(Boolean).join(' · ')
   return (
     <div className="flex flex-wrap justify-between gap-4 rounded-card border border-border bg-surface px-5 py-[18px]">
       <div className="flex gap-3.5">
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white ${candidate.avatarColorClass}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white ${colorForName(candidate.fullName)}`}
         >
-          {candidate.initial}
+          {candidate.fullName.charAt(0).toUpperCase()}
         </div>
         <div>
-          <div className="text-[15px] font-bold text-ink">{candidate.name}</div>
-          <div className="mt-0.5 text-[13px] text-slate">
-            {t('searchCandidates.candidateMeta', {
-              title: candidate.title,
-              location: candidate.location,
-              years: candidate.years,
-            })}
-          </div>
+          <div className="text-[15px] font-bold text-ink">{candidate.fullName}</div>
+          {meta && <div className="mt-0.5 text-[13px] text-slate">{meta}</div>}
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {candidate.skills.map((skill) => (
               <span
@@ -87,11 +45,6 @@ function CandidateCard({
         </div>
       </div>
       <div className="flex flex-col items-end gap-2">
-        <span
-          className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ${INTENT_BADGE_CLASS[candidate.intent]}`}
-        >
-          {t(INTENT_LABEL_KEYS[candidate.intent])}
-        </span>
         <div className="flex gap-2">
           <button
             type="button"
@@ -117,27 +70,26 @@ export default function SearchCandidatesPage() {
   const { t } = useTranslation('company')
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
-  const [intents, setIntents] = useState<Set<CandidateIntent>>(new Set())
-  const [experiences, setExperiences] = useState<Set<ExperienceBucket>>(new Set())
   const [contactedIds, setContactedIds] = useState<Set<string>>(new Set())
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const loc = location.trim().toLowerCase()
-    return candidates.filter((candidate) => {
-      if (q) {
-        const matchesQuery =
-          candidate.name.toLowerCase().includes(q) ||
-          candidate.title.toLowerCase().includes(q) ||
-          candidate.skills.some((skill) => skill.toLowerCase().includes(q))
-        if (!matchesQuery) return false
-      }
-      if (loc && !candidate.location.toLowerCase().includes(loc)) return false
-      if (intents.size > 0 && !intents.has(candidate.intent)) return false
-      if (experiences.size > 0 && !experiences.has(experienceBucket(candidate.years))) return false
-      return true
-    })
-  }, [query, location, intents, experiences])
+  const [candidates, setCandidates] = useState<CandidateSearchSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      companyApi
+        .searchCandidates({ q: query.trim() || undefined, location: location.trim() || undefined })
+        .then(setCandidates)
+        .catch((caught) => {
+          setError(caught instanceof ApiError ? caught.message : t('searchCandidates.loadError'))
+        })
+        .finally(() => setLoading(false))
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [query, location, t])
 
   return (
     <main>
@@ -178,47 +130,6 @@ export default function SearchCandidatesPage() {
             <div className="mb-4 text-[15px] font-bold text-ink">
               {t('public:filters.heading')}
             </div>
-
-            <div className="mb-[18px]">
-              <div className="mb-2.5 text-[13px] font-bold text-ink">
-                {t('searchCandidates.lookingFor')}
-              </div>
-              {INTENT_OPTIONS.map((intent) => (
-                <label
-                  key={intent}
-                  className="mb-2.5 flex cursor-pointer items-center gap-2.5 text-sm text-[#3A414D]"
-                >
-                  <input
-                    type="checkbox"
-                    checked={intents.has(intent)}
-                    onChange={() => setIntents(toggleInSet(intents, intent))}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  {t(INTENT_LABEL_KEYS[intent])}
-                </label>
-              ))}
-            </div>
-
-            <div className="mb-[18px]">
-              <div className="mb-2.5 text-[13px] font-bold text-ink">
-                {t('searchCandidates.experience.heading')}
-              </div>
-              {EXPERIENCE_BUCKETS.map((bucket) => (
-                <label
-                  key={bucket}
-                  className="mb-2.5 flex cursor-pointer items-center gap-2.5 text-sm text-[#3A414D]"
-                >
-                  <input
-                    type="checkbox"
-                    checked={experiences.has(bucket)}
-                    onChange={() => setExperiences(toggleInSet(experiences, bucket))}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  {t(EXPERIENCE_BUCKET_KEYS[bucket])}
-                </label>
-              ))}
-            </div>
-
             <div>
               <div className="mb-2.5 text-[13px] font-bold text-ink">
                 {t('searchCandidates.location')}
@@ -234,24 +145,37 @@ export default function SearchCandidatesPage() {
         </aside>
 
         <div>
-          <div className="mb-4 text-[15px] text-slate">
-            {t('searchCandidates.showingCount', { count: filtered.length })}
-          </div>
-          <div className="flex flex-col gap-3">
-            {filtered.map((candidate) => (
-              <CandidateCard
-                key={candidate.id}
-                candidate={candidate}
-                contacted={contactedIds.has(candidate.id)}
-                onContact={() => setContactedIds((prev) => new Set(prev).add(candidate.id))}
-              />
-            ))}
-            {filtered.length === 0 && (
-              <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-                {t('searchCandidates.noResults')}
+          {error && (
+            <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+              {t('searchCandidates.loading')}
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 text-[15px] text-slate">
+                {t('searchCandidates.showingCount', { count: candidates.length })}
               </div>
-            )}
-          </div>
+              <div className="flex flex-col gap-3">
+                {candidates.map((candidate) => (
+                  <CandidateCard
+                    key={candidate.userId}
+                    candidate={candidate}
+                    contacted={contactedIds.has(candidate.userId)}
+                    onContact={() => setContactedIds((prev) => new Set(prev).add(candidate.userId))}
+                  />
+                ))}
+                {candidates.length === 0 && (
+                  <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+                    {t('searchCandidates.noResults')}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </main>

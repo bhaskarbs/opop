@@ -92,7 +92,9 @@
     "lookingFor": "Looking for",
     "location": "Location",
     "showingCount": "Showing {{count}} candidates matching your filters",
-    "noResults": "No candidates match your filters. Try clearing some filters or searching a different keyword."
+    "noResults": "No candidates match your filters. Try clearing some filters or searching a different keyword.",
+    "loading": "Loading candidates…",
+    "loadError": "Could not load candidates."
   },
   "seminars": {
     "dateTbd": "Date TBD",
