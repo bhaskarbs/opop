@@ -37,7 +37,7 @@ export default function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setFormError(null)
     try {
-      const response = await authApi.login(values)
+      const response = await authApi.login({ ...values, role: 'candidate' })
       setSession(response.accessToken, response.user)
       navigate(localize(ROUTES.candidateDashboard))
     } catch (error) {

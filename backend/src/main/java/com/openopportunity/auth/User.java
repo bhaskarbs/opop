@@ -8,18 +8,24 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.UUID;
 
+/** email is unique per role, not globally (see V14 migration) — the same address can hold a
+ * separate candidate account and company account, since those are distinct login contexts
+ * with their own login pages (LoginPage vs. CompanyLoginPage). */
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = @UniqueConstraint(name = "users_email_role_key", columnNames = {"email", "role"}))
 public class User {
 
     @Id
     @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(name = "password_hash", nullable = false)

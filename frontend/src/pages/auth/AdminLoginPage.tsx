@@ -36,11 +36,7 @@ export default function AdminLoginPage() {
   async function onSubmit(values: AdminLoginFormValues) {
     setFormError(null)
     try {
-      const response = await authApi.login(values)
-      if (response.user.role !== 'ADMIN') {
-        setFormError(t('adminLogin.notAdmin'))
-        return
-      }
+      const response = await authApi.login({ ...values, role: 'admin' })
       setSession(response.accessToken, response.user)
       navigate(localize(ROUTES.adminDashboard))
     } catch (error) {

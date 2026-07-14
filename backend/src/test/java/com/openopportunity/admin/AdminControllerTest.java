@@ -44,7 +44,7 @@ class AdminControllerTest {
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new LoginRequest(adminSeedEmail, adminSeedPassword))))
+                                new LoginRequest(adminSeedEmail, adminSeedPassword, "admin"))))
                 .andExpect(status().isOk())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
@@ -156,7 +156,7 @@ class AdminControllerTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new LoginRequest("suspend-me@example.com", "password123"))))
+                                new LoginRequest("suspend-me@example.com", "password123", "candidate"))))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/admin/users/" + userId + "/reactivate")
@@ -167,7 +167,7 @@ class AdminControllerTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new LoginRequest("suspend-me@example.com", "password123"))))
+                                new LoginRequest("suspend-me@example.com", "password123", "candidate"))))
                 .andExpect(status().isOk());
     }
 

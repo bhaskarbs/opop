@@ -126,7 +126,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(register)))
                 .andExpect(status().isCreated());
 
-        LoginRequest badLogin = new LoginRequest("wrongpass@example.com", "wrong-password");
+        LoginRequest badLogin = new LoginRequest("wrongpass@example.com", "wrong-password", "candidate");
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(badLogin)))

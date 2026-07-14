@@ -6,7 +6,6 @@ import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.dto.UserSummary;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
-import com.openopportunity.auth.exception.GoogleAccountRoleConflictException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
@@ -66,7 +65,7 @@ public class AuthService {
     @Transactional
     public Issued register(RegisterRequest request) {
         UserRole role = parseRegistrationRole(request.role());
-        if (userRepository.existsByEmail(request.email())) {
+        if (userRepository.existsByEmailAndRole(request.email(), role)) {
             throw new EmailAlreadyRegisteredException(request.email());
         }
         if (role == UserRole.COMPANY) {
@@ -105,7 +104,10 @@ public class AuthService {
 
     @Transactional
     public Issued login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email()).orElseThrow(InvalidCredentialsException::new);
+        UserRole role = parseLoginRole(request.role());
+        User user = userRepository
+                .findByEmailAndRole(request.email(), role)
+                .orElseThrow(InvalidCredentialsException::new);
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
@@ -116,10 +118,11 @@ public class AuthService {
     }
 
     /** Candidate-only: verifies the Google ID token, then either logs into the matching
-     * account or auto-registers a new CANDIDATE (with a blank, fillable-later candidate
+     * CANDIDATE account or auto-registers a new one (with a blank, fillable-later candidate
      * profile) on first sign-in — mirroring findProfile()'s auto-provisioning elsewhere so a
-     * Google sign-in never requires a separate "finish registration" step. Accounts that
-     * already exist under a different role are rejected rather than silently logged in. */
+     * Google sign-in never requires a separate "finish registration" step. Since email is
+     * unique per role (see User), this only ever looks at/creates a CANDIDATE row — it's
+     * unaffected by, and never conflicts with, a COMPANY account under the same email. */
     @Transactional
     public Issued loginWithGoogle(GoogleAuthRequest request) {
         GoogleTokenVerifierService.VerifiedGoogleUser googleUser =
@@ -128,14 +131,12 @@ public class AuthService {
             throw new InvalidGoogleTokenException();
         }
 
-        User user = userRepository.findByEmail(googleUser.email()).orElse(null);
+        User user = userRepository.findByEmailAndRole(googleUser.email(), UserRole.CANDIDATE).orElse(null);
         if (user == null) {
             String fullName = isNotBlank(googleUser.fullName()) ? googleUser.fullName() : googleUser.email();
             user = new User(googleUser.email(), passwordEncoder.encode(generateRawToken()), fullName, UserRole.CANDIDATE);
             userRepository.save(user);
             candidateProfileRepository.save(new CandidateProfile(user.getId(), "", List.of(), null));
-        } else if (user.getRole() != UserRole.CANDIDATE) {
-            throw new GoogleAccountRoleConflictException();
         }
 
         if (user.isSuspended()) {
@@ -197,6 +198,17 @@ public class AuthService {
             throw new InvalidRegistrationRoleException(rawRole);
         }
         return role;
+    }
+
+    /** Unlike parseRegistrationRole, admin is a valid login role (there's just no admin
+     * self-registration). An unrecognized role reads as "no such account" rather than a
+     * validation error, matching InvalidCredentialsException's generic non-disclosure. */
+    private UserRole parseLoginRole(String rawRole) {
+        try {
+            return UserRole.valueOf(rawRole.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidCredentialsException();
+        }
     }
 
     private void requireCompanyProfileFields(RegisterRequest request) {

@@ -107,6 +107,9 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string
   password: string
+  // Email is unique per role, not globally (see backend User) — the same address can hold a
+  // candidate account and a company account, so the backend needs to know which one to look up.
+  role: 'candidate' | 'company' | 'admin'
 }
 
 export const authApi = {

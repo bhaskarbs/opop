@@ -51,7 +51,7 @@ class ApplicationControllerTest {
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new LoginRequest(adminSeedEmail, adminSeedPassword))))
+                                new LoginRequest(adminSeedEmail, adminSeedPassword, "admin"))))
                 .andExpect(status().isOk())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
