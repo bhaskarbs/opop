@@ -38,7 +38,7 @@ public class AdminSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepository.existsByEmail(seedEmail)) {
+        if (userRepository.existsByEmailAndRole(seedEmail, UserRole.ADMIN)) {
             return;
         }
         User admin = new User(seedEmail, passwordEncoder.encode(seedPassword), "Platform Admin", UserRole.ADMIN);

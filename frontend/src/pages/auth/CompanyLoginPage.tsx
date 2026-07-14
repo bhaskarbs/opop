@@ -37,7 +37,7 @@ export default function CompanyLoginPage() {
   async function onSubmit(values: CompanyLoginFormValues) {
     setFormError(null)
     try {
-      const response = await authApi.login({ email: values.workEmail, password: values.password })
+      const response = await authApi.login({ email: values.workEmail, password: values.password, role: 'company' })
       setSession(response.accessToken, response.user)
       navigate(localize(ROUTES.companyDashboard))
     } catch (error) {

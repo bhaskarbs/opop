@@ -10,7 +10,6 @@ import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
-import com.openopportunity.auth.exception.GoogleAccountRoleConflictException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
@@ -88,7 +87,7 @@ class AuthServiceTest {
     @Test
     void registerCreatesCandidateAndIssuesTokens() {
         RegisterRequest request = candidateRequest();
-        when(userRepository.existsByEmail("rohan@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
         when(jwtService.generateAccessToken(any())).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
@@ -109,9 +108,24 @@ class AuthServiceTest {
     @Test
     void registerRejectsDuplicateEmail() {
         RegisterRequest request = new RegisterRequest("rohan@example.com", "password123", "Rohan Mehta", "candidate");
-        when(userRepository.existsByEmail("rohan@example.com")).thenReturn(true);
+        when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request)).isInstanceOf(EmailAlreadyRegisteredException.class);
+    }
+
+    @Test
+    void registerAllowsEmailAlreadyUsedByADifferentRole() {
+        RegisterRequest request = candidateRequest();
+        // A COMPANY account already exists with this email — should NOT block a CANDIDATE
+        // registration, since email is unique per role, not globally.
+        when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("hashed");
+        when(jwtService.generateAccessToken(any())).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+
+        AuthService.Issued issued = authService.register(request);
+
+        assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
     }
 
     @Test
@@ -131,7 +145,7 @@ class AuthServiceTest {
                 null,
                 List.of(),
                 null);
-        when(userRepository.existsByEmail("rohan@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(false);
 
         assertThatThrownBy(() -> authService.register(request)).isInstanceOf(IncompleteCandidateProfileException.class);
     }
@@ -155,12 +169,14 @@ class AuthServiceTest {
     @Test
     void loginSucceedsWithCorrectPassword() {
         User user = new User("rohan@example.com", "hashed", "Rohan Mehta", UserRole.CANDIDATE);
-        when(userRepository.findByEmail("rohan@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailAndRole("rohan@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "hashed")).thenReturn(true);
         when(jwtService.generateAccessToken(user)).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
 
-        AuthService.Issued issued = authService.login(new LoginRequest("rohan@example.com", "password123"));
+        AuthService.Issued issued =
+                authService.login(new LoginRequest("rohan@example.com", "password123", "candidate"));
 
         assertThat(issued.response().accessToken()).isEqualTo("access-token");
     }
@@ -168,18 +184,40 @@ class AuthServiceTest {
     @Test
     void loginFailsWithWrongPassword() {
         User user = new User("rohan@example.com", "hashed", "Rohan Mehta", UserRole.CANDIDATE);
-        when(userRepository.findByEmail("rohan@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailAndRole("rohan@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
 
-        assertThatThrownBy(() -> authService.login(new LoginRequest("rohan@example.com", "wrong")))
+        assertThatThrownBy(() -> authService.login(new LoginRequest("rohan@example.com", "wrong", "candidate")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 
     @Test
     void loginFailsForUnknownEmail() {
-        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndRole("nobody@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.login(new LoginRequest("nobody@example.com", "password123")))
+        assertThatThrownBy(
+                        () -> authService.login(new LoginRequest("nobody@example.com", "password123", "candidate")))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void loginFailsForUnknownRole() {
+        assertThatThrownBy(
+                        () -> authService.login(new LoginRequest("rohan@example.com", "password123", "manager")))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void loginScopesLookupToTheRequestedRole() {
+        // Same email, but the CANDIDATE account is what's registered — logging in as
+        // "company" with it must not match, since email is unique per role, not globally.
+        when(userRepository.findByEmailAndRole("rohan@example.com", UserRole.COMPANY))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(
+                        () -> authService.login(new LoginRequest("rohan@example.com", "password123", "company")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 
@@ -211,7 +249,8 @@ class AuthServiceTest {
         when(googleTokenVerifierService.verify("google-id-token"))
                 .thenReturn(new GoogleTokenVerifierService.VerifiedGoogleUser(
                         "rohan@example.com", true, "Rohan Mehta"));
-        when(userRepository.findByEmail("rohan@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndRole("rohan@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.empty());
         when(passwordEncoder.encode(any())).thenReturn("hashed");
         when(jwtService.generateAccessToken(any())).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
@@ -233,7 +272,8 @@ class AuthServiceTest {
         when(googleTokenVerifierService.verify("google-id-token"))
                 .thenReturn(new GoogleTokenVerifierService.VerifiedGoogleUser(
                         "rohan@example.com", true, "Rohan Mehta"));
-        when(userRepository.findByEmail("rohan@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailAndRole("rohan@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.of(user));
         when(jwtService.generateAccessToken(user)).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
 
@@ -254,13 +294,19 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginWithGoogleRejectsNonCandidateAccount() {
-        User company = new User("acme@example.com", "hashed", "Acme Inc", UserRole.COMPANY);
+    void loginWithGoogleAutoRegistersCandidateEvenWhenACompanyAccountSharesTheEmail() {
+        // The point of scoping email uniqueness to (email, role): a COMPANY account already
+        // existing under this email must not block a CANDIDATE Google sign-in.
         when(googleTokenVerifierService.verify("google-id-token"))
                 .thenReturn(new GoogleTokenVerifierService.VerifiedGoogleUser("acme@example.com", true, "Acme Inc"));
-        when(userRepository.findByEmail("acme@example.com")).thenReturn(Optional.of(company));
+        when(userRepository.findByEmailAndRole("acme@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.empty());
+        when(passwordEncoder.encode(any())).thenReturn("hashed");
+        when(jwtService.generateAccessToken(any())).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
 
-        assertThatThrownBy(() -> authService.loginWithGoogle(new GoogleAuthRequest("google-id-token")))
-                .isInstanceOf(GoogleAccountRoleConflictException.class);
+        AuthService.Issued issued = authService.loginWithGoogle(new GoogleAuthRequest("google-id-token"));
+
+        assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
     }
 }
