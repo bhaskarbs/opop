@@ -58,6 +58,17 @@ public class CandidateProfile {
     @Column(name = "work_culture", columnDefinition = "text")
     private String workCulture;
 
+    // There's no real OTP/SMS provider wired up — this just tracks whether the candidate went
+    // through AddMissingDetailsPage's (currently cosmetic) verify flow, not a confirmed number.
+    @Column(name = "mobile_verified", nullable = false)
+    private boolean mobileVerified;
+
+    @Column(name = "work_mode_preference", length = 50)
+    private String workModePreference;
+
+    @Column(name = "open_to_preference", length = 100)
+    private String openToPreference;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -111,6 +122,16 @@ public class CandidateProfile {
         this.workCulture = workCulture;
     }
 
+    public void verifyMobile(String mobile) {
+        this.mobile = mobile;
+        this.mobileVerified = true;
+    }
+
+    public void updatePreferences(String workModePreference, String openToPreference) {
+        this.workModePreference = workModePreference;
+        this.openToPreference = openToPreference;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -157,6 +178,18 @@ public class CandidateProfile {
 
     public String getWorkCulture() {
         return workCulture;
+    }
+
+    public boolean isMobileVerified() {
+        return mobileVerified;
+    }
+
+    public String getWorkModePreference() {
+        return workModePreference;
+    }
+
+    public String getOpenToPreference() {
+        return openToPreference;
     }
 
     public Instant getCreatedAt() {

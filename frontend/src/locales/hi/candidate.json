@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "loading": "आपका डैशबोर्ड लोड हो रहा है…",
     "welcomeBack": "वापसी पर स्वागत है, {{name}}",
     "profileComplete": "आपकी प्रोफ़ाइल {{percent}}% पूरी है — बेहतर मैच पाने के लिए इसे पूरा करें।",
     "completeProfile": "प्रोफ़ाइल पूरी करें",

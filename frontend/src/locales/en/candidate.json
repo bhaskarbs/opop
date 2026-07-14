@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "loading": "Loading your dashboard…",
     "welcomeBack": "Welcome back, {{name}}",
     "profileComplete": "Your profile is {{percent}}% complete — finish it to unlock better matches.",
     "completeProfile": "Complete profile",

@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { candidateProfile, profileCompletionPercent } from '../../mocks/candidateProfile'
-import { opportunities, type JobListing } from '../../mocks/jobs'
+import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
+import { deriveCompletedSections, profileCompletionPercent } from '../../lib/candidateProfileCompletion'
+import { jobsApi } from '../../lib/jobsApi'
+import { toDisplayJob, type DisplayJob } from '../job-search/jobDisplay'
 import { ROUTES } from '../../routes/paths'
 
 // Mock content, not translated UI copy — same treatment as job/company/startup data elsewhere.
@@ -41,15 +43,55 @@ export default function CandidateDashboardPage() {
   const { t } = useTranslation('candidate')
   const localize = useLocalizedPath()
   const [showNudge, setShowNudge] = useState(true)
-  const completionPercent = profileCompletionPercent(candidateProfile.completedSections)
+
+  const [profile, setProfile] = useState<CandidateProfileResponse | null>(null)
+  const [jobs, setJobs] = useState<DisplayJob[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([candidateApi.getProfile(), jobsApi.search({})])
+      .then(([profileData, jobResults]) => {
+        if (cancelled) return
+        setProfile(profileData)
+        setJobs(jobResults.map(toDisplayJob))
+      })
+      .catch(() => {
+        // Best-effort — an empty dashboard (no matches, 0% complete) is a reasonable fallback
+        // rather than blocking the whole page on either call failing.
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const matchedJobs = useMemo(() => {
-    const skillSet = new Set(candidateProfile.skills.map((skill) => skill.toLowerCase()))
-    return opportunities.filter(
-      (item): item is JobListing =>
-        item.type === 'job' && item.tags.some((tag) => skillSet.has(tag.toLowerCase())),
+    if (!profile) return []
+    const skillSet = new Set(profile.skills.map((skill) => skill.toLowerCase()))
+    return jobs.filter((job) => job.tags.some((tag) => skillSet.has(tag.toLowerCase())))
+  }, [profile, jobs])
+
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16 text-center text-sm text-slate">
+        {t('dashboard.loading')}
+      </main>
     )
-  }, [])
+  }
+
+  if (!profile) {
+    return (
+      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16 text-center text-sm text-danger">
+        {t('profile.loadError')}
+      </main>
+    )
+  }
+
+  const completionPercent = profileCompletionPercent(deriveCompletedSections(profile))
+  const firstName = profile.fullName.split(' ')[0]
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
@@ -58,7 +100,7 @@ export default function CandidateDashboardPage() {
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-card bg-gradient-to-br from-primary to-[#1B3FB0] p-[26px] text-white">
             <div>
               <h1 className="mb-1.5 text-[22px] font-extrabold">
-                {t('dashboard.welcomeBack', { name: candidateProfile.name.split(' ')[0] })}
+                {t('dashboard.welcomeBack', { name: firstName })}
               </h1>
               <p className="text-sm text-[#C9D8FA]">
                 {t('dashboard.profileComplete', { percent: completionPercent })}
