@@ -7,7 +7,6 @@ import com.openopportunity.auth.dto.UpdateMobileRequest;
 import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
 import com.openopportunity.auth.dto.UpdatePreferencesRequest;
 import com.openopportunity.auth.dto.UpdateSkillsRequest;
-import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
@@ -38,7 +37,7 @@ public class CandidateProfileService {
         this.fileStorageService = fileStorageService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CandidateProfileResponse getProfile(UUID userId) {
         return toResponse(userRepository.findById(userId).orElseThrow(), findProfile(userId));
     }
@@ -105,10 +104,13 @@ public class CandidateProfileService {
         return new ResumeUploadResponse(profile.getResumeFileName(), uploadedAt, file.getSize());
     }
 
+    // Auto-provisions a blank profile for accounts registered before candidate_profiles
+    // existed (or any other legacy gap) rather than 404ing — every candidate ends up with a
+    // row on first touch, which they then fill in via the usual update endpoints.
     private CandidateProfile findProfile(UUID userId) {
         return candidateProfileRepository
                 .findByUserId(userId)
-                .orElseThrow(() -> new CandidateProfileNotFoundException(userId));
+                .orElseGet(() -> candidateProfileRepository.save(new CandidateProfile(userId, "", List.of(), null)));
     }
 
     private CandidateProfileResponse toResponse(User user, CandidateProfile profile) {
