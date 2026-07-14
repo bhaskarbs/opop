@@ -1,6 +1,7 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.AuthResponse;
+import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.dto.UserSummary;
@@ -50,6 +51,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return withRefreshCookie(authService.login(request), HttpStatus.OK);
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
+        return withRefreshCookie(authService.loginWithGoogle(request), HttpStatus.OK);
     }
 
     @PostMapping("/refresh")

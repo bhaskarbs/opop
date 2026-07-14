@@ -114,6 +114,10 @@ export const authApi = {
     request<AuthResponse>('/api/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
   login: (payload: LoginPayload) =>
     request<AuthResponse>('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
+  // Candidate-only: verifies the Google ID token server-side and logs in (or auto-registers
+  // on first sign-in) — see AuthService.loginWithGoogle.
+  loginWithGoogle: (idToken: string) =>
+    request<AuthResponse>('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
   refresh: () => request<AuthResponse>('/api/auth/refresh', { method: 'POST' }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
 }

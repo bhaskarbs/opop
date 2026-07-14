@@ -29,6 +29,8 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	// Verifies "Sign in with Google" ID tokens against Google's public keys (GoogleIdTokenVerifier).
+	implementation 'com.google.api-client:google-api-client:2.7.0'
 	runtimeOnly 'org.postgresql:postgresql'
 	// Lets the JDBC URL connect through the Unix socket Cloud Run mounts at /cloudsql
 	// (see infra/run.tf) instead of a raw TCP host:port — only exercised in that

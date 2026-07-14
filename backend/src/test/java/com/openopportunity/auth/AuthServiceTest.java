@@ -6,11 +6,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.GoogleAccountRoleConflictException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
+import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import java.time.Instant;
@@ -46,6 +49,9 @@ class AuthServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private GoogleTokenVerifierService googleTokenVerifierService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -57,6 +63,7 @@ class AuthServiceTest {
                 candidateProfileRepository,
                 passwordEncoder,
                 jwtService,
+                googleTokenVerifierService,
                 30);
     }
 
@@ -197,5 +204,63 @@ class AuthServiceTest {
     void refreshRejectsBlankOrMissingToken() {
         assertThatThrownBy(() -> authService.refresh(" ")).isInstanceOf(InvalidRefreshTokenException.class);
         assertThatThrownBy(() -> authService.refresh(null)).isInstanceOf(InvalidRefreshTokenException.class);
+    }
+
+    @Test
+    void loginWithGoogleAutoRegistersNewCandidate() {
+        when(googleTokenVerifierService.verify("google-id-token"))
+                .thenReturn(new GoogleTokenVerifierService.VerifiedGoogleUser(
+                        "rohan@example.com", true, "Rohan Mehta"));
+        when(userRepository.findByEmail("rohan@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(any())).thenReturn("hashed");
+        when(jwtService.generateAccessToken(any())).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+
+        AuthService.Issued issued = authService.loginWithGoogle(new GoogleAuthRequest("google-id-token"));
+
+        assertThat(issued.response().user().email()).isEqualTo("rohan@example.com");
+        assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getFullName()).isEqualTo("Rohan Mehta");
+        verify(candidateProfileRepository).save(any(CandidateProfile.class));
+    }
+
+    @Test
+    void loginWithGoogleLogsInExistingCandidate() {
+        User user = new User("rohan@example.com", "hashed", "Rohan Mehta", UserRole.CANDIDATE);
+        when(googleTokenVerifierService.verify("google-id-token"))
+                .thenReturn(new GoogleTokenVerifierService.VerifiedGoogleUser(
+                        "rohan@example.com", true, "Rohan Mehta"));
+        when(userRepository.findByEmail("rohan@example.com")).thenReturn(Optional.of(user));
+        when(jwtService.generateAccessToken(user)).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+
+        AuthService.Issued issued = authService.loginWithGoogle(new GoogleAuthRequest("google-id-token"));
+
+        assertThat(issued.response().accessToken()).isEqualTo("access-token");
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void loginWithGoogleRejectsUnverifiedEmail() {
+        when(googleTokenVerifierService.verify("google-id-token"))
+                .thenReturn(new GoogleTokenVerifierService.VerifiedGoogleUser(
+                        "rohan@example.com", false, "Rohan Mehta"));
+
+        assertThatThrownBy(() -> authService.loginWithGoogle(new GoogleAuthRequest("google-id-token")))
+                .isInstanceOf(InvalidGoogleTokenException.class);
+    }
+
+    @Test
+    void loginWithGoogleRejectsNonCandidateAccount() {
+        User company = new User("acme@example.com", "hashed", "Acme Inc", UserRole.COMPANY);
+        when(googleTokenVerifierService.verify("google-id-token"))
+                .thenReturn(new GoogleTokenVerifierService.VerifiedGoogleUser("acme@example.com", true, "Acme Inc"));
+        when(userRepository.findByEmail("acme@example.com")).thenReturn(Optional.of(company));
+
+        assertThatThrownBy(() -> authService.loginWithGoogle(new GoogleAuthRequest("google-id-token")))
+                .isInstanceOf(GoogleAccountRoleConflictException.class);
     }
 }

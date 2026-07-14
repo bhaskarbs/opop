@@ -1,13 +1,16 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.AuthResponse;
+import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.dto.UserSummary;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.GoogleAccountRoleConflictException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
+import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
@@ -34,6 +37,7 @@ public class AuthService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final GoogleTokenVerifierService googleTokenVerifierService;
     private final long refreshTokenExpiryDays;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -44,6 +48,7 @@ public class AuthService {
             CandidateProfileRepository candidateProfileRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
+            GoogleTokenVerifierService googleTokenVerifierService,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -51,6 +56,7 @@ public class AuthService {
         this.candidateProfileRepository = candidateProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.googleTokenVerifierService = googleTokenVerifierService;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
     }
 
@@ -103,6 +109,35 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+        if (user.isSuspended()) {
+            throw new SuspendedAccountException();
+        }
+        return issueTokens(user);
+    }
+
+    /** Candidate-only: verifies the Google ID token, then either logs into the matching
+     * account or auto-registers a new CANDIDATE (with a blank, fillable-later candidate
+     * profile) on first sign-in — mirroring findProfile()'s auto-provisioning elsewhere so a
+     * Google sign-in never requires a separate "finish registration" step. Accounts that
+     * already exist under a different role are rejected rather than silently logged in. */
+    @Transactional
+    public Issued loginWithGoogle(GoogleAuthRequest request) {
+        GoogleTokenVerifierService.VerifiedGoogleUser googleUser =
+                googleTokenVerifierService.verify(request.idToken());
+        if (!googleUser.emailVerified()) {
+            throw new InvalidGoogleTokenException();
+        }
+
+        User user = userRepository.findByEmail(googleUser.email()).orElse(null);
+        if (user == null) {
+            String fullName = isNotBlank(googleUser.fullName()) ? googleUser.fullName() : googleUser.email();
+            user = new User(googleUser.email(), passwordEncoder.encode(generateRawToken()), fullName, UserRole.CANDIDATE);
+            userRepository.save(user);
+            candidateProfileRepository.save(new CandidateProfile(user.getId(), "", List.of(), null));
+        } else if (user.getRole() != UserRole.CANDIDATE) {
+            throw new GoogleAccountRoleConflictException();
+        }
+
         if (user.isSuspended()) {
             throw new SuspendedAccountException();
         }

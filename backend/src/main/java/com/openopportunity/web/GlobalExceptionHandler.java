@@ -7,9 +7,11 @@ import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.GoogleAccountRoleConflictException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
+import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
@@ -42,6 +44,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ApiError> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
         return error(HttpStatus.UNAUTHORIZED, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidGoogleTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidGoogleToken(InvalidGoogleTokenException ex) {
+        return error(HttpStatus.UNAUTHORIZED, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(GoogleAccountRoleConflictException.class)
+    public ResponseEntity<ApiError> handleGoogleAccountRoleConflict(GoogleAccountRoleConflictException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(InvalidRegistrationRoleException.class)
