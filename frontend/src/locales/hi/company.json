@@ -1,5 +1,12 @@
 {
   "dashboard": {
+    "loading": "आपका डैशबोर्ड लोड हो रहा है…",
+    "loadError": "आपका डैशबोर्ड लोड नहीं हो सका।",
+    "verification": {
+      "pending": "सत्यापन लंबित",
+      "verified": "सत्यापित",
+      "rejected": "सत्यापन अस्वीकृत"
+    },
     "status": {
       "active": "सक्रिय",
       "draft": "ड्राफ़्ट",
