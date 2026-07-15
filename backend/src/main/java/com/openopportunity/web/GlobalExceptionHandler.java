@@ -1,6 +1,7 @@
 package com.openopportunity.web;
 
 import com.openopportunity.admin.exception.AdminUserNotFoundException;
+import com.openopportunity.admin.exception.CompanyProfileIncompleteException;
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
@@ -129,6 +130,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CompanyProfileNotFoundException.class)
     public ResponseEntity<ApiError> handleCompanyProfileNotFound(CompanyProfileNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyProfileIncompleteException.class)
+    public ResponseEntity<ApiError> handleCompanyProfileIncomplete(CompanyProfileIncompleteException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
