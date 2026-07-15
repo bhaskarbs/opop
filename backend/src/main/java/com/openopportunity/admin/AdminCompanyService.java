@@ -1,6 +1,7 @@
 package com.openopportunity.admin;
 
 import com.openopportunity.admin.dto.AdminCompanyProfileSummary;
+import com.openopportunity.admin.exception.CompanyProfileIncompleteException;
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
@@ -25,8 +26,13 @@ public class AdminCompanyService {
 
     @Transactional(readOnly = true)
     public List<AdminCompanyProfileSummary> getPending() {
+        // A Google-signup company (see AuthService.loginWithGoogleAsCompany) starts PENDING
+        // with every one of these fields blank — there's nothing for an admin to review until
+        // the company fills them in via PUT /api/company/profile, so it's excluded from the
+        // queue until then rather than showing up as a row of blanks.
         return companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING)
                 .stream()
+                .filter(CompanyProfile::isProfileComplete)
                 .map(this::toSummary)
                 .toList();
     }
@@ -35,6 +41,9 @@ public class AdminCompanyService {
     public AdminCompanyProfileSummary verify(UUID userId) {
         CompanyProfile profile = companyProfileRepository.findByUserId(userId).orElseThrow(
                 () -> new CompanyProfileNotFoundException(userId));
+        if (!profile.isProfileComplete()) {
+            throw new CompanyProfileIncompleteException();
+        }
         profile.verify();
         companyProfileRepository.save(profile);
         return toSummary(profile);

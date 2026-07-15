@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.admin.dto.AdminCompanyProfileSummary;
+import com.openopportunity.admin.exception.CompanyProfileIncompleteException;
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
@@ -90,5 +91,29 @@ class AdminCompanyServiceTest {
 
         assertThatThrownBy(() -> adminCompanyService.verify(UUID.randomUUID()))
                 .isInstanceOf(CompanyProfileNotFoundException.class);
+    }
+
+    @Test
+    void getPendingExcludesIncompleteProfiles() {
+        User user = companyUser();
+        // Blank profile, as left by AuthService.loginWithGoogleAsCompany right after sign-in —
+        // nothing here for an admin to review yet.
+        CompanyProfile blank = new CompanyProfile(user.getId(), null, null, null, null, null, null, null);
+        when(companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING))
+                .thenReturn(List.of(blank));
+
+        List<AdminCompanyProfileSummary> pending = adminCompanyService.getPending();
+
+        assertThat(pending).isEmpty();
+    }
+
+    @Test
+    void verifyRejectsIncompleteProfile() {
+        User user = companyUser();
+        CompanyProfile blank = new CompanyProfile(user.getId(), null, null, null, null, null, null, null);
+        when(companyProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(blank));
+
+        assertThatThrownBy(() -> adminCompanyService.verify(user.getId()))
+                .isInstanceOf(CompanyProfileIncompleteException.class);
     }
 }
