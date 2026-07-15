@@ -5,11 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.auth.CompanyProfile;
+import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
+import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
@@ -32,11 +35,21 @@ class JobServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CompanyProfileRepository companyProfileRepository;
+
     private JobService jobService;
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, userRepository);
+        jobService = new JobService(jobRepository, userRepository, companyProfileRepository);
+    }
+
+    private CompanyProfile eligibleProfile(UUID companyId) {
+        CompanyProfile profile = new CompanyProfile(
+                companyId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory");
+        profile.verify();
+        return profile;
     }
 
     private JobRequest sampleRequest(JobStatus status) {
@@ -61,6 +74,7 @@ class JobServiceTest {
         UUID companyId = UUID.randomUUID();
         User company = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
         when(userRepository.findById(companyId)).thenReturn(Optional.of(company));
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(eligibleProfile(companyId)));
 
         JobDetail detail = jobService.create(companyId, sampleRequest(JobStatus.PENDING_APPROVAL));
 
@@ -77,6 +91,28 @@ class JobServiceTest {
                 .isInstanceOf(InvalidJobStatusTransitionException.class);
         assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.REJECTED)))
                 .isInstanceOf(InvalidJobStatusTransitionException.class);
+    }
+
+    @Test
+    void createRejectsIncompleteCompanyProfile() {
+        UUID companyId = UUID.randomUUID();
+        // Blank profile, as left by AuthService.loginWithGoogleAsCompany right after sign-in.
+        CompanyProfile blank = new CompanyProfile(companyId, null, null, null, null, null, null, null);
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(blank));
+
+        assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.PENDING_APPROVAL)))
+                .isInstanceOf(CompanyNotEligibleToPostJobsException.class);
+    }
+
+    @Test
+    void createRejectsUnverifiedCompanyProfile() {
+        UUID companyId = UUID.randomUUID();
+        CompanyProfile pending = new CompanyProfile(
+                companyId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory");
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(pending));
+
+        assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.PENDING_APPROVAL)))
+                .isInstanceOf(CompanyNotEligibleToPostJobsException.class);
     }
 
     @Test

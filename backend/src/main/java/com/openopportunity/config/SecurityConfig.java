@@ -35,6 +35,7 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/google",
+                                "/api/auth/google/company",
                                 "/api/auth/refresh",
                                 "/api/auth/logout")
                         .permitAll()

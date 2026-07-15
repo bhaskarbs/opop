@@ -58,6 +58,11 @@ public class AuthController {
         return withRefreshCookie(authService.loginWithGoogle(request), HttpStatus.OK);
     }
 
+    @PostMapping("/google/company")
+    public ResponseEntity<AuthResponse> loginWithGoogleAsCompany(@Valid @RequestBody GoogleAuthRequest request) {
+        return withRefreshCookie(authService.loginWithGoogleAsCompany(request), HttpStatus.OK);
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken) {

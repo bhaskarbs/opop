@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { type KeyboardEvent, useState } from 'react'
+import { type KeyboardEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller, useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Button, Input } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
@@ -18,6 +18,7 @@ import {
   type WorkModeLabel,
 } from '../../lib/jobEnums'
 import { ApiError } from '../../lib/apiClient'
+import { companyApi } from '../../lib/companyApi'
 import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
 
@@ -98,6 +99,25 @@ export default function PostJobPage() {
   const localize = useLocalizedPath()
   const [newSkill, setNewSkill] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  // Mirrors JobService.requireEligibleToPostJobs on the backend — checked here too so a
+  // not-yet-eligible company sees why instead of filling out the whole form only to hit a 403.
+  const [eligible, setEligible] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    companyApi
+      .getProfile()
+      .then((profile) => {
+        if (!cancelled)
+          setEligible(profile.profileComplete && profile.verificationStatus === 'VERIFIED')
+      })
+      .catch(() => {
+        if (!cancelled) setEligible(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const {
     register,
@@ -148,6 +168,31 @@ export default function PostJobPage() {
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
     }
+  }
+
+  if (eligible === null) {
+    return (
+      <main className="mx-auto max-w-[840px] px-6 py-7 pb-16 text-center text-sm text-slate">
+        {t('postJob.checkingEligibility')}
+      </main>
+    )
+  }
+
+  if (!eligible) {
+    return (
+      <main className="mx-auto max-w-[840px] px-6 py-7 pb-16">
+        <div className="rounded-card border border-[#FCE3B8] bg-amber-tint p-8 text-center">
+          <h1 className="mb-2 text-lg font-bold text-[#8A5A0F]">{t('postJob.notEligibleTitle')}</h1>
+          <p className="mb-5 text-sm text-[#8A5A0F]">{t('postJob.notEligibleBody')}</p>
+          <Link
+            to={localize(ROUTES.companyProfile)}
+            className="inline-block rounded-lg bg-primary px-5 py-2.5 text-[13.5px] font-bold text-white no-underline"
+          >
+            {t('dashboard.completeProfileCta')}
+          </Link>
+        </div>
+      </main>
+    )
   }
 
   return (

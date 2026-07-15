@@ -37,11 +37,26 @@ export default function CompanyLoginPage() {
   async function onSubmit(values: CompanyLoginFormValues) {
     setFormError(null)
     try {
-      const response = await authApi.login({ email: values.workEmail, password: values.password, role: 'company' })
+      const response = await authApi.login({
+        email: values.workEmail,
+        password: values.password,
+        role: 'company',
+      })
       setSession(response.accessToken, response.user)
       navigate(localize(ROUTES.companyDashboard))
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('errors.generic'))
+    }
+  }
+
+  async function onGoogleCredential(idToken: string) {
+    setFormError(null)
+    try {
+      const response = await authApi.loginWithGoogleAsCompany(idToken)
+      setSession(response.accessToken, response.user)
+      navigate(localize(ROUTES.companyDashboard))
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : t('social.googleSignInFailed'))
     }
   }
 
@@ -92,7 +107,7 @@ export default function CompanyLoginPage() {
         </Button>
       </form>
 
-      <SocialAuthButtons />
+      <SocialAuthButtons onGoogleCredential={onGoogleCredential} />
 
       <p className="mb-2.5 text-center text-[13.5px] text-slate">
         {t('companyLogin.newEmployer')}{' '}

@@ -1,10 +1,13 @@
 package com.openopportunity.job;
 
+import com.openopportunity.auth.CompanyProfile;
+import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSummary;
+import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
@@ -21,10 +24,15 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
+    private final CompanyProfileRepository companyProfileRepository;
 
-    public JobService(JobRepository jobRepository, UserRepository userRepository) {
+    public JobService(
+            JobRepository jobRepository,
+            UserRepository userRepository,
+            CompanyProfileRepository companyProfileRepository) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
+        this.companyProfileRepository = companyProfileRepository;
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +71,7 @@ public class JobService {
     @Transactional
     public JobDetail create(UUID companyId, JobRequest request) {
         requireClientSettableStatus(request.status());
+        requireEligibleToPostJobs(companyId);
         User company = userRepository.findById(companyId).orElseThrow();
         Job job = new Job(
                 companyId,
@@ -135,6 +144,22 @@ public class JobService {
         job.reject();
         jobRepository.save(job);
         return toDetail(job);
+    }
+
+    /** A company can only post once its verification profile is both complete (entityType/
+     * cin/gstin/pan/etc. filled in — never true right after Google sign-in, see
+     * AuthService.loginWithGoogleAsCompany) and admin-verified. Searching candidates has no
+     * such gate; only posting jobs and (client-side, see SearchCandidatesPage) contacting
+     * candidates do. */
+    private void requireEligibleToPostJobs(UUID companyId) {
+        CompanyProfile profile = companyProfileRepository.findByUserId(companyId).orElseThrow();
+        if (!profile.isProfileComplete()) {
+            throw new CompanyNotEligibleToPostJobsException("Complete your company profile before posting a job");
+        }
+        if (!profile.isVerified()) {
+            throw new CompanyNotEligibleToPostJobsException(
+                    "Your company profile is awaiting admin verification before you can post a job");
+        }
     }
 
     private void requireClientSettableStatus(JobStatus status) {

@@ -1,4 +1,33 @@
 {
+  "profile": {
+    "title": "Company profile",
+    "subtitle": "Complete these verification details so admins can review and approve your account.",
+    "loading": "Loading your company profile…",
+    "loadError": "Could not load your company profile.",
+    "completeBanner": "Complete your company profile below to start posting jobs and contacting candidates. You can still browse and search candidates in the meantime.",
+    "pendingBanner": "Your company profile is awaiting admin verification. You can browse and search candidates in the meantime, but can't post jobs or contact candidates yet.",
+    "rejectedBanner": "Your company verification was rejected. Update your details below and resubmit for review.",
+    "verifiedBanner": "Your company is verified — you can post jobs and contact candidates.",
+    "fields": {
+      "entityType": "Entity type",
+      "cin": "CIN / LLPIN",
+      "gstin": "GSTIN",
+      "pan": "PAN",
+      "industry": "Industry",
+      "address": "Registered office address",
+      "signatoryName": "Authorized signatory name"
+    },
+    "entityTypes": {
+      "privateLimited": "Private Limited Company",
+      "llp": "Limited Liability Partnership (LLP)",
+      "partnershipFirm": "Partnership Firm",
+      "soleProprietorship": "Sole Proprietorship",
+      "publicLimited": "Public Limited Company"
+    },
+    "submit": "Save company details",
+    "saveSuccess": "Company details saved.",
+    "saveError": "Could not save your company details."
+  },
   "dashboard": {
     "loading": "Loading your dashboard…",
     "loadError": "Could not load your dashboard.",
@@ -40,7 +69,9 @@
     "scheduleNewSeminar": "+ Schedule new seminar",
     "notificationsSent": "Notifications sent",
     "email": "Email",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "completeProfileBanner": "Complete your company profile to start posting jobs and contacting candidates.",
+    "completeProfileCta": "Complete profile →"
   },
   "postJob": {
     "employmentType": {
@@ -51,6 +82,9 @@
     },
     "errorGeneric": "Something went wrong. Try again.",
     "errorTitleRequired": "Enter a job title before saving a draft.",
+    "checkingEligibility": "Checking your company's verification status…",
+    "notEligibleTitle": "You can't post a job yet",
+    "notEligibleBody": "Complete your company profile and wait for admin verification before posting a job. You can still search candidates in the meantime.",
     "title": "Post a job",
     "subtitle": "Reach candidates directly — and surface your listing to skill-matched partnership and community applicants too.",
     "roleDetails": "Role details",
@@ -88,6 +122,7 @@
     "candidateMeta": "{{title}} · {{location}} · {{years}} yrs experience",
     "contacted": "Contacted ✓",
     "contact": "Contact",
+    "contactDisabledHint": "Complete your company profile and get admin-verified before contacting candidates.",
     "searchPlaceholder": "Search by skill, title, or keyword",
     "lookingFor": "Looking for",
     "location": "Location",

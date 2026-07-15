@@ -120,7 +120,18 @@ export const authApi = {
   // Candidate-only: verifies the Google ID token server-side and logs in (or auto-registers
   // on first sign-in) — see AuthService.loginWithGoogle.
   loginWithGoogle: (idToken: string) =>
-    request<AuthResponse>('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
+    request<AuthResponse>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
+  // Company-only counterpart — also auto-registers on first sign-in, but with a blank
+  // verification profile (Google never supplies CIN/GSTIN/PAN/etc.); see
+  // AuthService.loginWithGoogleAsCompany and CompanyProfilePage.
+  loginWithGoogleAsCompany: (idToken: string) =>
+    request<AuthResponse>('/api/auth/google/company', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
   refresh: () => request<AuthResponse>('/api/auth/refresh', { method: 'POST' }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
 }

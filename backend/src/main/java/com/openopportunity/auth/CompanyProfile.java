@@ -22,25 +22,25 @@ public class CompanyProfile {
     @Column(name = "user_id", nullable = false, unique = true, updatable = false)
     private UUID userId;
 
-    @Column(name = "entity_type", nullable = false)
+    @Column(name = "entity_type")
     private String entityType;
 
-    @Column(nullable = false)
+    @Column
     private String cin;
 
-    @Column(nullable = false)
+    @Column
     private String gstin;
 
-    @Column(nullable = false)
+    @Column
     private String pan;
 
-    @Column(nullable = false)
+    @Column
     private String industry;
 
-    @Column(nullable = false, columnDefinition = "text")
+    @Column(columnDefinition = "text")
     private String address;
 
-    @Column(name = "signatory_name", nullable = false)
+    @Column(name = "signatory_name")
     private String signatoryName;
 
     @Enumerated(EnumType.STRING)
@@ -94,12 +94,47 @@ public class CompanyProfile {
         return verificationStatus == VerificationStatus.VERIFIED;
     }
 
+    /** True once every verification field has been filled in (via updateDetails) — a company
+     * created through Google sign-in starts with all of them blank, since Google never
+     * supplies CIN/GSTIN/PAN/etc. Posting jobs and contacting candidates require this AND
+     * isVerified() — see JobService.create(). */
+    public boolean isProfileComplete() {
+        return isNotBlank(entityType)
+                && isNotBlank(cin)
+                && isNotBlank(gstin)
+                && isNotBlank(pan)
+                && isNotBlank(industry)
+                && isNotBlank(address)
+                && isNotBlank(signatoryName);
+    }
+
+    public void updateDetails(
+            String entityType,
+            String cin,
+            String gstin,
+            String pan,
+            String industry,
+            String address,
+            String signatoryName) {
+        this.entityType = entityType;
+        this.cin = cin;
+        this.gstin = gstin;
+        this.pan = pan;
+        this.industry = industry;
+        this.address = address;
+        this.signatoryName = signatoryName;
+    }
+
     public void verify() {
         this.verificationStatus = VerificationStatus.VERIFIED;
     }
 
     public void reject() {
         this.verificationStatus = VerificationStatus.REJECTED;
+    }
+
+    private static boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     public UUID getId() {
