@@ -27,8 +27,9 @@ export const ROUTES = {
 
   adminLogin: '/admin/login',
   adminDashboard: '/admin/dashboard',
-  adminJobApprovals: '/admin/job-approvals',
-  adminCompanyApprovals: '/admin/company-approvals',
+  adminApprovals: '/admin/approvals',
+  adminCompanyApprovals: '/admin/approvals/companies',
+  adminJobApprovals: '/admin/approvals/jobs',
   adminUsers: '/admin/users',
   adminReports: '/admin/reports',
 } as const

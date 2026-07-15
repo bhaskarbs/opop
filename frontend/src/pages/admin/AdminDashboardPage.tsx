@@ -1,4 +1,7 @@
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { ROUTES } from '../../routes/paths'
 
 const KPIS = [
   { labelKey: 'dashboard.kpis.totalCandidates', value: '84,210', trend: '+1,204 this week' },
@@ -77,6 +80,7 @@ const STATUS_LABEL_KEYS: Record<keyof typeof STATUS_CLASS, string> = {
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation('admin')
+  const localize = useLocalizedPath()
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
       <h1 className="mb-5 text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
@@ -157,13 +161,12 @@ export default function AdminDashboardPage() {
           <h2 className="text-[15px] font-bold text-ink">
             {t('dashboard.recentCompanyRegistrations')}
           </h2>
-          <a
-            href="#users"
-            onClick={(event) => event.preventDefault()}
+          <Link
+            to={localize(ROUTES.adminCompanyApprovals)}
             className="text-[13px] font-bold text-primary no-underline"
           >
             {t('dashboard.manageAll')}
-          </a>
+          </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-[13.5px]">
