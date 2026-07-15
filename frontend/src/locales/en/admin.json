@@ -1,4 +1,8 @@
 {
+  "approvals": {
+    "companiesTab": "Company approvals",
+    "jobsTab": "Job approvals"
+  },
   "dashboard": {
     "title": "Platform overview",
     "kpis": {

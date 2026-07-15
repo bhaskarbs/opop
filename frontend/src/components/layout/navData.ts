@@ -30,9 +30,9 @@ export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
   ],
   admin: [
     { label: 'nav.dashboard', to: ROUTES.adminDashboard },
+    { label: 'nav.approvals', to: ROUTES.adminApprovals },
     { label: 'nav.reports', to: ROUTES.adminReports },
     { label: 'nav.users', to: ROUTES.adminUsers },
-    { label: 'nav.jobsAdmin' },
   ],
 }
 

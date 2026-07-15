@@ -35,6 +35,7 @@ import PostJobPage from './pages/company/PostJobPage'
 import SearchCandidatesPage from './pages/company/SearchCandidatesPage'
 import SeminarSchedulerPage from './pages/company/SeminarSchedulerPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
+import AdminApprovalsPage from './pages/admin/AdminApprovalsPage'
 import AdminJobApprovalsPage from './pages/admin/AdminJobApprovalsPage'
 import AdminCompanyApprovalsPage from './pages/admin/AdminCompanyApprovalsPage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -123,8 +124,11 @@ function App() {
             <Route element={<RequireAuth role="ADMIN" />}>
               <Route element={<AuthenticatedLayout headerVariant="admin" />}>
                 <Route path="admin/dashboard" element={<AdminDashboardPage />} />
-                <Route path="admin/job-approvals" element={<AdminJobApprovalsPage />} />
-                <Route path="admin/company-approvals" element={<AdminCompanyApprovalsPage />} />
+                <Route path="admin/approvals" element={<AdminApprovalsPage />}>
+                  <Route index element={<Navigate to="companies" replace />} />
+                  <Route path="companies" element={<AdminCompanyApprovalsPage />} />
+                  <Route path="jobs" element={<AdminJobApprovalsPage />} />
+                </Route>
                 <Route path="admin/users" element={<AdminUsersPage />} />
                 <Route path="admin/reports" element={<AdminReportsPage />} />
               </Route>

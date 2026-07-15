@@ -1,4 +1,8 @@
 {
+  "approvals": {
+    "companiesTab": "कंपनी अप्रूवल",
+    "jobsTab": "नौकरी अप्रूवल"
+  },
   "dashboard": {
     "title": "प्लेटफ़ॉर्म का अवलोकन",
     "kpis": {
