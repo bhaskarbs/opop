@@ -57,6 +57,8 @@ class ApplicationControllerTest {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
     }
 
+    /** Registers and, for role=company, immediately admin-verifies — job-posting here needs a
+     * company that's actually eligible to post (see JobService#requireEligibleToPostJobs). */
     private String registerAndGetToken(String email, String fullName, String role) throws Exception {
         // Company profile fields are required for role=company, mobile/skills for
         // role=candidate, and both are ignored for whichever role doesn't apply — so it's
@@ -81,7 +83,15 @@ class ApplicationControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
+        var body = objectMapper.readTree(result.getResponse().getContentAsString());
+        String token = body.get("accessToken").asText();
+        if ("company".equals(role)) {
+            String companyUserId = body.get("user").get("id").asText();
+            mockMvc.perform(post("/api/admin/companies/" + companyUserId + "/verify")
+                            .header("Authorization", "Bearer " + adminToken()))
+                    .andExpect(status().isOk());
+        }
+        return token;
     }
 
     /** Creates a job as PENDING_APPROVAL and immediately has the seeded admin approve it —

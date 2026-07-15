@@ -45,6 +45,11 @@ class JobControllerTest {
     @Value("${app.admin.seed-password}")
     private String adminSeedPassword;
 
+    /** Registers and, for role=company, immediately admin-verifies — job-posting tests need a
+     * company that's actually eligible to post (see JobService.requireEligibleToPostJobs), and
+     * this is by far the most common starting state call sites in this file want. A company
+     * that's registered but not yet verified is exercised explicitly by
+     * createRejectsUnverifiedCompany below instead of through this helper. */
     private String registerAndGetToken(String email, String fullName, String role) throws Exception {
         // Company profile fields are required for role=company, mobile/skills for
         // role=candidate, and both are ignored for whichever role doesn't apply — so it's
@@ -69,7 +74,15 @@ class JobControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
+        var body = objectMapper.readTree(result.getResponse().getContentAsString());
+        String token = body.get("accessToken").asText();
+        if ("company".equals(role)) {
+            String companyUserId = body.get("user").get("id").asText();
+            mockMvc.perform(post("/api/admin/companies/" + companyUserId + "/verify")
+                            .header("Authorization", "Bearer " + adminToken()))
+                    .andExpect(status().isOk());
+        }
+        return token;
     }
 
     /** The seeded admin account (see AdminSeeder) exists by the time any test runs — it's
@@ -146,6 +159,36 @@ class JobControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void createRejectsUnverifiedCompany() throws Exception {
+        RegisterRequest request = new RegisterRequest(
+                "unverified-co@example.com",
+                "password123",
+                "Unverified Co",
+                "company",
+                "Private Limited",
+                "U74999KA2021PTC145632",
+                "29ABCDE1234F1Z5",
+                "ABCDE1234F",
+                "Technology",
+                "123 Test Street, Bengaluru",
+                "Test Signatory");
+        MvcResult result = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String token = objectMapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
+
+        mockMvc.perform(post("/api/jobs")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(jobRequest(
+                                "Blocked Job", ExperienceLevel.MID_LEVEL, WorkMode.REMOTE, "Remote",
+                                null, null, List.of("React"), JobStatus.PENDING_APPROVAL))))
+                .andExpect(status().isForbidden());
     }
 
     @Test

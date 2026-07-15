@@ -161,6 +161,18 @@ export default function CompanyDashboardPage() {
         </div>
       </div>
 
+      {!profile.profileComplete && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] text-[#8A5A0F]">
+          <span>{t('dashboard.completeProfileBanner')}</span>
+          <Link
+            to={localize(ROUTES.companyProfile)}
+            className="font-bold whitespace-nowrap text-primary no-underline"
+          >
+            {t('dashboard.completeProfileCta')}
+          </Link>
+        </div>
+      )}
+
       <div className="mb-7 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
         {kpis.map((kpi) => (
           <div

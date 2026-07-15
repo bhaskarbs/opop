@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { companyApi, type CandidateSearchSummary } from '../../lib/companyApi'
+import { ROUTES } from '../../routes/paths'
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
 
@@ -13,10 +16,12 @@ function colorForName(name: string): string {
 function CandidateCard({
   candidate,
   contacted,
+  canContact,
   onContact,
 }: {
   candidate: CandidateSearchSummary
   contacted: boolean
+  canContact: boolean
   onContact: () => void
 }) {
   const { t } = useTranslation('company')
@@ -54,8 +59,9 @@ function CandidateCard({
           </button>
           <button
             type="button"
-            disabled={contacted}
+            disabled={contacted || !canContact}
             onClick={onContact}
+            title={canContact ? undefined : t('searchCandidates.contactDisabledHint')}
             className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:bg-ink/50"
           >
             {contacted ? t('searchCandidates.contacted') : t('searchCandidates.contact')}
@@ -68,6 +74,7 @@ function CandidateCard({
 
 export default function SearchCandidatesPage() {
   const { t } = useTranslation('company')
+  const localize = useLocalizedPath()
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
   const [contactedIds, setContactedIds] = useState<Set<string>>(new Set())
@@ -75,6 +82,19 @@ export default function SearchCandidatesPage() {
   const [candidates, setCandidates] = useState<CandidateSearchSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Search itself has no eligibility gate — only contacting a candidate does (see
+  // JobService.requireEligibleToPostJobs for the equivalent job-posting gate on the backend;
+  // contacting a candidate has no backend action to gate yet, so this is enforced client-side).
+  const [canContact, setCanContact] = useState(false)
+
+  useEffect(() => {
+    companyApi
+      .getProfile()
+      .then((profile) =>
+        setCanContact(profile.profileComplete && profile.verificationStatus === 'VERIFIED'),
+      )
+      .catch(() => setCanContact(false))
+  }, [])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -127,9 +147,7 @@ export default function SearchCandidatesPage() {
       <div className="search:grid-cols-[260px_1fr] mx-auto grid max-w-[1280px] grid-cols-1 gap-6 px-6 py-7 pb-16">
         <aside className="search:block hidden">
           <div className="sticky top-[88px] rounded-card border border-border bg-surface p-5">
-            <div className="mb-4 text-[15px] font-bold text-ink">
-              {t('public:filters.heading')}
-            </div>
+            <div className="mb-4 text-[15px] font-bold text-ink">{t('public:filters.heading')}</div>
             <div>
               <div className="mb-2.5 text-[13px] font-bold text-ink">
                 {t('searchCandidates.location')}
@@ -145,6 +163,17 @@ export default function SearchCandidatesPage() {
         </aside>
 
         <div>
+          {!canContact && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] text-[#8A5A0F]">
+              <span>{t('searchCandidates.contactDisabledHint')}</span>
+              <Link
+                to={localize(ROUTES.companyProfile)}
+                className="font-bold whitespace-nowrap text-primary no-underline"
+              >
+                {t('dashboard.completeProfileCta')}
+              </Link>
+            </div>
+          )}
           {error && (
             <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
               {error}
@@ -165,6 +194,7 @@ export default function SearchCandidatesPage() {
                     key={candidate.userId}
                     candidate={candidate}
                     contacted={contactedIds.has(candidate.userId)}
+                    canContact={canContact}
                     onContact={() => setContactedIds((prev) => new Set(prev).add(candidate.userId))}
                   />
                 ))}

@@ -145,6 +145,35 @@ public class AuthService {
         return issueTokens(user);
     }
 
+    /** Company-only: mirrors loginWithGoogle (candidate) — verifies the token, then either
+     * logs into the matching COMPANY account or auto-registers a new one on first sign-in.
+     * Unlike registration, a Google-created company starts with a blank profile (no CIN/GSTIN/
+     * PAN/etc. — Google never supplies those): it can log in and search candidates right away,
+     * but posting jobs and contacting candidates require completing the profile via
+     * PUT /api/company/profile and then being admin-verified — see JobService.create() and
+     * CompanyProfile.isProfileComplete(). */
+    @Transactional
+    public Issued loginWithGoogleAsCompany(GoogleAuthRequest request) {
+        GoogleTokenVerifierService.VerifiedGoogleUser googleUser =
+                googleTokenVerifierService.verify(request.idToken());
+        if (!googleUser.emailVerified()) {
+            throw new InvalidGoogleTokenException();
+        }
+
+        User user = userRepository.findByEmailAndRole(googleUser.email(), UserRole.COMPANY).orElse(null);
+        if (user == null) {
+            String fullName = isNotBlank(googleUser.fullName()) ? googleUser.fullName() : googleUser.email();
+            user = new User(googleUser.email(), passwordEncoder.encode(generateRawToken()), fullName, UserRole.COMPANY);
+            userRepository.save(user);
+            companyProfileRepository.save(new CompanyProfile(user.getId(), null, null, null, null, null, null, null));
+        }
+
+        if (user.isSuspended()) {
+            throw new SuspendedAccountException();
+        }
+        return issueTokens(user);
+    }
+
     /** Rotates the refresh token on every use: the presented token is revoked, a new one is issued. */
     @Transactional
     public Issued refresh(String rawRefreshToken) {

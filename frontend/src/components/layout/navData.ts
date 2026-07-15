@@ -52,7 +52,7 @@ export const USER_MENU_BY_VARIANT: Partial<Record<HeaderVariant, NavItem[]>> = {
     { label: 'nav.logout' },
   ],
   company: [
-    { label: 'userMenu.companyProfile' },
+    { label: 'userMenu.companyProfile', to: ROUTES.companyProfile },
     { label: 'userMenu.jobPostings' },
     { label: 'userMenu.billing' },
     { label: 'nav.logout' },

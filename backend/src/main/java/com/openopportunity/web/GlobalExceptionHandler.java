@@ -15,6 +15,7 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
@@ -98,6 +99,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidJobStatusTransitionException.class)
     public ResponseEntity<ApiError> handleInvalidJobStatusTransition(InvalidJobStatusTransitionException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyNotEligibleToPostJobsException.class)
+    public ResponseEntity<ApiError> handleCompanyNotEligibleToPostJobs(CompanyNotEligibleToPostJobsException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(ApplicationNotFoundException.class)

@@ -6,9 +6,29 @@ export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export interface CompanyProfileResponse {
   companyName: string
   email: string
-  entityType: string
-  industry: string
+  // Null until the company fills these in (see CompanyProfilePage) — always null right after
+  // Google sign-in, since Google never supplies CIN/GSTIN/PAN/etc.
+  entityType: string | null
+  cin: string | null
+  gstin: string | null
+  pan: string | null
+  industry: string | null
+  address: string | null
+  signatoryName: string | null
   verificationStatus: VerificationStatus
+  // True once every field above is filled in. Posting jobs and (see SearchCandidatesPage)
+  // contacting candidates both require this AND verificationStatus === 'VERIFIED'.
+  profileComplete: boolean
+}
+
+export interface UpdateCompanyProfilePayload {
+  entityType: string
+  cin: string
+  gstin: string
+  pan: string
+  industry: string
+  address: string
+  signatoryName: string
 }
 
 export interface CandidateSearchSummary {
@@ -38,7 +58,14 @@ function buildQuery(params: CandidateSearchParams): string {
 }
 
 export const companyApi = {
-  getProfile: () => request<CompanyProfileResponse>('/api/company/profile', { headers: authHeaders() }),
+  getProfile: () =>
+    request<CompanyProfileResponse>('/api/company/profile', { headers: authHeaders() }),
+  updateProfile: (payload: UpdateCompanyProfilePayload) =>
+    request<CompanyProfileResponse>('/api/company/profile', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    }),
   searchCandidates: (params: CandidateSearchParams = {}) =>
     request<CandidateSearchSummary[]>(`/api/company/candidates${buildQuery(params)}`, {
       headers: authHeaders(),

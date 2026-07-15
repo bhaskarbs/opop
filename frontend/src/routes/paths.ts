@@ -20,6 +20,7 @@ export const ROUTES = {
   candidateMockInterview: '/candidate/mock-interview',
 
   companyDashboard: '/company/dashboard',
+  companyProfile: '/company/profile',
   companyPostJob: '/company/post-job',
   companySearchCandidates: '/company/search-candidates',
   companySeminars: '/company/seminars',

@@ -1,5 +1,13 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from 'react-router-dom'
 import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
 import { RequireAuth } from './routes/RequireAuth'
@@ -22,6 +30,7 @@ import AddMissingDetailsPage from './pages/candidate/AddMissingDetailsPage'
 import ApplicationsPage from './pages/candidate/ApplicationsPage'
 import MockInterviewPage from './pages/candidate/MockInterviewPage'
 import CompanyDashboardPage from './pages/company/CompanyDashboardPage'
+import CompanyProfilePage from './pages/company/CompanyProfilePage'
 import PostJobPage from './pages/company/PostJobPage'
 import SearchCandidatesPage from './pages/company/SearchCandidatesPage'
 import SeminarSchedulerPage from './pages/company/SeminarSchedulerPage'
@@ -104,6 +113,7 @@ function App() {
             <Route element={<RequireAuth role="COMPANY" />}>
               <Route element={<AuthenticatedLayout headerVariant="company" />}>
                 <Route path="company/dashboard" element={<CompanyDashboardPage />} />
+                <Route path="company/profile" element={<CompanyProfilePage />} />
                 <Route path="company/post-job" element={<PostJobPage />} />
                 <Route path="company/search-candidates" element={<SearchCandidatesPage />} />
                 <Route path="company/seminars" element={<SeminarSchedulerPage />} />
