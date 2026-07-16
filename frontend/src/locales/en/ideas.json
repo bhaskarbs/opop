@@ -80,7 +80,9 @@
     "pendingNotice": "Your idea will stay in \"Pending review\" until an admin approves it. You can edit it anytime from My Ideas.",
     "cancel": "Cancel",
     "submitForReview": "Submit for review",
-    "saveChanges": "Save changes"
+    "saveChanges": "Save changes",
+    "loadingExisting": "Loading your idea…",
+    "errorGeneric": "Something went wrong. Please try again."
   },
   "myIdeas": {
     "title": "My ideas",

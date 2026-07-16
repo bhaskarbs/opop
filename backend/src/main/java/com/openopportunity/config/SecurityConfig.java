@@ -59,6 +59,14 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
+                        // Both candidates and companies can submit ideas (see
+                        // IdeasBrowsePage's "Submit your idea" CTA).
+                        .requestMatchers(HttpMethod.POST, "/api/ideas")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
+                        .requestMatchers(HttpMethod.GET, "/api/ideas/*")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
+                        .requestMatchers(HttpMethod.PUT, "/api/ideas/*")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.POST, "/api/applications", "/api/applications/*/withdraw")
                         .hasRole("CANDIDATE")
                         .requestMatchers(HttpMethod.GET, "/api/applications/mine")

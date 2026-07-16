@@ -16,6 +16,8 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.idea.exception.IdeaAccessDeniedException;
+import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
@@ -135,6 +137,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CompanyProfileIncompleteException.class)
     public ResponseEntity<ApiError> handleCompanyProfileIncomplete(CompanyProfileIncompleteException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(IdeaNotFoundException.class)
+    public ResponseEntity<ApiError> handleIdeaNotFound(IdeaNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(IdeaAccessDeniedException.class)
+    public ResponseEntity<ApiError> handleIdeaAccessDenied(IdeaAccessDeniedException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
