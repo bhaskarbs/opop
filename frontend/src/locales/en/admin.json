@@ -1,7 +1,8 @@
 {
   "approvals": {
     "companiesTab": "Company approvals",
-    "jobsTab": "Job approvals"
+    "jobsTab": "Job approvals",
+    "ideasTab": "Idea approvals"
   },
   "dashboard": {
     "title": "Platform overview",
@@ -173,5 +174,25 @@
         "share": "Share"
       }
     }
+  },
+  "billing": {
+    "title": "Billing overview",
+    "subtitle": "Monitor subscriptions, review upgrade requests, and track revenue.",
+    "stats": {
+      "mrr": "Monthly recurring revenue",
+      "activeSubscriptions": "Active subscriptions",
+      "pendingUpgrades": "Pending upgrade requests",
+      "churned": "Churned this month"
+    },
+    "pendingUpgradeRequests": "Pending upgrade requests",
+    "requestMeta": "Requesting {{from}} → {{to}} · Requested {{date}}",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "statusPaid": "Paid",
+    "statusFailed": "Failed",
+    "invoiceHistory": "Invoice history",
+    "since": "Since {{date}}"
   }
 }

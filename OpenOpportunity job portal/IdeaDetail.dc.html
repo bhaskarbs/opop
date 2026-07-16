@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+    @keyframes oo-fade-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="guest" active-item="Community" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:960px;margin:0 auto;padding:32px 24px 64px;display:grid;grid-template-columns:minmax(0,1fr);gap:20px;">
+  <a href="IdeasBrowse.dc.html" style="font-size:13px;font-weight:600;text-decoration:none;">← Back to all ideas</a>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:28px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <span style="font-size:11.5px;font-weight:700;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:3px 10px;">Fintech</span>
+      <span style="font-size:11.5px;font-weight:700;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:3px 10px;">Live</span>
+    </div>
+    <h1 style="font-size:24px;font-weight:800;color:#14181F;margin:0 0 10px;letter-spacing:-0.01em;">Instant micro-insurance for gig workers</h1>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+      <span style="width:32px;height:32px;border-radius:50%;background:#0F8A6B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;">S</span>
+      <div>
+        <div style="font-size:13.5px;font-weight:700;color:#14181F;">Sahaay Finance <span style="font-weight:500;color:#8891A0;">· Company</span></div>
+        <div style="font-size:12px;color:#8891A0;">Submitted Jun 30, 2026 · 41 people interested</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;background:#F7F8FA;border-radius:12px;padding:18px;margin-bottom:22px;">
+      <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Funding required</div><div style="font-size:14px;font-weight:700;color:#14181F;">₹60,00,000</div></div>
+      <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Equity / revenue offered</div><div style="font-size:14px;font-weight:700;color:#14181F;">8% equity or 12% rev-share</div></div>
+      <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Team size needed</div><div style="font-size:14px;font-weight:700;color:#14181F;">4 people</div></div>
+      <div><div style="font-size:11.5px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Timeline</div><div style="font-size:14px;font-weight:700;color:#14181F;">9 months to launch</div></div>
+    </div>
+
+    <h3 style="font-size:14.5px;font-weight:700;color:#14181F;margin:0 0 8px;">Problem statement</h3>
+    <p style="font-size:14px;color:#3A414D;line-height:1.65;margin:0 0 18px;">Gig workers — delivery riders, drivers, freelancers — have no income protection for sick days, accidents, or lost work. Existing insurance products require paperwork and upfront annual premiums that don't fit irregular gig income.</p>
+
+    <h3 style="font-size:14.5px;font-weight:700;color:#14181F;margin:0 0 8px;">The idea</h3>
+    <p style="font-size:14px;color:#3A414D;line-height:1.65;margin:0 0 18px;">A pay-per-day micro-insurance product, deducted automatically from gig platform payouts, with claims settled within 48 hours via a simple app flow. Target market: 12M+ gig workers across India's top 20 cities.</p>
+
+    <h3 style="font-size:14.5px;font-weight:700;color:#14181F;margin:0 0 8px;">Video pitch</h3>
+    <div style="background:#101522;border-radius:12px;aspect-ratio:16/9;max-width:420px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;">
+      <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:24px;position:sticky;bottom:16px;">
+    <div style="font-size:14.5px;font-weight:700;color:#14181F;margin-bottom:12px;">Interested in this idea?</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button onClick="{{ () => openModal('investor') }}" style="flex:1;min-width:180px;border:none;background:#2451D6;color:#FFFFFF;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">Apply as Investor</button>
+      <button onClick="{{ () => openModal('participant') }}" style="flex:1;min-width:180px;border:1px solid #E2E5EA;background:#FFFFFF;color:#14181F;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">Apply as Participant</button>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;background:rgba(20,24,31,0.75);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+    <div style="background:#FFFFFF;border-radius:16px;max-width:440px;width:100%;padding:28px;position:relative;">
+      <button onClick="{{ closeModal }}" style="position:absolute;top:16px;right:16px;border:none;background:#F0F2F5;width:28px;height:28px;border-radius:50%;font-size:15px;cursor:pointer;">×</button>
+
+      <sc-if value="{{ isLoggedIn }}" hint-placeholder-val="{{ false }}">
+        <h3 style="font-size:17px;font-weight:700;color:#14181F;margin:0 0 4px;">Apply as {{ roleLabel }}</h3>
+        <p style="font-size:13px;color:#5B6472;margin:0 0 18px;">Instant micro-insurance for gig workers</p>
+        <sc-if value="{{ isInvestor }}" hint-placeholder-val="{{ false }}">
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Investment ticket size</label>
+          <input type="text" placeholder="e.g. ₹5,00,000" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:10px 12px;font-size:13.5px;font-family:inherit;margin-bottom:14px;" />
+        </sc-if>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Message to the submitter</label>
+        <textarea rows="4" placeholder="Share why you're a good fit" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:10px 12px;font-size:13.5px;font-family:inherit;resize:vertical;margin-bottom:16px;"></textarea>
+        <button onClick="{{ closeModal }}" style="width:100%;border:none;background:#14181F;color:#FFFFFF;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">Submit interest</button>
+      </sc-if>
+      <sc-if value="{{ isGuestModal }}" hint-placeholder-val="{{ true }}">
+        <h3 style="font-size:17px;font-weight:700;color:#14181F;margin:0 0 8px;">Log in to show interest</h3>
+        <p style="font-size:13.5px;color:#5B6472;line-height:1.6;margin:0 0 18px;">Create a free account or log in to apply to this idea as an investor or participant.</p>
+        <div style="display:flex;gap:10px;">
+          <a href="Login.dc.html" style="flex:1;text-align:center;text-decoration:none;font-size:13.5px;font-weight:700;color:#FFFFFF;background:#14181F;border-radius:9px;padding:11px;">Log in</a>
+          <a href="Register.dc.html" style="flex:1;text-align:center;text-decoration:none;font-size:13.5px;font-weight:700;color:#14181F;border:1px solid #E2E5EA;border-radius:9px;padding:11px;">Register</a>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1280, &quot;height&quot;: 900}, &quot;isLoggedIn&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { modalOpen: false, role: 'investor' };
+  openModal = (role) => this.setState({ modalOpen: true, role });
+  closeModal = () => this.setState({ modalOpen: false });
+
+  renderVals() {
+    const isLoggedIn = !!(this.props.isLoggedIn);
+    return {
+      modalOpen: this.state.modalOpen,
+      isLoggedIn,
+      isGuestModal: !isLoggedIn,
+      isInvestor: this.state.role === 'investor',
+      roleLabel: this.state.role === 'investor' ? 'Investor' : 'Participant',
+      openModal: this.openModal,
+      closeModal: this.closeModal,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

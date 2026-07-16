@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="guest" active-item="Community" hint-size="100%,68px"></dc-import>
+
+<div style="background:linear-gradient(135deg,#0B3B34,#0F5B4F);padding:44px 24px;">
+  <div style="max-width:1120px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
+    <div>
+      <span style="font-size:12px;font-weight:700;color:#B9E9DC;background:rgba(255,255,255,0.1);border-radius:999px;padding:5px 12px;">Community Ideas</span>
+      <h1 style="font-size:clamp(24px,3vw,32px);font-weight:800;color:#FFFFFF;margin:14px 0 8px;">Ideas worth building, from people who could use a partner</h1>
+      <p style="font-size:14.5px;color:#CBEAE0;margin:0;max-width:560px;">Candidates and companies post ideas here — anyone can browse, and members can apply to join as an investor or an active participant.</p>
+    </div>
+    <a href="IdeaSubmit.dc.html" style="text-decoration:none;font-size:14px;font-weight:700;color:#0B3B34;background:#FFFFFF;border-radius:9px;padding:12px 22px;white-space:nowrap;">Submit your idea</a>
+  </div>
+</div>
+
+<div style="max-width:1120px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:16px 20px;margin-bottom:22px;display:flex;gap:10px;flex-wrap:wrap;">
+    <div style="flex:2;min-width:220px;display:flex;align-items:center;gap:10px;border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8891A0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" placeholder="Search ideas" style="border:none;outline:none;font-size:13.5px;width:100%;font-family:inherit;color:#14181F;" />
+    </div>
+    <select style="border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;color:#14181F;">
+      <option>All categories</option>
+      <sc-for list="{{ categories }}" as="c" hint-placeholder-count="8">
+        <option>{{ c }}</option>
+      </sc-for>
+    </select>
+    <select style="border:1px solid #E2E5EA;border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;color:#14181F;">
+      <option>All stages</option>
+      <option>Concept</option>
+      <option>Prototype</option>
+      <option>Live</option>
+    </select>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+    <sc-for list="{{ ideas }}" as="idea" hint-placeholder-count="6">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <span style="font-size:11.5px;font-weight:700;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:3px 10px;">{{ idea.category }}</span>
+          <span style="font-size:11.5px;font-weight:700;color:{{ idea.stageColor }};background:{{ idea.stageBg }};border-radius:999px;padding:3px 10px;white-space:nowrap;">{{ idea.stage }}</span>
+        </div>
+        <div>
+          <h3 style="font-size:16.5px;font-weight:700;color:#14181F;margin:0 0 6px;">{{ idea.title }}</h3>
+          <p style="font-size:13.5px;color:#5B6472;line-height:1.55;margin:0;">{{ idea.problem }}</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+          <span style="width:26px;height:26px;border-radius:50%;background:{{ idea.color }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">{{ idea.initial }}</span>
+          <span style="font-size:12.5px;color:#5B6472;">{{ idea.submitter }} · {{ idea.submitterType }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0F1F3;padding-top:12px;margin-top:2px;">
+          <div style="font-size:12.5px;color:#8891A0;">Seeking {{ idea.funding }} · {{ idea.applicants }} interested</div>
+          <a href="IdeaDetail.dc.html" style="text-decoration:none;font-size:13px;font-weight:700;">View idea →</a>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      categories: ['Technology & SaaS', 'Fintech', 'Healthtech', 'Edtech', 'D2C & Retail', 'Climate & Sustainability', 'Agritech', 'Social Impact & Community'],
+      ideas: [
+        { title: 'Peer-to-peer skill bartering app', category: 'Social Impact & Community', stage: 'Concept', stageColor: '#B45309', stageBg: '#FFF1DC', problem: 'Skilled people with no cash have no way to trade expertise directly for services they need.', submitter: 'Ananya Desai', submitterType: 'Candidate', initial: 'A', color: '#2451D6', funding: '₹8L', applicants: 12 },
+        { title: 'AI-assisted regional language tutoring', category: 'Edtech', stage: 'Prototype', stageColor: '#2451D6', stageBg: '#EAF0FE', problem: 'Non-English speakers in tier-2 cities lack affordable, personalized tutoring.', submitter: 'Vertex Robotics', submitterType: 'Company', initial: 'V', color: '#0F8A6B', funding: '₹35L', applicants: 27 },
+        { title: 'Micro-warehousing for D2C sellers', category: 'D2C & Retail', stage: 'Live', stageColor: '#0F8A6B', stageBg: '#E7F7F1', problem: 'Small D2C brands overpay for storage they only need seasonally.', submitter: 'Rohan Mehta', submitterType: 'Candidate', initial: 'R', color: '#2451D6', funding: '₹20L', applicants: 9 },
+        { title: 'Community-funded rooftop solar co-ops', category: 'Climate & Sustainability', stage: 'Concept', stageColor: '#B45309', stageBg: '#FFF1DC', problem: 'Individual households can\u2019t afford solar, but a co-op could pool costs and savings.', submitter: 'Greenline Logistics', submitterType: 'Company', initial: 'G', color: '#0F8A6B', funding: '₹1.2Cr', applicants: 34 },
+        { title: 'Soil-health sensors for smallholder farms', category: 'Agritech', stage: 'Prototype', stageColor: '#2451D6', stageBg: '#EAF0FE', problem: 'Smallholder farmers lack affordable data to time fertilizer and irrigation.', submitter: 'Karan Patel', submitterType: 'Candidate', initial: 'K', color: '#C2760C', funding: '₹45L', applicants: 18 },
+        { title: 'Instant micro-insurance for gig workers', category: 'Fintech', stage: 'Live', stageColor: '#0F8A6B', stageBg: '#E7F7F1', problem: 'Gig workers have no income protection for sick days or accidents.', submitter: 'Sahaay Finance', submitterType: 'Company', initial: 'S', color: '#0F8A6B', funding: '₹60L', applicants: 41 },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Community" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1000px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:22px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">My ideas</h1>
+      <p style="font-size:14px;color:#5B6472;margin:0;">Track review status and see who's applied to each idea.</p>
+    </div>
+    <a href="IdeaSubmit.dc.html" style="text-decoration:none;font-size:13.5px;font-weight:700;color:#FFFFFF;background:#2451D6;border-radius:9px;padding:10px 20px;">+ Submit new idea</a>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <sc-for list="{{ ideas }}" as="idea" hint-placeholder-count="3">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:20px 22px;">
+        <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+          <div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+              <h3 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0;">{{ idea.title }}</h3>
+              <span style="font-size:11px;font-weight:700;color:{{ idea.statusColor }};background:{{ idea.statusBg }};border-radius:999px;padding:3px 9px;">{{ idea.status }}</span>
+            </div>
+            <div style="font-size:13px;color:#5B6472;">{{ idea.category }} · {{ idea.stage }} · Submitted {{ idea.submitted }}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <a href="IdeaSubmit.dc.html" style="text-decoration:none;font-size:12.5px;font-weight:700;color:#14181F;border:1px solid #E2E5EA;border-radius:7px;padding:7px 14px;">Edit</a>
+            <button onClick="{{ () => remove(idea.id) }}" style="border:1px solid #FCA5A5;background:#FFFFFF;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer;">Delete</button>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
+          <div style="font-size:13px;color:#3A414D;"><strong>{{ idea.applicantCount }}</strong> people interested ({{ idea.investorCount }} investors, {{ idea.participantCount }} participants)</div>
+          <button onClick="{{ () => toggleExpand(idea.id) }}" style="border:none;background:none;font-size:13px;font-weight:700;color:#2451D6;cursor:pointer;">{{ idea.toggleLabel }}</button>
+        </div>
+
+        <sc-if value="{{ idea.expanded }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;border-top:1px solid #F0F1F3;padding-top:14px;display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ idea.applicants }}" as="ap" hint-placeholder-count="2">
+              <div style="display:flex;justify-content:space-between;align-items:center;background:#F7F8FA;border-radius:10px;padding:12px 14px;gap:12px;flex-wrap:wrap;">
+                <div>
+                  <div style="font-size:13.5px;font-weight:700;color:#14181F;">{{ ap.name }} <span style="font-weight:600;color:{{ ap.roleColor }};">· {{ ap.role }}</span></div>
+                  <div style="font-size:12.5px;color:#5B6472;margin-top:2px;">{{ ap.note }}</div>
+                  <div style="font-size:11.5px;color:#8891A0;margin-top:2px;">Applied {{ ap.date }}</div>
+                </div>
+                <button style="border:1px solid #E2E5EA;background:#FFFFFF;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#14181F;cursor:pointer;white-space:nowrap;">View profile</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    expanded: {},
+    deleted: {},
+  };
+  toggleExpand = (id) => this.setState(s => ({ expanded: { ...s.expanded, [id]: !s.expanded[id] } }));
+  remove = (id) => this.setState(s => ({ deleted: { ...s.deleted, [id]: true } }));
+
+  RAW = [
+    { id: 'i1', title: 'Micro-warehousing for D2C sellers', category: 'D2C & Retail', stage: 'Live', submitted: 'Jun 18, 2026', status: 'Approved', statusColor: '#0F8A6B', statusBg: '#E7F7F1',
+      applicants: [
+        { name: 'Fatima Sheikh', role: 'Investor', roleColor: '#2451D6', note: 'Ticket size: ₹5,00,000. Interested in D2C logistics.', date: 'Jul 10, 2026' },
+        { name: 'Devika Menon', role: 'Participant', roleColor: '#0F8A6B', note: 'Has 3 years in warehouse operations, wants to join full-time.', date: 'Jul 8, 2026' },
+      ] },
+    { id: 'i2', title: 'Peer-to-peer skill bartering app', category: 'Social Impact & Community', stage: 'Concept', submitted: 'Jul 2, 2026', status: 'Pending review', statusColor: '#B45309', statusBg: '#FFF1DC',
+      applicants: [
+        { name: 'Arjun Subramaniam', role: 'Participant', roleColor: '#0F8A6B', note: 'Frontend developer, wants to build the MVP.', date: 'Jul 9, 2026' },
+      ] },
+    { id: 'i3', title: 'Subscription tool library for renters', category: 'D2C & Retail', stage: 'Concept', submitted: 'Jun 5, 2026', status: 'Rejected', statusColor: '#DC2626', statusBg: '#FDECEC', applicants: [] },
+  ];
+
+  renderVals() {
+    const expanded = this.state.expanded;
+    const deleted = this.state.deleted;
+    const ideas = this.RAW.filter(i => !deleted[i.id]).map(i => ({
+      ...i,
+      applicantCount: i.applicants.length,
+      investorCount: i.applicants.filter(a => a.role === 'Investor').length,
+      participantCount: i.applicants.filter(a => a.role === 'Participant').length,
+      expanded: !!expanded[i.id],
+      toggleLabel: expanded[i.id] ? 'Hide applicants' : 'View applicants',
+    }));
+    return { ideas, toggleExpand: this.toggleExpand, remove: this.remove };
+  }
+}
+
+</script>
+</body>
+</html>

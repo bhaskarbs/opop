@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Community Ideas" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1000px;margin:0 auto;padding:28px 24px 64px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Idea approvals</h1>
+      <p style="font-size:14px;color:#5B6472;margin:0;">Review submitted ideas before they appear on the public community page.</p>
+    </div>
+    <div style="font-size:13.5px;font-weight:700;color:#B45309;background:#FFF1DC;border-radius:999px;padding:6px 14px;">{{ pendingCount }} pending review</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <sc-for list="{{ ideas }}" as="idea" hint-placeholder-count="4">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:22px;">
+        <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+          <div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <h3 style="font-size:15.5px;font-weight:700;color:#14181F;margin:0;">{{ idea.title }}</h3>
+              <span style="font-size:11px;font-weight:700;color:#0F8A6B;background:#E7F7F1;border-radius:999px;padding:3px 9px;">{{ idea.category }}</span>
+            </div>
+            <div style="font-size:13px;color:#5B6472;margin-top:3px;">Submitted by {{ idea.submitter }} ({{ idea.submitterType }}) · {{ idea.submitted }}</div>
+          </div>
+          <span style="font-size:12px;font-weight:600;color:{{ idea.statusColor }};background:{{ idea.statusBg }};border-radius:999px;padding:4px 10px;height:fit-content;white-space:nowrap;">{{ idea.status }}</span>
+        </div>
+
+        <p style="font-size:13.5px;color:#3A414D;line-height:1.6;margin:0 0 14px;">{{ idea.problem }}</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;background:#F7F8FA;border-radius:10px;padding:14px;margin-bottom:16px;">
+          <div><div style="font-size:11px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Stage</div><div style="font-size:13px;font-weight:600;color:#14181F;">{{ idea.stage }}</div></div>
+          <div><div style="font-size:11px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Funding sought</div><div style="font-size:13px;font-weight:600;color:#14181F;">{{ idea.funding }}</div></div>
+          <div><div style="font-size:11px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Team needed</div><div style="font-size:13px;font-weight:600;color:#14181F;">{{ idea.team }}</div></div>
+          <div><div style="font-size:11px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:3px;">Timeline</div><div style="font-size:13px;font-weight:600;color:#14181F;">{{ idea.timeline }}</div></div>
+        </div>
+
+        <sc-if value="{{ idea.isPending }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button onClick="{{ () => approve(idea.id) }}" style="border:none;background:#0F8A6B;color:#FFFFFF;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;">Approve & publish</button>
+            <button onClick="{{ () => reject(idea.id) }}" style="border:1px solid #FCA5A5;background:#FFFFFF;color:#DC2626;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;">Reject</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ idea.isApproved }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:600;color:#0F8A6B;">Published — visible to all visitors</div>
+        </sc-if>
+        <sc-if value="{{ idea.isRejected }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:600;color:#DC2626;">Rejected — submitter has been notified</div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { decisions: {} };
+  approve = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'approved' } }));
+  reject = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'rejected' } }));
+
+  RAW = [
+    { id: 'd1', title: 'Peer-to-peer skill bartering app', category: 'Social Impact', submitter: 'Ananya Desai', submitterType: 'Candidate', submitted: '2 days ago', problem: 'Skilled people with no cash have no way to trade expertise directly for services they need.', stage: 'Concept', funding: '₹8,00,000', team: '3 people', timeline: '6 months' },
+    { id: 'd2', title: 'AI-assisted regional language tutoring', category: 'Edtech', submitter: 'Vertex Robotics', submitterType: 'Company', submitted: '3 days ago', problem: 'Non-English speakers in tier-2 cities lack affordable, personalized tutoring.', stage: 'Prototype', funding: '₹35,00,000', team: '6 people', timeline: '12 months' },
+    { id: 'd3', title: 'Subscription tool library for renters', category: 'D2C & Retail', submitter: 'Priya Nambiar', submitterType: 'Candidate', submitted: '5 days ago', problem: 'Renters buy tools they use once a year and then store forever.', stage: 'Concept', funding: '₹6,00,000', team: '2 people', timeline: '4 months' },
+    { id: 'd4', title: 'Community-funded rooftop solar co-ops', category: 'Climate & Sustainability', submitter: 'Greenline Logistics', submitterType: 'Company', submitted: '1 week ago', problem: 'Individual households can\u2019t afford solar, but a co-op could pool costs and savings.', stage: 'Concept', funding: '₹1,20,00,000', team: '5 people', timeline: '18 months' },
+  ];
+
+  renderVals() {
+    const decisions = this.state.decisions;
+    const ideas = this.RAW.map(i => {
+      const d = decisions[i.id];
+      return {
+        ...i,
+        isPending: !d,
+        isApproved: d === 'approved',
+        isRejected: d === 'rejected',
+        status: d === 'approved' ? 'Approved' : d === 'rejected' ? 'Rejected' : 'Pending review',
+        statusColor: d === 'approved' ? '#0F8A6B' : d === 'rejected' ? '#DC2626' : '#B45309',
+        statusBg: d === 'approved' ? '#E7F7F1' : d === 'rejected' ? '#FDECEC' : '#FFF1DC',
+      };
+    });
+    return { ideas, approve: this.approve, reject: this.reject, pendingCount: ideas.filter(i => i.isPending).length };
+  }
+}
+
+</script>
+</body>
+</html>

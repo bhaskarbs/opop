@@ -131,6 +131,54 @@
     "appliedPrefix": "{{org}} · Applied {{applied}}",
     "withdraw": "Withdraw"
   },
+  "billing": {
+    "title": "Billing & plans",
+    "currentPlan": "You're currently on the {{plan}} plan.",
+    "currentPlanBadge": "Current plan",
+    "downgrade": "Downgrade",
+    "upgrade": "Upgrade",
+    "billingHistory": "Billing history",
+    "downloadInvoice": "Download invoice",
+    "statusPaid": "Paid",
+    "statusFailed": "Failed",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price": "₹0",
+        "period": "/month",
+        "features": [
+          "Post ideas freely",
+          "Apply to jobs, partnerships & community roles",
+          "Basic profile visibility",
+          "2 mock interviews / month"
+        ]
+      },
+      "plus": {
+        "name": "Plus",
+        "price": "₹499",
+        "period": "/month",
+        "features": [
+          "Everything in Free",
+          "Profile top-listed in candidate search",
+          "Free access to income-type trainings",
+          "Priority application review",
+          "Featured listing when you post an idea"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "₹1,499",
+        "period": "/month",
+        "features": [
+          "Everything in Plus",
+          "Unlimited mock interviews with detailed feedback",
+          "Monthly 1:1 career coaching session",
+          "Early access to new partnership listings",
+          "Dedicated application status updates"
+        ]
+      }
+    }
+  },
   "mockInterview": {
     "title": "Mock interviews",
     "subtitle": "Practice on camera, then review your recorded sessions anytime.",

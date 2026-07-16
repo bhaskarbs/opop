@@ -1,0 +1,119 @@
+{
+  "browse": {
+    "badge": "Community Ideas",
+    "heroTitle": "Ideas worth building, from people who could use a partner",
+    "heroSubtitle": "Candidates and companies post ideas here — anyone can browse, and members can apply to join as an investor or an active participant.",
+    "submitCta": "Submit your idea",
+    "searchPlaceholder": "Search ideas",
+    "allCategories": "All categories",
+    "allStages": "All stages",
+    "stages": {
+      "concept": "Concept",
+      "prototype": "Prototype",
+      "live": "Live"
+    },
+    "submitterMeta": "{{name}} · {{type}}",
+    "submitterTypes": {
+      "candidate": "Candidate",
+      "company": "Company"
+    },
+    "seekingInterested": "Seeking {{funding}} · {{count}} interested",
+    "viewIdea": "View idea →",
+    "noResults": "No ideas match your filters."
+  },
+  "detail": {
+    "backToAll": "← Back to all ideas",
+    "submittedMeta": "Submitted {{date}} · {{count}} people interested",
+    "fundingRequired": "Funding required",
+    "equityOffered": "Equity / revenue offered",
+    "teamSize": "Team size needed",
+    "timeline": "Timeline",
+    "problemStatement": "Problem statement",
+    "theIdea": "The idea",
+    "videoPitch": "Video pitch",
+    "interestedHeading": "Interested in this idea?",
+    "applyAsInvestor": "Apply as Investor",
+    "applyAsParticipant": "Apply as Participant",
+    "modal": {
+      "applyAs": "Apply as {{role}}",
+      "investor": "Investor",
+      "participant": "Participant",
+      "ticketSize": "Investment ticket size",
+      "ticketSizePlaceholder": "e.g. ₹5,00,000",
+      "message": "Message to the submitter",
+      "messagePlaceholder": "Share why you're a good fit",
+      "submitInterest": "Submit interest",
+      "interestSubmitted": "Thanks — the submitter can now see your interest.",
+      "loginHeading": "Log in to show interest",
+      "loginBody": "Create a free account or log in to apply to this idea as an investor or participant.",
+      "logIn": "Log in",
+      "register": "Register"
+    },
+    "notFound": "This idea couldn't be found."
+  },
+  "submit": {
+    "titleNew": "Submit a new idea",
+    "titleEdit": "Edit your idea",
+    "subtitle": "Every idea is reviewed by our team before it appears publicly — usually within 2 business days.",
+    "fields": {
+      "ideaTitle": "Idea title",
+      "ideaTitlePlaceholder": "e.g. Instant micro-insurance for gig workers",
+      "category": "Industry category",
+      "stage": "Stage",
+      "problem": "Problem statement",
+      "problemPlaceholder": "What problem does this solve, and for whom?",
+      "solution": "Your idea / solution",
+      "solutionPlaceholder": "Describe how it works",
+      "targetMarket": "Target market / audience",
+      "targetMarketPlaceholder": "e.g. Gig workers in tier-1 and tier-2 Indian cities",
+      "funding": "Funding required",
+      "fundingPlaceholder": "e.g. ₹35,00,000",
+      "equity": "Equity / revenue-share offered",
+      "equityPlaceholder": "e.g. 8% equity or 12% rev-share",
+      "teamSize": "Team size needed",
+      "teamSizePlaceholder": "e.g. 4",
+      "timeline": "Timeline / duration",
+      "timelinePlaceholder": "e.g. 9 months to launch",
+      "videoLink": "Video pitch link (optional)",
+      "contactEmail": "Contact email"
+    },
+    "pendingNotice": "Your idea will stay in \"Pending review\" until an admin approves it. You can edit it anytime from My Ideas.",
+    "cancel": "Cancel",
+    "submitForReview": "Submit for review",
+    "saveChanges": "Save changes"
+  },
+  "myIdeas": {
+    "title": "My ideas",
+    "subtitle": "Track review status and see who's applied to each idea.",
+    "submitNew": "+ Submit new idea",
+    "edit": "Edit",
+    "delete": "Delete",
+    "submittedMeta": "{{category}} · {{stage}} · Submitted {{date}}",
+    "interestedCount": "{{count}} people interested ({{investors}} investors, {{participants}} participants)",
+    "viewApplicants": "View applicants",
+    "hideApplicants": "Hide applicants",
+    "appliedMeta": "Applied {{date}}",
+    "viewProfile": "View profile",
+    "statuses": {
+      "approved": "Approved",
+      "pendingReview": "Pending review",
+      "rejected": "Rejected"
+    },
+    "empty": "You haven't submitted any ideas yet."
+  },
+  "adminApprovals": {
+    "title": "Idea approvals",
+    "subtitle": "Review submitted ideas before they appear on the public community page.",
+    "pendingCount": "{{count}} pending review",
+    "submittedMeta": "Submitted by {{submitter}} ({{type}}) · {{date}}",
+    "stage": "Stage",
+    "fundingSought": "Funding sought",
+    "teamNeeded": "Team needed",
+    "timeline": "Timeline",
+    "approveAndPublish": "Approve & publish",
+    "reject": "Reject",
+    "publishedNotice": "Published — visible to all visitors",
+    "rejectedNotice": "Rejected — submitter has been notified",
+    "noneWaiting": "No ideas are waiting for review."
+  }
+}

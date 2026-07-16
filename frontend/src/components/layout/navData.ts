@@ -33,6 +33,7 @@ export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
     { label: 'nav.approvals', to: ROUTES.adminApprovals },
     { label: 'nav.reports', to: ROUTES.adminReports },
     { label: 'nav.users', to: ROUTES.adminUsers },
+    { label: 'nav.billing', to: ROUTES.adminBilling },
   ],
 }
 
@@ -49,12 +50,15 @@ export const USER_MENU_BY_VARIANT: Partial<Record<HeaderVariant, NavItem[]>> = {
     { label: 'userMenu.myProfile', to: ROUTES.candidateProfile },
     { label: 'userMenu.myApplications', to: ROUTES.candidateApplications },
     { label: 'userMenu.mockInterviews', to: ROUTES.candidateMockInterview },
+    { label: 'userMenu.myIdeas', to: ROUTES.candidateIdeas },
+    { label: 'userMenu.billing', to: ROUTES.candidateBilling },
     { label: 'nav.logout' },
   ],
   company: [
     { label: 'userMenu.companyProfile', to: ROUTES.companyProfile },
     { label: 'userMenu.jobPostings' },
-    { label: 'userMenu.billing' },
+    { label: 'userMenu.myIdeas', to: ROUTES.companyIdeas },
+    { label: 'userMenu.billing', to: ROUTES.companyBilling },
     { label: 'nav.logout' },
   ],
   admin: [{ label: 'userMenu.adminSettings' }, { label: 'nav.logout' }],

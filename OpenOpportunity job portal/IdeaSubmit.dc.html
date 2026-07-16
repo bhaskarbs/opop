@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+    input, textarea, select { font-family: inherit; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="Community" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:760px;margin:0 auto;padding:32px 24px 64px;">
+  <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 6px;">{{ heading }}</h1>
+  <p style="font-size:14px;color:#5B6472;margin:0 0 24px;">Every idea is reviewed by our team before it appears publicly — usually within 2 business days.</p>
+
+  <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:18px;">
+    <div>
+      <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Idea title</label>
+      <input type="text" placeholder="e.g. Instant micro-insurance for gig workers" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+      <div>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Industry category</label>
+        <select style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;color:#14181F;">
+          <sc-for list="{{ categories }}" as="c" hint-placeholder-count="8">
+            <option>{{ c }}</option>
+          </sc-for>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Stage</label>
+        <select style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;color:#14181F;">
+          <option>Concept</option>
+          <option>Prototype</option>
+          <option>Live</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Problem statement</label>
+      <textarea rows="3" placeholder="What problem does this solve, and for whom?" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;resize:vertical;"></textarea>
+    </div>
+
+    <div>
+      <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Your idea / solution</label>
+      <textarea rows="4" placeholder="Describe how it works" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;resize:vertical;"></textarea>
+    </div>
+
+    <div>
+      <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Target market / audience</label>
+      <input type="text" placeholder="e.g. Gig workers in tier-1 and tier-2 Indian cities" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+      <div>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Funding required</label>
+        <input type="text" placeholder="e.g. ₹35,00,000" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Equity / revenue-share offered</label>
+        <input type="text" placeholder="e.g. 8% equity or 12% rev-share" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+      <div>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Team size needed</label>
+        <input type="number" placeholder="e.g. 4" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+      </div>
+      <div>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Timeline / duration</label>
+        <input type="text" placeholder="e.g. 9 months to launch" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+      </div>
+    </div>
+
+    <div>
+      <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Video pitch link (optional)</label>
+      <input type="url" placeholder="https://..." style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+    </div>
+
+    <div>
+      <label style="display:block;font-size:12.5px;font-weight:600;color:#3A414D;margin-bottom:6px;">Contact email</label>
+      <input type="email" placeholder="you@email.com" style="width:100%;box-sizing:border-box;border:1px solid #E2E5EA;border-radius:8px;padding:11px 13px;font-size:14px;" />
+    </div>
+
+    <div style="background:#FFF6E9;border:1px solid #FCE3B8;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#8A5A0F;">Your idea will stay in "Pending review" until an admin approves it. You can edit it anytime from My Ideas.</div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <a href="MyIdeas.dc.html" style="text-decoration:none;font-size:13.5px;font-weight:700;color:#14181F;border:1px solid #E2E5EA;border-radius:9px;padding:11px 22px;">Cancel</a>
+      <a href="MyIdeas.dc.html" style="text-decoration:none;font-size:13.5px;font-weight:700;color:#FFFFFF;background:#2451D6;border-radius:9px;padding:11px 22px;">{{ submitLabel }}</a>
+    </div>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1280, &quot;height&quot;: 1400}, &quot;editing&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const editing = !!(this.props.editing);
+    return {
+      heading: editing ? 'Edit your idea' : 'Submit a new idea',
+      submitLabel: editing ? 'Save changes' : 'Submit for review',
+      categories: ['Technology & SaaS', 'Fintech', 'Healthtech', 'Edtech', 'D2C & Retail', 'Climate & Sustainability', 'Agritech', 'Social Impact & Community'],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
