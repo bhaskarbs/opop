@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="candidate" active-item="" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1080px;margin:0 auto;padding:28px 24px 64px;">
+  <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Billing & plans</h1>
+  <p style="font-size:14px;color:#5B6472;margin:0 0 24px;">You're currently on the {{ currentPlanName }} plan.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:36px;">
+    <sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+      <div style="background:#FFFFFF;border:2px solid {{ p.borderColor }};border-radius:16px;padding:26px;position:relative;display:flex;flex-direction:column;">
+        <sc-if value="{{ p.isCurrent }}" hint-placeholder-val="{{ false }}">
+          <span style="position:absolute;top:-11px;left:24px;font-size:11px;font-weight:700;color:#FFFFFF;background:#2451D6;border-radius:999px;padding:3px 12px;">Current plan</span>
+        </sc-if>
+        <div style="font-size:14px;font-weight:700;color:#14181F;margin-bottom:6px;">{{ p.name }}</div>
+        <div style="margin-bottom:16px;"><span style="font-size:28px;font-weight:800;color:#14181F;">{{ p.price }}</span><span style="font-size:13px;color:#8891A0;">{{ p.period }}</span></div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px;flex:1;">
+          <sc-for list="{{ p.features }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F8A6B" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><path d="M20 6L9 17l-5-5"/></svg>
+              <span style="font-size:13px;color:#3A414D;line-height:1.5;">{{ f }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button style="border:none;background:{{ p.btnBg }};color:{{ p.btnColor }};border-radius:9px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid {{ p.btnBorder }};">{{ p.btnLabel }}</button>
+      </div>
+    </sc-for>
+  </div>
+
+  <h2 style="font-size:16.5px;font-weight:700;color:#14181F;margin:0 0 14px;">Billing history</h2>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:13.5px;color:#14181F;font-weight:600;">{{ h.plan }}</div>
+        <div style="font-size:13px;color:#8891A0;">{{ h.date }}</div>
+        <div style="font-size:13.5px;font-weight:700;color:#14181F;">{{ h.amount }}</div>
+        <span style="font-size:12px;font-weight:600;color:{{ h.statusColor }};background:{{ h.statusBg }};border-radius:999px;padding:4px 10px;">{{ h.status }}</span>
+        <a href="#" style="font-size:12.5px;font-weight:700;text-decoration:none;">Download invoice</a>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1280, &quot;height&quot;: 900}, &quot;currentPlan&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;free&quot;, &quot;options&quot;: [&quot;free&quot;, &quot;plus&quot;, &quot;pro&quot;], &quot;tsType&quot;: &quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const current = this.props.currentPlan || 'free';
+    const plan = (key, name, price, period, features, note) => ({
+      key, name, price, period, features,
+      isCurrent: key === current,
+      borderColor: key === current ? '#2451D6' : '#E2E5EA',
+      btnLabel: key === current ? 'Current plan' : (key === 'free' ? 'Downgrade' : 'Upgrade'),
+      btnBg: key === current ? '#F0F2F5' : '#14181F',
+      btnColor: key === current ? '#8891A0' : '#FFFFFF',
+      btnBorder: key === current ? '#E2E5EA' : '#14181F',
+    });
+    return {
+      currentPlanName: current === 'free' ? 'Free' : current === 'plus' ? 'Plus' : 'Pro',
+      plans: [
+        plan('free', 'Free', '₹0', '/month', [
+          'Post ideas freely',
+          'Apply to jobs, partnerships & community roles',
+          'Basic profile visibility',
+          '2 mock interviews / month',
+        ]),
+        plan('plus', 'Plus', '₹499', '/month', [
+          'Everything in Free',
+          'Profile top-listed in candidate search',
+          'Free access to income-type trainings',
+          'Priority application review',
+          'Featured listing when you post an idea',
+        ]),
+        plan('pro', 'Pro', '₹1,499', '/month', [
+          'Everything in Plus',
+          'Unlimited mock interviews with detailed feedback',
+          'Monthly 1:1 career coaching session',
+          'Early access to new partnership listings',
+          'Dedicated application status updates',
+        ]),
+      ],
+      history: [
+        { plan: 'Plus — Monthly', date: 'Jul 1, 2026', amount: '₹499', status: 'Paid', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { plan: 'Plus — Monthly', date: 'Jun 1, 2026', amount: '₹499', status: 'Paid', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { plan: 'Free', date: 'May 1, 2026', amount: '₹0', status: 'Paid', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

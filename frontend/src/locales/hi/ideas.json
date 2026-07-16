@@ -1,0 +1,119 @@
+{
+  "browse": {
+    "badge": "कम्युनिटी आइडियाज़",
+    "heroTitle": "बनाने लायक आइडियाज़, उन लोगों की तरफ़ से जिन्हें एक साथी की ज़रूरत है",
+    "heroSubtitle": "उम्मीदवार और कंपनियां यहां आइडियाज़ पोस्ट करते हैं — कोई भी ब्राउज़ कर सकता है, और सदस्य निवेशक या सक्रिय भागीदार के रूप में जुड़ने के लिए आवेदन कर सकते हैं।",
+    "submitCta": "अपना आइडिया सबमिट करें",
+    "searchPlaceholder": "आइडियाज़ खोजें",
+    "allCategories": "सभी श्रेणियां",
+    "allStages": "सभी चरण",
+    "stages": {
+      "concept": "कॉन्सेप्ट",
+      "prototype": "प्रोटोटाइप",
+      "live": "लाइव"
+    },
+    "submitterMeta": "{{name}} · {{type}}",
+    "submitterTypes": {
+      "candidate": "उम्मीदवार",
+      "company": "कंपनी"
+    },
+    "seekingInterested": "{{funding}} की तलाश · {{count}} रुचि रखते हैं",
+    "viewIdea": "आइडिया देखें →",
+    "noResults": "आपके फ़िल्टर से कोई आइडिया मेल नहीं खाता।"
+  },
+  "detail": {
+    "backToAll": "← सभी आइडियाज़ पर वापस जाएं",
+    "submittedMeta": "{{date}} को सबमिट किया गया · {{count}} लोग रुचि रखते हैं",
+    "fundingRequired": "आवश्यक फंडिंग",
+    "equityOffered": "इक्विटी / रेवेन्यू ऑफर",
+    "teamSize": "आवश्यक टीम आकार",
+    "timeline": "समयसीमा",
+    "problemStatement": "समस्या का विवरण",
+    "theIdea": "आइडिया",
+    "videoPitch": "वीडियो पिच",
+    "interestedHeading": "इस आइडिया में रुचि है?",
+    "applyAsInvestor": "निवेशक के रूप में आवेदन करें",
+    "applyAsParticipant": "भागीदार के रूप में आवेदन करें",
+    "modal": {
+      "applyAs": "{{role}} के रूप में आवेदन करें",
+      "investor": "निवेशक",
+      "participant": "भागीदार",
+      "ticketSize": "निवेश की राशि",
+      "ticketSizePlaceholder": "जैसे ₹5,00,000",
+      "message": "सबमिटर को संदेश",
+      "messagePlaceholder": "बताएं कि आप क्यों उपयुक्त हैं",
+      "submitInterest": "रुचि सबमिट करें",
+      "interestSubmitted": "धन्यवाद — सबमिटर अब आपकी रुचि देख सकता है।",
+      "loginHeading": "रुचि दिखाने के लिए लॉग इन करें",
+      "loginBody": "इस आइडिया में निवेशक या भागीदार के रूप में आवेदन करने के लिए मुफ़्त अकाउंट बनाएं या लॉग इन करें।",
+      "logIn": "लॉग इन करें",
+      "register": "रजिस्टर करें"
+    },
+    "notFound": "यह आइडिया नहीं मिल सका।"
+  },
+  "submit": {
+    "titleNew": "नया आइडिया सबमिट करें",
+    "titleEdit": "अपना आइडिया संपादित करें",
+    "subtitle": "हर आइडिया सार्वजनिक रूप से दिखने से पहले हमारी टीम द्वारा समीक्षा की जाती है — आमतौर पर 2 कार्यदिवसों के भीतर।",
+    "fields": {
+      "ideaTitle": "आइडिया का शीर्षक",
+      "ideaTitlePlaceholder": "जैसे गिग वर्कर्स के लिए इंस्टेंट माइक्रो-इंश्योरेंस",
+      "category": "उद्योग श्रेणी",
+      "stage": "चरण",
+      "problem": "समस्या का विवरण",
+      "problemPlaceholder": "यह किसके लिए और कौन सी समस्या हल करता है?",
+      "solution": "आपका आइडिया / समाधान",
+      "solutionPlaceholder": "बताएं कि यह कैसे काम करता है",
+      "targetMarket": "लक्षित बाज़ार / ऑडियंस",
+      "targetMarketPlaceholder": "जैसे टियर-1 और टियर-2 शहरों में गिग वर्कर्स",
+      "funding": "आवश्यक फंडिंग",
+      "fundingPlaceholder": "जैसे ₹35,00,000",
+      "equity": "इक्विटी / रेवेन्यू-शेयर ऑफर",
+      "equityPlaceholder": "जैसे 8% इक्विटी या 12% रेव-शेयर",
+      "teamSize": "आवश्यक टीम आकार",
+      "teamSizePlaceholder": "जैसे 4",
+      "timeline": "समयसीमा / अवधि",
+      "timelinePlaceholder": "जैसे लॉन्च के लिए 9 महीने",
+      "videoLink": "वीडियो पिच लिंक (वैकल्पिक)",
+      "contactEmail": "संपर्क ईमेल"
+    },
+    "pendingNotice": "आपका आइडिया तब तक \"समीक्षा लंबित\" में रहेगा जब तक कोई एडमिन इसे मंज़ूर नहीं करता। आप इसे कभी भी My Ideas से संपादित कर सकते हैं।",
+    "cancel": "रद्द करें",
+    "submitForReview": "समीक्षा के लिए सबमिट करें",
+    "saveChanges": "बदलाव सेव करें"
+  },
+  "myIdeas": {
+    "title": "मेरे आइडियाज़",
+    "subtitle": "समीक्षा की स्थिति ट्रैक करें और देखें कि हर आइडिया पर किसने आवेदन किया।",
+    "submitNew": "+ नया आइडिया सबमिट करें",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "submittedMeta": "{{category}} · {{stage}} · {{date}} को सबमिट किया गया",
+    "interestedCount": "{{count}} लोग रुचि रखते हैं ({{investors}} निवेशक, {{participants}} भागीदार)",
+    "viewApplicants": "आवेदक देखें",
+    "hideApplicants": "आवेदक छुपाएं",
+    "appliedMeta": "{{date}} को आवेदन किया",
+    "viewProfile": "प्रोफ़ाइल देखें",
+    "statuses": {
+      "approved": "मंज़ूर",
+      "pendingReview": "समीक्षा लंबित",
+      "rejected": "अस्वीकृत"
+    },
+    "empty": "आपने अभी तक कोई आइडिया सबमिट नहीं किया है।"
+  },
+  "adminApprovals": {
+    "title": "आइडिया अप्रूवल",
+    "subtitle": "सार्वजनिक कम्युनिटी पेज पर दिखने से पहले सबमिट किए गए आइडियाज़ की समीक्षा करें।",
+    "pendingCount": "{{count}} समीक्षा लंबित",
+    "submittedMeta": "{{submitter}} ({{type}}) द्वारा सबमिट · {{date}}",
+    "stage": "चरण",
+    "fundingSought": "मांगी गई फंडिंग",
+    "teamNeeded": "आवश्यक टीम",
+    "timeline": "समयसीमा",
+    "approveAndPublish": "मंज़ूर करें और पब्लिश करें",
+    "reject": "अस्वीकार करें",
+    "publishedNotice": "पब्लिश किया गया — सभी विज़िटर को दिखाई देगा",
+    "rejectedNotice": "अस्वीकृत — सबमिटर को सूचित कर दिया गया है",
+    "noneWaiting": "समीक्षा के लिए कोई आइडिया लंबित नहीं है।"
+  }
+}

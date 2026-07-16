@@ -18,6 +18,8 @@ import JobSearchPage from './pages/job-search/JobSearchPage'
 import JobDetailPage from './pages/JobDetailPage'
 import PartnershipsPage from './pages/PartnershipsPage'
 import CommunityPage from './pages/CommunityPage'
+import IdeasBrowsePage from './pages/IdeasBrowsePage'
+import IdeaDetailPage from './pages/IdeaDetailPage'
 import NotFoundPage from './pages/NotFoundPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
@@ -29,17 +31,23 @@ import CandidateProfilePage from './pages/candidate/CandidateProfilePage'
 import AddMissingDetailsPage from './pages/candidate/AddMissingDetailsPage'
 import ApplicationsPage from './pages/candidate/ApplicationsPage'
 import MockInterviewPage from './pages/candidate/MockInterviewPage'
+import MyIdeasPage from './pages/candidate/MyIdeasPage'
+import IdeaSubmitPage from './pages/candidate/IdeaSubmitPage'
+import CandidateBillingPage from './pages/candidate/CandidateBillingPage'
 import CompanyDashboardPage from './pages/company/CompanyDashboardPage'
 import CompanyProfilePage from './pages/company/CompanyProfilePage'
 import PostJobPage from './pages/company/PostJobPage'
 import SearchCandidatesPage from './pages/company/SearchCandidatesPage'
 import SeminarSchedulerPage from './pages/company/SeminarSchedulerPage'
+import CompanyBillingPage from './pages/company/CompanyBillingPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminApprovalsPage from './pages/admin/AdminApprovalsPage'
 import AdminJobApprovalsPage from './pages/admin/AdminJobApprovalsPage'
 import AdminCompanyApprovalsPage from './pages/admin/AdminCompanyApprovalsPage'
+import AdminIdeaApprovalsPage from './pages/admin/AdminIdeaApprovalsPage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
+import AdminBillingPage from './pages/admin/AdminBillingPage'
 
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
@@ -93,6 +101,8 @@ function App() {
               <Route path="jobs" element={<JobSearchPage />} />
               <Route path="jobs/:jobId" element={<JobDetailPage />} />
               <Route path="partnerships" element={<PartnershipsPage />} />
+              <Route path="partnerships/ideas" element={<IdeasBrowsePage />} />
+              <Route path="partnerships/ideas/:ideaId" element={<IdeaDetailPage />} />
               <Route path="community" element={<CommunityPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
@@ -108,6 +118,10 @@ function App() {
                 <Route path="candidate/profile/add-details" element={<AddMissingDetailsPage />} />
                 <Route path="candidate/applications" element={<ApplicationsPage />} />
                 <Route path="candidate/mock-interview" element={<MockInterviewPage />} />
+                <Route path="candidate/ideas" element={<MyIdeasPage />} />
+                <Route path="candidate/ideas/submit" element={<IdeaSubmitPage />} />
+                <Route path="candidate/ideas/:ideaId/edit" element={<IdeaSubmitPage />} />
+                <Route path="candidate/billing" element={<CandidateBillingPage />} />
               </Route>
             </Route>
 
@@ -118,6 +132,10 @@ function App() {
                 <Route path="company/post-job" element={<PostJobPage />} />
                 <Route path="company/search-candidates" element={<SearchCandidatesPage />} />
                 <Route path="company/seminars" element={<SeminarSchedulerPage />} />
+                <Route path="company/ideas" element={<MyIdeasPage />} />
+                <Route path="company/ideas/submit" element={<IdeaSubmitPage />} />
+                <Route path="company/ideas/:ideaId/edit" element={<IdeaSubmitPage />} />
+                <Route path="company/billing" element={<CompanyBillingPage />} />
               </Route>
             </Route>
 
@@ -128,9 +146,11 @@ function App() {
                   <Route index element={<Navigate to="companies" replace />} />
                   <Route path="companies" element={<AdminCompanyApprovalsPage />} />
                   <Route path="jobs" element={<AdminJobApprovalsPage />} />
+                  <Route path="ideas" element={<AdminIdeaApprovalsPage />} />
                 </Route>
                 <Route path="admin/users" element={<AdminUsersPage />} />
                 <Route path="admin/reports" element={<AdminReportsPage />} />
+                <Route path="admin/billing" element={<AdminBillingPage />} />
               </Route>
             </Route>
 

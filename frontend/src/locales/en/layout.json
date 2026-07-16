@@ -12,6 +12,7 @@
     "reports": "Reports",
     "users": "Users",
     "approvals": "Approvals",
+    "billing": "Billing",
     "login": "Log in",
     "register": "Register",
     "logout": "Log out"
@@ -20,6 +21,7 @@
     "myProfile": "My Profile",
     "myApplications": "My Applications",
     "mockInterviews": "Mock Interviews",
+    "myIdeas": "My Ideas",
     "companyProfile": "Company Profile",
     "jobPostings": "Job Postings",
     "billing": "Billing",

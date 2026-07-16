@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background: #F7F8FA; }
+    a { color: #2451D6; }
+    a:hover { color: #1E45BD; }
+  </style>
+</helmet>
+
+<dc-import name="Header" variant="admin" active-item="Billing" hint-size="100%,68px"></dc-import>
+
+<div style="max-width:1120px;margin:0 auto;padding:28px 24px 64px;">
+  <h1 style="font-size:22px;font-weight:800;color:#14181F;margin:0 0 4px;">Billing overview</h1>
+  <p style="font-size:14px;color:#5B6472;margin:0 0 22px;">Monitor subscriptions, review upgrade requests, and track revenue.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
+    <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:18px 20px;">
+        <div style="font-size:12px;color:#8891A0;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:6px;">{{ s.label }}</div>
+        <div style="font-size:22px;font-weight:800;color:#14181F;">{{ s.value }}</div>
+        <div style="font-size:12.5px;color:{{ s.deltaColor }};margin-top:4px;">{{ s.delta }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <h2 style="font-size:16.5px;font-weight:700;color:#14181F;margin:0 0 14px;">Pending upgrade requests</h2>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
+    <sc-for list="{{ requests }}" as="r" hint-placeholder-count="3">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#14181F;">{{ r.name }} <span style="font-weight:500;color:#8891A0;">· {{ r.type }}</span></div>
+          <div style="font-size:13px;color:#5B6472;margin-top:2px;">Requesting {{ r.from }} → <strong style="color:#14181F;">{{ r.to }}</strong> · Requested {{ r.date }}</div>
+        </div>
+        <sc-if value="{{ r.isPending }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px;">
+            <button onClick="{{ () => approve(r.id) }}" style="border:none;background:#0F8A6B;color:#FFFFFF;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;">Approve</button>
+            <button onClick="{{ () => reject(r.id) }}" style="border:1px solid #FCA5A5;background:#FFFFFF;color:#DC2626;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;">Reject</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ r.isApproved }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:12.5px;font-weight:700;color:#0F8A6B;">Approved</span>
+        </sc-if>
+        <sc-if value="{{ r.isRejected }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:12.5px;font-weight:700;color:#DC2626;">Rejected</span>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+      <button onClick="{{ () => setTab(t.key) }}" style="border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.color }};border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:600;cursor:pointer;">{{ t.label }}</button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ isCandidates }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px;">
+      <sc-for list="{{ candidateSubs }}" as="c" hint-placeholder-count="5">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="font-size:13.5px;font-weight:700;color:#14181F;">{{ c.name }}</div>
+          <span style="font-size:12px;font-weight:700;color:{{ c.planColor }};background:{{ c.planBg }};border-radius:999px;padding:4px 10px;">{{ c.plan }}</span>
+          <div style="font-size:13px;color:#8891A0;">Since {{ c.since }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isCompanies }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px;">
+      <sc-for list="{{ companySubs }}" as="c" hint-placeholder-count="5">
+        <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="font-size:13.5px;font-weight:700;color:#14181F;">{{ c.name }}</div>
+          <span style="font-size:12px;font-weight:700;color:{{ c.planColor }};background:{{ c.planBg }};border-radius:999px;padding:4px 10px;">{{ c.plan }}</span>
+          <div style="font-size:13px;color:#8891A0;">Since {{ c.since }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <h2 style="font-size:16.5px;font-weight:700;color:#14181F;margin:0 0 14px;">Invoice history</h2>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <sc-for list="{{ invoices }}" as="inv" hint-placeholder-count="5">
+      <div style="background:#FFFFFF;border:1px solid #E2E5EA;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:13.5px;font-weight:600;color:#14181F;">{{ inv.name }}</div>
+        <div style="font-size:13px;color:#8891A0;">{{ inv.plan }}</div>
+        <div style="font-size:13px;color:#8891A0;">{{ inv.date }}</div>
+        <div style="font-size:13.5px;font-weight:700;color:#14181F;">{{ inv.amount }}</div>
+        <span style="font-size:12px;font-weight:600;color:{{ inv.statusColor }};background:{{ inv.statusBg }};border-radius:999px;padding:4px 10px;">{{ inv.status }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<dc-import name="Footer" hint-size="100%,360px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'candidates', decisions: {} };
+  setTab = (key) => this.setState({ tab: key });
+  approve = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'approved' } }));
+  reject = (id) => this.setState(s => ({ decisions: { ...s.decisions, [id]: 'rejected' } }));
+
+  REQUESTS = [
+    { id: 'r1', name: 'Sahaay Finance Ltd.', type: 'Company', from: 'Free', to: 'Growth', date: '2 days ago' },
+    { id: 'r2', name: 'Rohan Mehta', type: 'Candidate', from: 'Free', to: 'Plus', date: '3 days ago' },
+    { id: 'r3', name: 'Northstar EdTech', type: 'Company', from: 'Growth', to: 'Enterprise', date: '5 days ago' },
+  ];
+
+  renderVals() {
+    const tab = this.state.tab;
+    const decisions = this.state.decisions;
+    const requests = this.REQUESTS.map(r => {
+      const d = decisions[r.id];
+      return { ...r, isPending: !d, isApproved: d === 'approved', isRejected: d === 'rejected' };
+    });
+    return {
+      setTab: this.setTab,
+      approve: this.approve,
+      reject: this.reject,
+      requests,
+      stats: [
+        { label: 'Monthly recurring revenue', value: '₹8,42,600', delta: '+12% vs last month', deltaColor: '#0F8A6B' },
+        { label: 'Active subscriptions', value: '312', delta: '+18 this month', deltaColor: '#0F8A6B' },
+        { label: 'Pending upgrade requests', value: '3', delta: 'Needs review', deltaColor: '#B45309' },
+        { label: 'Churned this month', value: '4', delta: '-2 vs last month', deltaColor: '#0F8A6B' },
+      ],
+      tabs: [
+        { key: 'candidates', label: 'Candidates', border: tab === 'candidates' ? '#14181F' : '#E2E5EA', bg: tab === 'candidates' ? '#14181F' : '#FFFFFF', color: tab === 'candidates' ? '#FFFFFF' : '#3A414D' },
+        { key: 'companies', label: 'Companies', border: tab === 'companies' ? '#14181F' : '#E2E5EA', bg: tab === 'companies' ? '#14181F' : '#FFFFFF', color: tab === 'companies' ? '#FFFFFF' : '#3A414D' },
+      ],
+      isCandidates: tab === 'candidates',
+      isCompanies: tab === 'companies',
+      candidateSubs: [
+        { name: 'Rohan Mehta', plan: 'Plus', planColor: '#2451D6', planBg: '#EAF0FE', since: 'Jun 1, 2026' },
+        { name: 'Anita Sharma', plan: 'Free', planColor: '#5B6472', planBg: '#F0F2F5', since: 'May 20, 2026' },
+        { name: 'Karan Patel', plan: 'Pro', planColor: '#8A5A0F', planBg: '#FFF6E9', since: 'Apr 12, 2026' },
+        { name: 'Meera Iyer', plan: 'Free', planColor: '#5B6472', planBg: '#F0F2F5', since: 'Jul 4, 2026' },
+      ],
+      companySubs: [
+        { name: 'Vertex Robotics Pvt. Ltd.', plan: 'Enterprise', planColor: '#8A5A0F', planBg: '#FFF6E9', since: 'Mar 3, 2026' },
+        { name: 'Sahaay Finance Ltd.', plan: 'Free', planColor: '#5B6472', planBg: '#F0F2F5', since: 'Jul 2, 2026' },
+        { name: 'Northstar EdTech', plan: 'Growth', planColor: '#2451D6', planBg: '#EAF0FE', since: 'Feb 18, 2026' },
+      ],
+      invoices: [
+        { name: 'Rohan Mehta', plan: 'Plus', date: 'Jul 1, 2026', amount: '₹499', status: 'Paid', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Vertex Robotics Pvt. Ltd.', plan: 'Enterprise', date: 'Jul 1, 2026', amount: '₹14,999', status: 'Paid', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Northstar EdTech', plan: 'Growth', date: 'Jul 1, 2026', amount: '₹4,999', status: 'Paid', statusColor: '#0F8A6B', statusBg: '#E7F7F1' },
+        { name: 'Karan Patel', plan: 'Pro', date: 'Jun 30, 2026', amount: '₹1,499', status: 'Failed', statusColor: '#DC2626', statusBg: '#FDECEC' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,7 +1,8 @@
 {
   "approvals": {
     "companiesTab": "कंपनी अप्रूवल",
-    "jobsTab": "नौकरी अप्रूवल"
+    "jobsTab": "नौकरी अप्रूवल",
+    "ideasTab": "आइडिया अप्रूवल"
   },
   "dashboard": {
     "title": "प्लेटफ़ॉर्म का अवलोकन",
@@ -173,5 +174,25 @@
         "share": "हिस्सा"
       }
     }
+  },
+  "billing": {
+    "title": "बिलिंग अवलोकन",
+    "subtitle": "सब्सक्रिप्शन देखें, अपग्रेड अनुरोधों की समीक्षा करें, और रेवेन्यू ट्रैक करें।",
+    "stats": {
+      "mrr": "मासिक आवर्ती राजस्व",
+      "activeSubscriptions": "सक्रिय सब्सक्रिप्शन",
+      "pendingUpgrades": "लंबित अपग्रेड अनुरोध",
+      "churned": "इस माह छोड़ने वाले"
+    },
+    "pendingUpgradeRequests": "लंबित अपग्रेड अनुरोध",
+    "requestMeta": "{{from}} → {{to}} का अनुरोध · {{date}} को अनुरोध किया गया",
+    "approve": "मंज़ूर करें",
+    "reject": "अस्वीकार करें",
+    "approved": "मंज़ूर",
+    "rejected": "अस्वीकृत",
+    "statusPaid": "भुगतान हो गया",
+    "statusFailed": "विफल",
+    "invoiceHistory": "इनवॉइस इतिहास",
+    "since": "{{date}} से"
   }
 }

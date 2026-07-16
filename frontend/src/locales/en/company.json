@@ -156,5 +156,51 @@
     },
     "notifyNotice": "Invitees get both an email and a WhatsApp notification automatically.",
     "scheduleAndNotify": "Schedule & notify"
+  },
+  "billing": {
+    "title": "Billing & plans",
+    "currentPlan": "Your company is currently on the {{plan}} plan.",
+    "currentPlanBadge": "Current plan",
+    "downgrade": "Downgrade",
+    "upgrade": "Upgrade",
+    "billingHistory": "Billing history",
+    "downloadInvoice": "Download invoice",
+    "statusPaid": "Paid",
+    "statusFailed": "Failed",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price": "₹0",
+        "period": "/month",
+        "features": [
+          "Post jobs with all categories",
+          "List partnership opportunities",
+          "Basic company profile"
+        ]
+      },
+      "growth": {
+        "name": "Growth",
+        "price": "₹4,999",
+        "period": "/month",
+        "features": [
+          "Everything in Free",
+          "Contact candidates directly for 1 month per search",
+          "Featured / boosted job posts",
+          "Seminar & meetup scheduling tools"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "₹14,999",
+        "period": "/month",
+        "features": [
+          "Everything in Growth",
+          "Unlimited candidate search & unlock contacts",
+          "Analytics dashboard on applicants",
+          "Dedicated account manager",
+          "Bulk job posting"
+        ]
+      }
+    }
   }
 }
