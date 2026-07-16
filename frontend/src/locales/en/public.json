@@ -148,7 +148,7 @@
       "title": "Turn a startup's needs into your next career move",
       "subtitle": "There's no list of open roles here yet — this is where you learn how partnerships work, then choose the track that fits: startups with funding to offer, or early-stage ones offering pure experience.",
       "watchExplainer": "Watch the explainer",
-      "seeTracks": "See the two tracks",
+      "exploreIdeas": "Explore the ideas",
       "videoCaption": "3 min · How it works"
     },
     "videoModal": {
@@ -172,24 +172,9 @@
         "desc": "Work together and document it for your resume."
       }
     },
-    "tracks": {
-      "heading": "Two tracks. Both count as real experience.",
-      "funded": {
-        "tag": "With funding",
-        "title": "Funded partnership",
-        "desc": "Startups that have raised capital and can offer a stipend, revenue share, or equity for your work.",
-        "cta": "Apply with funding"
-      },
-      "unfunded": {
-        "tag": "Without funding",
-        "title": "Early-stage partnership",
-        "desc": "Pre-funding founders who can't pay yet — you build real, documented experience alongside them.",
-        "cta": "Apply without funding"
-      }
-    },
     "cta": {
-      "heading": "Still deciding which track fits?",
-      "body": "Show interest and we'll notify you the moment a matching partnership opens — funded or not.",
+      "heading": "Want us to notify you?",
+      "body": "Show interest and we'll notify you the moment a matching partnership opens up.",
       "thanks": "Thanks — we'll notify you when a matching partnership opens ✓",
       "placeholder": "Your top skill",
       "submit": "Show interest"

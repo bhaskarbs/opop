@@ -1,8 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
+import { useLocalizedPath } from '../i18n/useLocalizedPath'
+import { ROUTES } from '../routes/paths'
 
 const STEPS = [
-  { step: '01', titleKey: 'partnerships.steps.share.title', descKey: 'partnerships.steps.share.desc' },
+  {
+    step: '01',
+    titleKey: 'partnerships.steps.share.title',
+    descKey: 'partnerships.steps.share.desc',
+  },
   {
     step: '02',
     titleKey: 'partnerships.steps.matched.title',
@@ -20,27 +27,6 @@ const STEPS = [
   },
 ]
 
-const TRACKS = [
-  {
-    tagKey: 'partnerships.tracks.funded.tag',
-    tagClass: 'bg-primary-tint text-primary',
-    gradientClass: 'bg-[linear-gradient(135deg,#2451D6,#7FA0F2)]',
-    titleKey: 'partnerships.tracks.funded.title',
-    descKey: 'partnerships.tracks.funded.desc',
-    ctaKey: 'partnerships.tracks.funded.cta',
-    ctaClass: 'bg-primary',
-  },
-  {
-    tagKey: 'partnerships.tracks.unfunded.tag',
-    tagClass: 'bg-teal-tint text-teal',
-    gradientClass: 'bg-[linear-gradient(135deg,#0F8A6B,#7FE0C4)]',
-    titleKey: 'partnerships.tracks.unfunded.title',
-    descKey: 'partnerships.tracks.unfunded.desc',
-    ctaKey: 'partnerships.tracks.unfunded.cta',
-    ctaClass: 'bg-teal',
-  },
-]
-
 function PlayIcon({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="#FFFFFF">
@@ -51,6 +37,7 @@ function PlayIcon({ size }: { size: number }) {
 
 export default function PartnershipsPage() {
   const { t } = useTranslation('public')
+  const localize = useLocalizedPath()
   const [videoOpen, setVideoOpen] = useState(false)
   const [skill, setSkill] = useState('')
   const [interested, setInterested] = useState(false)
@@ -77,12 +64,12 @@ export default function PartnershipsPage() {
               <PlayIcon size={15} />
               {t('partnerships.hero.watchExplainer')}
             </button>
-            <a
-              href="#choose-track"
+            <Link
+              to={localize(ROUTES.ideasBrowse)}
               className="rounded-[9px] border border-border bg-surface px-[22px] py-3 text-sm font-bold text-ink no-underline"
             >
-              {t('partnerships.hero.seeTracks')}
-            </a>
+              {t('partnerships.hero.exploreIdeas')}
+            </Link>
           </div>
         </div>
         <button
@@ -128,35 +115,7 @@ export default function PartnershipsPage() {
         </div>
       </div>
 
-      <div id="choose-track" className="mx-auto max-w-[1120px] px-6 py-16">
-        <div className="mx-auto mb-9 max-w-[600px] text-center">
-          <h2 className="mb-3 text-[26px] font-extrabold tracking-[-0.01em] text-ink">
-            {t('partnerships.tracks.heading')}
-          </h2>
-        </div>
-        <div className="mb-12 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-5">
-          {TRACKS.map((track) => (
-            <div key={track.titleKey} className={`rounded-2xl p-0.5 ${track.gradientClass}`}>
-              <div className="h-full rounded-card bg-surface p-7">
-                <span
-                  className={`rounded-full px-2.5 py-[3px] text-[11.5px] font-bold ${track.tagClass}`}
-                >
-                  {t(track.tagKey)}
-                </span>
-                <h3 className="mt-3.5 mb-2 text-lg font-bold text-ink">{t(track.titleKey)}</h3>
-                <p className="mb-5 text-sm leading-[1.6] text-slate">{t(track.descKey)}</p>
-                <a
-                  href="#apply"
-                  onClick={(event) => event.preventDefault()}
-                  className={`block rounded-[9px] p-3 text-center text-sm font-bold text-white no-underline ${track.ctaClass}`}
-                >
-                  {t(track.ctaKey)}
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-
+      <div className="mx-auto max-w-[1120px] px-6 py-16">
         <div className="flex flex-wrap items-center justify-between gap-6 rounded-[18px] bg-ink p-10">
           <div>
             <div className="mb-1.5 text-[17px] font-bold text-white">
