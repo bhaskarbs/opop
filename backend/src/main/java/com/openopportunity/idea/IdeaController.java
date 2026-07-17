@@ -5,6 +5,7 @@ import com.openopportunity.idea.dto.IdeaInterestRequest;
 import com.openopportunity.idea.dto.IdeaInterestSummary;
 import com.openopportunity.idea.dto.IdeaRequest;
 import com.openopportunity.idea.dto.IdeaSummary;
+import com.openopportunity.idea.dto.MyIdeaInterestSummary;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -91,6 +92,11 @@ public class IdeaController {
     @GetMapping("/{id}/interests")
     public List<IdeaInterestSummary> interests(@PathVariable UUID id) {
         return ideaService.getInterests(id, currentUserId());
+    }
+
+    @GetMapping("/interests/mine")
+    public List<MyIdeaInterestSummary> myInterests() {
+        return ideaService.getMyInterests(currentUserId());
     }
 
     private UUID currentUserId() {

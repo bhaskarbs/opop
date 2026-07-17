@@ -73,6 +73,17 @@ export interface IdeaInterestSummary {
   createdAt: string
 }
 
+export interface MyIdeaInterestSummary {
+  id: string
+  ideaId: string
+  ideaTitle: string
+  ideaSubmitterName: string
+  role: BackendIdeaInterestRole
+  ticketSize: string | null
+  message: string | null
+  createdAt: string
+}
+
 export interface IdeaInterestRequestPayload {
   role: BackendIdeaInterestRole
   ticketSize: string | null
@@ -125,4 +136,8 @@ export const ideasApi = {
   // Owner-only server-side — see IdeaService.getInterests. Backs MyIdeasPage's applicant list.
   interests: (id: string) =>
     request<IdeaInterestSummary[]>(`/api/ideas/${id}/interests`, { headers: authHeaders() }),
+  // The caller's own expressed interests across all ideas — backs ApplicationsPage's
+  // Partnership tab (a candidate applying as investor/participant on someone's idea).
+  myInterests: () =>
+    request<MyIdeaInterestSummary[]>('/api/ideas/interests/mine', { headers: authHeaders() }),
 }

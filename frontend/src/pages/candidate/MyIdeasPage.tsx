@@ -43,7 +43,11 @@ const INTEREST_ROLE_CLASSES: Record<BackendIdeaInterestRole, string> = {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 /** Mounted under both /candidate/ideas and /company/ideas (companies can submit ideas too —
@@ -134,7 +138,9 @@ export default function MyIdeasPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">{error}</div>
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {error}
+        </div>
       )}
 
       {loading ? (
@@ -207,7 +213,9 @@ export default function MyIdeasPage() {
                         {t('myIdeas.applicantsLoading')}
                       </div>
                     ) : interestsError && !applicants ? (
-                      <div className="py-2 text-center text-[13px] text-danger">{interestsError}</div>
+                      <div className="py-2 text-center text-[13px] text-danger">
+                        {interestsError}
+                      </div>
                     ) : applicants && applicants.length === 0 ? (
                       <div className="py-2 text-center text-[13px] text-slate">
                         {t('myIdeas.noApplicants')}
@@ -221,7 +229,9 @@ export default function MyIdeasPage() {
                           <div>
                             <div className="text-[13.5px] font-bold text-ink">
                               {applicant.interestedUserName}{' '}
-                              <span className={`font-semibold ${INTEREST_ROLE_CLASSES[applicant.role]}`}>
+                              <span
+                                className={`font-semibold ${INTEREST_ROLE_CLASSES[applicant.role]}`}
+                              >
                                 · {t(INTEREST_ROLE_KEYS[applicant.role])}
                               </span>
                             </div>
@@ -231,7 +241,9 @@ export default function MyIdeasPage() {
                               </div>
                             )}
                             {applicant.message && (
-                              <div className="mt-0.5 text-[12.5px] text-slate">{applicant.message}</div>
+                              <div className="mt-0.5 text-[12.5px] text-slate">
+                                {applicant.message}
+                              </div>
                             )}
                             <div className="mt-0.5 text-[11.5px] text-fog">
                               {t('myIdeas.appliedMeta', { date: formatDate(applicant.createdAt) })}

@@ -7,6 +7,7 @@ import com.openopportunity.idea.dto.IdeaInterestRequest;
 import com.openopportunity.idea.dto.IdeaInterestSummary;
 import com.openopportunity.idea.dto.IdeaRequest;
 import com.openopportunity.idea.dto.IdeaSummary;
+import com.openopportunity.idea.dto.MyIdeaInterestSummary;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
@@ -154,6 +155,8 @@ public class IdeaService {
         User interestedUser = userRepository.findById(interestedUserId).orElseThrow();
         IdeaInterest interest = new IdeaInterest(
                 ideaId,
+                idea.getTitle(),
+                idea.getSubmitterName(),
                 interestedUserId,
                 interestedUser.getFullName(),
                 request.role(),
@@ -174,6 +177,24 @@ public class IdeaService {
         }
         return ideaInterestRepository.findByIdeaIdOrderByCreatedAtDesc(ideaId).stream()
                 .map(this::toInterestSummary)
+                .toList();
+    }
+
+    /** The ideas a user has themselves expressed interest in (as investor/participant) — backs
+     * ApplicationsPage's Partnership tab. Unlike getInterests(), this has no owner check: it's
+     * always scoped to the caller's own interests. */
+    @Transactional(readOnly = true)
+    public List<MyIdeaInterestSummary> getMyInterests(UUID interestedUserId) {
+        return ideaInterestRepository.findByInterestedUserIdOrderByCreatedAtDesc(interestedUserId).stream()
+                .map(interest -> new MyIdeaInterestSummary(
+                        interest.getId(),
+                        interest.getIdeaId(),
+                        interest.getIdeaTitle(),
+                        interest.getIdeaSubmitterName(),
+                        interest.getRole(),
+                        interest.getTicketSize(),
+                        interest.getMessage(),
+                        interest.getCreatedAt()))
                 .toList();
     }
 
