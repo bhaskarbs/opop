@@ -5,7 +5,7 @@
       "title": "Find your next partner, not just another hire",
       "subtitle": "You haven't listed a partnership yet — this is where you learn how it works, then choose the track that fits: offer funding and structure to a partner, or bring an early-stage builder in on pure experience.",
       "watchExplainer": "Watch the explainer",
-      "seeTracks": "See the two tracks",
+      "exploreIdeas": "Explore the ideas",
       "videoCaption": "3 min · How it works"
     },
     "videoModal": {
@@ -29,24 +29,9 @@
         "desc": "Work together and document the outcomes for both sides."
       }
     },
-    "tracks": {
-      "heading": "Two tracks. Both bring in real commitment.",
-      "funded": {
-        "tag": "With funding",
-        "title": "Funded partnership",
-        "desc": "You've raised capital and can offer a stipend, revenue share, or equity to a partner who joins now.",
-        "cta": "Offer a funded partnership"
-      },
-      "unfunded": {
-        "tag": "Without funding",
-        "title": "Early-stage partnership",
-        "desc": "Pre-funding and can't pay yet — bring in a partner who'll build real, documented experience alongside you.",
-        "cta": "Offer an early-stage partnership"
-      }
-    },
     "cta": {
-      "heading": "Still deciding which track fits?",
-      "body": "Show interest and we'll help you find the right partner — funded or not.",
+      "heading": "Want us to notify you?",
+      "body": "Show interest and we'll notify you the moment a matching partner is available.",
       "thanks": "Thanks — we'll notify you when a matching partner is available ✓",
       "placeholder": "Role you need filled",
       "submit": "Show interest"
