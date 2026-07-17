@@ -185,7 +185,8 @@
     "hero": {
       "title": "Understand income beyond a paycheck",
       "subtitle": "Community roles build soft skills and introduce you to income types you may never have considered — while you keep searching for the job you want.",
-      "videoCaption": "[ video: what is community income? · 4 min ]"
+      "videoCaption": "[ video: what is community income? · 4 min ]",
+      "knowMore": "Know more about community & community income"
     },
     "incomeTypes": {
       "heading": "Learn about different income types",
@@ -206,28 +207,6 @@
         "title": "Partnership income",
         "desc": "Value earned by co-building and sharing outcomes with a team."
       }
-    },
-    "opportunities": {
-      "heading": "Community opportunities near you",
-      "buildsSkill": "Builds {{skill}}",
-      "interestShared": "Interest shared ✓",
-      "showInterest": "Show interest"
-    },
-    "sidebar": {
-      "tellUsHeading": "Tell us you're interested",
-      "tellUsBody": "We'll invite you to the next intro session and match you with a local community role.",
-      "selectPlaceholder": "What interests you most?",
-      "selectOption1": "Community income basics",
-      "selectOption2": "Soft-skill building roles",
-      "selectOption3": "Both",
-      "onList": "You're on the list ✓",
-      "notifyMe": "Notify me",
-      "guidesHeading": "Guides & reading"
-    },
-    "guides": {
-      "whatIsCommunityIncome": "What is community income?",
-      "activeVsPassive": "Active vs. passive income, explained",
-      "softSkillsTransfer": "How soft skills transfer to any job"
     }
   }
 }
