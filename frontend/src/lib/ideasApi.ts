@@ -14,6 +14,8 @@ export interface IdeaSummary {
   submitterName: string
   submitterRole: BackendIdeaSubmitterRole
   funding: string | null
+  teamSize: number | null
+  timeline: string | null
   createdAt: string
 }
 

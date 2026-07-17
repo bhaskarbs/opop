@@ -14,4 +14,6 @@ public record IdeaSummary(
         String submitterName,
         UserRole submitterRole,
         String funding,
+        Integer teamSize,
+        String timeline,
         Instant createdAt) {}
