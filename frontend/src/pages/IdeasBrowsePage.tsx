@@ -1,21 +1,24 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
-import { IDEAS, IDEA_CATEGORIES, type IdeaStage } from '../mocks/ideas'
+import { ApiError } from '../lib/apiClient'
+import { avatarColorClass } from '../lib/ideaAvatar'
+import { ideasApi, type BackendIdeaStage, type IdeaSummary } from '../lib/ideasApi'
+import { IDEA_CATEGORIES } from '../mocks/ideas'
 import { ideaRoutesFor, ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 
-const STAGE_KEYS: Record<IdeaStage, string> = {
-  Concept: 'browse.stages.concept',
-  Prototype: 'browse.stages.prototype',
-  Live: 'browse.stages.live',
+const STAGE_KEYS: Record<BackendIdeaStage, string> = {
+  CONCEPT: 'browse.stages.concept',
+  PROTOTYPE: 'browse.stages.prototype',
+  LIVE: 'browse.stages.live',
 }
 
-const STAGE_BADGE_CLASSES: Record<IdeaStage, string> = {
-  Concept: 'bg-amber-tint text-amber',
-  Prototype: 'bg-primary-tint text-primary',
-  Live: 'bg-teal-tint text-teal',
+const STAGE_BADGE_CLASSES: Record<BackendIdeaStage, string> = {
+  CONCEPT: 'bg-amber-tint text-amber',
+  PROTOTYPE: 'bg-primary-tint text-primary',
+  LIVE: 'bg-teal-tint text-teal',
 }
 
 /** Public — anyone can browse, living under /partnerships/ideas so it highlights the
@@ -29,20 +32,26 @@ export default function IdeasBrowsePage() {
   const submitRoute = ideaRoutesFor(role === 'COMPANY' ? 'COMPANY' : 'CANDIDATE').submit
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
-  const [stage, setStage] = useState('')
+  const [stage, setStage] = useState<BackendIdeaStage | ''>('')
 
-  const filteredIdeas = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    return IDEAS.filter((idea) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        idea.title.toLowerCase().includes(normalizedQuery) ||
-        idea.problem.toLowerCase().includes(normalizedQuery)
-      const matchesCategory = !category || idea.category === category
-      const matchesStage = !stage || idea.stage === stage
-      return matchesQuery && matchesCategory && matchesStage
-    })
-  }, [query, category, stage])
+  const [ideas, setIdeas] = useState<IdeaSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      ideasApi
+        .browse({ q: query.trim() || undefined, category: category || undefined, stage: stage || undefined })
+        .then(setIdeas)
+        .catch((caught) => {
+          setError(caught instanceof ApiError ? caught.message : t('browse.errorLoading'))
+        })
+        .finally(() => setLoading(false))
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [query, category, stage, t])
 
   return (
     <main>
@@ -102,11 +111,11 @@ export default function IdeasBrowsePage() {
           </select>
           <select
             value={stage}
-            onChange={(event) => setStage(event.target.value)}
+            onChange={(event) => setStage(event.target.value as BackendIdeaStage | '')}
             className="rounded-lg border border-border px-3 py-2.5 text-[13.5px] text-ink"
           >
             <option value="">{t('browse.allStages')}</option>
-            {(Object.keys(STAGE_KEYS) as IdeaStage[]).map((s) => (
+            {(Object.keys(STAGE_KEYS) as BackendIdeaStage[]).map((s) => (
               <option key={s} value={s}>
                 {t(STAGE_KEYS[s])}
               </option>
@@ -114,8 +123,10 @@ export default function IdeasBrowsePage() {
           </select>
         </div>
 
+        {error && <p className="mb-4 text-center text-sm text-danger">{error}</p>}
+
         <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
-          {filteredIdeas.map((idea) => (
+          {ideas.map((idea) => (
             <div
               key={idea.id}
               className="flex flex-col gap-2.5 rounded-card border border-border bg-surface p-5"
@@ -136,20 +147,20 @@ export default function IdeasBrowsePage() {
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <span
-                  className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${idea.avatarColorClass}`}
+                  className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${avatarColorClass(idea.submitterName)}`}
                 >
-                  {idea.initial}
+                  {idea.submitterName.charAt(0).toUpperCase()}
                 </span>
                 <span className="text-[12.5px] text-slate">
                   {t('browse.submitterMeta', {
-                    name: idea.submitter,
-                    type: t(`browse.submitterTypes.${idea.submitterType.toLowerCase()}`),
+                    name: idea.submitterName,
+                    type: t(`browse.submitterTypes.${idea.submitterRole.toLowerCase()}`),
                   })}
                 </span>
               </div>
               <div className="mt-0.5 flex items-center justify-between border-t border-[#F0F1F3] pt-3">
                 <div className="text-[12.5px] text-fog">
-                  {t('browse.seekingInterested', { funding: idea.funding, count: idea.applicants })}
+                  {t('browse.seekingInterested', { funding: idea.funding ?? '—', count: 0 })}
                 </div>
                 <Link
                   to={localize(ROUTES.ideaDetail(idea.id))}
@@ -160,7 +171,7 @@ export default function IdeasBrowsePage() {
               </div>
             </div>
           ))}
-          {filteredIdeas.length === 0 && (
+          {!loading && ideas.length === 0 && !error && (
             <div className="col-span-full rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
               {t('browse.noResults')}
             </div>

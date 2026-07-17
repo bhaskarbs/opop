@@ -65,12 +65,9 @@ class IdeaServiceTest {
         assertThat(detail.status()).isEqualTo(IdeaStatus.PENDING);
     }
 
-    @Test
-    void getMineRejectsNonOwner() {
-        UUID ownerId = UUID.randomUUID();
-        UUID otherId = UUID.randomUUID();
-        Idea idea = new Idea(
-                ownerId,
+    private Idea sampleIdea(UUID submitterId) {
+        return new Idea(
+                submitterId,
                 "Vertex Robotics",
                 UserRole.COMPANY,
                 "Title",
@@ -85,40 +82,55 @@ class IdeaServiceTest {
                 null,
                 null,
                 "founder@vertex.com");
-        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
-
-        assertThatThrownBy(() -> ideaService.getMine(idea.getId(), otherId))
-                .isInstanceOf(IdeaAccessDeniedException.class);
     }
 
     @Test
-    void getMineRejectsUnknownIdea() {
+    void getRejectsUnknownIdea() {
         when(ideaRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ideaService.getMine(UUID.randomUUID(), UUID.randomUUID()))
+        assertThatThrownBy(() -> ideaService.get(UUID.randomUUID(), UUID.randomUUID()))
                 .isInstanceOf(IdeaNotFoundException.class);
+    }
+
+    @Test
+    void getHidesPendingIdeaFromNonOwner() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        assertThatThrownBy(() -> ideaService.get(idea.getId(), UUID.randomUUID()))
+                .isInstanceOf(IdeaNotFoundException.class);
+        assertThatThrownBy(() -> ideaService.get(idea.getId(), null)).isInstanceOf(IdeaNotFoundException.class);
+    }
+
+    @Test
+    void getAllowsOwnerToViewTheirOwnPendingIdea() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        IdeaDetail detail = ideaService.get(idea.getId(), ownerId);
+
+        assertThat(detail.status()).isEqualTo(IdeaStatus.PENDING);
+    }
+
+    @Test
+    void getAllowsAnyoneToViewAnApprovedIdea() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        idea.approve();
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        IdeaDetail detail = ideaService.get(idea.getId(), null);
+
+        assertThat(detail.status()).isEqualTo(IdeaStatus.APPROVED);
     }
 
     @Test
     void updateRejectsNonOwner() {
         UUID ownerId = UUID.randomUUID();
         UUID otherId = UUID.randomUUID();
-        Idea idea = new Idea(
-                ownerId,
-                "Vertex Robotics",
-                UserRole.COMPANY,
-                "Title",
-                "Fintech",
-                IdeaStage.CONCEPT,
-                "Problem",
-                "Solution",
-                "Target market",
-                null,
-                null,
-                null,
-                null,
-                null,
-                "founder@vertex.com");
+        Idea idea = sampleIdea(ownerId);
         when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
 
         assertThatThrownBy(() -> ideaService.update(idea.getId(), otherId, sampleRequest()))
@@ -128,27 +140,44 @@ class IdeaServiceTest {
     @Test
     void updateResetsApprovedIdeaBackToPending() {
         UUID ownerId = UUID.randomUUID();
-        Idea idea = new Idea(
-                ownerId,
-                "Vertex Robotics",
-                UserRole.COMPANY,
-                "Title",
-                "Fintech",
-                IdeaStage.CONCEPT,
-                "Problem",
-                "Solution",
-                "Target market",
-                null,
-                null,
-                null,
-                null,
-                null,
-                "founder@vertex.com");
+        Idea idea = sampleIdea(ownerId);
+        idea.approve();
         when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
 
         IdeaDetail detail = ideaService.update(idea.getId(), ownerId, sampleRequest());
 
         assertThat(detail.status()).isEqualTo(IdeaStatus.PENDING);
         assertThat(detail.title()).isEqualTo(sampleRequest().title());
+    }
+
+    @Test
+    void approveRejectsUnknownIdea() {
+        when(ideaRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> ideaService.approve(UUID.randomUUID()))
+                .isInstanceOf(IdeaNotFoundException.class);
+    }
+
+    @Test
+    void approveMakesIdeaVisibleToNonOwner() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        IdeaDetail approved = ideaService.approve(idea.getId());
+
+        assertThat(approved.status()).isEqualTo(IdeaStatus.APPROVED);
+        assertThat(ideaService.get(idea.getId(), null).status()).isEqualTo(IdeaStatus.APPROVED);
+    }
+
+    @Test
+    void rejectSetsStatusToRejected() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        IdeaDetail rejected = ideaService.reject(idea.getId());
+
+        assertThat(rejected.status()).isEqualTo(IdeaStatus.REJECTED);
     }
 }

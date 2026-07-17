@@ -146,6 +146,14 @@ public class Idea {
         this.status = IdeaStatus.PENDING;
     }
 
+    public void approve() {
+        this.status = IdeaStatus.APPROVED;
+    }
+
+    public void reject() {
+        this.status = IdeaStatus.REJECTED;
+    }
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();

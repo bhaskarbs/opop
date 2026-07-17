@@ -19,7 +19,8 @@
     },
     "seekingInterested": "Seeking {{funding}} · {{count}} interested",
     "viewIdea": "View idea →",
-    "noResults": "No ideas match your filters."
+    "noResults": "No ideas match your filters.",
+    "errorLoading": "Couldn't load ideas. Please try again."
   },
   "detail": {
     "backToAll": "← Back to all ideas",
