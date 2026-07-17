@@ -1,50 +1,81 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { MY_IDEAS, type MyIdeaStatus } from '../../mocks/myIdeas'
+import { ApiError } from '../../lib/apiClient'
+import {
+  ideasApi,
+  type BackendIdeaStage,
+  type BackendIdeaStatus,
+  type IdeaSummary,
+} from '../../lib/ideasApi'
 import { ideaRoutesFor } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 
-const STATUS_KEYS: Record<MyIdeaStatus, string> = {
-  Approved: 'myIdeas.statuses.approved',
-  'Pending review': 'myIdeas.statuses.pendingReview',
-  Rejected: 'myIdeas.statuses.rejected',
+const STAGE_KEYS: Record<BackendIdeaStage, string> = {
+  CONCEPT: 'browse.stages.concept',
+  PROTOTYPE: 'browse.stages.prototype',
+  LIVE: 'browse.stages.live',
 }
 
-const STATUS_BADGE_CLASSES: Record<MyIdeaStatus, string> = {
-  Approved: 'bg-teal-tint text-teal',
-  'Pending review': 'bg-amber-tint text-amber',
-  Rejected: 'bg-danger/10 text-danger',
+const STATUS_KEYS: Record<BackendIdeaStatus, string> = {
+  APPROVED: 'myIdeas.statuses.approved',
+  PENDING: 'myIdeas.statuses.pendingReview',
+  REJECTED: 'myIdeas.statuses.rejected',
 }
 
-const ROLE_COLOR_CLASSES = {
-  Investor: 'text-primary',
-  Participant: 'text-teal',
+const STATUS_BADGE_CLASSES: Record<BackendIdeaStatus, string> = {
+  APPROVED: 'bg-teal-tint text-teal',
+  PENDING: 'bg-amber-tint text-amber',
+  REJECTED: 'bg-danger/10 text-danger',
 }
 
 /** Mounted under both /candidate/ideas and /company/ideas (companies can submit ideas too —
  * see IdeasBrowsePage's "Submit your idea" CTA) — it lives under pages/candidate/ only because
  * that's where it was first built; ideaRoutesFor() picks the right link targets for whichever
- * role is actually signed in. No backend for this feature yet — expand/delete are local
- * session state only, matching the mockup's own behavior (nothing here survives a reload). */
+ * role is actually signed in. */
 export default function MyIdeasPage() {
   const { t } = useTranslation('ideas')
   const localize = useLocalizedPath()
   const role = useAuthStore((state) => state.user?.role)
   const routes = ideaRoutesFor(role === 'COMPANY' ? 'COMPANY' : 'CANDIDATE')
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
 
-  const ideas = MY_IDEAS.filter((idea) => !deletedIds.has(idea.id))
+  const [ideas, setIdeas] = useState<IdeaSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  function toggleExpand(id: string) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  useEffect(() => {
+    let cancelled = false
+    ideasApi
+      .mine()
+      .then((result) => {
+        if (!cancelled) setIdeas(result)
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setError(caught instanceof ApiError ? caught.message : t('myIdeas.loadError'))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [t])
+
+  async function handleDelete(ideaId: string) {
+    if (!window.confirm(t('myIdeas.deleteConfirm'))) return
+    setDeletingId(ideaId)
+    try {
+      await ideasApi.remove(ideaId)
+      setIdeas((prev) => prev.filter((idea) => idea.id !== ideaId))
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t('myIdeas.loadError'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -62,12 +93,17 @@ export default function MyIdeasPage() {
         </Link>
       </div>
 
-      <div className="flex flex-col gap-3.5">
-        {ideas.map((idea) => {
-          const expanded = expandedIds.has(idea.id)
-          const investorCount = idea.applicants.filter((a) => a.role === 'Investor').length
-          const participantCount = idea.applicants.filter((a) => a.role === 'Participant').length
-          return (
+      {error && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">{error}</div>
+      )}
+
+      {loading ? (
+        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+          {t('myIdeas.loading')}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3.5">
+          {ideas.map((idea) => (
             <div
               key={idea.id}
               className="rounded-card border border-border bg-surface px-[22px] py-5"
@@ -85,8 +121,12 @@ export default function MyIdeasPage() {
                   <div className="text-[13px] text-slate">
                     {t('myIdeas.submittedMeta', {
                       category: idea.category,
-                      stage: idea.stage,
-                      date: idea.submitted,
+                      stage: t(STAGE_KEYS[idea.stage]),
+                      date: new Date(idea.createdAt).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      }),
                     })}
                   </div>
                 </div>
@@ -99,69 +139,23 @@ export default function MyIdeasPage() {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => setDeletedIds((prev) => new Set(prev).add(idea.id))}
-                    className="rounded-[7px] border border-[#FCA5A5] bg-surface px-3.5 py-[7px] text-[12.5px] font-bold text-danger"
+                    disabled={deletingId === idea.id}
+                    onClick={() => handleDelete(idea.id)}
+                    className="rounded-[7px] border border-[#FCA5A5] bg-surface px-3.5 py-[7px] text-[12.5px] font-bold text-danger disabled:opacity-60"
                   >
                     {t('myIdeas.delete')}
                   </button>
                 </div>
               </div>
-
-              <div className="mt-3.5 flex items-center justify-between">
-                <div className="text-[13px] text-[#3A414D]">
-                  {t('myIdeas.interestedCount', {
-                    count: idea.applicants.length,
-                    investors: investorCount,
-                    participants: participantCount,
-                  })}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => toggleExpand(idea.id)}
-                  className="text-[13px] font-bold text-primary"
-                >
-                  {expanded ? t('myIdeas.hideApplicants') : t('myIdeas.viewApplicants')}
-                </button>
-              </div>
-
-              {expanded && (
-                <div className="mt-3.5 flex flex-col gap-2.5 border-t border-[#F0F1F3] pt-3.5">
-                  {idea.applicants.map((applicant) => (
-                    <div
-                      key={`${applicant.name}-${applicant.date}`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-page px-3.5 py-3"
-                    >
-                      <div>
-                        <div className="text-[13.5px] font-bold text-ink">
-                          {applicant.name}{' '}
-                          <span className={`font-semibold ${ROLE_COLOR_CLASSES[applicant.role]}`}>
-                            · {applicant.role}
-                          </span>
-                        </div>
-                        <div className="mt-0.5 text-[12.5px] text-slate">{applicant.note}</div>
-                        <div className="mt-0.5 text-[11.5px] text-fog">
-                          {t('myIdeas.appliedMeta', { date: applicant.date })}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="shrink-0 rounded-[7px] border border-border bg-surface px-3 py-1.5 text-xs font-bold whitespace-nowrap text-ink"
-                      >
-                        {t('myIdeas.viewProfile')}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          )
-        })}
-        {ideas.length === 0 && (
-          <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-            {t('myIdeas.empty')}
-          </div>
-        )}
-      </div>
+          ))}
+          {ideas.length === 0 && (
+            <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+              {t('myIdeas.empty')}
+            </div>
+          )}
+        </div>
+      )}
     </main>
   )
 }

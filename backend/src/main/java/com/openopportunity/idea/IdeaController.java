@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,6 +43,11 @@ public class IdeaController {
         return ideaService.getPending();
     }
 
+    @GetMapping("/mine")
+    public List<IdeaSummary> mine() {
+        return ideaService.getMine(currentUserId());
+    }
+
     @PostMapping("/{id}/approve")
     public IdeaDetail approve(@PathVariable UUID id) {
         return ideaService.approve(id);
@@ -65,6 +71,12 @@ public class IdeaController {
     @PutMapping("/{id}")
     public IdeaDetail update(@PathVariable UUID id, @Valid @RequestBody IdeaRequest request) {
         return ideaService.update(id, currentUserId(), request);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        ideaService.delete(id, currentUserId());
+        return ResponseEntity.noContent().build();
     }
 
     private UUID currentUserId() {

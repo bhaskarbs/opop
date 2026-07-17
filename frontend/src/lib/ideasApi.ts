@@ -16,6 +16,7 @@ export interface IdeaSummary {
   funding: string | null
   teamSize: number | null
   timeline: string | null
+  status: BackendIdeaStatus
   createdAt: string
 }
 
@@ -82,6 +83,7 @@ export const ideasApi = {
   // Auth headers are attached whenever a token exists so that owner check can succeed; they're
   // simply ignored server-side for a logged-out visitor.
   get: (id: string) => request<IdeaDetail>(`/api/ideas/${id}`, { headers: authHeaders() }),
+  mine: () => request<IdeaSummary[]>('/api/ideas/mine', { headers: authHeaders() }),
   create: (payload: IdeaRequestPayload) =>
     request<IdeaDetail>('/api/ideas', {
       method: 'POST',
@@ -94,4 +96,6 @@ export const ideasApi = {
       body: JSON.stringify(payload),
       headers: authHeaders(),
     }),
+  remove: (id: string) =>
+    request<void>(`/api/ideas/${id}`, { method: 'DELETE', headers: authHeaders() }),
 }
