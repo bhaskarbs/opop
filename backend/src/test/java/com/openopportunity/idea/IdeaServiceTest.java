@@ -258,4 +258,28 @@ class IdeaServiceTest {
         assertThatThrownBy(() -> ideaService.getInterests(idea.getId(), otherId))
                 .isInstanceOf(IdeaAccessDeniedException.class);
     }
+
+    @Test
+    void getMyInterestsReturnsTheDenormalizedIdeaTitleAndSubmitter() {
+        UUID ownerId = UUID.randomUUID();
+        UUID interestedUserId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        com.openopportunity.idea.IdeaInterest interest = new com.openopportunity.idea.IdeaInterest(
+                idea.getId(),
+                idea.getTitle(),
+                idea.getSubmitterName(),
+                interestedUserId,
+                "Fatima Sheikh",
+                IdeaInterestRole.INVESTOR,
+                "₹5,00,000",
+                "Interested.");
+        when(ideaInterestRepository.findByInterestedUserIdOrderByCreatedAtDesc(interestedUserId))
+                .thenReturn(java.util.List.of(interest));
+
+        var mine = ideaService.getMyInterests(interestedUserId);
+
+        assertThat(mine).hasSize(1);
+        assertThat(mine.get(0).ideaTitle()).isEqualTo(idea.getTitle());
+        assertThat(mine.get(0).ideaSubmitterName()).isEqualTo(idea.getSubmitterName());
+    }
 }

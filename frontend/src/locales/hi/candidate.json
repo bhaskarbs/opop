@@ -99,23 +99,22 @@
   "applications": {
     "type": {
       "job": "नौकरी",
-      "partnership": "पार्टनरशिप",
-      "community": "कम्युनिटी"
+      "partnership": "पार्टनरशिप"
     },
     "status": {
-      "interviewScheduled": "इंटरव्यू शेड्यूल किया गया",
       "underReview": "समीक्षा जारी",
       "applied": "आवेदन किया गया",
-      "invitedToSession": "सेशन के लिए आमंत्रित",
       "notSelected": "चयनित नहीं",
-      "seminarInviteSent": "सेमिनार का निमंत्रण भेजा गया",
       "withdrawn": "वापस लिया गया"
+    },
+    "role": {
+      "investor": "निवेशक",
+      "participant": "भागीदार"
     },
     "tabs": {
       "all": "सभी",
       "jobs": "नौकरियां",
-      "partnerships": "पार्टनरशिप",
-      "community": "कम्युनिटी"
+      "partnerships": "पार्टनरशिप"
     },
     "appliedToday": "आज",
     "appliedOneDayAgo": "1 दिन पहले",
@@ -126,8 +125,9 @@
     "appliedMonthsAgo": "{{months}} महीने पहले",
     "loadError": "आपके आवेदन लोड नहीं हो सके।",
     "title": "मेरे आवेदन",
-    "subtitle": "हर नौकरी, पार्टनरशिप और कम्युनिटी आवेदन को एक ही जगह ट्रैक करें।",
+    "subtitle": "हर नौकरी और पार्टनरशिप आवेदन को एक ही जगह ट्रैक करें।",
     "loading": "आपके आवेदन लोड हो रहे हैं…",
+    "empty": "अभी तक कोई आवेदन नहीं है।",
     "appliedPrefix": "{{org}} · {{applied}} आवेदन किया",
     "withdraw": "वापस लें"
   },

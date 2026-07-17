@@ -6,17 +6,11 @@ import {
   applicationsApi,
   type ApplicationStatus as BackendApplicationStatus,
 } from '../../lib/applicationsApi'
+import { ideasApi, type BackendIdeaInterestRole } from '../../lib/ideasApi'
 
-type ApplicationType = 'Job' | 'Partnership' | 'Community'
+type ApplicationType = 'Job' | 'Partnership'
 
-type ApplicationStatus =
-  | 'Interview scheduled'
-  | 'Under review'
-  | 'Applied'
-  | 'Invited to session'
-  | 'Not selected'
-  | 'Seminar invite sent'
-  | 'Withdrawn'
+type ApplicationStatus = 'Under review' | 'Applied' | 'Not selected' | 'Withdrawn'
 
 interface Application {
   id: string
@@ -25,6 +19,10 @@ interface Application {
   applied: string
   type: ApplicationType
   status: ApplicationStatus
+  // Only set for Partnership rows (investor/participant on an idea) — idea interests have no
+  // review workflow of their own (see IdeaService.submitInterest), so status is always a fixed
+  // 'Applied'; this is what actually distinguishes one row from another.
+  roleLabel?: BackendIdeaInterestRole
 }
 
 const TYPE_STYLES: Record<
@@ -43,21 +41,12 @@ const TYPE_STYLES: Record<
     iconBgClass: 'bg-warning-tint',
     tagClass: 'bg-amber-tint text-amber',
   },
-  Community: {
-    icon: 'M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M9 8a3 3 0 1 0 0 6',
-    strokeColor: '#0F8A6B',
-    iconBgClass: 'bg-[#E1F5EE]',
-    tagClass: 'bg-teal-tint text-teal',
-  },
 }
 
 const STATUS_CLASSES: Record<ApplicationStatus, string> = {
-  'Interview scheduled': 'bg-teal-tint text-teal',
   'Under review': 'bg-warning-tint text-warning',
   Applied: 'bg-neutral-tint text-slate',
-  'Invited to session': 'bg-teal-tint text-teal',
   'Not selected': 'bg-[#FDECEC] text-danger',
-  'Seminar invite sent': 'bg-teal-tint text-teal',
   Withdrawn: 'bg-neutral-tint text-fog',
 }
 
@@ -66,16 +55,12 @@ const STATUS_CLASSES: Record<ApplicationStatus, string> = {
 const TYPE_LABEL_KEYS: Record<ApplicationType, string> = {
   Job: 'applications.type.job',
   Partnership: 'applications.type.partnership',
-  Community: 'applications.type.community',
 }
 
 const STATUS_LABEL_KEYS: Record<ApplicationStatus, string> = {
-  'Interview scheduled': 'applications.status.interviewScheduled',
   'Under review': 'applications.status.underReview',
   Applied: 'applications.status.applied',
-  'Invited to session': 'applications.status.invitedToSession',
   'Not selected': 'applications.status.notSelected',
-  'Seminar invite sent': 'applications.status.seminarInviteSent',
   Withdrawn: 'applications.status.withdrawn',
 }
 
@@ -86,42 +71,15 @@ const BACKEND_STATUS_LABELS: Record<BackendApplicationStatus, ApplicationStatus>
   WITHDRAWN: 'Withdrawn',
 }
 
-// Startup partnerships and community roles have no backend service (see Step 16/17 scope
-// notes) — these stay mock, unlike the Job applications fetched below.
-const MOCK_APPLICATIONS: Application[] = [
-  {
-    id: 'mock-partnership-1',
-    title: 'Frontend Partner — Product MVP',
-    org: 'Vertex Robotics',
-    applied: '5 days ago',
-    type: 'Partnership',
-    status: 'Under review',
-  },
-  {
-    id: 'mock-community-1',
-    title: 'Peer Mentor Circle — Tech Careers',
-    org: 'OpenOpportunity Community',
-    applied: '1 week ago',
-    type: 'Community',
-    status: 'Invited to session',
-  },
-  {
-    id: 'mock-partnership-2',
-    title: 'Growth & Lifecycle Partner',
-    org: 'Lumen Health',
-    applied: '3 weeks ago',
-    type: 'Partnership',
-    status: 'Seminar invite sent',
-  },
-  {
-    id: 'mock-partnership-3',
-    title: 'Founding Frontend Partner',
-    org: 'Sahaay Finance',
-    applied: '1 month ago',
-    type: 'Partnership',
-    status: 'Applied',
-  },
-]
+const ROLE_LABEL_KEYS: Record<BackendIdeaInterestRole, string> = {
+  INVESTOR: 'applications.role.investor',
+  PARTICIPANT: 'applications.role.participant',
+}
+
+const ROLE_BADGE_CLASSES: Record<BackendIdeaInterestRole, string> = {
+  INVESTOR: 'bg-primary-tint text-primary',
+  PARTICIPANT: 'bg-teal-tint text-teal',
+}
 
 function formatAppliedLabel(t: TFunction<'candidate'>, appliedAt: string): string {
   const days = Math.floor((Date.now() - new Date(appliedAt).getTime()) / 86_400_000)
@@ -140,26 +98,25 @@ function formatAppliedLabel(t: TFunction<'candidate'>, appliedAt: string): strin
     : t('applications.appliedMonthsAgo', { months })
 }
 
-const TAB_FILTERS = ['All', 'Jobs', 'Partnerships', 'Community'] as const
+const TAB_FILTERS = ['All', 'Jobs', 'Partnerships'] as const
 type TabFilter = (typeof TAB_FILTERS)[number]
 
 const TAB_TO_TYPE: Record<Exclude<TabFilter, 'All'>, ApplicationType> = {
   Jobs: 'Job',
   Partnerships: 'Partnership',
-  Community: 'Community',
 }
 
 const TAB_LABEL_KEYS: Record<TabFilter, string> = {
   All: 'applications.tabs.all',
   Jobs: 'applications.tabs.jobs',
   Partnerships: 'applications.tabs.partnerships',
-  Community: 'applications.tabs.community',
 }
 
 export default function ApplicationsPage() {
   const { t } = useTranslation('candidate')
   const [activeTab, setActiveTab] = useState<TabFilter>('All')
   const [jobApplications, setJobApplications] = useState<Application[]>([])
+  const [partnershipApplications, setPartnershipApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -169,11 +126,15 @@ export default function ApplicationsPage() {
     async function load() {
       setLoading(true)
       setError(null)
-      try {
-        const mine = await applicationsApi.mine()
-        if (cancelled) return
+      const [jobsResult, partnershipsResult] = await Promise.allSettled([
+        applicationsApi.mine(),
+        ideasApi.myInterests(),
+      ])
+      if (cancelled) return
+
+      if (jobsResult.status === 'fulfilled') {
         setJobApplications(
-          mine.map((application) => ({
+          jobsResult.value.map((application) => ({
             id: application.id,
             title: application.jobTitle,
             org: application.companyName,
@@ -182,13 +143,30 @@ export default function ApplicationsPage() {
             status: BACKEND_STATUS_LABELS[application.status],
           })),
         )
-      } catch (caught) {
-        if (!cancelled) {
-          setError(caught instanceof ApiError ? caught.message : t('applications.loadError'))
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
       }
+      if (partnershipsResult.status === 'fulfilled') {
+        setPartnershipApplications(
+          partnershipsResult.value.map((interest) => ({
+            id: interest.id,
+            title: interest.ideaTitle,
+            org: interest.ideaSubmitterName,
+            applied: formatAppliedLabel(t, interest.createdAt),
+            type: 'Partnership',
+            status: 'Applied',
+            roleLabel: interest.role,
+          })),
+        )
+      }
+      const failure =
+        jobsResult.status === 'rejected'
+          ? jobsResult.reason
+          : partnershipsResult.status === 'rejected'
+            ? partnershipsResult.reason
+            : null
+      if (failure) {
+        setError(failure instanceof ApiError ? failure.message : t('applications.loadError'))
+      }
+      setLoading(false)
     }
 
     load()
@@ -210,7 +188,7 @@ export default function ApplicationsPage() {
     }
   }
 
-  const allApplications = [...jobApplications, ...MOCK_APPLICATIONS]
+  const allApplications = [...jobApplications, ...partnershipApplications]
 
   function tabCount(tab: TabFilter): number {
     if (tab === 'All') return allApplications.length
@@ -286,6 +264,13 @@ export default function ApplicationsPage() {
                       >
                         {t(TYPE_LABEL_KEYS[application.type])}
                       </span>
+                      {application.roleLabel && (
+                        <span
+                          className={`rounded-full px-[9px] py-0.5 text-[11px] font-bold ${ROLE_BADGE_CLASSES[application.roleLabel]}`}
+                        >
+                          {t(ROLE_LABEL_KEYS[application.roleLabel])}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-0.5 text-[13px] text-slate">
                       {t('applications.appliedPrefix', {
@@ -314,6 +299,11 @@ export default function ApplicationsPage() {
               </div>
             )
           })}
+          {visible.length === 0 && (
+            <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+              {t('applications.empty')}
+            </div>
+          )}
         </div>
       )}
     </main>

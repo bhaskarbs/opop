@@ -99,23 +99,22 @@
   "applications": {
     "type": {
       "job": "Job",
-      "partnership": "Partnership",
-      "community": "Community"
+      "partnership": "Partnership"
     },
     "status": {
-      "interviewScheduled": "Interview scheduled",
       "underReview": "Under review",
       "applied": "Applied",
-      "invitedToSession": "Invited to session",
       "notSelected": "Not selected",
-      "seminarInviteSent": "Seminar invite sent",
       "withdrawn": "Withdrawn"
+    },
+    "role": {
+      "investor": "Investor",
+      "participant": "Participant"
     },
     "tabs": {
       "all": "All",
       "jobs": "Jobs",
-      "partnerships": "Partnerships",
-      "community": "Community"
+      "partnerships": "Partnerships"
     },
     "appliedToday": "today",
     "appliedOneDayAgo": "1 day ago",
@@ -126,8 +125,9 @@
     "appliedMonthsAgo": "{{months}} months ago",
     "loadError": "Could not load your applications.",
     "title": "My applications",
-    "subtitle": "Track every job, partnership, and community application in one place.",
+    "subtitle": "Track every job and partnership application in one place.",
     "loading": "Loading your applications…",
+    "empty": "No applications yet.",
     "appliedPrefix": "{{org}} · Applied {{applied}}",
     "withdraw": "Withdraw"
   },

@@ -9,4 +9,6 @@ public interface IdeaInterestRepository extends JpaRepository<IdeaInterest, UUID
     boolean existsByIdeaIdAndInterestedUserId(UUID ideaId, UUID interestedUserId);
 
     List<IdeaInterest> findByIdeaIdOrderByCreatedAtDesc(UUID ideaId);
+
+    List<IdeaInterest> findByInterestedUserIdOrderByCreatedAtDesc(UUID interestedUserId);
 }

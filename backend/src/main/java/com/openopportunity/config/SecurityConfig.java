@@ -83,6 +83,11 @@ public class SecurityConfig {
                         .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.POST, "/api/ideas/*/interests")
                         .hasAnyRole("CANDIDATE", "COMPANY")
+                        // A distinct literal path (not "/api/ideas/{id}/interests" — id would
+                        // never be the literal string "interests"), but still needs its own rule
+                        // since it doesn't fall under any broader permitAll pattern above.
+                        .requestMatchers(HttpMethod.GET, "/api/ideas/interests/mine")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
                         // Owner-only (IdeaService.getInterests enforces it) — any authenticated
                         // candidate/company can call this, but only sees a real list for ideas
                         // they themselves submitted.

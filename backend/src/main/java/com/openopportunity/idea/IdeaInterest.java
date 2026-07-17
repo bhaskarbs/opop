@@ -21,6 +21,12 @@ public class IdeaInterest {
     @Column(name = "idea_id", nullable = false, updatable = false)
     private UUID ideaId;
 
+    @Column(name = "idea_title", nullable = false, updatable = false)
+    private String ideaTitle;
+
+    @Column(name = "idea_submitter_name", nullable = false, updatable = false)
+    private String ideaSubmitterName;
+
     @Column(name = "interested_user_id", nullable = false, updatable = false)
     private UUID interestedUserId;
 
@@ -46,6 +52,8 @@ public class IdeaInterest {
 
     public IdeaInterest(
             UUID ideaId,
+            String ideaTitle,
+            String ideaSubmitterName,
             UUID interestedUserId,
             String interestedUserName,
             IdeaInterestRole role,
@@ -53,6 +61,8 @@ public class IdeaInterest {
             String message) {
         this.id = UUID.randomUUID();
         this.ideaId = ideaId;
+        this.ideaTitle = ideaTitle;
+        this.ideaSubmitterName = ideaSubmitterName;
         this.interestedUserId = interestedUserId;
         this.interestedUserName = interestedUserName;
         this.role = role;
@@ -71,6 +81,14 @@ public class IdeaInterest {
 
     public UUID getIdeaId() {
         return ideaId;
+    }
+
+    public String getIdeaTitle() {
+        return ideaTitle;
+    }
+
+    public String getIdeaSubmitterName() {
+        return ideaSubmitterName;
     }
 
     public UUID getInterestedUserId() {
