@@ -180,4 +180,41 @@ class IdeaServiceTest {
 
         assertThat(rejected.status()).isEqualTo(IdeaStatus.REJECTED);
     }
+
+    @Test
+    void getMineReturnsOnlyTheCallersOwnIdeasRegardlessOfStatus() {
+        UUID ownerId = UUID.randomUUID();
+        Idea pending = sampleIdea(ownerId);
+        Idea approved = sampleIdea(ownerId);
+        approved.approve();
+        when(ideaRepository.findBySubmitterIdOrderByCreatedAtDesc(ownerId))
+                .thenReturn(java.util.List.of(pending, approved));
+
+        var mine = ideaService.getMine(ownerId);
+
+        assertThat(mine).hasSize(2);
+        assertThat(mine).extracting("status").containsExactlyInAnyOrder(IdeaStatus.PENDING, IdeaStatus.APPROVED);
+    }
+
+    @Test
+    void deleteRejectsNonOwner() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        assertThatThrownBy(() -> ideaService.delete(idea.getId(), otherId))
+                .isInstanceOf(IdeaAccessDeniedException.class);
+    }
+
+    @Test
+    void deleteRemovesTheOwnersIdea() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        ideaService.delete(idea.getId(), ownerId);
+
+        org.mockito.Mockito.verify(ideaRepository).delete(idea);
+    }
 }

@@ -59,9 +59,11 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
-                        // /pending and /*/approve, /*/reject must be declared before the
+                        // /mine, /pending and /*/approve, /*/reject must be declared before the
                         // general GET /api/ideas/** permitAll rule below — same
                         // declaration-order caveat as /api/jobs/pending above.
+                        .requestMatchers(HttpMethod.GET, "/api/ideas/mine")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.GET, "/api/ideas/pending")
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/ideas/*/approve", "/api/ideas/*/reject")
@@ -76,6 +78,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/ideas")
                         .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.PUT, "/api/ideas/*")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
+                        .requestMatchers(HttpMethod.DELETE, "/api/ideas/*")
                         .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.POST, "/api/applications", "/api/applications/*/withdraw")
                         .hasRole("CANDIDATE")

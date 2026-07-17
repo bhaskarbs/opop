@@ -86,6 +86,19 @@ public class IdeaService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<IdeaSummary> getMine(UUID submitterId) {
+        return ideaRepository.findBySubmitterIdOrderByCreatedAtDesc(submitterId).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Transactional
+    public void delete(UUID id, UUID submitterId) {
+        Idea idea = findOwned(id, submitterId);
+        ideaRepository.delete(idea);
+    }
+
     @Transactional
     public IdeaDetail approve(UUID id) {
         Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
@@ -142,6 +155,7 @@ public class IdeaService {
                 idea.getFunding(),
                 idea.getTeamSize(),
                 idea.getTimeline(),
+                idea.getStatus(),
                 idea.getCreatedAt());
     }
 
