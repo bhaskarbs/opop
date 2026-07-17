@@ -25,7 +25,7 @@ export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
   company: [
     { label: 'nav.postJob', to: ROUTES.companyPostJob },
     { label: 'nav.searchCandidates', to: ROUTES.companySearchCandidates },
-    { label: 'nav.partnershipApplicants' },
+    { label: 'nav.partnerships', to: ROUTES.companyPartnerships },
     { label: 'nav.seminars', to: ROUTES.companySeminars },
   ],
   admin: [

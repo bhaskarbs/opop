@@ -1,4 +1,42 @@
 {
+  "partnerships": {
+    "badge": "Startup Partnership Ecosystem",
+    "hero": {
+      "title": "Find your next partner, not just another hire",
+      "subtitle": "You haven't listed a partnership yet — this is where you learn how it works, then choose the track that fits: offer funding and structure to a partner, or bring an early-stage builder in on pure experience.",
+      "watchExplainer": "Watch the explainer",
+      "exploreIdeas": "Explore the ideas",
+      "videoCaption": "3 min · How it works"
+    },
+    "videoModal": {
+      "caption": "[ video: how startup partnerships work · 3 min ]"
+    },
+    "steps": {
+      "share": {
+        "title": "Share your needs",
+        "desc": "The role, skills, and equity or funding you can offer a partner."
+      },
+      "matched": {
+        "title": "Get matched",
+        "desc": "We surface candidates whose skills fit what you need."
+      },
+      "seminar": {
+        "title": "Seminar or meetup",
+        "desc": "Meet shortlisted candidates through an invited session."
+      },
+      "partner": {
+        "title": "Partner & build together",
+        "desc": "Work together and document the outcomes for both sides."
+      }
+    },
+    "cta": {
+      "heading": "Want us to notify you?",
+      "body": "Show interest and we'll notify you the moment a matching partner is available.",
+      "thanks": "Thanks — we'll notify you when a matching partner is available ✓",
+      "placeholder": "Role you need filled",
+      "submit": "Show interest"
+    }
+  },
   "profile": {
     "title": "Company profile",
     "subtitle": "Complete these verification details so admins can review and approve your account.",

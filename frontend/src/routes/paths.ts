@@ -28,6 +28,7 @@ export const ROUTES = {
 
   companyDashboard: '/company/dashboard',
   companyProfile: '/company/profile',
+  companyPartnerships: '/company/partnerships',
   companyPostJob: '/company/post-job',
   companySearchCandidates: '/company/search-candidates',
   companySeminars: '/company/seminars',
