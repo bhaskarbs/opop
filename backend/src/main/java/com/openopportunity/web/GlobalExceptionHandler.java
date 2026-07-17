@@ -16,6 +16,7 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
@@ -147,6 +148,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IdeaAccessDeniedException.class)
     public ResponseEntity<ApiError> handleIdeaAccessDenied(IdeaAccessDeniedException ex) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(DuplicateIdeaInterestException.class)
+    public ResponseEntity<ApiError> handleDuplicateIdeaInterest(DuplicateIdeaInterestException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

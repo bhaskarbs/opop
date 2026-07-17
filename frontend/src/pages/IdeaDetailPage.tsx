@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
+import { ApiError } from '../lib/apiClient'
 import { avatarColorClass } from '../lib/ideaAvatar'
 import { ideasApi, type BackendIdeaStage, type IdeaDetail as IdeaDetailData } from '../lib/ideasApi'
 import { ROUTES } from '../routes/paths'
@@ -24,6 +25,8 @@ export default function IdeaDetailPage() {
   const [ticketSize, setTicketSize] = useState('')
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const [idea, setIdea] = useState<IdeaDetailData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -64,6 +67,26 @@ export default function IdeaDetailPage() {
     setTicketSize('')
     setMessage('')
     setSubmitted(false)
+    setSubmitError(null)
+  }
+
+  async function handleSubmitInterest() {
+    if (!idea || !modalRole) return
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      await ideasApi.submitInterest(idea.id, {
+        role: modalRole === 'investor' ? 'INVESTOR' : 'PARTICIPANT',
+        ticketSize: modalRole === 'investor' && ticketSize ? ticketSize : null,
+        message: message || null,
+      })
+      setIdea((prev) => (prev ? { ...prev, interestedCount: prev.interestedCount + 1 } : prev))
+      setSubmitted(true)
+    } catch (caught) {
+      setSubmitError(caught instanceof ApiError ? caught.message : t('submit.errorGeneric'))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const isLoggedIn = status === 'authenticated'
@@ -103,7 +126,7 @@ export default function IdeaDetailPage() {
               </span>
             </div>
             <div className="text-xs text-fog">
-              {t('detail.submittedMeta', { date: submittedDate, count: 0 })}
+              {t('detail.submittedMeta', { date: submittedDate, count: idea.interestedCount })}
             </div>
           </div>
         </div>
@@ -230,10 +253,14 @@ export default function IdeaDetailPage() {
                     placeholder={t('detail.modal.messagePlaceholder')}
                     className="mb-4 w-full resize-y rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
                   />
+                  {submitError && (
+                    <p className="mb-3.5 text-[12.5px] font-semibold text-danger">{submitError}</p>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setSubmitted(true)}
-                    className="w-full rounded-[9px] bg-ink py-3 text-sm font-bold text-white"
+                    disabled={submitting}
+                    onClick={handleSubmitInterest}
+                    className="w-full rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
                   >
                     {t('detail.modal.submitInterest')}
                   </button>

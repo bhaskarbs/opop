@@ -23,4 +23,5 @@ public record IdeaDetail(
         String videoLink,
         String contactEmail,
         IdeaStatus status,
+        int interestedCount,
         Instant createdAt) {}

@@ -81,6 +81,13 @@ public class SecurityConfig {
                         .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.DELETE, "/api/ideas/*")
                         .hasAnyRole("CANDIDATE", "COMPANY")
+                        .requestMatchers(HttpMethod.POST, "/api/ideas/*/interests")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
+                        // Owner-only (IdeaService.getInterests enforces it) — any authenticated
+                        // candidate/company can call this, but only sees a real list for ideas
+                        // they themselves submitted.
+                        .requestMatchers(HttpMethod.GET, "/api/ideas/*/interests")
+                        .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.POST, "/api/applications", "/api/applications/*/withdraw")
                         .hasRole("CANDIDATE")
                         .requestMatchers(HttpMethod.GET, "/api/applications/mine")
