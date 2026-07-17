@@ -1,15 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
-import { IDEAS, type IdeaStage } from '../mocks/ideas'
+import { avatarColorClass } from '../lib/ideaAvatar'
+import { ideasApi, type BackendIdeaStage, type IdeaDetail as IdeaDetailData } from '../lib/ideasApi'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 
-const STAGE_KEYS: Record<IdeaStage, string> = {
-  Concept: 'browse.stages.concept',
-  Prototype: 'browse.stages.prototype',
-  Live: 'browse.stages.live',
+const STAGE_KEYS: Record<BackendIdeaStage, string> = {
+  CONCEPT: 'browse.stages.concept',
+  PROTOTYPE: 'browse.stages.prototype',
+  LIVE: 'browse.stages.live',
 }
 
 type ApplyRole = 'investor' | 'participant'
@@ -24,7 +25,31 @@ export default function IdeaDetailPage() {
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-  const idea = IDEAS.find((i) => i.id === ideaId)
+  const [idea, setIdea] = useState<IdeaDetailData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!ideaId) return
+    let cancelled = false
+    ideasApi
+      .get(ideaId)
+      .then((detail) => {
+        if (!cancelled) setIdea(detail)
+      })
+      .catch(() => {
+        if (!cancelled) setIdea(null)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [ideaId])
+
+  if (loading) {
+    return <main className="mx-auto max-w-[960px] px-6 py-16 text-center text-sm text-slate" />
+  }
 
   if (!idea) {
     return (
@@ -42,6 +67,11 @@ export default function IdeaDetailPage() {
   }
 
   const isLoggedIn = status === 'authenticated'
+  const submittedDate = new Date(idea.createdAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 
   return (
     <main className="mx-auto grid max-w-[960px] grid-cols-1 gap-5 px-6 py-8 pb-16">
@@ -61,19 +91,19 @@ export default function IdeaDetailPage() {
         <h1 className="mb-2.5 text-2xl font-extrabold tracking-[-0.01em] text-ink">{idea.title}</h1>
         <div className="mb-5 flex items-center gap-2.5">
           <span
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-[12.5px] font-bold text-white ${idea.avatarColorClass}`}
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-[12.5px] font-bold text-white ${avatarColorClass(idea.submitterName)}`}
           >
-            {idea.initial}
+            {idea.submitterName.charAt(0).toUpperCase()}
           </span>
           <div>
             <div className="text-[13.5px] font-bold text-ink">
-              {idea.submitter}{' '}
+              {idea.submitterName}{' '}
               <span className="font-medium text-fog">
-                · {t(`browse.submitterTypes.${idea.submitterType.toLowerCase()}`)}
+                · {t(`browse.submitterTypes.${idea.submitterRole.toLowerCase()}`)}
               </span>
             </div>
             <div className="text-xs text-fog">
-              {t('detail.submittedMeta', { date: idea.submittedLabel, count: idea.applicants })}
+              {t('detail.submittedMeta', { date: submittedDate, count: 0 })}
             </div>
           </div>
         </div>
@@ -83,25 +113,25 @@ export default function IdeaDetailPage() {
             <div className="mb-[3px] text-[11.5px] tracking-[0.03em] text-fog uppercase">
               {t('detail.fundingRequired')}
             </div>
-            <div className="text-sm font-bold text-ink">{idea.funding}</div>
+            <div className="text-sm font-bold text-ink">{idea.funding ?? '—'}</div>
           </div>
           <div>
             <div className="mb-[3px] text-[11.5px] tracking-[0.03em] text-fog uppercase">
               {t('detail.equityOffered')}
             </div>
-            <div className="text-sm font-bold text-ink">{idea.equity}</div>
+            <div className="text-sm font-bold text-ink">{idea.equity ?? '—'}</div>
           </div>
           <div>
             <div className="mb-[3px] text-[11.5px] tracking-[0.03em] text-fog uppercase">
               {t('detail.teamSize')}
             </div>
-            <div className="text-sm font-bold text-ink">{idea.teamSize}</div>
+            <div className="text-sm font-bold text-ink">{idea.teamSize ?? '—'}</div>
           </div>
           <div>
             <div className="mb-[3px] text-[11.5px] tracking-[0.03em] text-fog uppercase">
               {t('detail.timeline')}
             </div>
-            <div className="text-sm font-bold text-ink">{idea.timeline}</div>
+            <div className="text-sm font-bold text-ink">{idea.timeline ?? '—'}</div>
           </div>
         </div>
 
@@ -113,14 +143,23 @@ export default function IdeaDetailPage() {
           {idea.solution} {idea.targetMarket}
         </p>
 
-        <h3 className="mb-2 text-[14.5px] font-bold text-ink">{t('detail.videoPitch')}</h3>
-        <div className="mb-1 flex aspect-video max-w-[420px] items-center justify-center rounded-xl bg-[#101522]">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-        </div>
+        {idea.videoLink && (
+          <>
+            <h3 className="mb-2 text-[14.5px] font-bold text-ink">{t('detail.videoPitch')}</h3>
+            <a
+              href={idea.videoLink}
+              target="_blank"
+              rel="noreferrer"
+              className="mb-1 flex aspect-video max-w-[420px] items-center justify-center rounded-xl bg-[#101522] no-underline"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </a>
+          </>
+        )}
       </div>
 
       <div className="sticky bottom-4 rounded-2xl border border-border bg-surface p-6">

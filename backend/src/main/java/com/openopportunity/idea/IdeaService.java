@@ -4,9 +4,13 @@ import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.idea.dto.IdeaDetail;
 import com.openopportunity.idea.dto.IdeaRequest;
+import com.openopportunity.idea.dto.IdeaSummary;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
+import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,8 +54,51 @@ public class IdeaService {
     }
 
     @Transactional(readOnly = true)
-    public IdeaDetail getMine(UUID id, UUID submitterId) {
-        Idea idea = findOwned(id, submitterId);
+    public List<IdeaSummary> browse(String q, String category, IdeaStage stage) {
+        Specification<Idea> spec = Specification.allOf(
+                IdeaSpecifications.hasStatus(IdeaStatus.APPROVED),
+                IdeaSpecifications.matchesKeyword(q),
+                IdeaSpecifications.hasCategory(category),
+                IdeaSpecifications.hasStage(stage));
+        return ideaRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    /** Anyone can view an APPROVED idea (public community browse/detail); a PENDING/REJECTED
+     * idea is only visible to its own submitter, e.g. while editing it — {@code callerId} is
+     * null for anonymous requests. Non-owners requesting a non-approved idea get the same 404
+     * as a truly unknown id, so existence of unapproved ideas isn't leaked. */
+    @Transactional(readOnly = true)
+    public IdeaDetail get(UUID id, UUID callerId) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
+        boolean isOwner = callerId != null && idea.getSubmitterId().equals(callerId);
+        if (idea.getStatus() != IdeaStatus.APPROVED && !isOwner) {
+            throw new IdeaNotFoundException(id);
+        }
+        return toDetail(idea);
+    }
+
+    @Transactional(readOnly = true)
+    public List<IdeaSummary> getPending() {
+        return ideaRepository.findByStatusOrderByCreatedAtDesc(IdeaStatus.PENDING).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Transactional
+    public IdeaDetail approve(UUID id) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
+        idea.approve();
+        ideaRepository.save(idea);
+        return toDetail(idea);
+    }
+
+    @Transactional
+    public IdeaDetail reject(UUID id) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
+        idea.reject();
+        ideaRepository.save(idea);
         return toDetail(idea);
     }
 
@@ -83,10 +130,24 @@ public class IdeaService {
         return idea;
     }
 
+    private IdeaSummary toSummary(Idea idea) {
+        return new IdeaSummary(
+                idea.getId(),
+                idea.getTitle(),
+                idea.getCategory(),
+                idea.getStage(),
+                idea.getProblem(),
+                idea.getSubmitterName(),
+                idea.getSubmitterRole(),
+                idea.getFunding(),
+                idea.getCreatedAt());
+    }
+
     private IdeaDetail toDetail(Idea idea) {
         return new IdeaDetail(
                 idea.getId(),
                 idea.getSubmitterName(),
+                idea.getSubmitterRole(),
                 idea.getTitle(),
                 idea.getCategory(),
                 idea.getStage(),

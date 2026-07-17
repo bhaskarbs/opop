@@ -59,11 +59,21 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
-                        // Both candidates and companies can submit ideas (see
-                        // IdeasBrowsePage's "Submit your idea" CTA).
+                        // /pending and /*/approve, /*/reject must be declared before the
+                        // general GET /api/ideas/** permitAll rule below — same
+                        // declaration-order caveat as /api/jobs/pending above.
+                        .requestMatchers(HttpMethod.GET, "/api/ideas/pending")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/ideas/*/approve", "/api/ideas/*/reject")
+                        .hasRole("ADMIN")
+                        // GET (browse/detail) is public — anyone can read the community ideas
+                        // page (see IdeasBrowsePage); IdeaService.get() still hides
+                        // PENDING/REJECTED ideas from everyone but their own submitter. Both
+                        // candidates and companies can submit/edit ideas (see IdeasBrowsePage's
+                        // "Submit your idea" CTA).
+                        .requestMatchers(HttpMethod.GET, "/api/ideas", "/api/ideas/*")
+                        .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/ideas")
-                        .hasAnyRole("CANDIDATE", "COMPANY")
-                        .requestMatchers(HttpMethod.GET, "/api/ideas/*")
                         .hasAnyRole("CANDIDATE", "COMPANY")
                         .requestMatchers(HttpMethod.PUT, "/api/ideas/*")
                         .hasAnyRole("CANDIDATE", "COMPANY")
