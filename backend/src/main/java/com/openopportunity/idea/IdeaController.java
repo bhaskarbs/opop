@@ -1,6 +1,8 @@
 package com.openopportunity.idea;
 
 import com.openopportunity.idea.dto.IdeaDetail;
+import com.openopportunity.idea.dto.IdeaInterestRequest;
+import com.openopportunity.idea.dto.IdeaInterestSummary;
 import com.openopportunity.idea.dto.IdeaRequest;
 import com.openopportunity.idea.dto.IdeaSummary;
 import jakarta.validation.Valid;
@@ -77,6 +79,18 @@ public class IdeaController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         ideaService.delete(id, currentUserId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/interests")
+    public ResponseEntity<IdeaInterestSummary> submitInterest(
+            @PathVariable UUID id, @Valid @RequestBody IdeaInterestRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ideaService.submitInterest(id, currentUserId(), request));
+    }
+
+    @GetMapping("/{id}/interests")
+    public List<IdeaInterestSummary> interests(@PathVariable UUID id) {
+        return ideaService.getInterests(id, currentUserId());
     }
 
     private UUID currentUserId() {

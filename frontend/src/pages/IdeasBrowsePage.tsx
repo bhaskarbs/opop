@@ -160,7 +160,10 @@ export default function IdeasBrowsePage() {
               </div>
               <div className="mt-0.5 flex items-center justify-between border-t border-[#F0F1F3] pt-3">
                 <div className="text-[12.5px] text-fog">
-                  {t('browse.seekingInterested', { funding: idea.funding ?? '—', count: 0 })}
+                  {t('browse.seekingInterested', {
+                    funding: idea.funding ?? '—',
+                    count: idea.interestedCount,
+                  })}
                 </div>
                 <Link
                   to={localize(ROUTES.ideaDetail(idea.id))}

@@ -9,7 +9,10 @@ import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
 import com.openopportunity.idea.dto.IdeaDetail;
+import com.openopportunity.idea.dto.IdeaInterestRequest;
+import com.openopportunity.idea.dto.IdeaInterestSummary;
 import com.openopportunity.idea.dto.IdeaRequest;
+import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import java.util.Optional;
@@ -29,11 +32,14 @@ class IdeaServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private IdeaInterestRepository ideaInterestRepository;
+
     private IdeaService ideaService;
 
     @BeforeEach
     void setUp() {
-        ideaService = new IdeaService(ideaRepository, userRepository);
+        ideaService = new IdeaService(ideaRepository, userRepository, ideaInterestRepository);
     }
 
     private IdeaRequest sampleRequest() {
@@ -216,5 +222,40 @@ class IdeaServiceTest {
         ideaService.delete(idea.getId(), ownerId);
 
         org.mockito.Mockito.verify(ideaRepository).delete(idea);
+    }
+
+    @Test
+    void submitInterestIncrementsCountAndRejectsASecondAttemptFromTheSameUser() {
+        UUID ownerId = UUID.randomUUID();
+        UUID interestedUserId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        idea.approve();
+        User interestedUser = new User("investor@example.com", "hash", "Fatima Sheikh", UserRole.CANDIDATE);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+        when(userRepository.findById(interestedUserId)).thenReturn(Optional.of(interestedUser));
+        when(ideaInterestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IdeaInterestRequest request = new IdeaInterestRequest(IdeaInterestRole.INVESTOR, "₹5,00,000", "Interested.");
+        IdeaInterestSummary summary = ideaService.submitInterest(idea.getId(), interestedUserId, request);
+
+        assertThat(summary.interestedUserName()).isEqualTo("Fatima Sheikh");
+        assertThat(idea.getInterestedCount()).isEqualTo(1);
+
+        when(ideaInterestRepository.existsByIdeaIdAndInterestedUserId(idea.getId(), interestedUserId))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> ideaService.submitInterest(idea.getId(), interestedUserId, request))
+                .isInstanceOf(DuplicateIdeaInterestException.class);
+    }
+
+    @Test
+    void getInterestsRejectsNonOwner() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        assertThatThrownBy(() -> ideaService.getInterests(idea.getId(), otherId))
+                .isInstanceOf(IdeaAccessDeniedException.class);
     }
 }

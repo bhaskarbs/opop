@@ -18,4 +18,5 @@ public record IdeaSummary(
         Integer teamSize,
         String timeline,
         IdeaStatus status,
+        int interestedCount,
         Instant createdAt) {}

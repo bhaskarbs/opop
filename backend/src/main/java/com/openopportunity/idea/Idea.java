@@ -71,6 +71,9 @@ public class Idea {
     @Column(nullable = false, length = 10)
     private IdeaStatus status;
 
+    @Column(name = "interested_count", nullable = false)
+    private int interestedCount;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -114,6 +117,7 @@ public class Idea {
         this.videoLink = videoLink;
         this.contactEmail = contactEmail;
         this.status = IdeaStatus.PENDING;
+        this.interestedCount = 0;
     }
 
     /** Edits send the idea back to PENDING — an approved/rejected idea's content may have
@@ -152,6 +156,10 @@ public class Idea {
 
     public void reject() {
         this.status = IdeaStatus.REJECTED;
+    }
+
+    public void incrementInterestedCount() {
+        this.interestedCount++;
     }
 
     @PrePersist
@@ -232,6 +240,10 @@ public class Idea {
 
     public IdeaStatus getStatus() {
         return status;
+    }
+
+    public int getInterestedCount() {
+        return interestedCount;
     }
 
     public Instant getCreatedAt() {

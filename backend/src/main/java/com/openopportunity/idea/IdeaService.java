@@ -3,8 +3,11 @@ package com.openopportunity.idea;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.idea.dto.IdeaDetail;
+import com.openopportunity.idea.dto.IdeaInterestRequest;
+import com.openopportunity.idea.dto.IdeaInterestSummary;
 import com.openopportunity.idea.dto.IdeaRequest;
 import com.openopportunity.idea.dto.IdeaSummary;
+import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import java.util.List;
@@ -19,10 +22,15 @@ public class IdeaService {
 
     private final IdeaRepository ideaRepository;
     private final UserRepository userRepository;
+    private final IdeaInterestRepository ideaInterestRepository;
 
-    public IdeaService(IdeaRepository ideaRepository, UserRepository userRepository) {
+    public IdeaService(
+            IdeaRepository ideaRepository,
+            UserRepository userRepository,
+            IdeaInterestRepository ideaInterestRepository) {
         this.ideaRepository = ideaRepository;
         this.userRepository = userRepository;
+        this.ideaInterestRepository = ideaInterestRepository;
     }
 
     @Transactional
@@ -135,6 +143,50 @@ public class IdeaService {
         return toDetail(idea);
     }
 
+    /** A user can express interest in an idea at most once — a second attempt is rejected
+     * rather than silently updating the first (same policy as a duplicate job application). */
+    @Transactional
+    public IdeaInterestSummary submitInterest(UUID ideaId, UUID interestedUserId, IdeaInterestRequest request) {
+        Idea idea = ideaRepository.findById(ideaId).orElseThrow(() -> new IdeaNotFoundException(ideaId));
+        if (ideaInterestRepository.existsByIdeaIdAndInterestedUserId(ideaId, interestedUserId)) {
+            throw new DuplicateIdeaInterestException();
+        }
+        User interestedUser = userRepository.findById(interestedUserId).orElseThrow();
+        IdeaInterest interest = new IdeaInterest(
+                ideaId,
+                interestedUserId,
+                interestedUser.getFullName(),
+                request.role(),
+                request.ticketSize(),
+                request.message());
+        interest = ideaInterestRepository.save(interest);
+        idea.incrementInterestedCount();
+        ideaRepository.save(idea);
+        return toInterestSummary(interest);
+    }
+
+    /** Only the idea's own submitter can see who has expressed interest in it. */
+    @Transactional(readOnly = true)
+    public List<IdeaInterestSummary> getInterests(UUID ideaId, UUID callerId) {
+        Idea idea = ideaRepository.findById(ideaId).orElseThrow(() -> new IdeaNotFoundException(ideaId));
+        if (!idea.getSubmitterId().equals(callerId)) {
+            throw new IdeaAccessDeniedException();
+        }
+        return ideaInterestRepository.findByIdeaIdOrderByCreatedAtDesc(ideaId).stream()
+                .map(this::toInterestSummary)
+                .toList();
+    }
+
+    private IdeaInterestSummary toInterestSummary(IdeaInterest interest) {
+        return new IdeaInterestSummary(
+                interest.getId(),
+                interest.getInterestedUserName(),
+                interest.getRole(),
+                interest.getTicketSize(),
+                interest.getMessage(),
+                interest.getCreatedAt());
+    }
+
     private Idea findOwned(UUID id, UUID submitterId) {
         Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
         if (!idea.getSubmitterId().equals(submitterId)) {
@@ -156,6 +208,7 @@ public class IdeaService {
                 idea.getTeamSize(),
                 idea.getTimeline(),
                 idea.getStatus(),
+                idea.getInterestedCount(),
                 idea.getCreatedAt());
     }
 
@@ -177,6 +230,7 @@ public class IdeaService {
                 idea.getVideoLink(),
                 idea.getContactEmail(),
                 idea.getStatus(),
+                idea.getInterestedCount(),
                 idea.getCreatedAt());
     }
 }

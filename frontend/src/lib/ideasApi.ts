@@ -4,6 +4,7 @@ import { request } from './apiClient'
 export type BackendIdeaStage = 'CONCEPT' | 'PROTOTYPE' | 'LIVE'
 export type BackendIdeaStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type BackendIdeaSubmitterRole = 'CANDIDATE' | 'COMPANY'
+export type BackendIdeaInterestRole = 'INVESTOR' | 'PARTICIPANT'
 
 export interface IdeaSummary {
   id: string
@@ -17,6 +18,7 @@ export interface IdeaSummary {
   teamSize: number | null
   timeline: string | null
   status: BackendIdeaStatus
+  interestedCount: number
   createdAt: string
 }
 
@@ -37,6 +39,7 @@ export interface IdeaDetail {
   videoLink: string | null
   contactEmail: string
   status: BackendIdeaStatus
+  interestedCount: number
   createdAt: string
 }
 
@@ -59,6 +62,21 @@ export interface IdeaRequestPayload {
   timeline: string | null
   videoLink: string | null
   contactEmail: string
+}
+
+export interface IdeaInterestSummary {
+  id: string
+  interestedUserName: string
+  role: BackendIdeaInterestRole
+  ticketSize: string | null
+  message: string | null
+  createdAt: string
+}
+
+export interface IdeaInterestRequestPayload {
+  role: BackendIdeaInterestRole
+  ticketSize: string | null
+  message: string | null
 }
 
 function authHeaders(): Record<string, string> {
@@ -98,4 +116,13 @@ export const ideasApi = {
     }),
   remove: (id: string) =>
     request<void>(`/api/ideas/${id}`, { method: 'DELETE', headers: authHeaders() }),
+  submitInterest: (id: string, payload: IdeaInterestRequestPayload) =>
+    request<IdeaInterestSummary>(`/api/ideas/${id}/interests`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  // Owner-only server-side — see IdeaService.getInterests. Backs MyIdeasPage's applicant list.
+  interests: (id: string) =>
+    request<IdeaInterestSummary[]>(`/api/ideas/${id}/interests`, { headers: authHeaders() }),
 }
