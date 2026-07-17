@@ -36,6 +36,7 @@ import IdeaSubmitPage from './pages/candidate/IdeaSubmitPage'
 import CandidateBillingPage from './pages/candidate/CandidateBillingPage'
 import CompanyDashboardPage from './pages/company/CompanyDashboardPage'
 import CompanyProfilePage from './pages/company/CompanyProfilePage'
+import CompanyPartnershipsPage from './pages/company/CompanyPartnershipsPage'
 import PostJobPage from './pages/company/PostJobPage'
 import SearchCandidatesPage from './pages/company/SearchCandidatesPage'
 import SeminarSchedulerPage from './pages/company/SeminarSchedulerPage'
@@ -129,6 +130,7 @@ function App() {
               <Route element={<AuthenticatedLayout headerVariant="company" />}>
                 <Route path="company/dashboard" element={<CompanyDashboardPage />} />
                 <Route path="company/profile" element={<CompanyProfilePage />} />
+                <Route path="company/partnerships" element={<CompanyPartnershipsPage />} />
                 <Route path="company/post-job" element={<PostJobPage />} />
                 <Route path="company/search-candidates" element={<SearchCandidatesPage />} />
                 <Route path="company/seminars" element={<SeminarSchedulerPage />} />
