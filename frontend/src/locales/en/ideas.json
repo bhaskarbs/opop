@@ -115,8 +115,8 @@
     "timeline": "Timeline",
     "approveAndPublish": "Approve & publish",
     "reject": "Reject",
-    "publishedNotice": "Published — visible to all visitors",
-    "rejectedNotice": "Rejected — submitter has been notified",
+    "loading": "Loading pending ideas…",
+    "loadError": "Could not load pending ideas.",
     "noneWaiting": "No ideas are waiting for review."
   }
 }

@@ -140,6 +140,8 @@ public class IdeaService {
                 idea.getSubmitterName(),
                 idea.getSubmitterRole(),
                 idea.getFunding(),
+                idea.getTeamSize(),
+                idea.getTimeline(),
                 idea.getCreatedAt());
     }
 

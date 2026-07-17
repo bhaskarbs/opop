@@ -1,5 +1,6 @@
 import { useAuthStore } from '../stores/authStore'
 import { request } from './apiClient'
+import type { IdeaSummary } from './ideasApi'
 import type { JobSummary } from './jobsApi'
 
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
@@ -57,6 +58,12 @@ export const adminApi = {
     request<JobSummary>(`/api/jobs/${id}/approve`, { method: 'POST', headers: authHeaders() }),
   rejectJob: (id: string) =>
     request<JobSummary>(`/api/jobs/${id}/reject`, { method: 'POST', headers: authHeaders() }),
+
+  pendingIdeas: () => request<IdeaSummary[]>('/api/ideas/pending', { headers: authHeaders() }),
+  approveIdea: (id: string) =>
+    request<IdeaSummary>(`/api/ideas/${id}/approve`, { method: 'POST', headers: authHeaders() }),
+  rejectIdea: (id: string) =>
+    request<IdeaSummary>(`/api/ideas/${id}/reject`, { method: 'POST', headers: authHeaders() }),
 
   pendingCompanies: () =>
     request<AdminCompanyProfileSummary[]>('/api/admin/companies/pending', {
