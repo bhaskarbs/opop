@@ -19,6 +19,8 @@ import JobSearchPage from './pages/job-search/JobSearchPage'
 import JobDetailPage from './pages/JobDetailPage'
 import PartnershipsPage from './pages/PartnershipsPage'
 import CommunityPage from './pages/CommunityPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/TermsOfServicePage'
 import IdeasBrowsePage from './pages/IdeasBrowsePage'
 import IdeaDetailPage from './pages/IdeaDetailPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -107,6 +109,8 @@ function App() {
               <Route path="partnerships/ideas" element={<IdeasBrowsePage />} />
               <Route path="partnerships/ideas/:ideaId" element={<IdeaDetailPage />} />
               <Route path="community" element={<CommunityPage />} />
+              <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="terms-of-service" element={<TermsOfServicePage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
               <Route path="company/login" element={<CompanyLoginPage />} />

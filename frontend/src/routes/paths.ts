@@ -11,6 +11,8 @@ export const ROUTES = {
   ideasBrowse: '/partnerships/ideas',
   ideaDetail: (ideaId: string) => `/partnerships/ideas/${ideaId}`,
   community: '/community',
+  privacyPolicy: '/privacy-policy',
+  termsOfService: '/terms-of-service',
   login: '/login',
   register: '/register',
   companyLogin: '/company/login',
