@@ -59,12 +59,14 @@ const THREE_PATHS = [
   },
 ]
 
-const STATS = [
-  { value: '12,400+', labelKey: 'landing.stats.liveJobs' },
-  { value: '860+', labelKey: 'landing.stats.startups' },
-  { value: '340+', labelKey: 'landing.stats.communitySessions' },
-  { value: '92%', labelKey: 'landing.stats.candidatesWhoFoundPath' },
-]
+// Numbers/stats band — commented out per request, along with its render block below. Restore
+// both to bring the section back.
+// const STATS = [
+//   { value: '12,400+', labelKey: 'landing.stats.liveJobs' },
+//   { value: '860+', labelKey: 'landing.stats.startups' },
+//   { value: '340+', labelKey: 'landing.stats.communitySessions' },
+//   { value: '92%', labelKey: 'landing.stats.candidatesWhoFoundPath' },
+// ]
 
 // Mock startup profiles — treated like company-authored content, not translated UI copy (i18n
 // scope here is static UI text only; job/company content stays as entered).
@@ -117,7 +119,7 @@ export default function LandingPage() {
   return (
     <main>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-primary-tint to-page px-6 pt-16 pb-14">
+      <section className="bg-gradient-to-b from-primary-tint to-page px-6 pt-16 pb-6">
         <div className="mx-auto max-w-[1120px] text-center">
           <div className="mb-[22px] inline-flex items-center gap-1.5 rounded-full border border-[#D8E1FB] bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-primary">
             {t('landing.badge')}
@@ -200,7 +202,7 @@ export default function LandingPage() {
       </section>
 
       {/* Three paths, one profile */}
-      <section className="mx-auto max-w-[1120px] px-6 pt-16 pb-4">
+      <section className="mx-auto max-w-[1120px] px-6 pt-8 pb-4">
         <div className="mx-auto mb-10 max-w-[640px] text-center">
           <h2 className="mb-3 text-[30px] font-extrabold tracking-[-0.01em] text-ink">
             {t('landing.paths.heading')}
@@ -225,7 +227,9 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="mb-2 text-lg font-bold text-ink">{t(path.titleKey)}</h3>
-              <p className="mb-4 text-[14.5px] leading-[1.6] text-slate">{t(path.descriptionKey)}</p>
+              <p className="mb-4 text-[14.5px] leading-[1.6] text-slate">
+                {t(path.descriptionKey)}
+              </p>
               <Link
                 to={localize(path.to)}
                 className={`text-sm font-bold no-underline ${path.linkClassName}`}
@@ -237,7 +241,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats band */}
+      {/* Stats band — commented out per request; see STATS above.
       <section className="mt-14 border-t border-b border-border bg-surface">
         <div className="mx-auto grid max-w-[1120px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-6 px-6 py-9 text-center">
           {STATS.map((stat) => (
@@ -248,6 +252,7 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      */}
 
       {/* Startups offering partnerships */}
       <section className="mx-auto max-w-[1120px] px-6 py-16">
@@ -277,16 +282,13 @@ export default function LandingPage() {
                 </div>
               </div>
               <p className="mb-3.5 text-sm leading-[1.55] text-slate">{startup.blurb}</p>
-              <div className="mb-4 flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {startup.tags.map((tag) => (
                   <Tag key={tag} variant="partnership">
                     {tag}
                   </Tag>
                 ))}
               </div>
-              <LinkButton to={ROUTES.partnerships} variant="dark" className="block w-full text-center">
-                {t('landing.startups.applyForPartnership')}
-              </LinkButton>
             </Card>
           ))}
         </div>
@@ -312,12 +314,6 @@ export default function LandingPage() {
               >
                 {t('landing.community.watchAndRead')}
               </Link>
-              <Link
-                to={localize(ROUTES.community)}
-                className="rounded-lg border border-[rgba(255,255,255,0.3)] px-5 py-[11px] text-sm font-bold text-white no-underline"
-              >
-                {t('landing.community.interested')}
-              </Link>
             </div>
           </div>
           <div className="flex aspect-video items-center justify-center rounded-card border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)]">
@@ -330,7 +326,9 @@ export default function LandingPage() {
 
       {/* Final CTA */}
       <section className="mx-auto mb-[72px] max-w-[1120px] px-6 text-center">
-        <h2 className="mb-3 text-[26px] font-extrabold text-ink">{t('landing.finalCta.heading')}</h2>
+        <h2 className="mb-3 text-[26px] font-extrabold text-ink">
+          {t('landing.finalCta.heading')}
+        </h2>
         <p className="mb-6 text-[15px] text-slate">{t('landing.finalCta.subtitle')}</p>
         <LinkButton to={ROUTES.register} size="lg" className="text-[15px]">
           {t('landing.finalCta.button')}

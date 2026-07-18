@@ -44,15 +44,13 @@
     },
     "startups": {
       "heading": "Startups offering partnerships",
-      "viewAll": "View all →",
-      "applyForPartnership": "Apply for partnership"
+      "viewAll": "View all →"
     },
     "community": {
       "badge": "Community income",
       "heading": "Never heard of community income?",
       "subtitle": "Watch short videos and read guides on different income types — then tell us you're interested and we'll invite you to the next session.",
       "watchAndRead": "Watch & read →",
-      "interested": "I'm interested",
       "videoPlaceholder": "[ intro video: community income explained ]"
     },
     "finalCta": {
