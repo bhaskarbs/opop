@@ -27,8 +27,8 @@ const EMPLOYER_LINKS: FooterLink[] = [
 ]
 
 const LEGAL_LINKS: FooterLink[] = [
-  { label: 'footer.legal.privacyPolicy' },
-  { label: 'footer.legal.termsOfService' },
+  { label: 'footer.legal.privacyPolicy', to: ROUTES.privacyPolicy },
+  { label: 'footer.legal.termsOfService', to: ROUTES.termsOfService },
   { label: 'footer.legal.grievanceRedressal' },
 ]
 
