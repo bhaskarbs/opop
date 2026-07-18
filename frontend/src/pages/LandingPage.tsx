@@ -1,9 +1,17 @@
-import { type SubmitEvent, useState } from 'react'
+import { type SubmitEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, LinkButton, Tag } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
+import { avatarColorClass } from '../lib/ideaAvatar'
+import { ideasApi, type BackendIdeaStage, type IdeaSummary } from '../lib/ideasApi'
 import { ROUTES } from '../routes/paths'
+
+const STAGE_KEYS: Record<BackendIdeaStage, string> = {
+  CONCEPT: 'ideas:browse.stages.concept',
+  PROTOTYPE: 'ideas:browse.stages.prototype',
+  LIVE: 'ideas:browse.stages.live',
+}
 
 // Trending-skill query chips double as literal search terms (see handleSearchSubmit), so — like
 // job/company content elsewhere — they stay in English rather than being translated UI copy.
@@ -68,44 +76,35 @@ const THREE_PATHS = [
 //   { value: '92%', labelKey: 'landing.stats.candidatesWhoFoundPath' },
 // ]
 
-// Mock startup profiles — treated like company-authored content, not translated UI copy (i18n
-// scope here is static UI text only; job/company content stays as entered).
-const STARTUPS = [
-  {
-    name: 'Vertex Robotics',
-    sector: 'Deep Tech · Seed',
-    initial: 'V',
-    avatarBgClass: 'bg-primary',
-    blurb:
-      'Looking for partners with embedded systems or hardware QA experience to co-build their next product line.',
-    tags: ['Hardware', 'QA', 'Embedded'],
-  },
-  {
-    name: 'Lumen Health',
-    sector: 'Healthtech · Series A',
-    initial: 'L',
-    avatarBgClass: 'bg-teal',
-    blurb:
-      'Needs partners across clinical ops, customer success, and growth marketing for its telehealth platform.',
-    tags: ['Ops', 'CS', 'Marketing'],
-  },
-  {
-    name: 'Sahaay Finance',
-    sector: 'Fintech · Pre-seed',
-    initial: 'S',
-    avatarBgClass: 'bg-amber',
-    blurb:
-      'Building rural credit tools — open to partners with sales, community outreach, or compliance backgrounds.',
-    tags: ['Sales', 'Compliance'],
-  },
-]
-
 export default function LandingPage() {
   const { t } = useTranslation('public')
   const navigate = useNavigate()
   const localize = useLocalizedPath()
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
+  const [startups, setStartups] = useState<IdeaSummary[]>([])
+  const [startupsLoading, setStartupsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ideasApi
+      .browse()
+      .then((ideas) => {
+        if (!cancelled) {
+          setStartups(ideas.slice(0, 3))
+        }
+      })
+      .catch(() => {
+        // Best-effort — the section just stays hidden if this fails, same as any other
+        // below-the-fold marketing content on this page.
+      })
+      .finally(() => {
+        if (!cancelled) setStartupsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function handleSearchSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -254,45 +253,52 @@ export default function LandingPage() {
       </section>
       */}
 
-      {/* Startups offering partnerships */}
-      <section className="mx-auto max-w-[1120px] px-6 py-16">
-        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-[26px] font-extrabold tracking-[-0.01em] text-ink">
-            {t('landing.startups.heading')}
-          </h2>
-          <Link
-            to={localize(ROUTES.partnerships)}
-            className="text-sm font-bold text-primary no-underline"
-          >
-            {t('landing.startups.viewAll')}
-          </Link>
-        </div>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[18px]">
-          {STARTUPS.map((startup) => (
-            <Card key={startup.name} className="p-[22px]">
-              <div className="mb-3.5 flex items-center gap-3">
-                <div
-                  className={`flex h-[42px] w-[42px] items-center justify-center rounded-[10px] text-[15px] font-bold text-white ${startup.avatarBgClass}`}
-                >
-                  {startup.initial}
+      {/* Startups offering partnerships — backed by approved ideas from any submitter, candidate
+      or company (see IdeasBrowsePage); an idea only becomes visible here once an admin approves
+      it (see IdeaService.browse). Hidden entirely once loaded if there are none yet, rather than
+      showing an empty heading with nothing under it. */}
+      {(startupsLoading || startups.length > 0) && (
+        <section className="mx-auto max-w-[1120px] px-6 py-16">
+          <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[26px] font-extrabold tracking-[-0.01em] text-ink">
+              {t('landing.startups.heading')}
+            </h2>
+            <Link
+              to={localize(ROUTES.partnerships)}
+              className="text-sm font-bold text-primary no-underline"
+            >
+              {t('landing.startups.viewAll')}
+            </Link>
+          </div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[18px]">
+            {startups.map((idea) => (
+              <Card key={idea.id} className="p-[22px]">
+                <div className="mb-3.5 flex items-center gap-3">
+                  <div
+                    className={`flex h-[42px] w-[42px] items-center justify-center rounded-[10px] text-[15px] font-bold text-white ${avatarColorClass(idea.submitterName)}`}
+                  >
+                    {idea.submitterName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="text-[15px] font-bold text-ink">{idea.submitterName}</div>
+                    <div className="text-[13px] text-fog">{idea.category}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[15px] font-bold text-ink">{startup.name}</div>
-                  <div className="text-[13px] text-fog">{startup.sector}</div>
+                <p className="mb-3.5 text-sm leading-[1.55] text-slate">{idea.problem}</p>
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <Tag variant="partnership">{t(STAGE_KEYS[idea.stage])}</Tag>
+                  <Link
+                    to={localize(ROUTES.ideaDetail(idea.id))}
+                    className="text-[13px] font-bold text-primary no-underline"
+                  >
+                    {t('ideas:browse.viewIdea')}
+                  </Link>
                 </div>
-              </div>
-              <p className="mb-3.5 text-sm leading-[1.55] text-slate">{startup.blurb}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {startup.tags.map((tag) => (
-                  <Tag key={tag} variant="partnership">
-                    {tag}
-                  </Tag>
-                ))}
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Community income banner */}
       <section className="mx-auto mb-16 max-w-[1120px] px-6">
