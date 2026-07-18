@@ -11,6 +11,7 @@ import {
 import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
 import { RequireAuth } from './routes/RequireAuth'
+import { ScrollToTop } from './routes/ScrollToTop'
 import i18n, { DEFAULT_LANGUAGE, isSupportedLanguage } from './i18n'
 import StyleGuidePage from './pages/dev/StyleGuidePage'
 import LandingPage from './pages/LandingPage'
@@ -92,6 +93,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<Navigate to={`/${DEFAULT_LANGUAGE}`} replace />} />
