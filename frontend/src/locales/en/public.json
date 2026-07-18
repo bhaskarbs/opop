@@ -186,7 +186,19 @@
       "title": "Understand income beyond a paycheck",
       "subtitle": "Community roles build soft skills and introduce you to income types you may never have considered — while you keep searching for the job you want.",
       "videoCaption": "[ video: what is community income? · 4 min ]",
-      "knowMore": "Know more about community & community income"
+      "knowMore": "Know more about community & community income",
+      "knowMoreSent": "Thanks — we'll get back to you soon.",
+      "knowMoreError": "Couldn't send your request. Please try again.",
+      "knowMoreModal": {
+        "close": "Close",
+        "heading": "Tell us how to reach you",
+        "body": "Share your details and our team will get back to you with more on community income.",
+        "name": "Name",
+        "companyName": "Company / organization (optional)",
+        "email": "Email",
+        "phone": "Phone (optional)",
+        "submit": "Send"
+      }
     },
     "incomeTypes": {
       "heading": "Learn about different income types",
