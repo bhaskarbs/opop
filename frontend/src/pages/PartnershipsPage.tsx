@@ -39,8 +39,6 @@ export default function PartnershipsPage() {
   const { t } = useTranslation('public')
   const localize = useLocalizedPath()
   const [videoOpen, setVideoOpen] = useState(false)
-  const [skill, setSkill] = useState('')
-  const [interested, setInterested] = useState(false)
 
   return (
     <main>
@@ -112,42 +110,6 @@ export default function PartnershipsPage() {
               <div className="text-[13px] leading-[1.55] text-slate">{t(step.descKey)}</div>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-[1120px] px-6 py-16">
-        <div className="flex flex-wrap items-center justify-between gap-6 rounded-[18px] bg-ink p-10">
-          <div>
-            <div className="mb-1.5 text-[17px] font-bold text-white">
-              {t('partnerships.cta.heading')}
-            </div>
-            <div className="text-sm text-[#B4BAC6]">{t('partnerships.cta.body')}</div>
-          </div>
-          {interested ? (
-            <div className="text-sm font-bold text-[#7FE0C4]">{t('partnerships.cta.thanks')}</div>
-          ) : (
-            <form
-              className="flex flex-wrap gap-2.5"
-              onSubmit={(event) => {
-                event.preventDefault()
-                setInterested(true)
-              }}
-            >
-              <input
-                type="text"
-                value={skill}
-                onChange={(event) => setSkill(event.target.value)}
-                placeholder={t('partnerships.cta.placeholder')}
-                className="w-[200px] rounded-[9px] border-none bg-white px-3.5 py-3 text-sm"
-              />
-              <button
-                type="submit"
-                className="rounded-[9px] bg-white px-[22px] text-sm font-bold text-ink"
-              >
-                {t('partnerships.cta.submit')}
-              </button>
-            </form>
-          )}
         </div>
       </div>
     </main>
