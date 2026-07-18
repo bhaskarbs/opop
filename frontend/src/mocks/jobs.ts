@@ -518,8 +518,15 @@ export const opportunities: Opportunity[] = [
 
 export const TRENDING_SKILLS = [
   'Frontend Developer',
+  'Backend Engineer',
   'Data Analyst',
+  'Product Manager',
+  'UI/UX Designer',
   'Customer Support',
   'Sales',
   'Content Writing',
+  'Digital Marketing',
+  'DevOps Engineer',
+  'HR Coordinator',
+  'Graphic Designer',
 ]
