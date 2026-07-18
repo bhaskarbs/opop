@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ApiError } from '../lib/apiClient'
+import { communityApi } from '../lib/communityApi'
 
 const INCOME_TYPES = [
   {
@@ -27,6 +29,40 @@ const INCOME_TYPES = [
 export default function CommunityPage() {
   const { t } = useTranslation('public')
   const [videoOpen, setVideoOpen] = useState(false)
+  const [interestModalOpen, setInterestModalOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [interestSending, setInterestSending] = useState(false)
+  const [interestSent, setInterestSent] = useState(false)
+  const [interestError, setInterestError] = useState<string | null>(null)
+
+  function closeInterestModal() {
+    setInterestModalOpen(false)
+    setInterestError(null)
+  }
+
+  async function handleSubmitInterest() {
+    setInterestSending(true)
+    setInterestError(null)
+    try {
+      await communityApi.notifyInterest({
+        name,
+        companyName: companyName || null,
+        email,
+        phone: phone || null,
+      })
+      setInterestSent(true)
+      setInterestModalOpen(false)
+    } catch (caught) {
+      setInterestError(
+        caught instanceof ApiError ? caught.message : t('community.hero.knowMoreError'),
+      )
+    } finally {
+      setInterestSending(false)
+    }
+  }
 
   return (
     <main>
@@ -42,13 +78,19 @@ export default function CommunityPage() {
             <p className="mb-5 max-w-[460px] text-[15px] leading-[1.65] text-[#B9E9DC]">
               {t('community.hero.subtitle')}
             </p>
-            <button
-              type="button"
-              onClick={() => setVideoOpen(true)}
-              className="rounded-[9px] bg-teal px-[22px] py-3 text-sm font-bold text-white"
-            >
-              {t('community.hero.knowMore')}
-            </button>
+            {interestSent ? (
+              <p className="text-sm font-semibold text-[#7FE0C4]">
+                {t('community.hero.knowMoreSent')}
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setInterestModalOpen(true)}
+                className="rounded-[9px] bg-teal px-[22px] py-3 text-sm font-bold text-white"
+              >
+                {t('community.hero.knowMore')}
+              </button>
+            )}
           </div>
           <button
             type="button"
@@ -85,6 +127,78 @@ export default function CommunityPage() {
             <div className="text-center font-mono text-[12.5px] text-[#7FA0F2]">
               {t('community.hero.videoCaption')}
             </div>
+          </div>
+        </div>
+      )}
+
+      {interestModalOpen && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-[#14181F]/75 p-5">
+          <div className="relative w-full max-w-[440px] rounded-2xl bg-surface p-7">
+            <button
+              type="button"
+              onClick={closeInterestModal}
+              aria-label={t('community.hero.knowMoreModal.close')}
+              className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-tint text-[15px]"
+            >
+              ×
+            </button>
+            <h3 className="mb-1 text-[17px] font-bold text-ink">
+              {t('community.hero.knowMoreModal.heading')}
+            </h3>
+            <p className="mb-[18px] text-[13px] text-slate">
+              {t('community.hero.knowMoreModal.body')}
+            </p>
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#3A414D]">
+              {t('community.hero.knowMoreModal.name')}
+            </label>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="mb-3.5 w-full rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
+            />
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#3A414D]">
+              {t('community.hero.knowMoreModal.companyName')}
+            </label>
+            <input
+              value={companyName}
+              onChange={(event) => setCompanyName(event.target.value)}
+              className="mb-3.5 w-full rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
+            />
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#3A414D]">
+              {t('community.hero.knowMoreModal.email')}
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="mb-3.5 w-full rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
+            />
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#3A414D]">
+              {t('community.hero.knowMoreModal.phone')}
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              className="mb-4 w-full rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
+            />
+
+            {interestError && (
+              <p className="mb-3.5 text-[12.5px] font-semibold text-danger">{interestError}</p>
+            )}
+
+            <button
+              type="button"
+              disabled={interestSending || !name || !email}
+              onClick={handleSubmitInterest}
+              className="w-full rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {t('community.hero.knowMoreModal.submit')}
+            </button>
           </div>
         </div>
       )}

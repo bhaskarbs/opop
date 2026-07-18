@@ -37,7 +37,8 @@ public class SecurityConfig {
                                 "/api/auth/google",
                                 "/api/auth/google/company",
                                 "/api/auth/refresh",
-                                "/api/auth/logout")
+                                "/api/auth/logout",
+                                "/api/community/interest")
                         .permitAll()
                         // /mine and /pending must be declared before the general GET
                         // /api/jobs/** permitAll rule below — authorizeHttpRequests matches in
