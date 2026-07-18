@@ -202,7 +202,7 @@
     },
     "incomeTypes": {
       "heading": "Learn about different income types",
-      "readGuide": "Read guide →",
+      "readGuide": "Know more about income types",
       "active": {
         "title": "Active income",
         "desc": "Trading time and skill directly for pay — most jobs work this way."
@@ -218,6 +218,17 @@
       "partnership": {
         "title": "Partnership income",
         "desc": "Value earned by co-building and sharing outcomes with a team."
+      },
+      "guideSent": "Thanks — we'll send the guide your way soon.",
+      "guideModal": {
+        "close": "Close",
+        "heading": "Get the income types guide",
+        "body": "Share your details and we'll send you the full guide on community income.",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone (optional)",
+        "submit": "Send",
+        "error": "Couldn't send your request. Please try again."
       }
     }
   }

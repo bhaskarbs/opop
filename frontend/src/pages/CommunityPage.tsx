@@ -38,6 +38,14 @@ export default function CommunityPage() {
   const [interestSent, setInterestSent] = useState(false)
   const [interestError, setInterestError] = useState<string | null>(null)
 
+  const [guideModalOpen, setGuideModalOpen] = useState(false)
+  const [guideName, setGuideName] = useState('')
+  const [guideEmail, setGuideEmail] = useState('')
+  const [guidePhone, setGuidePhone] = useState('')
+  const [guideSending, setGuideSending] = useState(false)
+  const [guideSent, setGuideSent] = useState(false)
+  const [guideError, setGuideError] = useState<string | null>(null)
+
   function closeInterestModal() {
     setInterestModalOpen(false)
     setInterestError(null)
@@ -61,6 +69,32 @@ export default function CommunityPage() {
       )
     } finally {
       setInterestSending(false)
+    }
+  }
+
+  function closeGuideModal() {
+    setGuideModalOpen(false)
+    setGuideError(null)
+  }
+
+  async function handleSubmitGuideRequest() {
+    setGuideSending(true)
+    setGuideError(null)
+    try {
+      await communityApi.notifyInterest({
+        name: guideName,
+        companyName: null,
+        email: guideEmail,
+        phone: guidePhone || null,
+      })
+      setGuideSent(true)
+      setGuideModalOpen(false)
+    } catch (caught) {
+      setGuideError(
+        caught instanceof ApiError ? caught.message : t('community.incomeTypes.guideModal.error'),
+      )
+    } finally {
+      setGuideSending(false)
     }
   }
 
@@ -203,11 +237,74 @@ export default function CommunityPage() {
         </div>
       )}
 
+      {guideModalOpen && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-[#14181F]/75 p-5">
+          <div className="relative w-full max-w-[440px] rounded-2xl bg-surface p-7">
+            <button
+              type="button"
+              onClick={closeGuideModal}
+              aria-label={t('community.incomeTypes.guideModal.close')}
+              className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-tint text-[15px]"
+            >
+              ×
+            </button>
+            <h3 className="mb-1 text-[17px] font-bold text-ink">
+              {t('community.incomeTypes.guideModal.heading')}
+            </h3>
+            <p className="mb-[18px] text-[13px] text-slate">
+              {t('community.incomeTypes.guideModal.body')}
+            </p>
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#3A414D]">
+              {t('community.incomeTypes.guideModal.name')}
+            </label>
+            <input
+              value={guideName}
+              onChange={(event) => setGuideName(event.target.value)}
+              className="mb-3.5 w-full rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
+            />
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#3A414D]">
+              {t('community.incomeTypes.guideModal.email')}
+            </label>
+            <input
+              type="email"
+              value={guideEmail}
+              onChange={(event) => setGuideEmail(event.target.value)}
+              className="mb-3.5 w-full rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
+            />
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#3A414D]">
+              {t('community.incomeTypes.guideModal.phone')}
+            </label>
+            <input
+              type="tel"
+              value={guidePhone}
+              onChange={(event) => setGuidePhone(event.target.value)}
+              className="mb-4 w-full rounded-lg border border-border px-3 py-2.5 text-[13.5px]"
+            />
+
+            {guideError && (
+              <p className="mb-3.5 text-[12.5px] font-semibold text-danger">{guideError}</p>
+            )}
+
+            <button
+              type="button"
+              disabled={guideSending || !guideName || !guideEmail}
+              onClick={handleSubmitGuideRequest}
+              className="w-full rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {t('community.incomeTypes.guideModal.submit')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-[1120px] px-6 py-11">
         <h2 className="mb-[18px] text-[19px] font-bold text-ink">
           {t('community.incomeTypes.heading')}
         </h2>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+        <div className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
           {INCOME_TYPES.map((incomeType) => (
             <div
               key={incomeType.titleKey}
@@ -228,16 +325,24 @@ export default function CommunityPage() {
               <div className="mb-1.5 text-[14.5px] font-bold text-ink">
                 {t(incomeType.titleKey)}
               </div>
-              <p className="mb-3 text-[13px] leading-[1.55] text-slate">{t(incomeType.descKey)}</p>
-              <a
-                href="#read"
-                onClick={(event) => event.preventDefault()}
-                className="text-[13px] font-bold text-teal no-underline"
-              >
-                {t('community.incomeTypes.readGuide')}
-              </a>
+              <p className="text-[13px] leading-[1.55] text-slate">{t(incomeType.descKey)}</p>
             </div>
           ))}
+        </div>
+        <div className="flex justify-center">
+          {guideSent ? (
+            <p className="text-sm font-semibold text-teal">
+              {t('community.incomeTypes.guideSent')}
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setGuideModalOpen(true)}
+              className="rounded-[9px] border border-teal px-[22px] py-3 text-sm font-bold text-teal"
+            >
+              {t('community.incomeTypes.readGuide')}
+            </button>
+          )}
         </div>
       </div>
     </main>
