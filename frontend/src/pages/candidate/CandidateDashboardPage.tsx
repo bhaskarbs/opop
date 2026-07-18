@@ -3,30 +3,19 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { applicationsApi } from '../../lib/applicationsApi'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
-import { deriveCompletedSections, profileCompletionPercent } from '../../lib/candidateProfileCompletion'
+import {
+  deriveCompletedSections,
+  profileCompletionPercent,
+} from '../../lib/candidateProfileCompletion'
+import { ideasApi, type IdeaSummary } from '../../lib/ideasApi'
 import { jobsApi } from '../../lib/jobsApi'
 import { toDisplayJob, type DisplayJob } from '../job-search/jobDisplay'
 import { ROUTES } from '../../routes/paths'
 
-// Mock content, not translated UI copy — same treatment as job/company/startup data elsewhere.
-const DASHBOARD_STARTUPS = [
-  {
-    name: 'Vertex Robotics',
-    initial: 'V',
-    blurb: 'Needs a frontend partner for their product MVP — remote friendly.',
-  },
-  {
-    name: 'Sahaay Finance',
-    initial: 'S',
-    blurb: 'Looking for partners with UI and customer research experience.',
-  },
-  {
-    name: 'Lumen Health',
-    initial: 'L',
-    blurb: 'Partner opportunity in growth and lifecycle design.',
-  },
-]
+const NUDGE_MIN_DAYS = 30
+const MS_PER_DAY = 86_400_000
 
 const RECORDINGS = [
   { title: 'Frontend behavioral round', date: 'Jul 2, 2026' },
@@ -46,15 +35,38 @@ export default function CandidateDashboardPage() {
 
   const [profile, setProfile] = useState<CandidateProfileResponse | null>(null)
   const [jobs, setJobs] = useState<DisplayJob[]>([])
+  const [ideas, setIdeas] = useState<IdeaSummary[]>([])
+  // The "no offer yet" nudge only makes sense once the candidate has actually had time to
+  // hear back — 30+ days since they started applying (their earliest application), or since
+  // they registered if they haven't applied to anything yet. Computed once when the data
+  // arrives (not during render) since Date.now() is impure.
+  const [daysSinceSearchStarted, setDaysSinceSearchStarted] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([candidateApi.getProfile(), jobsApi.search({})])
-      .then(([profileData, jobResults]) => {
+    Promise.all([
+      candidateApi.getProfile(),
+      jobsApi.search({}),
+      applicationsApi.mine(),
+      ideasApi.browse(),
+    ])
+      .then(([profileData, jobResults, applications, ideaResults]) => {
         if (cancelled) return
         setProfile(profileData)
         setJobs(jobResults.map(toDisplayJob))
+        setIdeas(ideaResults)
+        const earliestAppliedAt = applications.reduce<string | null>(
+          (earliestSoFar, application) =>
+            !earliestSoFar || application.appliedAt < earliestSoFar
+              ? application.appliedAt
+              : earliestSoFar,
+          null,
+        )
+        const searchStartedAt = earliestAppliedAt ?? profileData.createdAt
+        setDaysSinceSearchStarted(
+          Math.floor((Date.now() - new Date(searchStartedAt).getTime()) / MS_PER_DAY),
+        )
       })
       .catch(() => {
         // Best-effort — an empty dashboard (no matches, 0% complete) is a reasonable fallback
@@ -73,6 +85,21 @@ export default function CandidateDashboardPage() {
     const skillSet = new Set(profile.skills.map((skill) => skill.toLowerCase()))
     return jobs.filter((job) => job.tags.some((tag) => skillSet.has(tag.toLowerCase())))
   }, [profile, jobs])
+
+  // Ideas have no structured skills list (unlike jobs), so matching falls back to checking
+  // whether a skill shows up in the idea's own problem statement — the closest real signal
+  // available from IdeaSummary.
+  const matchedStartups = useMemo(() => {
+    if (!profile) return []
+    const skills = profile.skills.map((skill) => skill.toLowerCase()).filter(Boolean)
+    if (skills.length === 0) return []
+    return ideas
+      .filter((idea) => {
+        const problem = idea.problem.toLowerCase()
+        return skills.some((skill) => problem.includes(skill))
+      })
+      .slice(0, 3)
+  }, [profile, ideas])
 
   if (loading) {
     return (
@@ -114,7 +141,7 @@ export default function CandidateDashboardPage() {
             </Link>
           </div>
 
-          {showNudge && (
+          {showNudge && daysSinceSearchStarted >= NUDGE_MIN_DAYS && (
             <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-card border border-[#FCE3B8] bg-amber-tint p-[18px]">
               <div className="flex items-center gap-3.5">
                 <svg
@@ -131,7 +158,7 @@ export default function CandidateDashboardPage() {
                 </svg>
                 <div>
                   <div className="text-[14.5px] font-bold text-ink">
-                    {t('dashboard.nudge.title', { days: 47 })}
+                    {t('dashboard.nudge.title', { days: daysSinceSearchStarted })}
                   </div>
                   <div className="text-[13.5px] text-slate">{t('dashboard.nudge.body')}</div>
                 </div>
@@ -156,7 +183,10 @@ export default function CandidateDashboardPage() {
 
           <div className="mb-3.5 flex items-baseline justify-between">
             <h2 className="text-[17px] font-bold text-ink">{t('dashboard.jobsMatched')}</h2>
-            <Link to={localize(ROUTES.jobs)} className="text-[13.5px] font-bold text-primary no-underline">
+            <Link
+              to={localize(ROUTES.jobs)}
+              className="text-[13.5px] font-bold text-primary no-underline"
+            >
               {t('dashboard.searchJobs')}
             </Link>
           </div>
@@ -225,28 +255,57 @@ export default function CandidateDashboardPage() {
               {t('dashboard.seeAll')}
             </Link>
           </div>
-          <div className="mb-7 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3.5">
-            {DASHBOARD_STARTUPS.map((startup) => (
-              <div
-                key={startup.name}
-                className="rounded-xl border border-border bg-surface px-[18px] py-4"
-              >
-                <div className="mb-2.5 flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FFF1DC] text-[13.5px] font-bold text-amber">
-                    {startup.initial}
-                  </div>
-                  <div className="text-[14.5px] font-bold text-ink">{startup.name}</div>
-                </div>
-                <p className="mb-3 text-[13px] leading-[1.5] text-slate">{startup.blurb}</p>
-                <Link
-                  to={localize(ROUTES.partnerships)}
-                  className="block rounded-lg bg-amber-tint py-2 text-center text-[13px] font-bold text-amber no-underline"
+          {matchedStartups.length === 0 ? (
+            <div className="mb-7 rounded-xl border border-dashed border-[#D7DBE2] bg-surface p-7 text-center">
+              <div className="mx-auto mb-3.5 flex h-11 w-11 items-center justify-center rounded-[10px] bg-neutral-tint">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#8891A0"
+                  strokeWidth={2}
                 >
-                  {t('dashboard.applyForPartnership')}
-                </Link>
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+                </svg>
               </div>
-            ))}
-          </div>
+              <div className="mb-1.5 text-[14.5px] font-bold text-ink">
+                {t('dashboard.noMatchedStartups.title')}
+              </div>
+              <p className="mx-auto mb-4 max-w-[420px] text-[13.5px] leading-[1.55] text-slate">
+                {t('dashboard.noMatchedStartups.body')}
+              </p>
+              <Link
+                to={localize(ROUTES.partnerships)}
+                className="inline-block rounded-lg border border-border bg-surface px-[18px] py-2.5 text-[13.5px] font-bold text-ink no-underline"
+              >
+                {t('dashboard.noMatchedStartups.explore')}
+              </Link>
+            </div>
+          ) : (
+            <div className="mb-7 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3.5">
+              {matchedStartups.map((idea) => (
+                <div
+                  key={idea.id}
+                  className="rounded-xl border border-border bg-surface px-[18px] py-4"
+                >
+                  <div className="mb-2.5 flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FFF1DC] text-[13.5px] font-bold text-amber">
+                      {idea.submitterName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="text-[14.5px] font-bold text-ink">{idea.submitterName}</div>
+                  </div>
+                  <p className="mb-3 text-[13px] leading-[1.5] text-slate">{idea.problem}</p>
+                  <Link
+                    to={localize(ROUTES.ideaDetail(idea.id))}
+                    className="block rounded-lg bg-amber-tint py-2 text-center text-[13px] font-bold text-amber no-underline"
+                  >
+                    {t('dashboard.applyForPartnership')}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-card bg-[#0B3B34] p-[22px]">
             <div>
@@ -295,7 +354,9 @@ export default function CandidateDashboardPage() {
           </Card>
 
           <Card className="mb-4 p-5">
-            <h3 className="mb-3 text-[14.5px] font-bold text-ink">{t('dashboard.mockInterviews')}</h3>
+            <h3 className="mb-3 text-[14.5px] font-bold text-ink">
+              {t('dashboard.mockInterviews')}
+            </h3>
             <p className="mb-3.5 text-[13px] leading-[1.5] text-slate">
               {t('dashboard.mockInterviewsBody')}
             </p>

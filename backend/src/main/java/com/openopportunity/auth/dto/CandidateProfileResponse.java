@@ -20,4 +20,5 @@ public record CandidateProfileResponse(
         String lifeGoals,
         String workCulture,
         String workModePreference,
-        String openToPreference) {}
+        String openToPreference,
+        Instant createdAt) {}

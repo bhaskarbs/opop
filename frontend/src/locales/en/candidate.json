@@ -21,6 +21,11 @@
     "startupsMatched": "Startups matching your skill set",
     "seeAll": "See all →",
     "applyForPartnership": "Apply for partnership",
+    "noMatchedStartups": {
+      "title": "No startups matching your skills right now",
+      "body": "We'll surface a startup idea here as soon as one matches your skills. Meanwhile, explore what's already posted.",
+      "explore": "Explore partnerships"
+    },
     "communityBanner": {
       "title": "Curious about community income?",
       "body": "Watch a 4-minute explainer, then tell us you're interested.",
