@@ -128,7 +128,8 @@ public class CandidateProfileService {
                 profile.getLifeGoals(),
                 profile.getWorkCulture(),
                 profile.getWorkModePreference(),
-                profile.getOpenToPreference());
+                profile.getOpenToPreference(),
+                user.getCreatedAt());
     }
 
     private void validate(MultipartFile file) {

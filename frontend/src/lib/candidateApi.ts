@@ -16,6 +16,7 @@ export interface CandidateProfileResponse {
   workCulture: string | null
   workModePreference: string | null
   openToPreference: string | null
+  createdAt: string
 }
 
 export interface ResumeUploadResponse {
@@ -47,7 +48,8 @@ function authHeaders(): Record<string, string> {
 }
 
 export const candidateApi = {
-  getProfile: () => request<CandidateProfileResponse>('/api/candidate/profile', { headers: authHeaders() }),
+  getProfile: () =>
+    request<CandidateProfileResponse>('/api/candidate/profile', { headers: authHeaders() }),
   updatePersonalDetails: (payload: UpdatePersonalDetailsPayload) =>
     request<CandidateProfileResponse>('/api/candidate/profile/personal', {
       method: 'PATCH',
