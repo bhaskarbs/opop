@@ -1,7 +1,7 @@
 import { useAuthStore } from '../stores/authStore'
 import { request } from './apiClient'
 import type { IdeaSummary } from './ideasApi'
-import type { JobSummary } from './jobsApi'
+import type { BackendExperienceLevel, JobSummary } from './jobsApi'
 
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED'
@@ -38,6 +38,36 @@ export interface AdminUserListParams {
   q?: string
 }
 
+export type MockInterviewQuestionSource = 'AI' | 'ADMIN'
+
+export interface AdminMockInterviewQuestionSummary {
+  id: string
+  text: string
+  category: string
+  skills: string[]
+  industry: string | null
+  experienceLevel: BackendExperienceLevel | null
+  important: boolean
+  source: MockInterviewQuestionSource
+  createdAt: string
+}
+
+export interface MockInterviewQuestionListParams {
+  category?: string
+  skill?: string
+  industry?: string
+  experienceLevel?: BackendExperienceLevel
+  q?: string
+}
+
+export interface CreateMockInterviewQuestionPayload {
+  text: string
+  category: string
+  skills: string[]
+  industry: string | null
+  experienceLevel: BackendExperienceLevel | null
+}
+
 function authHeaders(): Record<string, string> {
   const token = useAuthStore.getState().accessToken
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -47,6 +77,17 @@ function buildUserListQuery(params: AdminUserListParams): string {
   const search = new URLSearchParams()
   if (params.role) search.set('role', params.role)
   if (params.status) search.set('status', params.status)
+  if (params.q) search.set('q', params.q)
+  const query = search.toString()
+  return query ? `?${query}` : ''
+}
+
+function buildMockInterviewQuestionQuery(params: MockInterviewQuestionListParams): string {
+  const search = new URLSearchParams()
+  if (params.category) search.set('category', params.category)
+  if (params.skill) search.set('skill', params.skill)
+  if (params.industry) search.set('industry', params.industry)
+  if (params.experienceLevel) search.set('experienceLevel', params.experienceLevel)
   if (params.q) search.set('q', params.q)
   const query = search.toString()
   return query ? `?${query}` : ''
@@ -94,4 +135,37 @@ export const adminApi = {
       method: 'POST',
       headers: authHeaders(),
     }),
+
+  mockInterviewQuestions: (params: MockInterviewQuestionListParams = {}) =>
+    request<AdminMockInterviewQuestionSummary[]>(
+      `/api/admin/mock-interview-questions${buildMockInterviewQuestionQuery(params)}`,
+      { headers: authHeaders() },
+    ),
+  createMockInterviewQuestion: (payload: CreateMockInterviewQuestionPayload) =>
+    request<AdminMockInterviewQuestionSummary>('/api/admin/mock-interview-questions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  deleteMockInterviewQuestion: (id: string) =>
+    request<void>(`/api/admin/mock-interview-questions/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }),
+  highlightMockInterviewQuestion: (id: string) =>
+    request<AdminMockInterviewQuestionSummary>(
+      `/api/admin/mock-interview-questions/${id}/highlight`,
+      {
+        method: 'POST',
+        headers: authHeaders(),
+      },
+    ),
+  unhighlightMockInterviewQuestion: (id: string) =>
+    request<AdminMockInterviewQuestionSummary>(
+      `/api/admin/mock-interview-questions/${id}/unhighlight`,
+      {
+        method: 'POST',
+        headers: authHeaders(),
+      },
+    ),
 }

@@ -25,6 +25,7 @@ import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
+import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFoundException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
@@ -184,6 +185,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(QuestionGenerationUnavailableException.class)
     public ResponseEntity<ApiError> handleQuestionGenerationUnavailable(QuestionGenerationUnavailableException ex) {
         return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(MockInterviewQuestionNotFoundException.class)
+    public ResponseEntity<ApiError> handleMockInterviewQuestionNotFound(MockInterviewQuestionNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
