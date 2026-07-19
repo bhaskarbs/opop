@@ -1,7 +1,10 @@
 package com.openopportunity.auth;
 
+import com.openopportunity.job.ExperienceLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -51,6 +54,16 @@ public class CandidateProfile {
 
     @Column(length = 255)
     private String title;
+
+    // Reuses jobs' own ExperienceLevel enum (see V4/V22) so a candidate's self-reported level
+    // lines up with the levels job search filters by; industry stays free text, matching how
+    // company registration free-texts a company's industry.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "experience_level", length = 20)
+    private ExperienceLevel experienceLevel;
+
+    @Column(length = 255)
+    private String industry;
 
     @Column(name = "life_goals", columnDefinition = "text")
     private String lifeGoals;
@@ -107,10 +120,13 @@ public class CandidateProfile {
         this.resumeUploadedAt = resumeUploadedAt;
     }
 
-    public void updatePersonalDetails(String location, String title, String mobile) {
+    public void updatePersonalDetails(
+            String location, String title, String mobile, ExperienceLevel experienceLevel, String industry) {
         this.location = location;
         this.title = title;
         this.mobile = mobile;
+        this.experienceLevel = experienceLevel;
+        this.industry = industry;
     }
 
     public void updateSkills(List<String> skills) {
@@ -170,6 +186,14 @@ public class CandidateProfile {
 
     public String getTitle() {
         return title;
+    }
+
+    public ExperienceLevel getExperienceLevel() {
+        return experienceLevel;
+    }
+
+    public String getIndustry() {
+        return industry;
     }
 
     public String getLifeGoals() {

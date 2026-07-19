@@ -58,7 +58,11 @@
       "fullName": "Full name",
       "location": "Location",
       "email": "Email",
-      "mobile": "Mobile"
+      "mobile": "Mobile",
+      "experienceLevel": "Experience level",
+      "experienceLevelPlaceholder": "Select your experience level",
+      "industry": "Industry",
+      "industryPlaceholder": "e.g. Fintech, Healthtech, E-commerce"
     },
     "replace": "Replace",
     "resumeUploaded": "Uploaded {{uploaded}} · {{size}}",
@@ -194,6 +198,8 @@
     "recording": "Recording",
     "avatarName": "AI Interviewer",
     "readyToStart": "Start a session to get your first question.",
+    "skillsForSession": "Skills to ask about this session",
+    "repeatLastSession": "Practice the same questions again",
     "toggleMic": "Toggle microphone",
     "stopRecording": "Stop recording",
     "toggleCamera": "Toggle camera",

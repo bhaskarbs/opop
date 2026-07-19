@@ -58,7 +58,11 @@
       "fullName": "पूरा नाम",
       "location": "स्थान",
       "email": "ईमेल",
-      "mobile": "मोबाइल"
+      "mobile": "मोबाइल",
+      "experienceLevel": "अनुभव स्तर",
+      "experienceLevelPlaceholder": "अपना अनुभव स्तर चुनें",
+      "industry": "इंडस्ट्री",
+      "industryPlaceholder": "जैसे फिनटेक, हेल्थटेक, ई-कॉमर्स"
     },
     "replace": "बदलें",
     "resumeUploaded": "{{uploaded}} को अपलोड किया गया · {{size}}",
@@ -194,6 +198,8 @@
     "recording": "रिकॉर्डिंग हो रही है",
     "avatarName": "AI इंटरव्यूअर",
     "readyToStart": "अपना पहला सवाल पाने के लिए एक सेशन शुरू करें।",
+    "skillsForSession": "इस सेशन में इन हुनर के बारे में पूछें",
+    "repeatLastSession": "वही सवाल फिर से अभ्यास करें",
     "toggleMic": "माइक्रोफ़ोन टॉगल करें",
     "stopRecording": "रिकॉर्डिंग रोकें",
     "toggleCamera": "कैमरा टॉगल करें",

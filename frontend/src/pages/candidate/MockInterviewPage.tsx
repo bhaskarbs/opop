@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi } from '../../lib/candidateApi'
+import { experienceLevelFromBackend } from '../../lib/jobEnums'
+import type { BackendExperienceLevel } from '../../lib/jobsApi'
 import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
 
-// Fallback questions for when the candidate has no skills on their profile yet — otherwise
-// every question is generated from SKILL_QUESTION_TEMPLATES + their own skills (see
+// Fallback questions for when the candidate has no skills selected for this session —
+// otherwise every question is generated from QUESTION_TEMPLATES + their selected skills (see
 // generateQuestion). Canned/static content, not backend data — same treatment as other
 // decorative-but-real content in this app (see IDEA_CATEGORIES).
 const QUESTION_BANK: Record<string, string[]> = {
@@ -34,13 +36,55 @@ const QUESTIONS_PER_SESSION = 8
 const MAX_SESSIONS = 3
 const MAX_DURATION_SECONDS = 20 * 60
 
-const SKILL_QUESTION_TEMPLATES = [
-  'Tell me about a time you used {{skill}} to solve a challenging problem.',
-  'How would you explain {{skill}} to someone with no technical background?',
-  'Describe a project where {{skill}} was critical to the outcome.',
-  'What’s a mistake you made while working with {{skill}}, and what did you learn from it?',
-  'How do you stay current with {{skill}}?',
-  'What’s the hardest part of working with {{skill}}, in your experience?',
+type TemplateInput = 'skill' | 'experienceLevel' | 'industry'
+
+interface QuestionTemplate {
+  text: string
+  // Every listed input must have a real value for this template to be eligible — lets richer,
+  // more specific questions surface once the candidate has filled in experience/industry,
+  // without ever blocking on skill alone (see QUESTION_TEMPLATES below).
+  requires: TemplateInput[]
+}
+
+const QUESTION_TEMPLATES: QuestionTemplate[] = [
+  {
+    text: 'Tell me about a time you used {{skill}} to solve a challenging problem.',
+    requires: ['skill'],
+  },
+  {
+    text: 'How would you explain {{skill}} to someone with no technical background?',
+    requires: ['skill'],
+  },
+  { text: 'Describe a project where {{skill}} was critical to the outcome.', requires: ['skill'] },
+  {
+    text: 'What’s a mistake you made while working with {{skill}}, and what did you learn from it?',
+    requires: ['skill'],
+  },
+  { text: 'How do you stay current with {{skill}}?', requires: ['skill'] },
+  {
+    text: 'What’s the hardest part of working with {{skill}}, in your experience?',
+    requires: ['skill'],
+  },
+  {
+    text: 'As a {{experienceLevel}} professional, how would you approach a {{skill}} challenge?',
+    requires: ['skill', 'experienceLevel'],
+  },
+  {
+    text: 'How has your approach to {{skill}} evolved as you’ve grown into a {{experienceLevel}} role?',
+    requires: ['skill', 'experienceLevel'],
+  },
+  {
+    text: 'How is {{skill}} typically applied in the {{industry}} industry?',
+    requires: ['skill', 'industry'],
+  },
+  {
+    text: 'What unique challenges does the {{industry}} industry present when applying {{skill}}?',
+    requires: ['skill', 'industry'],
+  },
+  {
+    text: 'As a {{experienceLevel}} candidate working in {{industry}}, how have you used {{skill}} to deliver results?',
+    requires: ['skill', 'experienceLevel', 'industry'],
+  },
 ]
 
 // MediaRecorder picks whichever mimeType the browser actually supports; Chrome/Firefox/Edge
@@ -51,19 +95,48 @@ function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
 }
 
-/** Random and skill-based whenever the candidate has added skills to their profile; falls back
- * to the category's canned question bank otherwise. Avoids repeating the immediately-previous
+/** Random and skill-based whenever the candidate has selected at least one skill for this
+ * session — enriched with experience level and/or industry once those are filled in on the
+ * candidate's profile (see QUESTION_TEMPLATES' `requires`). Falls back to the category's
+ * canned question bank when no skills are selected. Avoids repeating the immediately-previous
  * question where it reasonably can. */
-function generateQuestion(skills: string[], category: string, previous: string): string {
-  const pool =
-    skills.length > 0
-      ? skills.map((skill) => pickRandom(SKILL_QUESTION_TEMPLATES).replace('{{skill}}', skill))
-      : QUESTION_BANK[category]!
+function generateQuestion(
+  skills: string[],
+  experienceLevel: string | null,
+  industry: string | null,
+  category: string,
+  previous: string,
+): string {
+  if (skills.length === 0) {
+    const pool = QUESTION_BANK[category]!
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = pickRandom(pool)
+      if (candidate !== previous) return candidate
+    }
+    return pool[0]!
+  }
+
+  const available: Record<TemplateInput, boolean> = {
+    skill: true,
+    experienceLevel: !!experienceLevel,
+    industry: !!industry,
+  }
+  const eligibleTemplates = QUESTION_TEMPLATES.filter((template) =>
+    template.requires.every((input) => available[input]),
+  )
+
+  function fill(template: QuestionTemplate, skill: string): string {
+    return template.text
+      .replace('{{skill}}', skill)
+      .replace('{{experienceLevel}}', (experienceLevel ?? '').toLowerCase())
+      .replace('{{industry}}', industry ?? '')
+  }
+
   for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = pickRandom(pool)
+    const candidate = fill(pickRandom(eligibleTemplates), pickRandom(skills))
     if (candidate !== previous) return candidate
   }
-  return pool[0]!
+  return fill(eligibleTemplates[0]!, skills[0]!)
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -130,6 +203,10 @@ export default function MockInterviewPage() {
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [skills, setSkills] = useState<string[]>([])
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([])
+  const [experienceLevel, setExperienceLevel] = useState<BackendExperienceLevel | null>(null)
+  const [industry, setIndustry] = useState<string | null>(null)
+  const [lastQuestionSet, setLastQuestionSet] = useState<string[]>([])
 
   const [category, setCategory] = useState(CATEGORIES[0]!)
   const [currentQuestion, setCurrentQuestion] = useState('')
@@ -156,6 +233,8 @@ export default function MockInterviewPage() {
   const questionsAskedRef = useRef(0)
   const autoStopTimeoutRef = useRef<number | null>(null)
   const countdownIntervalRef = useRef<number | null>(null)
+  const sessionQuestionsRef = useRef<string[]>([])
+  const repeatModeRef = useRef(false)
 
   function loadThumbnail(session: MockInterviewSessionSummary) {
     if (!session.hasThumbnail) return
@@ -194,7 +273,11 @@ export default function MockInterviewPage() {
     candidateApi
       .getProfile()
       .then((profile) => {
-        if (!cancelled) setSkills(profile.skills)
+        if (cancelled) return
+        setSkills(profile.skills)
+        setSelectedSkills(profile.skills)
+        setExperienceLevel(profile.experienceLevel)
+        setIndustry(profile.industry)
       })
       .catch(() => {
         // Best-effort — falls back to the canned question bank if this fails.
@@ -203,6 +286,12 @@ export default function MockInterviewPage() {
       cancelled = true
     }
   }, [])
+
+  function toggleSkillSelected(skill: string) {
+    setSelectedSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill],
+    )
+  }
 
   useEffect(() => {
     return () => {
@@ -224,8 +313,19 @@ export default function MockInterviewPage() {
   }
 
   function askQuestion(previous: string) {
-    const question = generateQuestion(skills, category, previous)
+    const index = questionsAskedRef.current
+    const repeated = repeatModeRef.current ? lastQuestionSet[index] : undefined
+    const question =
+      repeated ??
+      generateQuestion(
+        selectedSkills,
+        experienceLevel ? experienceLevelFromBackend(experienceLevel) : null,
+        industry,
+        category,
+        previous,
+      )
     setCurrentQuestion(question)
+    sessionQuestionsRef.current.push(question)
     questionsAskedRef.current += 1
     setQuestionsAsked(questionsAskedRef.current)
     speakQuestion(
@@ -235,11 +335,13 @@ export default function MockInterviewPage() {
     )
   }
 
-  async function handleStart() {
+  async function handleStart(repeat = false) {
     if (sessions.length >= MAX_SESSIONS) return
     setCameraError(null)
     setUploadError(null)
     setAutoStopped(false)
+    repeatModeRef.current = repeat
+    sessionQuestionsRef.current = []
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       streamRef.current = stream
@@ -321,6 +423,7 @@ export default function MockInterviewPage() {
       })
       setSessions((prev) => [summary, ...prev])
       loadThumbnail(summary)
+      setLastQuestionSet(sessionQuestionsRef.current)
     } catch (caught) {
       setUploadError(caught instanceof ApiError ? caught.message : t('mockInterview.uploadError'))
     } finally {
@@ -535,6 +638,34 @@ export default function MockInterviewPage() {
               <option key={option}>{option}</option>
             ))}
           </select>
+          {skills.length > 0 && (
+            <div className="mb-2.5 rounded-[9px] border border-border bg-surface p-3">
+              <div className="mb-2 text-[12px] font-bold text-fog uppercase">
+                {t('mockInterview.skillsForSession')}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {skills.map((skill) => {
+                  const selected = selectedSkills.includes(skill)
+                  return (
+                    <button
+                      key={skill}
+                      type="button"
+                      disabled={recording}
+                      onClick={() => toggleSkillSelected(skill)}
+                      aria-pressed={selected}
+                      className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold disabled:opacity-60 ${
+                        selected
+                          ? 'border-primary bg-primary-tint text-primary'
+                          : 'border-border bg-surface text-fog line-through'
+                      }`}
+                    >
+                      {skill}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           {autoStopped && !uploadError && (
             <p className="mb-2.5 text-[13px] font-semibold text-amber">
               {t('mockInterview.autoStopped')}
@@ -555,6 +686,16 @@ export default function MockInterviewPage() {
                 ? t('mockInterview.stopAndSave')
                 : t('mockInterview.startNewSession')}
           </button>
+          {!recording && lastQuestionSet.length > 0 && !atSessionLimit && (
+            <button
+              type="button"
+              onClick={() => void handleStart(true)}
+              disabled={uploading}
+              className="mt-2 w-full rounded-[9px] border border-border py-[11px] text-sm font-bold text-ink disabled:opacity-60"
+            >
+              {t('mockInterview.repeatLastSession')}
+            </button>
+          )}
         </div>
       </div>
 

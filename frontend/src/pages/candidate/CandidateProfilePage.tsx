@@ -3,7 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
-import { deriveCompletedSections, profileCompletionPercent } from '../../lib/candidateProfileCompletion'
+import {
+  deriveCompletedSections,
+  profileCompletionPercent,
+} from '../../lib/candidateProfileCompletion'
+import {
+  EXPERIENCE_LEVELS,
+  experienceLevelFromBackend,
+  experienceLevelToBackend,
+  type ExperienceLevelLabel,
+} from '../../lib/jobEnums'
 
 const NAV_SECTIONS = [
   { labelKey: 'profile.nav.personalDetails', href: '#personal' },
@@ -29,6 +38,8 @@ export default function CandidateProfilePage() {
   const [fullName, setFullName] = useState('')
   const [location, setLocation] = useState('')
   const [title, setTitle] = useState('')
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevelLabel | ''>('')
+  const [industry, setIndustry] = useState('')
   const [mobile, setMobile] = useState('')
   const [savingPersonal, setSavingPersonal] = useState(false)
   const [personalError, setPersonalError] = useState<string | null>(null)
@@ -60,6 +71,10 @@ export default function CandidateProfilePage() {
         setFullName(data.fullName)
         setLocation(data.location ?? '')
         setTitle(data.title ?? '')
+        setExperienceLevel(
+          data.experienceLevel ? experienceLevelFromBackend(data.experienceLevel) : '',
+        )
+        setIndustry(data.industry ?? '')
         setMobile(data.mobile)
         setResumeFileName(data.resumeFileName)
         setResumeUploadedAt(data.resumeUploadedAt)
@@ -85,7 +100,14 @@ export default function CandidateProfilePage() {
     setPersonalError(null)
     setSavingPersonal(true)
     try {
-      const updated = await candidateApi.updatePersonalDetails({ fullName, location, title, mobile })
+      const updated = await candidateApi.updatePersonalDetails({
+        fullName,
+        location,
+        title,
+        mobile,
+        experienceLevel: experienceLevel ? experienceLevelToBackend(experienceLevel) : null,
+        industry,
+      })
       setProfile(updated)
       setSavedPersonal(true)
       setTimeout(() => setSavedPersonal(false), 2000)
@@ -211,7 +233,9 @@ export default function CandidateProfilePage() {
 
         <div>
           <Card id="personal" className="mb-[18px] p-[26px]">
-            <h2 className="mb-4 text-base font-bold text-ink">{t('profile.nav.personalDetails')}</h2>
+            <h2 className="mb-4 text-base font-bold text-ink">
+              {t('profile.nav.personalDetails')}
+            </h2>
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div className="flex flex-col">
                 <label htmlFor="fullName" className="mb-1.5 text-[13px] font-bold text-ink">
@@ -256,6 +280,38 @@ export default function CandidateProfilePage() {
                   id="mobile"
                   value={mobile}
                   onChange={(event) => setMobile(event.target.value)}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="experienceLevel" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.experienceLevel')}
+                </label>
+                <select
+                  id="experienceLevel"
+                  value={experienceLevel}
+                  onChange={(event) =>
+                    setExperienceLevel(event.target.value as ExperienceLevelLabel | '')
+                  }
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                >
+                  <option value="">{t('profile.fields.experienceLevelPlaceholder')}</option>
+                  {EXPERIENCE_LEVELS.map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="industry" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.industry')}
+                </label>
+                <input
+                  id="industry"
+                  value={industry}
+                  onChange={(event) => setIndustry(event.target.value)}
+                  placeholder={t('profile.fields.industryPlaceholder')}
                   className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
                 />
               </div>
