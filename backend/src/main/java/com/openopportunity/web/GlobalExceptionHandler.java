@@ -27,6 +27,7 @@ import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
+import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -178,6 +179,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidMockInterviewVideoException.class)
     public ResponseEntity<ApiError> handleInvalidMockInterviewVideo(InvalidMockInterviewVideoException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(QuestionGenerationUnavailableException.class)
+    public ResponseEntity<ApiError> handleQuestionGenerationUnavailable(QuestionGenerationUnavailableException ex) {
+        return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
