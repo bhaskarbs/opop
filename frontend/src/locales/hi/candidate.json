@@ -188,13 +188,23 @@
     "title": "मॉक इंटरव्यू",
     "subtitle": "कैमरे पर अभ्यास करें, फिर अपने रिकॉर्ड किए गए सेशन कभी भी देखें।",
     "cameraPreview": "[ कैमरा प्रीव्यू ]",
+    "cameraUnavailable": "कैमरा उपलब्ध नहीं है — अपनी ब्राउज़र अनुमतियां जांचें।",
+    "recording": "रिकॉर्डिंग हो रही है",
     "toggleMic": "माइक्रोफ़ोन टॉगल करें",
     "stopRecording": "रिकॉर्डिंग रोकें",
     "toggleCamera": "कैमरा टॉगल करें",
     "questionProgress": "सवाल {{current}} / {{total}}",
+    "nextQuestion": "अगला सवाल →",
     "startNewSession": "नया सेशन शुरू करें",
+    "stopAndSave": "रोकें और सेशन सेव करें",
+    "uploading": "आपकी रिकॉर्डिंग सेव हो रही है…",
+    "uploadError": "आपकी रिकॉर्डिंग सेव नहीं हो सकी। कृपया फिर से कोशिश करें।",
     "recordedLogs": "रिकॉर्ड किए गए लॉग",
     "sessionsCount": "{{count}} सेशन",
-    "recordingMeta": "{{date}} · {{count}} सवाल"
+    "recordingMeta": "{{date}} · {{count}} सवाल",
+    "loadingSessions": "आपके सेशन लोड हो रहे हैं…",
+    "noSessions": "आपने अभी तक कोई मॉक इंटरव्यू रिकॉर्ड नहीं किया है।",
+    "playbackError": "यह रिकॉर्डिंग लोड नहीं हो सकी। कृपया फिर से कोशिश करें।",
+    "close": "बंद करें"
   }
 }

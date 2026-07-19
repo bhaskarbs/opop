@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +31,11 @@ public class LocalFileStorageService implements FileStorageService {
         String storageKey = subdirectory + "/" + UUID.randomUUID() + extensionOf(file.getOriginalFilename());
         file.transferTo(rootDir.resolve(storageKey));
         return storageKey;
+    }
+
+    @Override
+    public Resource load(String storageKey) throws IOException {
+        return new UrlResource(rootDir.resolve(storageKey).toUri());
     }
 
     private static String extensionOf(String originalFilename) {
