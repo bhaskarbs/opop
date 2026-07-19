@@ -19,6 +19,10 @@ public class MockInterviewService {
 
     private static final long MAX_VIDEO_SIZE_BYTES = 150L * 1024 * 1024;
     private static final int MAX_SESSIONS_PER_CANDIDATE = 3;
+    // The frontend auto-stops recording at 20 minutes (see MockInterviewPage); this is a
+    // defensive server-side backstop against a modified/buggy client, with slack for the time
+    // between the auto-stop firing and the upload actually landing.
+    private static final int MAX_DURATION_SECONDS = 20 * 60 + 60;
 
     private final MockInterviewSessionRepository mockInterviewSessionRepository;
     private final FileStorageService fileStorageService;
@@ -39,6 +43,9 @@ public class MockInterviewService {
             int durationSeconds) {
         if (mockInterviewSessionRepository.countByCandidateId(candidateId) >= MAX_SESSIONS_PER_CANDIDATE) {
             throw new MockInterviewSessionLimitReachedException();
+        }
+        if (durationSeconds > MAX_DURATION_SECONDS) {
+            throw new InvalidMockInterviewVideoException("Recording must be 20 minutes or shorter");
         }
         validate(video);
 
