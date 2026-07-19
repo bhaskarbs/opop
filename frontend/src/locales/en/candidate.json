@@ -190,6 +190,8 @@
     "cameraPreview": "[ camera preview ]",
     "cameraUnavailable": "Camera unavailable — check your browser permissions.",
     "recording": "Recording",
+    "avatarName": "AI Interviewer",
+    "readyToStart": "Start a session to get your first question.",
     "toggleMic": "Toggle microphone",
     "stopRecording": "Stop recording",
     "toggleCamera": "Toggle camera",
