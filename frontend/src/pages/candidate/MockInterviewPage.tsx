@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../lib/apiClient'
+import { candidateApi } from '../../lib/candidateApi'
 import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
 
-// Practice questions are canned/static content, not backend data — same treatment as other
-// decorative-but-real content in this app (see IDEA_CATEGORIES). MediaRecorder picks whichever
-// mimeType the browser actually supports; Chrome/Firefox/Edge all support webm/vp8+opus.
-const RECORDER_MIME_TYPE = 'video/webm;codecs=vp8,opus'
-
+// Fallback questions for when the candidate has no skills on their profile yet — otherwise
+// every question is generated from SKILL_QUESTION_TEMPLATES + their own skills (see
+// generateQuestion). Canned/static content, not backend data — same treatment as other
+// decorative-but-real content in this app (see IDEA_CATEGORIES).
 const QUESTION_BANK: Record<string, string[]> = {
   'Frontend Developer — behavioral': [
     'Tell me about a time you had to debug a difficult production issue. What was your process?',
@@ -30,6 +30,39 @@ const QUESTION_BANK: Record<string, string[]> = {
 }
 
 const CATEGORIES = Object.keys(QUESTION_BANK)
+const QUESTIONS_PER_SESSION = 8
+
+const SKILL_QUESTION_TEMPLATES = [
+  'Tell me about a time you used {{skill}} to solve a challenging problem.',
+  'How would you explain {{skill}} to someone with no technical background?',
+  'Describe a project where {{skill}} was critical to the outcome.',
+  'What’s a mistake you made while working with {{skill}}, and what did you learn from it?',
+  'How do you stay current with {{skill}}?',
+  'What’s the hardest part of working with {{skill}}, in your experience?',
+]
+
+// MediaRecorder picks whichever mimeType the browser actually supports; Chrome/Firefox/Edge
+// all support webm/vp8+opus.
+const RECORDER_MIME_TYPE = 'video/webm;codecs=vp8,opus'
+
+function pickRandom<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)]!
+}
+
+/** Random and skill-based whenever the candidate has added skills to their profile; falls back
+ * to the category's canned question bank otherwise. Avoids repeating the immediately-previous
+ * question where it reasonably can. */
+function generateQuestion(skills: string[], category: string, previous: string): string {
+  const pool =
+    skills.length > 0
+      ? skills.map((skill) => pickRandom(SKILL_QUESTION_TEMPLATES).replace('{{skill}}', skill))
+      : QUESTION_BANK[category]!
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = pickRandom(pool)
+    if (candidate !== previous) return candidate
+  }
+  return pool[0]!
+}
 
 function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)
@@ -37,14 +70,31 @@ function formatDuration(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+/** Speaks a question aloud so the avatar "asks" it — heard live by the candidate during the
+ * session. Browsers give no API to capture SpeechSynthesis output as a MediaStreamTrack, so
+ * this can't be mixed into the MediaRecorder recording itself; only the candidate's own mic
+ * (captured via getUserMedia below) ends up in the saved video. */
+function speakQuestion(text: string, onStart: () => void, onEnd: () => void) {
+  if (!('speechSynthesis' in window)) return
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.onstart = onStart
+  utterance.onend = onEnd
+  utterance.onerror = onEnd
+  window.speechSynthesis.speak(utterance)
+}
+
 export default function MockInterviewPage() {
   const { t } = useTranslation('candidate')
 
   const [sessions, setSessions] = useState<MockInterviewSessionSummary[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(true)
+  const [skills, setSkills] = useState<string[]>([])
 
   const [category, setCategory] = useState(CATEGORIES[0]!)
-  const [questionIndex, setQuestionIndex] = useState(0)
+  const [currentQuestion, setCurrentQuestion] = useState('')
+  const [questionsAsked, setQuestionsAsked] = useState(0)
+  const [avatarSpeaking, setAvatarSpeaking] = useState(false)
   const [recording, setRecording] = useState(false)
   const [hasStream, setHasStream] = useState(false)
   const [micOn, setMicOn] = useState(true)
@@ -61,6 +111,7 @@ export default function MockInterviewPage() {
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const recordingStartedAtRef = useRef<number>(0)
+  const questionsAskedRef = useRef(0)
 
   useEffect(() => {
     let cancelled = false
@@ -81,8 +132,24 @@ export default function MockInterviewPage() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
+    candidateApi
+      .getProfile()
+      .then((profile) => {
+        if (!cancelled) setSkills(profile.skills)
+      })
+      .catch(() => {
+        // Best-effort — falls back to the canned question bank if this fails.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop())
+      window.speechSynthesis?.cancel()
       if (playback) URL.revokeObjectURL(playback.url)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup only, not a reactive effect
@@ -93,6 +160,18 @@ export default function MockInterviewPage() {
     streamRef.current = null
     setHasStream(false)
     if (videoRef.current) videoRef.current.srcObject = null
+  }
+
+  function askQuestion(previous: string) {
+    const question = generateQuestion(skills, category, previous)
+    setCurrentQuestion(question)
+    questionsAskedRef.current += 1
+    setQuestionsAsked(questionsAskedRef.current)
+    speakQuestion(
+      question,
+      () => setAvatarSpeaking(true),
+      () => setAvatarSpeaking(false),
+    )
   }
 
   async function handleStart() {
@@ -119,10 +198,11 @@ export default function MockInterviewPage() {
       recorder.onstop = () => void handleRecordingStopped()
       recorder.onstart = () => {
         recordingStartedAtRef.current = Date.now()
+        questionsAskedRef.current = 0
+        askQuestion('')
       }
       recorderRef.current = recorder
       recorder.start()
-      setQuestionIndex(0)
       setRecording(true)
     } catch {
       setCameraError(t('mockInterview.cameraUnavailable'))
@@ -130,6 +210,8 @@ export default function MockInterviewPage() {
   }
 
   function handleStop() {
+    window.speechSynthesis?.cancel()
+    setAvatarSpeaking(false)
     recorderRef.current?.stop()
     setRecording(false)
   }
@@ -141,6 +223,7 @@ export default function MockInterviewPage() {
     )
     const video = new Blob(chunksRef.current, { type: 'video/webm' })
     chunksRef.current = []
+    const questionCount = questionsAskedRef.current
     stopStream()
 
     setUploading(true)
@@ -149,7 +232,7 @@ export default function MockInterviewPage() {
       const summary = await mockInterviewApi.upload({
         video,
         category,
-        questionCount: QUESTION_BANK[category]!.length,
+        questionCount,
         durationSeconds,
       })
       setSessions((prev) => [summary, ...prev])
@@ -175,7 +258,7 @@ export default function MockInterviewPage() {
   }
 
   function nextQuestion() {
-    setQuestionIndex((index) => Math.min(index + 1, QUESTION_BANK[category]!.length - 1))
+    askQuestion(currentQuestion)
   }
 
   async function handleWatch(sessionId: string) {
@@ -194,9 +277,6 @@ export default function MockInterviewPage() {
     if (playback) URL.revokeObjectURL(playback.url)
     setPlayback(null)
   }
-
-  const questions = QUESTION_BANK[category]!
-  const currentQuestion = questions[questionIndex]!
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 pt-7 pb-16">
@@ -259,7 +339,7 @@ export default function MockInterviewPage() {
             </button>
             <button
               type="button"
-              onClick={recording ? handleStop : undefined}
+              onClick={() => (recording ? handleStop() : undefined)}
               disabled={!recording}
               aria-label={t('mockInterview.stopRecording')}
               className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-danger disabled:opacity-50"
@@ -292,12 +372,33 @@ export default function MockInterviewPage() {
           <div className="mb-3.5 rounded-card border border-border bg-surface p-5">
             <div className="mb-3 inline-block rounded-full bg-primary-tint px-2.5 py-1 text-xs font-bold text-primary">
               {t('mockInterview.questionProgress', {
-                current: questionIndex + 1,
-                total: questions.length,
+                current: Math.min(questionsAsked, QUESTIONS_PER_SESSION),
+                total: QUESTIONS_PER_SESSION,
               })}
             </div>
-            <div className="text-[15px] leading-normal font-bold text-ink">{currentQuestion}</div>
-            {recording && questionIndex < questions.length - 1 && (
+            {recording ? (
+              <div className="flex items-start gap-2.5">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-white ${avatarSpeaking ? 'ring-primary/30 ring-4' : ''}`}
+                  aria-hidden="true"
+                >
+                  AI
+                </div>
+                <div>
+                  <div className="mb-0.5 text-[11px] font-bold text-fog uppercase">
+                    {t('mockInterview.avatarName')}
+                  </div>
+                  <div className="text-[15px] leading-normal font-bold text-ink">
+                    {currentQuestion}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-[15px] leading-normal font-bold text-ink">
+                {t('mockInterview.readyToStart')}
+              </div>
+            )}
+            {recording && questionsAsked < QUESTIONS_PER_SESSION && (
               <button
                 type="button"
                 onClick={nextQuestion}
