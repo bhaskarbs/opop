@@ -1,5 +1,6 @@
 import { useAuthStore } from '../stores/authStore'
 import { request, uploadRequest } from './apiClient'
+import type { BackendExperienceLevel } from './jobsApi'
 
 export interface CandidateProfileResponse {
   fullName: string
@@ -8,6 +9,8 @@ export interface CandidateProfileResponse {
   mobileVerified: boolean
   location: string | null
   title: string | null
+  experienceLevel: BackendExperienceLevel | null
+  industry: string | null
   skills: string[]
   resumeFileName: string | null
   resumeUploadedAt: string | null
@@ -30,6 +33,8 @@ export interface UpdatePersonalDetailsPayload {
   location: string
   title: string
   mobile: string
+  experienceLevel: BackendExperienceLevel | null
+  industry: string
 }
 
 export interface UpdateGoalsPayload {

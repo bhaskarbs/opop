@@ -1,5 +1,6 @@
 package com.openopportunity.auth.dto;
 
+import com.openopportunity.job.ExperienceLevel;
 import java.time.Instant;
 import java.util.List;
 
@@ -13,6 +14,8 @@ public record CandidateProfileResponse(
         boolean mobileVerified,
         String location,
         String title,
+        ExperienceLevel experienceLevel,
+        String industry,
         List<String> skills,
         String resumeFileName,
         Instant resumeUploadedAt,

@@ -49,7 +49,8 @@ public class CandidateProfileService {
         userRepository.save(user);
 
         CandidateProfile profile = findProfile(userId);
-        profile.updatePersonalDetails(request.location(), request.title(), request.mobile());
+        profile.updatePersonalDetails(
+                request.location(), request.title(), request.mobile(), request.experienceLevel(), request.industry());
         candidateProfileRepository.save(profile);
         return toResponse(user, profile);
     }
@@ -121,6 +122,8 @@ public class CandidateProfileService {
                 profile.isMobileVerified(),
                 profile.getLocation(),
                 profile.getTitle(),
+                profile.getExperienceLevel(),
+                profile.getIndustry(),
                 profile.getSkills(),
                 profile.getResumeFileName(),
                 profile.getResumeUploadedAt(),
