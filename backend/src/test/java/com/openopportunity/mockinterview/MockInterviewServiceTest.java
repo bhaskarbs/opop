@@ -102,6 +102,17 @@ class MockInterviewServiceTest {
     }
 
     @Test
+    void createRejectsARecordingLongerThanTwentyMinutes() {
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+
+        assertThatThrownBy(
+                        () -> mockInterviewService.create(
+                                candidateId, sampleVideo(), null, "General soft skills", 1, 20 * 60 + 120))
+                .isInstanceOf(InvalidMockInterviewVideoException.class);
+    }
+
+    @Test
     void createRejectsAnEmptyRecording() {
         UUID candidateId = UUID.randomUUID();
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);

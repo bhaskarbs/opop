@@ -32,6 +32,7 @@ const QUESTION_BANK: Record<string, string[]> = {
 const CATEGORIES = Object.keys(QUESTION_BANK)
 const QUESTIONS_PER_SESSION = 8
 const MAX_SESSIONS = 3
+const MAX_DURATION_SECONDS = 20 * 60
 
 const SKILL_QUESTION_TEMPLATES = [
   'Tell me about a time you used {{skill}} to solve a challenging problem.',
@@ -141,6 +142,8 @@ export default function MockInterviewPage() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [autoStopped, setAutoStopped] = useState(false)
+  const [remainingSeconds, setRemainingSeconds] = useState(MAX_DURATION_SECONDS)
 
   const [playback, setPlayback] = useState<{ url: string } | null>(null)
   const [playbackError, setPlaybackError] = useState<string | null>(null)
@@ -151,6 +154,8 @@ export default function MockInterviewPage() {
   const chunksRef = useRef<Blob[]>([])
   const recordingStartedAtRef = useRef<number>(0)
   const questionsAskedRef = useRef(0)
+  const autoStopTimeoutRef = useRef<number | null>(null)
+  const countdownIntervalRef = useRef<number | null>(null)
 
   function loadThumbnail(session: MockInterviewSessionSummary) {
     if (!session.hasThumbnail) return
@@ -203,6 +208,8 @@ export default function MockInterviewPage() {
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop())
       window.speechSynthesis?.cancel()
+      if (autoStopTimeoutRef.current !== null) window.clearTimeout(autoStopTimeoutRef.current)
+      if (countdownIntervalRef.current !== null) window.clearInterval(countdownIntervalRef.current)
       if (playback) URL.revokeObjectURL(playback.url)
       Object.values(thumbnailUrls).forEach((url) => URL.revokeObjectURL(url))
     }
@@ -232,6 +239,7 @@ export default function MockInterviewPage() {
     if (sessions.length >= MAX_SESSIONS) return
     setCameraError(null)
     setUploadError(null)
+    setAutoStopped(false)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       streamRef.current = stream
@@ -255,6 +263,17 @@ export default function MockInterviewPage() {
         recordingStartedAtRef.current = Date.now()
         questionsAskedRef.current = 0
         askQuestion('')
+        // Hard cutoff — matches the server-side MAX_DURATION_SECONDS backstop in
+        // MockInterviewService, so a session can never silently run past the stated limit.
+        autoStopTimeoutRef.current = window.setTimeout(() => {
+          setAutoStopped(true)
+          handleStop()
+        }, MAX_DURATION_SECONDS * 1000)
+        setRemainingSeconds(MAX_DURATION_SECONDS)
+        countdownIntervalRef.current = window.setInterval(() => {
+          const elapsed = Math.floor((Date.now() - recordingStartedAtRef.current) / 1000)
+          setRemainingSeconds(Math.max(0, MAX_DURATION_SECONDS - elapsed))
+        }, 1000)
       }
       recorderRef.current = recorder
       recorder.start()
@@ -265,6 +284,14 @@ export default function MockInterviewPage() {
   }
 
   function handleStop() {
+    if (autoStopTimeoutRef.current !== null) {
+      window.clearTimeout(autoStopTimeoutRef.current)
+      autoStopTimeoutRef.current = null
+    }
+    if (countdownIntervalRef.current !== null) {
+      window.clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
+    }
     window.speechSynthesis?.cancel()
     setAvatarSpeaking(false)
     recorderRef.current?.stop()
@@ -361,7 +388,8 @@ export default function MockInterviewPage() {
   return (
     <main className="mx-auto max-w-[1120px] px-6 pt-7 pb-16">
       <h1 className="mb-1 text-xl font-extrabold text-ink">{t('mockInterview.title')}</h1>
-      <p className="mb-6 text-sm text-slate">{t('mockInterview.subtitle')}</p>
+      <p className="mb-1.5 text-sm text-slate">{t('mockInterview.subtitle')}</p>
+      <p className="mb-6 text-[13px] text-fog">{t('mockInterview.limitsNotice')}</p>
 
       <div className="mb-9 grid grid-cols-1 gap-6 profile:grid-cols-[minmax(0,1fr)_320px]">
         <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-footer">
@@ -395,6 +423,15 @@ export default function MockInterviewPage() {
             <span className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-danger px-2.5 py-1 text-[11px] font-bold text-white">
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
               {t('mockInterview.recording')}
+            </span>
+          )}
+          {recording && (
+            <span
+              className={`absolute top-4 right-4 rounded-full px-4 py-1.5 text-2xl font-extrabold tabular-nums text-white ${
+                remainingSeconds <= 60 ? 'bg-danger' : 'bg-[rgba(20,24,31,0.7)]'
+              }`}
+            >
+              {formatDuration(remainingSeconds)}
             </span>
           )}
           <div className="absolute inset-x-0 bottom-4 flex justify-center gap-3">
@@ -475,9 +512,7 @@ export default function MockInterviewPage() {
               </div>
             ) : (
               <div className="text-[15px] leading-normal font-bold text-ink">
-                {atSessionLimit
-                  ? t('mockInterview.sessionLimitReached')
-                  : t('mockInterview.readyToStart')}
+                {atSessionLimit ? t('mockInterview.limitsNotice') : t('mockInterview.readyToStart')}
               </div>
             )}
             {recording && questionsAsked < QUESTIONS_PER_SESSION && (
@@ -500,6 +535,11 @@ export default function MockInterviewPage() {
               <option key={option}>{option}</option>
             ))}
           </select>
+          {autoStopped && !uploadError && (
+            <p className="mb-2.5 text-[13px] font-semibold text-amber">
+              {t('mockInterview.autoStopped')}
+            </p>
+          )}
           {uploadError && (
             <p className="mb-2.5 text-[13px] font-semibold text-danger">{uploadError}</p>
           )}
