@@ -4,10 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
+import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import com.openopportunity.storage.FileStorageService;
 import java.util.List;
@@ -41,35 +45,81 @@ class MockInterviewServiceTest {
         return new MockMultipartFile("video", "interview.webm", "video/webm", new byte[] {1, 2, 3});
     }
 
+    private MockInterviewSession sampleSession(UUID candidateId) {
+        return new MockInterviewSession(
+                candidateId,
+                "General soft skills",
+                1,
+                10,
+                "mock-interviews/x.webm",
+                "video/webm",
+                3,
+                "mock-interviews/x.jpg",
+                "image/jpeg");
+    }
+
     @Test
     void createStoresTheVideoAndSavesASession() throws Exception {
         UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
         when(fileStorageService.store(any(), anyString())).thenReturn("mock-interviews/" + candidateId + "/x.webm");
         when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MockInterviewSessionSummary summary =
-                mockInterviewService.create(candidateId, sampleVideo(), "Frontend Developer — behavioral", 8, 320);
+        MockInterviewSessionSummary summary = mockInterviewService.create(
+                candidateId, sampleVideo(), null, "Frontend Developer — behavioral", 8, 320);
 
         assertThat(summary.category()).isEqualTo("Frontend Developer — behavioral");
         assertThat(summary.questionCount()).isEqualTo(8);
         assertThat(summary.durationSeconds()).isEqualTo(320);
+        assertThat(summary.hasThumbnail()).isFalse();
+    }
+
+    @Test
+    void createStoresAThumbnailWhenProvided() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        MockMultipartFile thumbnail = new MockMultipartFile("thumbnail", "thumb.jpg", "image/jpeg", new byte[] {9});
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        when(fileStorageService.store(any(), anyString())).thenReturn("mock-interviews/x");
+        when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MockInterviewSessionSummary summary =
+                mockInterviewService.create(candidateId, sampleVideo(), thumbnail, "General soft skills", 1, 10);
+
+        assertThat(summary.hasThumbnail()).isTrue();
+        verify(fileStorageService, times(2)).store(any(), anyString());
+    }
+
+    @Test
+    void createRejectsAFourthSession() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(3L);
+
+        assertThatThrownBy(
+                        () -> mockInterviewService.create(
+                                candidateId, sampleVideo(), null, "General soft skills", 1, 10))
+                .isInstanceOf(MockInterviewSessionLimitReachedException.class);
+        verify(fileStorageService, never()).store(any(), anyString());
     }
 
     @Test
     void createRejectsAnEmptyRecording() {
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
         MockMultipartFile empty = new MockMultipartFile("video", "interview.webm", "video/webm", new byte[0]);
 
-        assertThatThrownBy(() -> mockInterviewService.create(UUID.randomUUID(), empty, "General soft skills", 1, 10))
+        assertThatThrownBy(() -> mockInterviewService.create(candidateId, empty, null, "General soft skills", 1, 10))
                 .isInstanceOf(InvalidMockInterviewVideoException.class);
     }
 
     @Test
     void createRejectsANonVideoContentType() {
-        MockMultipartFile notVideo =
-                new MockMultipartFile("video", "notes.txt", "text/plain", new byte[] {1});
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        MockMultipartFile notVideo = new MockMultipartFile("video", "notes.txt", "text/plain", new byte[] {1});
 
         assertThatThrownBy(
-                        () -> mockInterviewService.create(UUID.randomUUID(), notVideo, "General soft skills", 1, 10))
+                        () -> mockInterviewService.create(
+                                candidateId, notVideo, null, "General soft skills", 1, 10))
                 .isInstanceOf(InvalidMockInterviewVideoException.class);
     }
 
@@ -77,8 +127,7 @@ class MockInterviewServiceTest {
     void getVideoRejectsANonOwner() {
         UUID ownerId = UUID.randomUUID();
         UUID otherId = UUID.randomUUID();
-        MockInterviewSession session = new MockInterviewSession(
-                ownerId, "General soft skills", 1, 10, "mock-interviews/x.webm", "video/webm", 3);
+        MockInterviewSession session = sampleSession(ownerId);
         when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> mockInterviewService.getVideo(session.getId(), otherId))
@@ -88,21 +137,54 @@ class MockInterviewServiceTest {
     @Test
     void getVideoReturnsTheStoredResourceForTheOwner() throws Exception {
         UUID ownerId = UUID.randomUUID();
-        MockInterviewSession session = new MockInterviewSession(
-                ownerId, "General soft skills", 1, 10, "mock-interviews/x.webm", "video/webm", 3);
+        MockInterviewSession session = sampleSession(ownerId);
         when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(fileStorageService.load("mock-interviews/x.webm")).thenReturn(new ByteArrayResource(new byte[] {1}));
 
-        MockInterviewService.LoadedVideo video = mockInterviewService.getVideo(session.getId(), ownerId);
+        MockInterviewService.LoadedFile video = mockInterviewService.getVideo(session.getId(), ownerId);
 
         assertThat(video.contentType()).isEqualTo("video/webm");
     }
 
     @Test
+    void getThumbnailRejectsWhenNoneWasStored() {
+        UUID ownerId = UUID.randomUUID();
+        MockInterviewSession session = new MockInterviewSession(
+                ownerId, "General soft skills", 1, 10, "mock-interviews/x.webm", "video/webm", 3, null, null);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> mockInterviewService.getThumbnail(session.getId(), ownerId))
+                .isInstanceOf(MockInterviewSessionNotFoundException.class);
+    }
+
+    @Test
+    void deleteRemovesTheSessionAndItsFiles() throws Exception {
+        UUID ownerId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(ownerId);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        mockInterviewService.delete(session.getId(), ownerId);
+
+        verify(fileStorageService).delete("mock-interviews/x.webm");
+        verify(fileStorageService).delete("mock-interviews/x.jpg");
+        verify(mockInterviewSessionRepository).delete(session);
+    }
+
+    @Test
+    void deleteRejectsANonOwner() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(ownerId);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> mockInterviewService.delete(session.getId(), otherId))
+                .isInstanceOf(MockInterviewSessionNotFoundException.class);
+    }
+
+    @Test
     void getMineReturnsOnlyTheCallersOwnSessions() {
         UUID candidateId = UUID.randomUUID();
-        MockInterviewSession session = new MockInterviewSession(
-                candidateId, "General soft skills", 1, 10, "mock-interviews/x.webm", "video/webm", 3);
+        MockInterviewSession session = sampleSession(candidateId);
         when(mockInterviewSessionRepository.findByCandidateIdOrderByRecordedAtDesc(candidateId))
                 .thenReturn(List.of(session));
 

@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,11 +30,13 @@ public class MockInterviewController {
     @PostMapping
     public ResponseEntity<MockInterviewSessionSummary> create(
             @RequestParam("video") MultipartFile video,
+            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
             @RequestParam String category,
             @RequestParam int questionCount,
             @RequestParam int durationSeconds) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(mockInterviewService.create(currentUserId(), video, category, questionCount, durationSeconds));
+                .body(mockInterviewService.create(
+                        currentUserId(), video, thumbnail, category, questionCount, durationSeconds));
     }
 
     @GetMapping
@@ -43,8 +46,22 @@ public class MockInterviewController {
 
     @GetMapping("/{id}/video")
     public ResponseEntity<Resource> video(@PathVariable UUID id) {
-        MockInterviewService.LoadedVideo video = mockInterviewService.getVideo(id, currentUserId());
+        MockInterviewService.LoadedFile video = mockInterviewService.getVideo(id, currentUserId());
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(video.contentType())).body(video.resource());
+    }
+
+    @GetMapping("/{id}/thumbnail")
+    public ResponseEntity<Resource> thumbnail(@PathVariable UUID id) {
+        MockInterviewService.LoadedFile thumbnail = mockInterviewService.getThumbnail(id, currentUserId());
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(thumbnail.contentType()))
+                .body(thumbnail.resource());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        mockInterviewService.delete(id, currentUserId());
+        return ResponseEntity.noContent().build();
     }
 
     private UUID currentUserId() {

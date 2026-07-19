@@ -31,6 +31,7 @@ const QUESTION_BANK: Record<string, string[]> = {
 
 const CATEGORIES = Object.keys(QUESTION_BANK)
 const QUESTIONS_PER_SESSION = 8
+const MAX_SESSIONS = 3
 
 const SKILL_QUESTION_TEMPLATES = [
   'Tell me about a time you used {{skill}} to solve a challenging problem.',
@@ -84,11 +85,49 @@ function speakQuestion(text: string, onStart: () => void, onEnd: () => void) {
   window.speechSynthesis.speak(utterance)
 }
 
+/** Grabs a single still frame from the just-recorded clip to use as its thumbnail — seeks to a
+ * fixed small offset rather than a duration-based one, since MediaRecorder-produced webm blobs
+ * often report an Infinity duration until the container is fixed up (a known browser quirk).
+ * Resolves null (not rejects) on any failure — a missing thumbnail is a fine fallback. */
+function generateThumbnail(videoBlob: Blob): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const videoEl = document.createElement('video')
+    videoEl.muted = true
+    videoEl.playsInline = true
+    const objectUrl = URL.createObjectURL(videoBlob)
+    videoEl.src = objectUrl
+
+    function finish(result: Blob | null) {
+      URL.revokeObjectURL(objectUrl)
+      resolve(result)
+    }
+
+    videoEl.addEventListener('loadeddata', () => {
+      videoEl.currentTime = 0.3
+    })
+    videoEl.addEventListener('seeked', () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = videoEl.videoWidth || 320
+      canvas.height = videoEl.videoHeight || 180
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        finish(null)
+        return
+      }
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob((blob) => finish(blob), 'image/jpeg', 0.8)
+    })
+    videoEl.addEventListener('error', () => finish(null))
+  })
+}
+
 export default function MockInterviewPage() {
   const { t } = useTranslation('candidate')
 
   const [sessions, setSessions] = useState<MockInterviewSessionSummary[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(true)
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [skills, setSkills] = useState<string[]>([])
 
   const [category, setCategory] = useState(CATEGORIES[0]!)
@@ -113,12 +152,26 @@ export default function MockInterviewPage() {
   const recordingStartedAtRef = useRef<number>(0)
   const questionsAskedRef = useRef(0)
 
+  function loadThumbnail(session: MockInterviewSessionSummary) {
+    if (!session.hasThumbnail) return
+    mockInterviewApi
+      .thumbnail(session.id)
+      .then((blob) => {
+        setThumbnailUrls((prev) => ({ ...prev, [session.id]: URL.createObjectURL(blob) }))
+      })
+      .catch(() => {
+        // Best-effort — the card just falls back to the generic play-icon placeholder.
+      })
+  }
+
   useEffect(() => {
     let cancelled = false
     mockInterviewApi
       .mine()
       .then((result) => {
-        if (!cancelled) setSessions(result)
+        if (cancelled) return
+        setSessions(result)
+        result.forEach(loadThumbnail)
       })
       .catch(() => {
         // Best-effort — an empty "Recorded logs" list is a reasonable fallback.
@@ -151,6 +204,7 @@ export default function MockInterviewPage() {
       streamRef.current?.getTracks().forEach((track) => track.stop())
       window.speechSynthesis?.cancel()
       if (playback) URL.revokeObjectURL(playback.url)
+      Object.values(thumbnailUrls).forEach((url) => URL.revokeObjectURL(url))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup only, not a reactive effect
   }, [])
@@ -175,6 +229,7 @@ export default function MockInterviewPage() {
   }
 
   async function handleStart() {
+    if (sessions.length >= MAX_SESSIONS) return
     setCameraError(null)
     setUploadError(null)
     try {
@@ -229,13 +284,16 @@ export default function MockInterviewPage() {
     setUploading(true)
     setUploadError(null)
     try {
+      const thumbnail = await generateThumbnail(video)
       const summary = await mockInterviewApi.upload({
         video,
+        thumbnail,
         category,
         questionCount,
         durationSeconds,
       })
       setSessions((prev) => [summary, ...prev])
+      loadThumbnail(summary)
     } catch (caught) {
       setUploadError(caught instanceof ApiError ? caught.message : t('mockInterview.uploadError'))
     } finally {
@@ -277,6 +335,28 @@ export default function MockInterviewPage() {
     if (playback) URL.revokeObjectURL(playback.url)
     setPlayback(null)
   }
+
+  async function handleDelete(sessionId: string) {
+    if (!window.confirm(t('mockInterview.deleteConfirm'))) return
+    setDeletingId(sessionId)
+    try {
+      await mockInterviewApi.remove(sessionId)
+      setSessions((prev) => prev.filter((session) => session.id !== sessionId))
+      setThumbnailUrls((prev) => {
+        const next = { ...prev }
+        const url = next[sessionId]
+        if (url) URL.revokeObjectURL(url)
+        delete next[sessionId]
+        return next
+      })
+    } catch (caught) {
+      setUploadError(caught instanceof ApiError ? caught.message : t('mockInterview.deleteError'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const atSessionLimit = sessions.length >= MAX_SESSIONS
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 pt-7 pb-16">
@@ -395,7 +475,9 @@ export default function MockInterviewPage() {
               </div>
             ) : (
               <div className="text-[15px] leading-normal font-bold text-ink">
-                {t('mockInterview.readyToStart')}
+                {atSessionLimit
+                  ? t('mockInterview.sessionLimitReached')
+                  : t('mockInterview.readyToStart')}
               </div>
             )}
             {recording && questionsAsked < QUESTIONS_PER_SESSION && (
@@ -424,7 +506,7 @@ export default function MockInterviewPage() {
           <button
             type="button"
             onClick={() => (recording ? handleStop() : void handleStart())}
-            disabled={uploading}
+            disabled={uploading || (!recording && atSessionLimit)}
             className="w-full rounded-[9px] bg-ink py-[11px] text-sm font-bold text-white disabled:opacity-60"
           >
             {uploading
@@ -439,7 +521,7 @@ export default function MockInterviewPage() {
       <div className="mb-3.5 flex items-baseline justify-between">
         <h2 className="text-base font-bold text-ink">{t('mockInterview.recordedLogs')}</h2>
         <span className="text-[13px] text-fog">
-          {t('mockInterview.sessionsCount', { count: sessions.length })}
+          {t('mockInterview.sessionsCount', { count: sessions.length, max: MAX_SESSIONS })}
         </span>
       </div>
       {playbackError && (
@@ -456,13 +538,21 @@ export default function MockInterviewPage() {
       ) : (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
           {sessions.map((session) => (
-            <button
+            <div
               key={session.id}
-              type="button"
-              onClick={() => handleWatch(session.id)}
-              className="overflow-hidden rounded-card border border-border bg-surface text-left"
+              className="overflow-hidden rounded-card border border-border bg-surface"
             >
-              <div className="relative flex aspect-video items-center justify-center bg-neutral-tint">
+              <button
+                type="button"
+                onClick={() => handleWatch(session.id)}
+                aria-label={t('mockInterview.watch')}
+                className="relative flex aspect-video w-full items-center justify-center bg-neutral-tint bg-cover bg-center"
+                style={
+                  thumbnailUrls[session.id]
+                    ? { backgroundImage: `url(${thumbnailUrls[session.id]})` }
+                    : undefined
+                }
+              >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(20,24,31,0.7)]">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFFFFF">
                     <path d="M8 5v14l11-7z" />
@@ -471,21 +561,34 @@ export default function MockInterviewPage() {
                 <span className="absolute right-2 bottom-2 rounded bg-[rgba(20,24,31,0.7)] px-1.5 py-0.5 text-[11px] font-semibold text-white">
                   {formatDuration(session.durationSeconds)}
                 </span>
-              </div>
-              <div className="p-3.5">
-                <div className="mb-0.5 text-sm font-bold text-ink">{session.category}</div>
-                <div className="text-[12.5px] text-fog">
-                  {t('mockInterview.recordingMeta', {
-                    date: new Date(session.recordedAt).toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    }),
-                    count: session.questionCount,
-                  })}
+              </button>
+              <div className="flex items-start justify-between gap-2 p-3.5">
+                <div className="min-w-0">
+                  <div className="mb-0.5 truncate text-sm font-bold text-ink">
+                    {session.category}
+                  </div>
+                  <div className="text-[12.5px] text-fog">
+                    {t('mockInterview.recordingMeta', {
+                      date: new Date(session.recordedAt).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      }),
+                      count: session.questionCount,
+                    })}
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(session.id)}
+                  disabled={deletingId === session.id}
+                  aria-label={t('mockInterview.delete')}
+                  className="shrink-0 rounded-lg border border-[#FCA5A5] px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                >
+                  {t('mockInterview.delete')}
+                </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}

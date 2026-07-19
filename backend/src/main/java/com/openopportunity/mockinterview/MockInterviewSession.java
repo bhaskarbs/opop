@@ -37,6 +37,14 @@ public class MockInterviewSession {
     @Column(name = "video_size_bytes", nullable = false, updatable = false)
     private long videoSizeBytes;
 
+    // Both null when the browser couldn't produce a thumbnail client-side — MockInterviewService
+    // treats that as "no thumbnail" rather than a failure (see MockInterviewController.thumbnail).
+    @Column(name = "thumbnail_storage_key", updatable = false, length = 500)
+    private String thumbnailStorageKey;
+
+    @Column(name = "thumbnail_content_type", updatable = false, length = 100)
+    private String thumbnailContentType;
+
     @Column(name = "recorded_at", nullable = false, updatable = false)
     private Instant recordedAt;
 
@@ -51,7 +59,9 @@ public class MockInterviewSession {
             int durationSeconds,
             String videoStorageKey,
             String videoContentType,
-            long videoSizeBytes) {
+            long videoSizeBytes,
+            String thumbnailStorageKey,
+            String thumbnailContentType) {
         this.id = UUID.randomUUID();
         this.candidateId = candidateId;
         this.category = category;
@@ -60,6 +70,8 @@ public class MockInterviewSession {
         this.videoStorageKey = videoStorageKey;
         this.videoContentType = videoContentType;
         this.videoSizeBytes = videoSizeBytes;
+        this.thumbnailStorageKey = thumbnailStorageKey;
+        this.thumbnailContentType = thumbnailContentType;
     }
 
     @PrePersist
@@ -97,6 +109,14 @@ public class MockInterviewSession {
 
     public long getVideoSizeBytes() {
         return videoSizeBytes;
+    }
+
+    public String getThumbnailStorageKey() {
+        return thumbnailStorageKey;
+    }
+
+    public String getThumbnailContentType() {
+        return thumbnailContentType;
     }
 
     public Instant getRecordedAt() {

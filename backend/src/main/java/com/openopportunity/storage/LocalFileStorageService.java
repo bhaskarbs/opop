@@ -38,6 +38,11 @@ public class LocalFileStorageService implements FileStorageService {
         return new UrlResource(rootDir.resolve(storageKey).toUri());
     }
 
+    @Override
+    public void delete(String storageKey) throws IOException {
+        Files.deleteIfExists(rootDir.resolve(storageKey));
+    }
+
     private static String extensionOf(String originalFilename) {
         if (originalFilename == null) {
             return "";

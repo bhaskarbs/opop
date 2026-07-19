@@ -192,6 +192,7 @@
     "recording": "Recording",
     "avatarName": "AI Interviewer",
     "readyToStart": "Start a session to get your first question.",
+    "sessionLimitReached": "You've reached the 3-session limit — delete one below to record a new session.",
     "toggleMic": "Toggle microphone",
     "stopRecording": "Stop recording",
     "toggleCamera": "Toggle camera",
@@ -202,11 +203,15 @@
     "uploading": "Saving your recording…",
     "uploadError": "Couldn't save your recording. Please try again.",
     "recordedLogs": "Recorded logs",
-    "sessionsCount": "{{count}} sessions",
+    "sessionsCount": "{{count}} of {{max}} sessions",
     "recordingMeta": "{{date}} · {{count}} questions",
     "loadingSessions": "Loading your sessions…",
     "noSessions": "You haven't recorded any mock interviews yet.",
     "playbackError": "Couldn't load this recording. Please try again.",
+    "watch": "Watch recording",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this recording? This can't be undone.",
+    "deleteError": "Couldn't delete this recording. Please try again.",
     "close": "Close"
   }
 }

@@ -25,6 +25,7 @@ import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
+import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import java.time.Instant;
 import java.util.List;
@@ -166,6 +167,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MockInterviewSessionNotFoundException.class)
     public ResponseEntity<ApiError> handleMockInterviewSessionNotFound(MockInterviewSessionNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(MockInterviewSessionLimitReachedException.class)
+    public ResponseEntity<ApiError> handleMockInterviewSessionLimitReached(
+            MockInterviewSessionLimitReachedException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(InvalidMockInterviewVideoException.class)
