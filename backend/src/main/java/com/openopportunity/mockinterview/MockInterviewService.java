@@ -2,6 +2,7 @@ package com.openopportunity.mockinterview;
 
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
+import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class MockInterviewService {
 
     private static final long MAX_VIDEO_SIZE_BYTES = 150L * 1024 * 1024;
+    private static final int MAX_SESSIONS_PER_CANDIDATE = 3;
 
     private final MockInterviewSessionRepository mockInterviewSessionRepository;
     private final FileStorageService fileStorageService;
@@ -29,24 +31,34 @@ public class MockInterviewService {
 
     @Transactional
     public MockInterviewSessionSummary create(
-            UUID candidateId, MultipartFile video, String category, int questionCount, int durationSeconds) {
+            UUID candidateId,
+            MultipartFile video,
+            MultipartFile thumbnail,
+            String category,
+            int questionCount,
+            int durationSeconds) {
+        if (mockInterviewSessionRepository.countByCandidateId(candidateId) >= MAX_SESSIONS_PER_CANDIDATE) {
+            throw new MockInterviewSessionLimitReachedException();
+        }
         validate(video);
 
-        String storageKey;
-        try {
-            storageKey = fileStorageService.store(video, "mock-interviews/" + candidateId);
-        } catch (IOException ex) {
-            throw new UncheckedIOException("Failed to store mock interview recording", ex);
-        }
+        String videoStorageKey = store(video, "mock-interviews/" + candidateId);
+        // The thumbnail is best-effort — the client may not have been able to generate one
+        // (see MockInterviewPage's generateThumbnail), so a missing/empty file just means no
+        // thumbnail rather than a failed upload.
+        String thumbnailStorageKey =
+                thumbnail != null && !thumbnail.isEmpty() ? store(thumbnail, "mock-interviews/" + candidateId) : null;
 
         MockInterviewSession session = new MockInterviewSession(
                 candidateId,
                 category,
                 questionCount,
                 durationSeconds,
-                storageKey,
+                videoStorageKey,
                 video.getContentType() != null ? video.getContentType() : "video/webm",
-                video.getSize());
+                video.getSize(),
+                thumbnailStorageKey,
+                thumbnailStorageKey != null ? thumbnail.getContentType() : null);
         session = mockInterviewSessionRepository.save(session);
         return toSummary(session);
     }
@@ -58,20 +70,58 @@ public class MockInterviewService {
                 .toList();
     }
 
-    /** A session's video is only ever visible to the candidate who recorded it — a non-owner
-     * gets the same "not found" as a truly unknown id, matching IdeaService.get()'s treatment
-     * of a non-owner requesting an unapproved idea. */
+    /** A session's video/thumbnail are only ever visible to the candidate who recorded it — a
+     * non-owner gets the same "not found" as a truly unknown id, matching IdeaService.get()'s
+     * treatment of a non-owner requesting an unapproved idea. */
     @Transactional(readOnly = true)
-    public LoadedVideo getVideo(UUID sessionId, UUID candidateId) {
-        MockInterviewSession session = mockInterviewSessionRepository
+    public LoadedFile getVideo(UUID sessionId, UUID candidateId) {
+        MockInterviewSession session = findOwned(sessionId, candidateId);
+        return load(session.getVideoStorageKey(), session.getVideoContentType());
+    }
+
+    @Transactional(readOnly = true)
+    public LoadedFile getThumbnail(UUID sessionId, UUID candidateId) {
+        MockInterviewSession session = findOwned(sessionId, candidateId);
+        if (session.getThumbnailStorageKey() == null) {
+            throw new MockInterviewSessionNotFoundException(sessionId);
+        }
+        return load(session.getThumbnailStorageKey(), session.getThumbnailContentType());
+    }
+
+    @Transactional
+    public void delete(UUID sessionId, UUID candidateId) {
+        MockInterviewSession session = findOwned(sessionId, candidateId);
+        try {
+            fileStorageService.delete(session.getVideoStorageKey());
+            if (session.getThumbnailStorageKey() != null) {
+                fileStorageService.delete(session.getThumbnailStorageKey());
+            }
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to delete mock interview files", ex);
+        }
+        mockInterviewSessionRepository.delete(session);
+    }
+
+    private MockInterviewSession findOwned(UUID sessionId, UUID candidateId) {
+        return mockInterviewSessionRepository
                 .findById(sessionId)
                 .filter(s -> s.getCandidateId().equals(candidateId))
                 .orElseThrow(() -> new MockInterviewSessionNotFoundException(sessionId));
+    }
+
+    private String store(MultipartFile file, String subdirectory) {
         try {
-            Resource resource = fileStorageService.load(session.getVideoStorageKey());
-            return new LoadedVideo(resource, session.getVideoContentType());
+            return fileStorageService.store(file, subdirectory);
         } catch (IOException ex) {
-            throw new UncheckedIOException("Failed to load mock interview recording", ex);
+            throw new UncheckedIOException("Failed to store mock interview file", ex);
+        }
+    }
+
+    private LoadedFile load(String storageKey, String contentType) {
+        try {
+            return new LoadedFile(fileStorageService.load(storageKey), contentType);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to load mock interview file", ex);
         }
     }
 
@@ -94,8 +144,9 @@ public class MockInterviewService {
                 session.getCategory(),
                 session.getQuestionCount(),
                 session.getDurationSeconds(),
+                session.getThumbnailStorageKey() != null,
                 session.getRecordedAt());
     }
 
-    public record LoadedVideo(Resource resource, String contentType) {}
+    public record LoadedFile(Resource resource, String contentType) {}
 }

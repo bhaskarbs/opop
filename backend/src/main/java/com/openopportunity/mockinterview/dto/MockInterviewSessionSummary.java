@@ -4,4 +4,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record MockInterviewSessionSummary(
-        UUID id, String category, int questionCount, int durationSeconds, Instant recordedAt) {}
+        UUID id,
+        String category,
+        int questionCount,
+        int durationSeconds,
+        boolean hasThumbnail,
+        Instant recordedAt) {}

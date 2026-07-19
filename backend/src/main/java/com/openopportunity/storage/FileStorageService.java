@@ -15,4 +15,7 @@ public interface FileStorageService {
 
     /** Loads a previously stored file back by the storage key {@link #store} returned. */
     Resource load(String storageKey) throws IOException;
+
+    /** Removes a previously stored file. A no-op if it's already gone. */
+    void delete(String storageKey) throws IOException;
 }

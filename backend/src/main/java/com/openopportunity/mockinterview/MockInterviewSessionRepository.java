@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MockInterviewSessionRepository extends JpaRepository<MockInterviewSession, UUID> {
 
     List<MockInterviewSession> findByCandidateIdOrderByRecordedAtDesc(UUID candidateId);
+
+    long countByCandidateId(UUID candidateId);
 }
