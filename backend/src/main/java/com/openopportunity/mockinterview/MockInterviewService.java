@@ -35,12 +35,7 @@ public class MockInterviewService {
 
     @Transactional
     public MockInterviewSessionSummary create(
-            UUID candidateId,
-            MultipartFile video,
-            MultipartFile thumbnail,
-            String category,
-            int questionCount,
-            int durationSeconds) {
+            UUID candidateId, MultipartFile video, MultipartFile thumbnail, int questionCount, int durationSeconds) {
         if (mockInterviewSessionRepository.countByCandidateId(candidateId) >= MAX_SESSIONS_PER_CANDIDATE) {
             throw new MockInterviewSessionLimitReachedException();
         }
@@ -58,7 +53,6 @@ public class MockInterviewService {
 
         MockInterviewSession session = new MockInterviewSession(
                 candidateId,
-                category,
                 questionCount,
                 durationSeconds,
                 videoStorageKey,
@@ -148,7 +142,6 @@ public class MockInterviewService {
     private MockInterviewSessionSummary toSummary(MockInterviewSession session) {
         return new MockInterviewSessionSummary(
                 session.getId(),
-                session.getCategory(),
                 session.getQuestionCount(),
                 session.getDurationSeconds(),
                 session.getThumbnailStorageKey() != null,

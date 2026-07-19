@@ -112,7 +112,6 @@
     "addQuestion": "Add question",
     "saving": "Saving…",
     "saveError": "Couldn't save this question. Try again.",
-    "allCategories": "All categories",
     "filterSkillPlaceholder": "Filter by skill",
     "filterIndustryPlaceholder": "Filter by industry",
     "searchPlaceholder": "Search question text",

@@ -19,9 +19,6 @@ public class MockInterviewSession {
     @Column(name = "candidate_id", nullable = false, updatable = false)
     private UUID candidateId;
 
-    @Column(nullable = false, updatable = false)
-    private String category;
-
     @Column(name = "question_count", nullable = false, updatable = false)
     private int questionCount;
 
@@ -54,7 +51,6 @@ public class MockInterviewSession {
 
     public MockInterviewSession(
             UUID candidateId,
-            String category,
             int questionCount,
             int durationSeconds,
             String videoStorageKey,
@@ -64,7 +60,6 @@ public class MockInterviewSession {
             String thumbnailContentType) {
         this.id = UUID.randomUUID();
         this.candidateId = candidateId;
-        this.category = category;
         this.questionCount = questionCount;
         this.durationSeconds = durationSeconds;
         this.videoStorageKey = videoStorageKey;
@@ -85,10 +80,6 @@ public class MockInterviewSession {
 
     public UUID getCandidateId() {
         return candidateId;
-    }
-
-    public String getCategory() {
-        return category;
     }
 
     public int getQuestionCount() {

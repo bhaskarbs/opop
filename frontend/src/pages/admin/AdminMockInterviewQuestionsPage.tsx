@@ -13,15 +13,6 @@ import {
 } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
 
-// Mirrors MockInterviewPage.tsx's CATEGORIES — candidate-facing question matching only works if
-// admin-added/tagged questions use the exact same category strings candidates pick from, so keep
-// this list in sync with that one (same duplication tradeoff as QUESTION_BANK there).
-const CATEGORIES = [
-  'Frontend Developer — behavioral',
-  'Frontend Developer — technical',
-  'General soft skills',
-]
-
 const SOURCE_LABEL_KEYS: Record<MockInterviewQuestionSource, string> = {
   AI: 'mockInterviewQuestions.sourceAi',
   ADMIN: 'mockInterviewQuestions.sourceAdmin',
@@ -30,7 +21,6 @@ const SOURCE_LABEL_KEYS: Record<MockInterviewQuestionSource, string> = {
 export default function AdminMockInterviewQuestionsPage() {
   const { t } = useTranslation('admin')
 
-  const [filterCategory, setFilterCategory] = useState('')
   const [filterSkill, setFilterSkill] = useState('')
   const [filterIndustry, setFilterIndustry] = useState('')
   const [filterExperienceLevel, setFilterExperienceLevel] = useState('')
@@ -42,7 +32,6 @@ export default function AdminMockInterviewQuestionsPage() {
   const [actioningId, setActioningId] = useState<string | null>(null)
 
   const [formText, setFormText] = useState('')
-  const [formCategory, setFormCategory] = useState(CATEGORIES[0]!)
   const [formSkills, setFormSkills] = useState<string[]>([])
   const [formNewSkill, setFormNewSkill] = useState('')
   const [formIndustry, setFormIndustry] = useState('')
@@ -57,7 +46,6 @@ export default function AdminMockInterviewQuestionsPage() {
       setLoadError(null)
       adminApi
         .mockInterviewQuestions({
-          category: filterCategory || undefined,
           skill: filterSkill.trim() || undefined,
           industry: filterIndustry.trim() || undefined,
           experienceLevel: (filterExperienceLevel || undefined) as
@@ -82,7 +70,7 @@ export default function AdminMockInterviewQuestionsPage() {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [filterCategory, filterSkill, filterIndustry, filterExperienceLevel, filterQuery, t])
+  }, [filterSkill, filterIndustry, filterExperienceLevel, filterQuery, t])
 
   function addFormSkill(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter') return
@@ -106,7 +94,6 @@ export default function AdminMockInterviewQuestionsPage() {
     try {
       const created = await adminApi.createMockInterviewQuestion({
         text: formText.trim(),
-        category: formCategory,
         skills: formSkills,
         industry: formIndustry.trim() || null,
         experienceLevel: (formExperienceLevel || null) as BackendExperienceLevel | null,
@@ -180,16 +167,7 @@ export default function AdminMockInterviewQuestionsPage() {
           required
           className="mb-3 w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:outline-none"
         />
-        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <select
-            value={formCategory}
-            onChange={(event) => setFormCategory(event.target.value)}
-            className="rounded-control border border-border bg-surface px-3 py-2.5 text-sm text-ink"
-          >
-            {CATEGORIES.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <select
             value={formExperienceLevel}
             onChange={(event) => setFormExperienceLevel(event.target.value)}
@@ -246,16 +224,6 @@ export default function AdminMockInterviewQuestionsPage() {
       </form>
 
       <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
-        <select
-          value={filterCategory}
-          onChange={(event) => setFilterCategory(event.target.value)}
-          className="rounded-control border border-border bg-surface px-3 py-2 text-[13.5px] text-ink"
-        >
-          <option value="">{t('mockInterviewQuestions.allCategories')}</option>
-          {CATEGORIES.map((option) => (
-            <option key={option}>{option}</option>
-          ))}
-        </select>
         <select
           value={filterExperienceLevel}
           onChange={(event) => setFilterExperienceLevel(event.target.value)}
@@ -345,9 +313,6 @@ export default function AdminMockInterviewQuestionsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
-                <span className="rounded-full bg-teal-tint px-2.5 py-[3px] font-bold text-teal">
-                  {question.category}
-                </span>
                 {question.skills.map((skill) => (
                   <span
                     key={skill}

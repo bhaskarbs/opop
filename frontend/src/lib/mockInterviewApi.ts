@@ -4,7 +4,6 @@ import type { BackendExperienceLevel } from './jobsApi'
 
 export interface MockInterviewSessionSummary {
   id: string
-  category: string
   questionCount: number
   durationSeconds: number
   hasThumbnail: boolean
@@ -15,14 +14,12 @@ export interface GenerateQuestionsPayload {
   skills: string[]
   experienceLevel: BackendExperienceLevel | null
   industry: string | null
-  category: string
   count: number
 }
 
 export interface MockInterviewUploadPayload {
   video: Blob
   thumbnail: Blob | null
-  category: string
   questionCount: number
   durationSeconds: number
 }
@@ -49,7 +46,6 @@ export const mockInterviewApi = {
     const formData = new FormData()
     formData.append('video', payload.video, 'interview.webm')
     if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail, 'thumbnail.jpg')
-    formData.append('category', payload.category)
     formData.append('questionCount', String(payload.questionCount))
     formData.append('durationSeconds', String(payload.durationSeconds))
     return uploadRequest<MockInterviewSessionSummary>(

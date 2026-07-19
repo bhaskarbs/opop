@@ -29,9 +29,6 @@ public class MockInterviewQuestion {
     @Column(nullable = false, columnDefinition = "text")
     private String text;
 
-    @Column(nullable = false, length = 255)
-    private String category;
-
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(nullable = false, columnDefinition = "text[]")
     private List<String> skills;
@@ -58,15 +55,9 @@ public class MockInterviewQuestion {
     }
 
     public MockInterviewQuestion(
-            String text,
-            String category,
-            List<String> skills,
-            String industry,
-            ExperienceLevel experienceLevel,
-            QuestionSource source) {
+            String text, List<String> skills, String industry, ExperienceLevel experienceLevel, QuestionSource source) {
         this.id = UUID.randomUUID();
         this.text = text;
-        this.category = category;
         this.skills = skills;
         this.industry = industry;
         this.experienceLevel = experienceLevel;
@@ -89,10 +80,6 @@ public class MockInterviewQuestion {
 
     public String getText() {
         return text;
-    }
-
-    public String getCategory() {
-        return category;
     }
 
     public List<String> getSkills() {

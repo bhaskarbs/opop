@@ -48,7 +48,6 @@ class MockInterviewServiceTest {
     private MockInterviewSession sampleSession(UUID candidateId) {
         return new MockInterviewSession(
                 candidateId,
-                "General soft skills",
                 1,
                 10,
                 "mock-interviews/x.webm",
@@ -65,10 +64,8 @@ class MockInterviewServiceTest {
         when(fileStorageService.store(any(), anyString())).thenReturn("mock-interviews/" + candidateId + "/x.webm");
         when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MockInterviewSessionSummary summary = mockInterviewService.create(
-                candidateId, sampleVideo(), null, "Frontend Developer — behavioral", 8, 320);
+        MockInterviewSessionSummary summary = mockInterviewService.create(candidateId, sampleVideo(), null, 8, 320);
 
-        assertThat(summary.category()).isEqualTo("Frontend Developer — behavioral");
         assertThat(summary.questionCount()).isEqualTo(8);
         assertThat(summary.durationSeconds()).isEqualTo(320);
         assertThat(summary.hasThumbnail()).isFalse();
@@ -83,7 +80,7 @@ class MockInterviewServiceTest {
         when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         MockInterviewSessionSummary summary =
-                mockInterviewService.create(candidateId, sampleVideo(), thumbnail, "General soft skills", 1, 10);
+                mockInterviewService.create(candidateId, sampleVideo(), thumbnail, 1, 10);
 
         assertThat(summary.hasThumbnail()).isTrue();
         verify(fileStorageService, times(2)).store(any(), anyString());
@@ -94,9 +91,7 @@ class MockInterviewServiceTest {
         UUID candidateId = UUID.randomUUID();
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(3L);
 
-        assertThatThrownBy(
-                        () -> mockInterviewService.create(
-                                candidateId, sampleVideo(), null, "General soft skills", 1, 10))
+        assertThatThrownBy(() -> mockInterviewService.create(candidateId, sampleVideo(), null, 1, 10))
                 .isInstanceOf(MockInterviewSessionLimitReachedException.class);
         verify(fileStorageService, never()).store(any(), anyString());
     }
@@ -107,8 +102,7 @@ class MockInterviewServiceTest {
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
 
         assertThatThrownBy(
-                        () -> mockInterviewService.create(
-                                candidateId, sampleVideo(), null, "General soft skills", 1, 20 * 60 + 120))
+                        () -> mockInterviewService.create(candidateId, sampleVideo(), null, 1, 20 * 60 + 120))
                 .isInstanceOf(InvalidMockInterviewVideoException.class);
     }
 
@@ -118,7 +112,7 @@ class MockInterviewServiceTest {
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
         MockMultipartFile empty = new MockMultipartFile("video", "interview.webm", "video/webm", new byte[0]);
 
-        assertThatThrownBy(() -> mockInterviewService.create(candidateId, empty, null, "General soft skills", 1, 10))
+        assertThatThrownBy(() -> mockInterviewService.create(candidateId, empty, null, 1, 10))
                 .isInstanceOf(InvalidMockInterviewVideoException.class);
     }
 
@@ -128,9 +122,7 @@ class MockInterviewServiceTest {
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
         MockMultipartFile notVideo = new MockMultipartFile("video", "notes.txt", "text/plain", new byte[] {1});
 
-        assertThatThrownBy(
-                        () -> mockInterviewService.create(
-                                candidateId, notVideo, null, "General soft skills", 1, 10))
+        assertThatThrownBy(() -> mockInterviewService.create(candidateId, notVideo, null, 1, 10))
                 .isInstanceOf(InvalidMockInterviewVideoException.class);
     }
 
@@ -160,8 +152,8 @@ class MockInterviewServiceTest {
     @Test
     void getThumbnailRejectsWhenNoneWasStored() {
         UUID ownerId = UUID.randomUUID();
-        MockInterviewSession session = new MockInterviewSession(
-                ownerId, "General soft skills", 1, 10, "mock-interviews/x.webm", "video/webm", 3, null, null);
+        MockInterviewSession session =
+                new MockInterviewSession(ownerId, 1, 10, "mock-interviews/x.webm", "video/webm", 3, null, null);
         when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> mockInterviewService.getThumbnail(session.getId(), ownerId))
@@ -202,6 +194,6 @@ class MockInterviewServiceTest {
         var mine = mockInterviewService.getMine(candidateId);
 
         assertThat(mine).hasSize(1);
-        assertThat(mine.get(0).category()).isEqualTo("General soft skills");
+        assertThat(mine.get(0).questionCount()).isEqualTo(1);
     }
 }

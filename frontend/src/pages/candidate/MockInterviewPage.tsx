@@ -8,31 +8,20 @@ import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mo
 
 // Questions are generated per-session by the backend via the Claude API (see
 // mockInterviewApi.generateQuestions), tailored to the candidate's selected skills, experience
-// level, and industry. QUESTION_TEMPLATES/QUESTION_BANK below are the local fallback used only
-// when that call fails (no API key configured, network error, rate limit, etc.) — see
+// level, and industry. QUESTION_TEMPLATES/FALLBACK_QUESTIONS below are the local fallback used
+// only when that call fails (no API key configured, network error, rate limit, etc.) — see
 // fetchSessionQuestions — so a candidate can always start a session.
-const QUESTION_BANK: Record<string, string[]> = {
-  'Frontend Developer — behavioral': [
-    'Tell me about a time you had to debug a difficult production issue. What was your process?',
-    'Describe a situation where you disagreed with a teammate’s technical decision. How did you handle it?',
-    'Walk me through a project you’re proud of, end to end.',
-    'How do you prioritize when you have multiple deadlines at once?',
-  ],
-  'Frontend Developer — technical': [
-    'How would you optimize a React app that re-renders too often?',
-    'Explain the difference between server-side and client-side rendering.',
-    'How do you approach making a complex UI accessible?',
-    'Describe how you’d structure state for a large form with interdependent fields.',
-  ],
-  'General soft skills': [
-    'Tell me about yourself.',
-    'What’s a piece of feedback that changed how you work?',
-    'Describe a time you had to learn something new under time pressure.',
-    'Where do you see yourself in three years?',
-  ],
-}
+const FALLBACK_QUESTIONS: string[] = [
+  'Tell me about yourself.',
+  'Tell me about a time you had to debug a difficult production issue. What was your process?',
+  'Describe a situation where you disagreed with a teammate’s decision. How did you handle it?',
+  'Walk me through a project you’re proud of, end to end.',
+  'How do you prioritize when you have multiple deadlines at once?',
+  'What’s a piece of feedback that changed how you work?',
+  'Describe a time you had to learn something new under time pressure.',
+  'Where do you see yourself in three years?',
+]
 
-const CATEGORIES = Object.keys(QUESTION_BANK)
 const QUESTIONS_PER_SESSION = 8
 const MAX_SESSIONS = 3
 const MAX_DURATION_SECONDS = 20 * 60
@@ -98,23 +87,21 @@ function pickRandom<T>(items: T[]): T {
 
 /** Random and skill-based whenever the candidate has selected at least one skill for this
  * session — enriched with experience level and/or industry once those are filled in on the
- * candidate's profile (see QUESTION_TEMPLATES' `requires`). Falls back to the category's
- * canned question bank when no skills are selected. Avoids repeating the immediately-previous
- * question where it reasonably can. */
+ * candidate's profile (see QUESTION_TEMPLATES' `requires`). Falls back to a flat canned question
+ * pool when no skills are selected. Avoids repeating the immediately-previous question where it
+ * reasonably can. */
 function generateQuestion(
   skills: string[],
   experienceLevel: string | null,
   industry: string | null,
-  category: string,
   previous: string,
 ): string {
   if (skills.length === 0) {
-    const pool = QUESTION_BANK[category]!
     for (let attempt = 0; attempt < 5; attempt++) {
-      const candidate = pickRandom(pool)
+      const candidate = pickRandom(FALLBACK_QUESTIONS)
       if (candidate !== previous) return candidate
     }
-    return pool[0]!
+    return FALLBACK_QUESTIONS[0]!
   }
 
   const available: Record<TemplateInput, boolean> = {
@@ -209,7 +196,6 @@ export default function MockInterviewPage() {
   const [industry, setIndustry] = useState<string | null>(null)
   const [lastQuestionSet, setLastQuestionSet] = useState<string[]>([])
 
-  const [category, setCategory] = useState(CATEGORIES[0]!)
   const [currentQuestion, setCurrentQuestion] = useState('')
   const [questionsAsked, setQuestionsAsked] = useState(0)
   const [avatarSpeaking, setAvatarSpeaking] = useState(false)
@@ -325,7 +311,6 @@ export default function MockInterviewPage() {
         skills: selectedSkills,
         experienceLevel,
         industry,
-        category,
         count: QUESTIONS_PER_SESSION,
       })
       if (result.questions.length > 0) return result.questions
@@ -338,13 +323,7 @@ export default function MockInterviewPage() {
     const questions: string[] = []
     let previous = ''
     for (let i = 0; i < QUESTIONS_PER_SESSION; i++) {
-      previous = generateQuestion(
-        selectedSkills,
-        resolvedExperienceLevel,
-        industry,
-        category,
-        previous,
-      )
+      previous = generateQuestion(selectedSkills, resolvedExperienceLevel, industry, previous)
       questions.push(previous)
     }
     return questions
@@ -456,7 +435,6 @@ export default function MockInterviewPage() {
       const summary = await mockInterviewApi.upload({
         video,
         thumbnail,
-        category,
         questionCount,
         durationSeconds,
       })
@@ -667,16 +645,6 @@ export default function MockInterviewPage() {
               </button>
             )}
           </div>
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            disabled={recording}
-            className="mb-2.5 w-full rounded-[9px] border border-border bg-surface px-3 py-2.5 text-[13.5px] text-ink disabled:opacity-60"
-          >
-            {CATEGORIES.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
           {skills.length > 0 && (
             <div className="mb-2.5 rounded-[9px] border border-border bg-surface p-3">
               <div className="mb-2 text-[12px] font-bold text-fog uppercase">
@@ -786,10 +754,7 @@ export default function MockInterviewPage() {
               </button>
               <div className="flex items-start justify-between gap-2 p-3.5">
                 <div className="min-w-0">
-                  <div className="mb-0.5 truncate text-sm font-bold text-ink">
-                    {session.category}
-                  </div>
-                  <div className="text-[12.5px] text-fog">
+                  <div className="truncate text-sm font-bold text-ink">
                     {t('mockInterview.recordingMeta', {
                       date: new Date(session.recordedAt).toLocaleDateString(undefined, {
                         year: 'numeric',

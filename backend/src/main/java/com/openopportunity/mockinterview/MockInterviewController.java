@@ -37,20 +37,17 @@ public class MockInterviewController {
     @PostMapping("/questions")
     public GenerateQuestionsResponse generateQuestions(@Valid @RequestBody GenerateQuestionsRequest request) {
         return new GenerateQuestionsResponse(mockInterviewQuestionService.getSessionQuestions(
-                request.skills(), request.experienceLevel(), request.industry(), request.category(),
-                request.count()));
+                request.skills(), request.experienceLevel(), request.industry(), request.count()));
     }
 
     @PostMapping
     public ResponseEntity<MockInterviewSessionSummary> create(
             @RequestParam("video") MultipartFile video,
             @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
-            @RequestParam String category,
             @RequestParam int questionCount,
             @RequestParam int durationSeconds) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(mockInterviewService.create(
-                        currentUserId(), video, thumbnail, category, questionCount, durationSeconds));
+                .body(mockInterviewService.create(currentUserId(), video, thumbnail, questionCount, durationSeconds));
     }
 
     @GetMapping
