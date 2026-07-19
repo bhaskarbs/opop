@@ -9,7 +9,6 @@ import java.util.UUID;
 public record AdminMockInterviewQuestionSummary(
         UUID id,
         String text,
-        String category,
         List<String> skills,
         String industry,
         ExperienceLevel experienceLevel,

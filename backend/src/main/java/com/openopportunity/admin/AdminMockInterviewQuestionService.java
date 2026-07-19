@@ -6,6 +6,7 @@ import com.openopportunity.mockinterview.MockInterviewQuestionRepository;
 import com.openopportunity.mockinterview.QuestionSource;
 import com.openopportunity.mockinterview.dto.AdminMockInterviewQuestionSummary;
 import com.openopportunity.mockinterview.dto.CreateMockInterviewQuestionRequest;
+import com.openopportunity.mockinterview.exception.DuplicateMockInterviewQuestionException;
 import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFoundException;
 import java.util.List;
 import java.util.UUID;
@@ -25,11 +26,10 @@ public class AdminMockInterviewQuestionService {
 
     @Transactional(readOnly = true)
     public List<AdminMockInterviewQuestionSummary> list(
-            String category, String skill, String industry, ExperienceLevel experienceLevel, String query) {
+            String skill, String industry, ExperienceLevel experienceLevel, String query) {
         String normalizedSkill = skill == null ? null : skill.trim().toLowerCase();
         String normalizedQuery = query == null ? null : query.trim().toLowerCase();
         return questionRepository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(question -> category == null || category.isBlank() || question.getCategory().equals(category))
                 .filter(question -> experienceLevel == null || question.getExperienceLevel() == experienceLevel)
                 .filter(question ->
                         industry == null || industry.isBlank() || industry.equalsIgnoreCase(question.getIndustry()))
@@ -43,15 +43,15 @@ public class AdminMockInterviewQuestionService {
                 .toList();
     }
 
+    /** Pre-checked rather than left to the DB's unique index on lower(text) (see V24) so an
+     * admin adding a duplicate gets a clean 409 instead of a raw constraint-violation 500. */
     @Transactional
     public AdminMockInterviewQuestionSummary create(CreateMockInterviewQuestionRequest request) {
+        if (questionRepository.existsByTextIgnoreCase(request.text())) {
+            throw new DuplicateMockInterviewQuestionException();
+        }
         MockInterviewQuestion question = new MockInterviewQuestion(
-                request.text(),
-                request.category(),
-                request.skills(),
-                request.industry(),
-                request.experienceLevel(),
-                QuestionSource.ADMIN);
+                request.text(), request.skills(), request.industry(), request.experienceLevel(), QuestionSource.ADMIN);
         return toSummary(questionRepository.save(question));
     }
 
@@ -75,7 +75,6 @@ public class AdminMockInterviewQuestionService {
         return new AdminMockInterviewQuestionSummary(
                 question.getId(),
                 question.getText(),
-                question.getCategory(),
                 question.getSkills(),
                 question.getIndustry(),
                 question.getExperienceLevel(),

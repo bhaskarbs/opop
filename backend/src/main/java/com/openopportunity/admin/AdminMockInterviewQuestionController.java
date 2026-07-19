@@ -29,12 +29,11 @@ public class AdminMockInterviewQuestionController {
 
     @GetMapping
     public List<AdminMockInterviewQuestionSummary> list(
-            @RequestParam(required = false) String category,
             @RequestParam(required = false) String skill,
             @RequestParam(required = false) String industry,
             @RequestParam(required = false) ExperienceLevel experienceLevel,
             @RequestParam(required = false) String q) {
-        return adminMockInterviewQuestionService.list(category, skill, industry, experienceLevel, q);
+        return adminMockInterviewQuestionService.list(skill, industry, experienceLevel, q);
     }
 
     @PostMapping

@@ -12,19 +12,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /** Supplies mock-interview session questions, in priority order: (1) the question bank in
  * Postgres, once it holds enough relevant questions to skip the AI call entirely; (2) the Claude
  * API otherwise, persisting whatever it returns into the bank for next time. If the AI call also
  * fails, this throws QuestionGenerationUnavailableException and MockInterviewController lets that
  * surface as a 502 — the frontend then falls back to its own local template generator, so a
- * candidate can always start a session regardless of which layer is down. */
+ * candidate can always start a session regardless of which layer is down.
+ *
+ * <p>Deliberately not @Transactional: each repository call below (find/exists/save) is
+ * independently transactional via Spring Data's default per-method behavior. That matters for
+ * persistGenerated — the bank has a unique index on lower(text) (see V24), so a duplicate insert
+ * throws; without a shared outer transaction, one failed insert doesn't abort the ones after it
+ * in the same loop the way it would inside a single Postgres transaction. */
 @Service
 public class MockInterviewQuestionService {
 
-    /** Once the bank has more than this many questions matching a session's category, industry,
+    /** Once the bank has more than this many questions matching a session's industry,
      * experience level, and (loosely) skills, serve from the bank instead of calling the AI. */
     private static final int BANK_THRESHOLD = 100;
 
@@ -47,29 +53,27 @@ public class MockInterviewQuestionService {
         this.client = created;
     }
 
-    @Transactional
     public List<String> getSessionQuestions(
-            List<String> skills, ExperienceLevel experienceLevel, String industry, String category, int count) {
-        List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, industry, category);
+            List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
+        List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, industry);
         if (bankMatches.size() > BANK_THRESHOLD) {
             return pickFromBank(bankMatches, count);
         }
 
-        List<String> generated = generateWithAi(skills, experienceLevel, industry, category, count);
-        persistGenerated(generated, skills, experienceLevel, industry, category);
+        List<String> generated = generateWithAi(skills, experienceLevel, industry, count);
+        persistGenerated(generated, skills, industry, experienceLevel);
         return generated;
     }
 
     private List<MockInterviewQuestion> matchingQuestions(
-            List<String> skills, ExperienceLevel experienceLevel, String industry, String category) {
-        List<MockInterviewQuestion> byCategory =
-                questionRepository.findByCategoryAndOptionalFilters(category, industry, experienceLevel);
+            List<String> skills, ExperienceLevel experienceLevel, String industry) {
+        List<MockInterviewQuestion> matches = questionRepository.findByOptionalFilters(industry, experienceLevel);
         if (skills.isEmpty()) {
-            return byCategory;
+            return matches;
         }
         // A question with no skills tagged (e.g. a soft-skills question) is a match for anyone;
         // otherwise at least one of its tagged skills has to overlap the candidate's selection.
-        return byCategory.stream()
+        return matches.stream()
                 .filter(question -> question.getSkills().isEmpty()
                         || question.getSkills().stream().anyMatch(skills::contains))
                 .toList();
@@ -93,17 +97,20 @@ public class MockInterviewQuestionService {
     }
 
     private void persistGenerated(
-            List<String> questions, List<String> skills, ExperienceLevel experienceLevel, String industry,
-            String category) {
+            List<String> questions, List<String> skills, String industry, ExperienceLevel experienceLevel) {
         for (String text : questions) {
             if (questionRepository.existsByTextIgnoreCase(text)) continue;
-            questionRepository.save(
-                    new MockInterviewQuestion(text, category, skills, industry, experienceLevel, QuestionSource.AI));
+            try {
+                questionRepository.save(new MockInterviewQuestion(text, skills, industry, experienceLevel, QuestionSource.AI));
+            } catch (DataIntegrityViolationException ex) {
+                // Lost a race against a concurrent insert of the same text (unique index on
+                // lower(text), see V24) — someone else already banked it, nothing to do here.
+            }
         }
     }
 
     private List<String> generateWithAi(
-            List<String> skills, ExperienceLevel experienceLevel, String industry, String category, int count) {
+            List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
         if (client == null) {
             throw new QuestionGenerationUnavailableException();
         }
@@ -112,7 +119,7 @@ public class MockInterviewQuestionService {
                     .model(Model.CLAUDE_OPUS_4_8)
                     .maxTokens(2048L)
                     .outputConfig(QuestionList.class)
-                    .addUserMessage(buildPrompt(skills, experienceLevel, industry, category, count))
+                    .addUserMessage(buildPrompt(skills, experienceLevel, industry, count))
                     .build();
 
             QuestionList result = client.messages().create(params).content().stream()
@@ -132,8 +139,7 @@ public class MockInterviewQuestionService {
         }
     }
 
-    private String buildPrompt(
-            List<String> skills, ExperienceLevel experienceLevel, String industry, String category, int count) {
+    private String buildPrompt(List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
         String skillsText = skills.isEmpty() ? "unspecified" : String.join(", ", skills);
         String experienceText =
                 experienceLevel == null ? "unspecified" : experienceLevel.name().toLowerCase(Locale.ROOT);
@@ -145,13 +151,11 @@ public class MockInterviewQuestionService {
                 Candidate skills: %s
                 Candidate experience level: %s
                 Candidate industry: %s
-                Interview category/style: %s
 
-                Tailor the questions to the candidate's skills, experience level, and industry where possible, \
-                in the tone implied by the interview category. Each question should be a natural, \
-                self-contained sentence a real interviewer would ask out loud — no numbering, no preamble, \
-                no markdown, and no two questions covering the same ground.
+                Tailor the questions to the candidate's skills, experience level, and industry where possible. \
+                Each question should be a natural, self-contained sentence a real interviewer would ask out \
+                loud — no numbering, no preamble, no markdown, and no two questions covering the same ground.
                 """
-                .formatted(count, skillsText, experienceText, industryText, category);
+                .formatted(count, skillsText, experienceText, industryText);
     }
 }

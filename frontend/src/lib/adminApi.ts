@@ -43,7 +43,6 @@ export type MockInterviewQuestionSource = 'AI' | 'ADMIN'
 export interface AdminMockInterviewQuestionSummary {
   id: string
   text: string
-  category: string
   skills: string[]
   industry: string | null
   experienceLevel: BackendExperienceLevel | null
@@ -53,7 +52,6 @@ export interface AdminMockInterviewQuestionSummary {
 }
 
 export interface MockInterviewQuestionListParams {
-  category?: string
   skill?: string
   industry?: string
   experienceLevel?: BackendExperienceLevel
@@ -62,7 +60,6 @@ export interface MockInterviewQuestionListParams {
 
 export interface CreateMockInterviewQuestionPayload {
   text: string
-  category: string
   skills: string[]
   industry: string | null
   experienceLevel: BackendExperienceLevel | null
@@ -84,7 +81,6 @@ function buildUserListQuery(params: AdminUserListParams): string {
 
 function buildMockInterviewQuestionQuery(params: MockInterviewQuestionListParams): string {
   const search = new URLSearchParams()
-  if (params.category) search.set('category', params.category)
   if (params.skill) search.set('skill', params.skill)
   if (params.industry) search.set('industry', params.industry)
   if (params.experienceLevel) search.set('experienceLevel', params.experienceLevel)
