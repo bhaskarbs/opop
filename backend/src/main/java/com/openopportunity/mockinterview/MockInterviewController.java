@@ -1,6 +1,9 @@
 package com.openopportunity.mockinterview;
 
+import com.openopportunity.mockinterview.dto.GenerateQuestionsRequest;
+import com.openopportunity.mockinterview.dto.GenerateQuestionsResponse;
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,9 +26,19 @@ import org.springframework.web.multipart.MultipartFile;
 public class MockInterviewController {
 
     private final MockInterviewService mockInterviewService;
+    private final MockInterviewQuestionService mockInterviewQuestionService;
 
-    public MockInterviewController(MockInterviewService mockInterviewService) {
+    public MockInterviewController(
+            MockInterviewService mockInterviewService, MockInterviewQuestionService mockInterviewQuestionService) {
         this.mockInterviewService = mockInterviewService;
+        this.mockInterviewQuestionService = mockInterviewQuestionService;
+    }
+
+    @PostMapping("/questions")
+    public GenerateQuestionsResponse generateQuestions(@Valid @RequestBody GenerateQuestionsRequest request) {
+        return new GenerateQuestionsResponse(mockInterviewQuestionService.generateQuestions(
+                request.skills(), request.experienceLevel(), request.industry(), request.category(),
+                request.count()));
     }
 
     @PostMapping

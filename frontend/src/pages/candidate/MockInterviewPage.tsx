@@ -6,10 +6,11 @@ import { experienceLevelFromBackend } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
 import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
 
-// Fallback questions for when the candidate has no skills selected for this session —
-// otherwise every question is generated from QUESTION_TEMPLATES + their selected skills (see
-// generateQuestion). Canned/static content, not backend data — same treatment as other
-// decorative-but-real content in this app (see IDEA_CATEGORIES).
+// Questions are generated per-session by the backend via the Claude API (see
+// mockInterviewApi.generateQuestions), tailored to the candidate's selected skills, experience
+// level, and industry. QUESTION_TEMPLATES/QUESTION_BANK below are the local fallback used only
+// when that call fails (no API key configured, network error, rate limit, etc.) — see
+// fetchSessionQuestions — so a candidate can always start a session.
 const QUESTION_BANK: Record<string, string[]> = {
   'Frontend Developer — behavioral': [
     'Tell me about a time you had to debug a difficult production issue. What was your process?',
@@ -219,6 +220,7 @@ export default function MockInterviewPage() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [preparingQuestions, setPreparingQuestions] = useState(false)
   const [autoStopped, setAutoStopped] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(MAX_DURATION_SECONDS)
 
@@ -234,7 +236,7 @@ export default function MockInterviewPage() {
   const autoStopTimeoutRef = useRef<number | null>(null)
   const countdownIntervalRef = useRef<number | null>(null)
   const sessionQuestionsRef = useRef<string[]>([])
-  const repeatModeRef = useRef(false)
+  const preparedQuestionsRef = useRef<string[]>([])
 
   function loadThumbnail(session: MockInterviewSessionSummary) {
     if (!session.hasThumbnail) return
@@ -312,18 +314,48 @@ export default function MockInterviewPage() {
     if (videoRef.current) videoRef.current.srcObject = null
   }
 
-  function askQuestion(previous: string) {
-    const index = questionsAskedRef.current
-    const repeated = repeatModeRef.current ? lastQuestionSet[index] : undefined
-    const question =
-      repeated ??
-      generateQuestion(
+  /** Asks Claude (via the backend) for this session's full question set, tailored to the
+   * candidate's selected skills, experience level, and industry. Falls back to the local
+   * template generator — silently, per product decision — if that call fails for any reason
+   * (no API key configured server-side, network error, rate limit), so a candidate can always
+   * start a session. */
+  async function fetchSessionQuestions(): Promise<string[]> {
+    try {
+      const result = await mockInterviewApi.generateQuestions({
+        skills: selectedSkills,
+        experienceLevel,
+        industry,
+        category,
+        count: QUESTIONS_PER_SESSION,
+      })
+      if (result.questions.length > 0) return result.questions
+    } catch {
+      // LLM unavailable — fall through to the local generator below.
+    }
+    const resolvedExperienceLevel = experienceLevel
+      ? experienceLevelFromBackend(experienceLevel)
+      : null
+    const questions: string[] = []
+    let previous = ''
+    for (let i = 0; i < QUESTIONS_PER_SESSION; i++) {
+      previous = generateQuestion(
         selectedSkills,
-        experienceLevel ? experienceLevelFromBackend(experienceLevel) : null,
+        resolvedExperienceLevel,
         industry,
         category,
         previous,
       )
+      questions.push(previous)
+    }
+    return questions
+  }
+
+  function askQuestion() {
+    const index = questionsAskedRef.current
+    const question =
+      preparedQuestionsRef.current[index] ??
+      preparedQuestionsRef.current[preparedQuestionsRef.current.length - 1] ??
+      ''
     setCurrentQuestion(question)
     sessionQuestionsRef.current.push(question)
     questionsAskedRef.current += 1
@@ -340,8 +372,15 @@ export default function MockInterviewPage() {
     setCameraError(null)
     setUploadError(null)
     setAutoStopped(false)
-    repeatModeRef.current = repeat
     sessionQuestionsRef.current = []
+
+    setPreparingQuestions(true)
+    try {
+      preparedQuestionsRef.current = repeat ? lastQuestionSet : await fetchSessionQuestions()
+    } finally {
+      setPreparingQuestions(false)
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       streamRef.current = stream
@@ -364,7 +403,7 @@ export default function MockInterviewPage() {
       recorder.onstart = () => {
         recordingStartedAtRef.current = Date.now()
         questionsAskedRef.current = 0
-        askQuestion('')
+        askQuestion()
         // Hard cutoff — matches the server-side MAX_DURATION_SECONDS backstop in
         // MockInterviewService, so a session can never silently run past the stated limit.
         autoStopTimeoutRef.current = window.setTimeout(() => {
@@ -446,7 +485,7 @@ export default function MockInterviewPage() {
   }
 
   function nextQuestion() {
-    askQuestion(currentQuestion)
+    askQuestion()
   }
 
   async function handleWatch(sessionId: string) {
@@ -677,20 +716,22 @@ export default function MockInterviewPage() {
           <button
             type="button"
             onClick={() => (recording ? handleStop() : void handleStart())}
-            disabled={uploading || (!recording && atSessionLimit)}
+            disabled={uploading || preparingQuestions || (!recording && atSessionLimit)}
             className="w-full rounded-[9px] bg-ink py-[11px] text-sm font-bold text-white disabled:opacity-60"
           >
             {uploading
               ? t('mockInterview.uploading')
-              : recording
-                ? t('mockInterview.stopAndSave')
-                : t('mockInterview.startNewSession')}
+              : preparingQuestions
+                ? t('mockInterview.preparingQuestions')
+                : recording
+                  ? t('mockInterview.stopAndSave')
+                  : t('mockInterview.startNewSession')}
           </button>
           {!recording && lastQuestionSet.length > 0 && !atSessionLimit && (
             <button
               type="button"
               onClick={() => void handleStart(true)}
-              disabled={uploading}
+              disabled={uploading || preparingQuestions}
               className="mt-2 w-full rounded-[9px] border border-border py-[11px] text-sm font-bold text-ink disabled:opacity-60"
             >
               {t('mockInterview.repeatLastSession')}

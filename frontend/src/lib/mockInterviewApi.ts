@@ -1,5 +1,6 @@
 import { useAuthStore } from '../stores/authStore'
 import { blobRequest, request, uploadRequest } from './apiClient'
+import type { BackendExperienceLevel } from './jobsApi'
 
 export interface MockInterviewSessionSummary {
   id: string
@@ -8,6 +9,14 @@ export interface MockInterviewSessionSummary {
   durationSeconds: number
   hasThumbnail: boolean
   recordedAt: string
+}
+
+export interface GenerateQuestionsPayload {
+  skills: string[]
+  experienceLevel: BackendExperienceLevel | null
+  industry: string | null
+  category: string
+  count: number
 }
 
 export interface MockInterviewUploadPayload {
@@ -26,6 +35,14 @@ function authHeaders(): Record<string, string> {
 export const mockInterviewApi = {
   mine: () =>
     request<MockInterviewSessionSummary[]>('/api/candidate/mock-interviews', {
+      headers: authHeaders(),
+    }),
+  // LLM-generated (Claude) — MockInterviewPage falls back to its own local template generator
+  // if this fails, so a candidate can always start a session.
+  generateQuestions: (payload: GenerateQuestionsPayload) =>
+    request<{ questions: string[] }>('/api/candidate/mock-interviews/questions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
       headers: authHeaders(),
     }),
   upload: (payload: MockInterviewUploadPayload) => {
