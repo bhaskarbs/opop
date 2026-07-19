@@ -188,13 +188,23 @@
     "title": "Mock interviews",
     "subtitle": "Practice on camera, then review your recorded sessions anytime.",
     "cameraPreview": "[ camera preview ]",
+    "cameraUnavailable": "Camera unavailable — check your browser permissions.",
+    "recording": "Recording",
     "toggleMic": "Toggle microphone",
     "stopRecording": "Stop recording",
     "toggleCamera": "Toggle camera",
     "questionProgress": "Question {{current}} of {{total}}",
+    "nextQuestion": "Next question →",
     "startNewSession": "Start new session",
+    "stopAndSave": "Stop & save session",
+    "uploading": "Saving your recording…",
+    "uploadError": "Couldn't save your recording. Please try again.",
     "recordedLogs": "Recorded logs",
     "sessionsCount": "{{count}} sessions",
-    "recordingMeta": "{{date}} · {{count}} questions"
+    "recordingMeta": "{{date}} · {{count}} questions",
+    "loadingSessions": "Loading your sessions…",
+    "noSessions": "You haven't recorded any mock interviews yet.",
+    "playbackError": "Couldn't load this recording. Please try again.",
+    "close": "Close"
   }
 }

@@ -82,6 +82,23 @@ export async function uploadRequest<T>(
   return handleResponse<T>(response)
 }
 
+/** For fetching a binary response (e.g. a mock interview recording) that needs an
+ * Authorization header — unlike request(), a plain <video src> or <a href> can't attach one,
+ * so callers fetch the bytes themselves and hand the resulting Blob to URL.createObjectURL. */
+export async function blobRequest(
+  path: string,
+  headers: Record<string, string> = {},
+): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    credentials: 'include',
+    headers,
+  })
+  if (!response.ok) {
+    throw new ApiError(response.status, `Request failed with status ${response.status}`)
+  }
+  return response.blob()
+}
+
 export interface RegisterPayload {
   email: string
   password: string

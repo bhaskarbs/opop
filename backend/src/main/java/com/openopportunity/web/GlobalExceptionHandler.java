@@ -24,6 +24,8 @@ import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
+import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -159,6 +161,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmailDeliveryException.class)
     public ResponseEntity<ApiError> handleEmailDelivery(EmailDeliveryException ex) {
         return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(MockInterviewSessionNotFoundException.class)
+    public ResponseEntity<ApiError> handleMockInterviewSessionNotFound(MockInterviewSessionNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidMockInterviewVideoException.class)
+    public ResponseEntity<ApiError> handleInvalidMockInterviewVideo(InvalidMockInterviewVideoException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
