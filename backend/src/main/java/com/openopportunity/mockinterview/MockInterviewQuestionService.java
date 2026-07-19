@@ -8,18 +8,25 @@ import com.anthropic.models.messages.StructuredMessageCreateParams;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.openopportunity.job.ExperienceLevel;
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/** Generates mock-interview questions with the Claude API, tailored to the candidate's selected
- * skills, experience level, and industry for this session. Requires ANTHROPIC_API_KEY to be set
- * in the environment the backend runs in (never hardcoded — see application.properties' MAIL_*
- * handling for the same pattern); when it's absent, or the call fails for any reason, this throws
- * QuestionGenerationUnavailableException and MockInterviewController lets that surface as a 502
- * so the frontend can fall back to its own local question generator. */
+/** Supplies mock-interview session questions, in priority order: (1) the question bank in
+ * Postgres, once it holds enough relevant questions to skip the AI call entirely; (2) the Claude
+ * API otherwise, persisting whatever it returns into the bank for next time. If the AI call also
+ * fails, this throws QuestionGenerationUnavailableException and MockInterviewController lets that
+ * surface as a 502 — the frontend then falls back to its own local template generator, so a
+ * candidate can always start a session regardless of which layer is down. */
 @Service
 public class MockInterviewQuestionService {
+
+    /** Once the bank has more than this many questions matching a session's category, industry,
+     * experience level, and (loosely) skills, serve from the bank instead of calling the AI. */
+    private static final int BANK_THRESHOLD = 100;
 
     record QuestionList(
             @JsonPropertyDescription(
@@ -27,8 +34,10 @@ public class MockInterviewQuestionService {
                     List<String> questions) {}
 
     private final AnthropicClient client;
+    private final MockInterviewQuestionRepository questionRepository;
 
-    public MockInterviewQuestionService() {
+    public MockInterviewQuestionService(MockInterviewQuestionRepository questionRepository) {
+        this.questionRepository = questionRepository;
         AnthropicClient created;
         try {
             created = AnthropicOkHttpClient.fromEnv();
@@ -38,7 +47,62 @@ public class MockInterviewQuestionService {
         this.client = created;
     }
 
-    public List<String> generateQuestions(
+    @Transactional
+    public List<String> getSessionQuestions(
+            List<String> skills, ExperienceLevel experienceLevel, String industry, String category, int count) {
+        List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, industry, category);
+        if (bankMatches.size() > BANK_THRESHOLD) {
+            return pickFromBank(bankMatches, count);
+        }
+
+        List<String> generated = generateWithAi(skills, experienceLevel, industry, category, count);
+        persistGenerated(generated, skills, experienceLevel, industry, category);
+        return generated;
+    }
+
+    private List<MockInterviewQuestion> matchingQuestions(
+            List<String> skills, ExperienceLevel experienceLevel, String industry, String category) {
+        List<MockInterviewQuestion> byCategory =
+                questionRepository.findByCategoryAndOptionalFilters(category, industry, experienceLevel);
+        if (skills.isEmpty()) {
+            return byCategory;
+        }
+        // A question with no skills tagged (e.g. a soft-skills question) is a match for anyone;
+        // otherwise at least one of its tagged skills has to overlap the candidate's selection.
+        return byCategory.stream()
+                .filter(question -> question.getSkills().isEmpty()
+                        || question.getSkills().stream().anyMatch(skills::contains))
+                .toList();
+    }
+
+    private List<String> pickFromBank(List<MockInterviewQuestion> eligible, int count) {
+        List<MockInterviewQuestion> important = new ArrayList<>(
+                eligible.stream().filter(MockInterviewQuestion::isImportant).toList());
+        List<MockInterviewQuestion> rest = new ArrayList<>(
+                eligible.stream().filter(question -> !question.isImportant()).toList());
+        Collections.shuffle(important);
+        Collections.shuffle(rest);
+
+        List<MockInterviewQuestion> picked = new ArrayList<>(important.subList(0, Math.min(count, important.size())));
+        for (MockInterviewQuestion question : rest) {
+            if (picked.size() >= count) break;
+            picked.add(question);
+        }
+        Collections.shuffle(picked);
+        return picked.stream().map(MockInterviewQuestion::getText).toList();
+    }
+
+    private void persistGenerated(
+            List<String> questions, List<String> skills, ExperienceLevel experienceLevel, String industry,
+            String category) {
+        for (String text : questions) {
+            if (questionRepository.existsByTextIgnoreCase(text)) continue;
+            questionRepository.save(
+                    new MockInterviewQuestion(text, category, skills, industry, experienceLevel, QuestionSource.AI));
+        }
+    }
+
+    private List<String> generateWithAi(
             List<String> skills, ExperienceLevel experienceLevel, String industry, String category, int count) {
         if (client == null) {
             throw new QuestionGenerationUnavailableException();

@@ -100,6 +100,32 @@
     "noneCandidates": "No candidates match your search.",
     "noneCompanies": "No companies match your search."
   },
+  "mockInterviewQuestions": {
+    "title": "Mock interview questions",
+    "subtitle": "Manage the question bank candidates draw from, and highlight the ones that matter most.",
+    "addTitle": "Add a question",
+    "textPlaceholder": "Type the interview question…",
+    "industryPlaceholder": "Industry (optional)",
+    "anyExperienceLevel": "Any experience level",
+    "addSkillPlaceholder": "Tag a skill and press enter",
+    "removeSkill": "Remove {{skill}}",
+    "addQuestion": "Add question",
+    "saving": "Saving…",
+    "saveError": "Couldn't save this question. Try again.",
+    "allCategories": "All categories",
+    "filterSkillPlaceholder": "Filter by skill",
+    "filterIndustryPlaceholder": "Filter by industry",
+    "searchPlaceholder": "Search question text",
+    "loadError": "Could not load questions.",
+    "loading": "Loading questions…",
+    "none": "No questions match these filters.",
+    "highlight": "Highlight as important",
+    "unhighlight": "Remove highlight",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this question? This can't be undone.",
+    "sourceAi": "AI-generated",
+    "sourceAdmin": "Added by admin"
+  },
   "reports": {
     "tabs": {
       "candidates": "Candidates",

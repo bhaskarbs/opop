@@ -46,6 +46,7 @@ export const ROUTES = {
   adminJobApprovals: '/admin/approvals/jobs',
   adminIdeaApprovals: '/admin/approvals/ideas',
   adminUsers: '/admin/users',
+  adminMockInterviewQuestions: '/admin/mock-interview-questions',
   adminReports: '/admin/reports',
   adminBilling: '/admin/billing',
 } as const

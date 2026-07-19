@@ -33,6 +33,7 @@ export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
     { label: 'nav.approvals', to: ROUTES.adminApprovals },
     { label: 'nav.reports', to: ROUTES.adminReports },
     { label: 'nav.users', to: ROUTES.adminUsers },
+    { label: 'nav.mockInterviewQuestions', to: ROUTES.adminMockInterviewQuestions },
     { label: 'nav.billing', to: ROUTES.adminBilling },
   ],
 }

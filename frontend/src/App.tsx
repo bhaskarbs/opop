@@ -50,6 +50,7 @@ import AdminJobApprovalsPage from './pages/admin/AdminJobApprovalsPage'
 import AdminCompanyApprovalsPage from './pages/admin/AdminCompanyApprovalsPage'
 import AdminIdeaApprovalsPage from './pages/admin/AdminIdeaApprovalsPage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
+import AdminMockInterviewQuestionsPage from './pages/admin/AdminMockInterviewQuestionsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import AdminBillingPage from './pages/admin/AdminBillingPage'
 
@@ -157,6 +158,10 @@ function App() {
                   <Route path="ideas" element={<AdminIdeaApprovalsPage />} />
                 </Route>
                 <Route path="admin/users" element={<AdminUsersPage />} />
+                <Route
+                  path="admin/mock-interview-questions"
+                  element={<AdminMockInterviewQuestionsPage />}
+                />
                 <Route path="admin/reports" element={<AdminReportsPage />} />
                 <Route path="admin/billing" element={<AdminBillingPage />} />
               </Route>

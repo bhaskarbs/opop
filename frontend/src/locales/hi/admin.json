@@ -100,6 +100,32 @@
     "noneCandidates": "आपकी खोज से कोई उम्मीदवार मेल नहीं खाता।",
     "noneCompanies": "आपकी खोज से कोई कंपनी मेल नहीं खाती।"
   },
+  "mockInterviewQuestions": {
+    "title": "मॉक इंटरव्यू प्रश्न",
+    "subtitle": "उम्मीदवारों को मिलने वाले प्रश्न बैंक को प्रबंधित करें, और सबसे ज़रूरी प्रश्नों को हाइलाइट करें।",
+    "addTitle": "एक प्रश्न जोड़ें",
+    "textPlaceholder": "इंटरव्यू प्रश्न टाइप करें…",
+    "industryPlaceholder": "इंडस्ट्री (वैकल्पिक)",
+    "anyExperienceLevel": "कोई भी अनुभव स्तर",
+    "addSkillPlaceholder": "एक हुनर टैग करें और एंटर दबाएं",
+    "removeSkill": "{{skill}} हटाएं",
+    "addQuestion": "प्रश्न जोड़ें",
+    "saving": "सेव हो रहा है…",
+    "saveError": "यह प्रश्न सेव नहीं हो सका। फिर से कोशिश करें।",
+    "allCategories": "सभी श्रेणियां",
+    "filterSkillPlaceholder": "हुनर से फ़िल्टर करें",
+    "filterIndustryPlaceholder": "इंडस्ट्री से फ़िल्टर करें",
+    "searchPlaceholder": "प्रश्न टेक्स्ट खोजें",
+    "loadError": "प्रश्न लोड नहीं हो सके।",
+    "loading": "प्रश्न लोड हो रहे हैं…",
+    "none": "इन फ़िल्टर से कोई प्रश्न मेल नहीं खाता।",
+    "highlight": "महत्वपूर्ण के रूप में हाइलाइट करें",
+    "unhighlight": "हाइलाइट हटाएं",
+    "delete": "हटाएं",
+    "deleteConfirm": "यह प्रश्न हटाएं? इसे वापस नहीं लाया जा सकता।",
+    "sourceAi": "AI-जनित",
+    "sourceAdmin": "एडमिन द्वारा जोड़ा गया"
+  },
   "reports": {
     "tabs": {
       "candidates": "उम्मीदवार",
