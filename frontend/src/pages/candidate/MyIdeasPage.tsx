@@ -11,7 +11,7 @@ import {
   type IdeaInterestSummary,
   type IdeaSummary,
 } from '../../lib/ideasApi'
-import { ideaRoutesFor } from '../../routes/paths'
+import { ideaRoutesFor, ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 
 const STAGE_KEYS: Record<BackendIdeaStage, string> = {
@@ -248,6 +248,20 @@ export default function MyIdeasPage() {
                             <div className="mt-0.5 text-[11.5px] text-fog">
                               {t('myIdeas.appliedMeta', { date: formatDate(applicant.createdAt) })}
                             </div>
+                            {applicant.contactNumber ? (
+                              <div className="mt-1 text-[12.5px] font-semibold text-teal">
+                                {t('myIdeas.contactNumber', { number: applicant.contactNumber })}
+                              </div>
+                            ) : (
+                              role !== 'COMPANY' && (
+                                <Link
+                                  to={localize(ROUTES.candidateBilling)}
+                                  className="mt-1 block text-[12.5px] font-bold text-primary no-underline"
+                                >
+                                  {t('myIdeas.upgradeForContact')}
+                                </Link>
+                              )
+                            )}
                           </div>
                         </div>
                       ))

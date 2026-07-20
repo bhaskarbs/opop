@@ -104,6 +104,8 @@
     "noApplicants": "अभी तक किसी ने रुचि नहीं दिखाई है।",
     "ticketSizeLabel": "निवेश राशि: {{amount}}",
     "appliedMeta": "{{date}} को आवेदन किया",
+    "contactNumber": "संपर्क: {{number}}",
+    "upgradeForContact": "संपर्क विवरण देखने के लिए प्लस में अपग्रेड करें →",
     "statuses": {
       "approved": "मंज़ूर",
       "pendingReview": "समीक्षा लंबित",

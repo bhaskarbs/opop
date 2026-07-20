@@ -5,9 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.auth.CandidateProfile;
+import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.billing.CandidateBillingService;
+import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.idea.dto.IdeaDetail;
 import com.openopportunity.idea.dto.IdeaInterestRequest;
 import com.openopportunity.idea.dto.IdeaInterestSummary;
@@ -39,11 +43,23 @@ class IdeaServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private CandidateProfileRepository candidateProfileRepository;
+
+    @Mock
+    private CandidateBillingService candidateBillingService;
+
     private IdeaService ideaService;
 
     @BeforeEach
     void setUp() {
-        ideaService = new IdeaService(ideaRepository, userRepository, ideaInterestRepository, notificationService);
+        ideaService = new IdeaService(
+                ideaRepository,
+                userRepository,
+                ideaInterestRepository,
+                notificationService,
+                candidateProfileRepository,
+                candidateBillingService);
     }
 
     private IdeaRequest sampleRequest() {
@@ -261,6 +277,35 @@ class IdeaServiceTest {
 
         assertThatThrownBy(() -> ideaService.getInterests(idea.getId(), otherId))
                 .isInstanceOf(IdeaAccessDeniedException.class);
+    }
+
+    @Test
+    void getInterestsOnlyIncludesContactNumberWhenCallerIsOnAPaidPlan() {
+        UUID ownerId = UUID.randomUUID();
+        UUID interestedUserId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        IdeaInterest interest = new IdeaInterest(
+                idea.getId(),
+                idea.getTitle(),
+                idea.getSubmitterName(),
+                interestedUserId,
+                "Fatima Sheikh",
+                IdeaInterestRole.INVESTOR,
+                "₹5,00,000",
+                "Interested.");
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+        when(ideaInterestRepository.findByIdeaIdOrderByCreatedAtDesc(idea.getId()))
+                .thenReturn(java.util.List.of(interest));
+        CandidateProfile interestedProfile =
+                new CandidateProfile(interestedUserId, "9876543210", java.util.List.of(), null);
+        when(candidateProfileRepository.findByUserId(interestedUserId)).thenReturn(Optional.of(interestedProfile));
+
+        when(candidateBillingService.getCurrentPlan(ownerId)).thenReturn(SubscriptionPlan.FREE);
+        assertThat(ideaService.getInterests(idea.getId(), ownerId).get(0).contactNumber()).isNull();
+
+        when(candidateBillingService.getCurrentPlan(ownerId)).thenReturn(SubscriptionPlan.PLUS);
+        assertThat(ideaService.getInterests(idea.getId(), ownerId).get(0).contactNumber())
+                .isEqualTo("9876543210");
     }
 
     @Test
