@@ -98,9 +98,9 @@
     }
   },
   "resultCard": {
-    "saved": "सेव किया गया",
-    "save": "सेव करें",
-    "applyNow": "अभी आवेदन करें"
+    "applyNow": "अभी आवेदन करें",
+    "applied": "आवेदन किया",
+    "viewDetails": "विवरण देखें"
   },
   "jobDetail": {
     "notFound": {
@@ -115,12 +115,9 @@
     "postedDaysAgo": "{{days}} दिन पहले",
     "postedOneWeekAgo": "1 हफ़्ते पहले",
     "postedWeeksAgo": "{{weeks}} हफ़्ते पहले",
-    "save": "सेव करें",
-    "saved": "सेव किया गया",
     "applying": "आवेदन किया जा रहा है…",
-    "withdrawing": "वापस लिया जा रहा है…",
     "applyNow": "अभी आवेदन करें",
-    "withdrawApplication": "आवेदन वापस लें",
+    "applied": "आवेदन किया",
     "applyError": "कुछ गड़बड़ हो गई। फिर से कोशिश करें।",
     "postedPrefix": "पोस्ट किया गया: {{label}}",
     "applicantsCount": "{{count}} आवेदक",
