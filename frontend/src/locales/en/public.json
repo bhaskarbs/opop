@@ -98,9 +98,9 @@
     }
   },
   "resultCard": {
-    "saved": "Saved",
-    "save": "Save",
-    "applyNow": "Apply now"
+    "applyNow": "Apply now",
+    "applied": "Applied",
+    "viewDetails": "View details"
   },
   "jobDetail": {
     "notFound": {
@@ -115,12 +115,9 @@
     "postedDaysAgo": "{{days}} days ago",
     "postedOneWeekAgo": "1 week ago",
     "postedWeeksAgo": "{{weeks}} weeks ago",
-    "save": "Save",
-    "saved": "Saved",
     "applying": "Applying…",
-    "withdrawing": "Withdrawing…",
     "applyNow": "Apply now",
-    "withdrawApplication": "Withdraw application",
+    "applied": "Applied",
     "applyError": "Something went wrong. Try again.",
     "postedPrefix": "Posted {{label}}",
     "applicantsCount": "{{count}} applicants",

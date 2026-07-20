@@ -68,7 +68,6 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  const [saved, setSaved] = useState(false)
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
@@ -110,6 +109,8 @@ export default function JobDetailPage() {
     }
   }, [jobId, authStatus, user?.role])
 
+  // Withdrawing lives on the Applications page only (see ApplicationsPage) — once applied, this
+  // page just shows a static "Applied" label rather than offering a withdraw action here too.
   async function handleApplyClick() {
     if (!job) return
     if (authStatus !== 'authenticated') {
@@ -119,17 +120,9 @@ export default function JobDetailPage() {
     setApplyError(null)
     setApplying(true)
     try {
-      if (applicationId) {
-        await applicationsApi.withdraw(applicationId)
-        setApplicationId(null)
-        setJob((prev) =>
-          prev ? { ...prev, applicantCount: Math.max(0, prev.applicantCount - 1) } : prev,
-        )
-      } else {
-        const created = await applicationsApi.apply(job.id)
-        setApplicationId(created.id)
-        setJob((prev) => (prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev))
-      }
+      const created = await applicationsApi.apply(job.id)
+      setApplicationId(created.id)
+      setJob((prev) => (prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev))
     } catch (error) {
       setApplyError(error instanceof ApiError ? error.message : t('jobDetail.applyError'))
     } finally {
@@ -185,31 +178,20 @@ export default function JobDetailPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-start gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setSaved((prev) => !prev)}
-                  className="rounded-control border border-border bg-surface px-[18px] py-2.5 text-sm font-bold text-ink"
-                >
-                  {saved ? t('jobDetail.saved') : t('jobDetail.save')}
-                </button>
-                <button
-                  type="button"
-                  disabled={applying}
-                  onClick={handleApplyClick}
-                  className={
-                    applicationId
-                      ? 'rounded-control border border-border bg-surface px-6 py-2.5 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-60'
-                      : 'rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50'
-                  }
-                >
-                  {applying
-                    ? applicationId
-                      ? t('jobDetail.withdrawing')
-                      : t('jobDetail.applying')
-                    : applicationId
-                      ? t('jobDetail.withdrawApplication')
-                      : t('jobDetail.applyNow')}
-                </button>
+                {applicationId ? (
+                  <span className="rounded-control bg-teal px-6 py-2.5 text-sm font-bold text-white">
+                    {t('jobDetail.applied')}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={applying}
+                    onClick={handleApplyClick}
+                    className="rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50"
+                  >
+                    {applying ? t('jobDetail.applying') : t('jobDetail.applyNow')}
+                  </button>
+                )}
               </div>
             </div>
             {applyError && (
@@ -218,7 +200,9 @@ export default function JobDetailPage() {
               </div>
             )}
             <div className="mt-5 flex flex-wrap gap-2 border-t border-[#F0F1F3] pt-4 text-[13.5px] text-fog">
-              <span>{t('jobDetail.postedPrefix', { label: formatPostedLabel(t, job.createdAt) })}</span>
+              <span>
+                {t('jobDetail.postedPrefix', { label: formatPostedLabel(t, job.createdAt) })}
+              </span>
               <span>·</span>
               <span>{t('jobDetail.applicantsCount', { count: job.applicantCount })}</span>
               <span>·</span>

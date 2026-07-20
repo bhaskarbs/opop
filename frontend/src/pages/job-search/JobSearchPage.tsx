@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { ApiError } from '../../lib/apiClient'
+import { applicationsApi } from '../../lib/applicationsApi'
 import { jobsApi } from '../../lib/jobsApi'
 import { experienceLevelToBackend, workModeToBackend } from '../../lib/jobEnums'
+import { useAuthStore } from '../../stores/authStore'
 import { FilterSidebar } from './FilterSidebar'
 import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './filterState'
 import { ResultCard } from './ResultCard'
@@ -26,6 +28,9 @@ export default function JobSearchPage() {
   const initialQuery = searchParams.get('q') ?? ''
   const initialLocation = searchParams.get('loc') ?? ''
 
+  const authStatus = useAuthStore((state) => state.status)
+  const user = useAuthStore((state) => state.user)
+
   const [query, setQuery] = useState(initialQuery)
   const [location, setLocation] = useState(initialLocation)
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery || initialLocation))
@@ -36,6 +41,37 @@ export default function JobSearchPage() {
   const [jobs, setJobs] = useState<DisplayJob[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
+
+  // Independent of the search effect below — which jobs the candidate has applied to doesn't
+  // change with query/filters/sort, so this only needs to re-run when auth state changes (e.g.
+  // logging in mid-session). Always resolves through a promise chain — even the "not a
+  // candidate" case — so setAppliedJobIds is only ever called from a .then(), not synchronously
+  // in the effect body (react-hooks/set-state-in-effect).
+  useEffect(() => {
+    let cancelled = false
+    const applied =
+      authStatus === 'authenticated' && user?.role === 'CANDIDATE'
+        ? applicationsApi.mine()
+        : Promise.resolve([])
+    applied
+      .then((applications) => {
+        if (cancelled) return
+        setAppliedJobIds(
+          new Set(
+            applications
+              .filter((application) => application.status !== 'WITHDRAWN')
+              .map((application) => application.jobId),
+          ),
+        )
+      })
+      .catch(() => {
+        // Best-effort — the "already applied" highlight just won't show if this fails.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [authStatus, user?.role])
 
   useEffect(() => {
     if (!hasSearched) return
@@ -216,7 +252,7 @@ export default function JobSearchPage() {
             ) : (
               <div className="flex flex-col gap-3.5">
                 {pageResults.map((job) => (
-                  <ResultCard key={job.id} job={job} />
+                  <ResultCard key={job.id} job={job} applied={appliedJobIds.has(job.id)} />
                 ))}
               </div>
             )}
