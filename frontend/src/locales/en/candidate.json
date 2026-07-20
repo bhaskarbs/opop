@@ -164,6 +164,7 @@
     "downloadInvoice": "Download invoice",
     "statusPaid": "Paid",
     "statusFailed": "Failed",
+    "statusPending": "Pending",
     "plans": {
       "free": {
         "name": "Free",

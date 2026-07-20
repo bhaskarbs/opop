@@ -16,6 +16,10 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
+import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
+import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
+import com.openopportunity.billing.exception.PaymentVerificationFailedException;
 import com.openopportunity.billing.exception.SamePlanException;
 import com.openopportunity.community.exception.EmailDeliveryException;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
@@ -203,6 +207,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SamePlanException.class)
     public ResponseEntity<ApiError> handleSamePlan(SamePlanException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(PaymentGatewayUnavailableException.class)
+    public ResponseEntity<ApiError> handlePaymentGatewayUnavailable(PaymentGatewayUnavailableException ex) {
+        return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(PaymentVerificationFailedException.class)
+    public ResponseEntity<ApiError> handlePaymentVerificationFailed(PaymentVerificationFailedException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(BillingTransactionNotFoundException.class)
+    public ResponseEntity<ApiError> handleBillingTransactionNotFound(BillingTransactionNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(PaidPlanRequiresCheckoutException.class)
+    public ResponseEntity<ApiError> handlePaidPlanRequiresCheckout(PaidPlanRequiresCheckoutException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(NotificationNotFoundException.class)

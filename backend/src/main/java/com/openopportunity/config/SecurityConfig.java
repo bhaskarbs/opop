@@ -38,7 +38,11 @@ public class SecurityConfig {
                                 "/api/auth/google/company",
                                 "/api/auth/refresh",
                                 "/api/auth/logout",
-                                "/api/community/interest")
+                                "/api/community/interest",
+                                // Razorpay calls this server-to-server with no JWT — auth is the
+                                // HMAC signature check inside CandidateBillingService, not Spring
+                                // Security. See RazorpayWebhookController.
+                                "/api/webhooks/razorpay")
                         .permitAll()
                         // /mine and /pending must be declared before the general GET
                         // /api/jobs/** permitAll rule below — authorizeHttpRequests matches in

@@ -164,6 +164,7 @@
     "downloadInvoice": "इनवॉइस डाउनलोड करें",
     "statusPaid": "भुगतान हो गया",
     "statusFailed": "विफल",
+    "statusPending": "लंबित",
     "plans": {
       "free": {
         "name": "फ्री",

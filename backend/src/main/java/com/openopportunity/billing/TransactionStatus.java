@@ -1,5 +1,7 @@
 package com.openopportunity.billing;
 
 public enum TransactionStatus {
-    PAID
+    PENDING,
+    PAID,
+    FAILED
 }
