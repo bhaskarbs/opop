@@ -19,6 +19,7 @@
     },
     "seekingInterested": "Seeking {{funding}} · {{count}} interested",
     "viewIdea": "View idea →",
+    "applied": "Applied",
     "noResults": "No ideas match your filters.",
     "errorLoading": "Couldn't load ideas. Please try again."
   },
