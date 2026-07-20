@@ -37,8 +37,17 @@
     "mockInterviews": "मॉक इंटरव्यू",
     "mockInterviewsBody": "कैमरे पर अभ्यास करें और अपने रिकॉर्ड किए गए सेशन कभी भी देखें।",
     "startMockInterview": "मॉक इंटरव्यू शुरू करें",
+    "recordingQuestions": "{{count}} सवाल",
     "watch": "देखें",
-    "applicationActivity": "आवेदन गतिविधि"
+    "applicationActivity": "आवेदन गतिविधि",
+    "activity": {
+      "appliedToJob": "{{company}} में {{jobTitle}} के लिए आवेदन किया",
+      "underReview": "{{jobTitle}} के लिए आवेदन की समीक्षा हो रही है",
+      "notSelected": "{{jobTitle}} के लिए चयनित नहीं हुए",
+      "withdrawn": "{{jobTitle}} के लिए आवेदन वापस लिया",
+      "appliedToPartnership": "{{ideaTitle}} पर पार्टनरशिप के लिए आवेदन किया",
+      "empty": "अभी तक कोई आवेदन गतिविधि नहीं है।"
+    }
   },
   "profile": {
     "loading": "आपकी प्रोफ़ाइल लोड हो रही है…",
