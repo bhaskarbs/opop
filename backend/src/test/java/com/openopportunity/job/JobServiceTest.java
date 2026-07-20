@@ -16,6 +16,7 @@ import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.notification.NotificationService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -38,11 +39,14 @@ class JobServiceTest {
     @Mock
     private CompanyProfileRepository companyProfileRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private JobService jobService;
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, userRepository, companyProfileRepository);
+        jobService = new JobService(jobRepository, userRepository, companyProfileRepository, notificationService);
     }
 
     private CompanyProfile eligibleProfile(UUID companyId) {

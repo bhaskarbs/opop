@@ -14,6 +14,7 @@ import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
 import com.openopportunity.auth.VerificationStatus;
+import com.openopportunity.notification.NotificationService;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,11 +33,14 @@ class AdminCompanyServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private AdminCompanyService adminCompanyService;
 
     @BeforeEach
     void setUp() {
-        adminCompanyService = new AdminCompanyService(companyProfileRepository, userRepository);
+        adminCompanyService = new AdminCompanyService(companyProfileRepository, userRepository, notificationService);
     }
 
     private User companyUser() {

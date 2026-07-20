@@ -8,6 +8,8 @@ import com.openopportunity.job.Job;
 import com.openopportunity.job.JobRepository;
 import com.openopportunity.job.JobStatus;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -18,10 +20,15 @@ public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
     private final JobRepository jobRepository;
+    private final NotificationService notificationService;
 
-    public ApplicationService(ApplicationRepository applicationRepository, JobRepository jobRepository) {
+    public ApplicationService(
+            ApplicationRepository applicationRepository,
+            JobRepository jobRepository,
+            NotificationService notificationService) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -71,7 +78,22 @@ public class ApplicationService {
         }
         application.updateStatus(status);
         applicationRepository.save(application);
+        notificationService.notify(
+                application.getCandidateId(),
+                NotificationType.APPLICATION_STATUS_CHANGED,
+                "Your application to " + application.getJobTitle() + " at " + application.getCompanyName()
+                        + " is now " + statusLabel(status) + ".",
+                "/candidate/applications");
         return toSummary(application);
+    }
+
+    private String statusLabel(ApplicationStatus status) {
+        return switch (status) {
+            case APPLIED -> "applied";
+            case UNDER_REVIEW -> "under review";
+            case REJECTED -> "not selected";
+            case WITHDRAWN -> "withdrawn";
+        };
     }
 
     @Transactional(readOnly = true)

@@ -31,6 +31,12 @@
     "notifications": "Notifications",
     "menu": "Menu"
   },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "loading": "Loading…",
+    "empty": "No notifications yet."
+  },
   "tagline": "More than a job board — apply for roles, partner with startups, and grow through community-based opportunities that count toward the career you actually want.",
   "footer": {
     "candidates": {

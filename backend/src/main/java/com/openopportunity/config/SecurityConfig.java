@@ -106,6 +106,11 @@ public class SecurityConfig {
                         .hasRole("CANDIDATE")
                         .requestMatchers("/api/company/**")
                         .hasRole("COMPANY")
+                        // The notification bell in Header.tsx is shared across every
+                        // authenticated role — candidate, company, and admin all get
+                        // notifications addressed to them (see NotificationService).
+                        .requestMatchers("/api/notifications/**")
+                        .authenticated()
                         .anyRequest()
                         .authenticated())
                 // Plain 401 for missing/invalid auth on protected routes, matching REST API

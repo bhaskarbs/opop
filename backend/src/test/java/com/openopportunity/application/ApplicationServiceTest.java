@@ -19,6 +19,7 @@ import com.openopportunity.job.JobRepository;
 import com.openopportunity.job.JobStatus;
 import com.openopportunity.job.WorkMode;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.notification.NotificationService;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,11 +38,14 @@ class ApplicationServiceTest {
     @Mock
     private JobRepository jobRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private ApplicationService applicationService;
 
     @BeforeEach
     void setUp() {
-        applicationService = new ApplicationService(applicationRepository, jobRepository);
+        applicationService = new ApplicationService(applicationRepository, jobRepository, notificationService);
     }
 
     private Job activeJob(UUID companyId) {

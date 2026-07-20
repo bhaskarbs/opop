@@ -8,6 +8,8 @@ import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.VerificationStatus;
+import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -18,10 +20,15 @@ public class AdminCompanyService {
 
     private final CompanyProfileRepository companyProfileRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    public AdminCompanyService(CompanyProfileRepository companyProfileRepository, UserRepository userRepository) {
+    public AdminCompanyService(
+            CompanyProfileRepository companyProfileRepository,
+            UserRepository userRepository,
+            NotificationService notificationService) {
         this.companyProfileRepository = companyProfileRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -46,6 +53,11 @@ public class AdminCompanyService {
         }
         profile.verify();
         companyProfileRepository.save(profile);
+        notificationService.notify(
+                userId,
+                NotificationType.COMPANY_VERIFIED,
+                "Your company profile has been verified. You can now post jobs and partnerships.",
+                "/company/profile");
         return toSummary(profile);
     }
 
@@ -55,6 +67,11 @@ public class AdminCompanyService {
                 () -> new CompanyProfileNotFoundException(userId));
         profile.reject();
         companyProfileRepository.save(profile);
+        notificationService.notify(
+                userId,
+                NotificationType.COMPANY_REJECTED,
+                "Your company profile verification was rejected. Please review and update your details.",
+                "/company/profile");
         return toSummary(profile);
     }
 

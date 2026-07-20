@@ -15,6 +15,7 @@ import com.openopportunity.idea.dto.IdeaRequest;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
+import com.openopportunity.notification.NotificationService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,11 +36,14 @@ class IdeaServiceTest {
     @Mock
     private IdeaInterestRepository ideaInterestRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private IdeaService ideaService;
 
     @BeforeEach
     void setUp() {
-        ideaService = new IdeaService(ideaRepository, userRepository, ideaInterestRepository);
+        ideaService = new IdeaService(ideaRepository, userRepository, ideaInterestRepository, notificationService);
     }
 
     private IdeaRequest sampleRequest() {

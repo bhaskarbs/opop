@@ -11,6 +11,8 @@ import com.openopportunity.idea.dto.MyIdeaInterestSummary;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
+import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Sort;
@@ -24,14 +26,17 @@ public class IdeaService {
     private final IdeaRepository ideaRepository;
     private final UserRepository userRepository;
     private final IdeaInterestRepository ideaInterestRepository;
+    private final NotificationService notificationService;
 
     public IdeaService(
             IdeaRepository ideaRepository,
             UserRepository userRepository,
-            IdeaInterestRepository ideaInterestRepository) {
+            IdeaInterestRepository ideaInterestRepository,
+            NotificationService notificationService) {
         this.ideaRepository = ideaRepository;
         this.userRepository = userRepository;
         this.ideaInterestRepository = ideaInterestRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -113,6 +118,11 @@ public class IdeaService {
         Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
         idea.approve();
         ideaRepository.save(idea);
+        notificationService.notify(
+                idea.getSubmitterId(),
+                NotificationType.IDEA_APPROVED,
+                "Your idea \"" + idea.getTitle() + "\" has been approved and is now live.",
+                "/partnerships/ideas/" + idea.getId());
         return toDetail(idea);
     }
 
@@ -121,6 +131,11 @@ public class IdeaService {
         Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
         idea.reject();
         ideaRepository.save(idea);
+        notificationService.notify(
+                idea.getSubmitterId(),
+                NotificationType.IDEA_REJECTED,
+                "Your idea \"" + idea.getTitle() + "\" was not approved.",
+                "/partnerships/ideas/" + idea.getId());
         return toDetail(idea);
     }
 
@@ -165,6 +180,13 @@ public class IdeaService {
         interest = ideaInterestRepository.save(interest);
         idea.incrementInterestedCount();
         ideaRepository.save(idea);
+        if (!idea.getSubmitterId().equals(interestedUserId)) {
+            notificationService.notify(
+                    idea.getSubmitterId(),
+                    NotificationType.IDEA_INTEREST_RECEIVED,
+                    interestedUser.getFullName() + " expressed interest in your idea \"" + idea.getTitle() + "\".",
+                    "/partnerships/ideas/" + idea.getId());
+        }
         return toInterestSummary(interest);
     }
 

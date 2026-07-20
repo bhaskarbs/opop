@@ -30,6 +30,7 @@ import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFound
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
+import com.openopportunity.notification.exception.NotificationNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -196,6 +197,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateMockInterviewQuestionException.class)
     public ResponseEntity<ApiError> handleDuplicateMockInterviewQuestion(DuplicateMockInterviewQuestionException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<ApiError> handleNotificationNotFound(NotificationNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
