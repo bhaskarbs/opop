@@ -130,10 +130,10 @@
       "partnerHeading": "Partner with a startup in this space",
       "partnerBody": "Startups on OpenOpportunity are looking for partners with similar skills — real product, counts as experience.",
       "viewPartnership": "View partnership",
-      "buildSoftSkills": "Build soft skills",
-      "mentorHeading": "Join a peer mentor circle",
-      "mentorBody": "Practice technical communication with peers weekly — useful for interviews like this one.",
-      "showInterest": "Show interest",
+      "communityIncome": "Community Income Opportunities",
+      "communityIncomeHeading": "Discover community income opportunities",
+      "communityIncomeBody": "Community roles build soft skills and introduce you to income types you may never have considered — a great way to stay active while you keep searching for the job you want.",
+      "learnMore": "Learn more",
       "similarJobs": "Similar jobs"
     }
   },
