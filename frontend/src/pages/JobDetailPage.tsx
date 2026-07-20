@@ -41,6 +41,38 @@ function findSimilarJobs(current: JobDetail, allJobs: JobSummary[], count = 3): 
   return scored.slice(0, count).map((entry) => entry.job)
 }
 
+/** Shared by the header apply CTA and the one repeated after the job description — same
+ * applicationId/applying state drives both, so a click on either stays in sync. */
+function ApplyButton({
+  applied,
+  applying,
+  onApply,
+  t,
+}: {
+  applied: boolean
+  applying: boolean
+  onApply: () => void
+  t: TFunction<'public'>
+}) {
+  if (applied) {
+    return (
+      <span className="rounded-control bg-teal px-6 py-2.5 text-sm font-bold text-white">
+        {t('jobDetail.applied')}
+      </span>
+    )
+  }
+  return (
+    <button
+      type="button"
+      disabled={applying}
+      onClick={onApply}
+      className="rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50"
+    >
+      {applying ? t('jobDetail.applying') : t('jobDetail.applyNow')}
+    </button>
+  )
+}
+
 function NotFound() {
   const { t } = useTranslation('public')
   const localize = useLocalizedPath()
@@ -178,20 +210,12 @@ export default function JobDetailPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-start gap-2.5">
-                {applicationId ? (
-                  <span className="rounded-control bg-teal px-6 py-2.5 text-sm font-bold text-white">
-                    {t('jobDetail.applied')}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={applying}
-                    onClick={handleApplyClick}
-                    className="rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50"
-                  >
-                    {applying ? t('jobDetail.applying') : t('jobDetail.applyNow')}
-                  </button>
-                )}
+                <ApplyButton
+                  applied={applicationId != null}
+                  applying={applying}
+                  onApply={handleApplyClick}
+                  t={t}
+                />
               </div>
             </div>
             {applyError && (
@@ -212,7 +236,9 @@ export default function JobDetailPage() {
 
           <Card className="mb-5 p-7">
             <h2 className="mb-3.5 text-[17px] font-bold text-ink">{t('jobDetail.aboutRole')}</h2>
-            <p className="mb-[18px] text-[14.5px] leading-[1.7] text-[#3A414D]">{job.aboutRole}</p>
+            <p className="mb-[18px] text-[14.5px] leading-[1.7] whitespace-pre-line text-[#3A414D]">
+              {job.aboutRole}
+            </p>
             <h3 className="mb-2.5 text-[15px] font-bold text-ink">
               {t('jobDetail.responsibilities')}
             </h3>
@@ -222,11 +248,19 @@ export default function JobDetailPage() {
               ))}
             </ul>
             <h3 className="mb-2.5 text-[15px] font-bold text-ink">{t('jobDetail.requirements')}</h3>
-            <ul className="list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
+            <ul className="mb-[18px] list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
               {job.requirements.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
+            <div className="flex justify-end border-t border-[#F0F1F3] pt-5">
+              <ApplyButton
+                applied={applicationId != null}
+                applying={applying}
+                onApply={handleApplyClick}
+                t={t}
+              />
+            </div>
           </Card>
         </div>
 
@@ -251,19 +285,19 @@ export default function JobDetailPage() {
 
           <div className="mb-4 rounded-card border border-[#C9EEDF] bg-teal-tint p-5">
             <span className="rounded-full bg-surface px-2.5 py-[3px] text-[11.5px] font-bold text-teal">
-              {t('jobDetail.sidebar.buildSoftSkills')}
+              {t('jobDetail.sidebar.communityIncome')}
             </span>
             <h3 className="mt-3 mb-2 text-[15px] font-bold text-ink">
-              {t('jobDetail.sidebar.mentorHeading')}
+              {t('jobDetail.sidebar.communityIncomeHeading')}
             </h3>
             <p className="mb-3.5 text-[13.5px] leading-[1.55] text-slate">
-              {t('jobDetail.sidebar.mentorBody')}
+              {t('jobDetail.sidebar.communityIncomeBody')}
             </p>
             <Link
               to={localize(ROUTES.community)}
               className="block rounded-lg bg-teal py-2.5 text-center text-[13.5px] font-bold text-white no-underline"
             >
-              {t('jobDetail.sidebar.showInterest')}
+              {t('jobDetail.sidebar.learnMore')}
             </Link>
           </div>
 
