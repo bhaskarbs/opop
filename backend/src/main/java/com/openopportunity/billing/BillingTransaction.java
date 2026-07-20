@@ -10,9 +10,11 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/** One record per plan change, recorded as an immediately-successful mock payment (no real
- * payment gateway exists in this phase) — this is what CandidateBillingPage.tsx's billing
- * history list actually shows. */
+/** One record per plan-change attempt — both the audit trail and the "billing history" list
+ * shown on CandidateBillingPage.tsx. A Free downgrade is created already PAID (no money involved,
+ * see the no-arg-order constructor); a paid-plan checkout is created PENDING against a real
+ * Razorpay Order and only becomes PAID once CandidateBillingService verifies the payment (either
+ * via the client-side checkout callback or the webhook fallback — see markPaid/markFailed). */
 @Entity
 @Table(name = "candidate_billing_transactions")
 public class BillingTransaction {
@@ -32,8 +34,14 @@ public class BillingTransaction {
     private int amountRupees;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20, updatable = false)
+    @Column(nullable = false, length = 20)
     private TransactionStatus status;
+
+    @Column(name = "razorpay_order_id", length = 64, updatable = false)
+    private String razorpayOrderId;
+
+    @Column(name = "razorpay_payment_id", length = 64)
+    private String razorpayPaymentId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -42,12 +50,20 @@ public class BillingTransaction {
         // JPA
     }
 
+    /** Free downgrade — no payment involved, recorded as already settled. */
     public BillingTransaction(UUID candidateId, SubscriptionPlan plan) {
+        this(candidateId, plan, null);
+        this.status = TransactionStatus.PAID;
+    }
+
+    /** Paid-plan checkout — starts PENDING against a just-created Razorpay Order. */
+    public BillingTransaction(UUID candidateId, SubscriptionPlan plan, String razorpayOrderId) {
         this.id = UUID.randomUUID();
         this.candidateId = candidateId;
         this.plan = plan;
         this.amountRupees = plan.getAmountRupees();
-        this.status = TransactionStatus.PAID;
+        this.status = TransactionStatus.PENDING;
+        this.razorpayOrderId = razorpayOrderId;
     }
 
     @PrePersist
@@ -55,8 +71,21 @@ public class BillingTransaction {
         createdAt = Instant.now();
     }
 
+    public void markPaid(String razorpayPaymentId) {
+        this.status = TransactionStatus.PAID;
+        this.razorpayPaymentId = razorpayPaymentId;
+    }
+
+    public void markFailed() {
+        this.status = TransactionStatus.FAILED;
+    }
+
     public UUID getId() {
         return id;
+    }
+
+    public UUID getCandidateId() {
+        return candidateId;
     }
 
     public SubscriptionPlan getPlan() {
@@ -69,6 +98,14 @@ public class BillingTransaction {
 
     public TransactionStatus getStatus() {
         return status;
+    }
+
+    public String getRazorpayOrderId() {
+        return razorpayOrderId;
+    }
+
+    public String getRazorpayPaymentId() {
+        return razorpayPaymentId;
     }
 
     public Instant getCreatedAt() {

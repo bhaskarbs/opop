@@ -13,12 +13,29 @@ type PlanKey = 'free' | 'plus' | 'pro'
 // in candidate.json's billing.plans.pro so it's a one-line change to bring back.
 const PLAN_KEYS: PlanKey[] = ['free', 'plus' /* , 'pro' */]
 
+const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js'
+
 function toPlanKey(plan: BackendSubscriptionPlan): PlanKey {
   return plan.toLowerCase() as PlanKey
 }
 
 function toBackendPlan(key: PlanKey): BackendSubscriptionPlan {
   return key.toUpperCase() as BackendSubscriptionPlan
+}
+
+/** Loads the Razorpay Checkout script at most once per page load — cheap to call from every
+ * upgrade click, since a second call is a no-op once the tag is already in the DOM. */
+function loadRazorpayCheckoutScript(): Promise<void> {
+  if (document.querySelector(`script[src="${RAZORPAY_CHECKOUT_SRC}"]`)) {
+    return Promise.resolve()
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = RAZORPAY_CHECKOUT_SRC
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Failed to load Razorpay checkout script'))
+    document.body.appendChild(script)
+  })
 }
 
 export default function CandidateBillingPage() {
@@ -53,16 +70,60 @@ export default function CandidateBillingPage() {
     }
   }, [t])
 
-  async function handleChangePlan(key: PlanKey) {
+  /** Free is the only instant path — no money involved. Upgrading to a paid plan goes through
+   * handleUpgrade's real Razorpay checkout instead (see CandidateBillingService.changePlan). */
+  async function handleDowngradeToFree() {
     setChangeError(null)
-    setChangingPlan(key)
+    setChangingPlan('free')
     try {
-      const summary = await billingApi.changePlan(toBackendPlan(key))
+      const summary = await billingApi.changePlan('FREE')
       setCurrentPlan(toPlanKey(summary.currentPlan))
       setHistory(summary.history)
     } catch (caught) {
       setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
     } finally {
+      setChangingPlan(null)
+    }
+  }
+
+  async function handleUpgrade(key: PlanKey) {
+    setChangeError(null)
+    setChangingPlan(key)
+    try {
+      await loadRazorpayCheckoutScript()
+      const checkout = await billingApi.checkout(toBackendPlan(key))
+
+      const razorpay = new window.Razorpay({
+        key: checkout.razorpayKeyId,
+        amount: checkout.amountRupees * 100,
+        currency: 'INR',
+        order_id: checkout.razorpayOrderId,
+        name: 'OpenOpportunity',
+        description: t(`billing.plans.${key}.name`),
+        handler: (response) => {
+          billingApi
+            .verifyCheckout({
+              transactionId: checkout.transactionId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            })
+            .then((summary) => {
+              setCurrentPlan(toPlanKey(summary.currentPlan))
+              setHistory(summary.history)
+            })
+            .catch((caught) => {
+              setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
+            })
+            .finally(() => setChangingPlan(null))
+        },
+        modal: {
+          ondismiss: () => setChangingPlan(null),
+        },
+      })
+      razorpay.open()
+    } catch (caught) {
+      setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
       setChangingPlan(null)
     }
   }
@@ -140,7 +201,7 @@ export default function CandidateBillingPage() {
               <button
                 type="button"
                 disabled={isCurrent || changingPlan !== null}
-                onClick={() => handleChangePlan(key)}
+                onClick={() => (key === 'free' ? handleDowngradeToFree() : handleUpgrade(key))}
                 className={`rounded-[9px] border py-2.5 text-[13.5px] font-bold disabled:cursor-not-allowed ${
                   isCurrent
                     ? 'border-border bg-neutral-tint text-fog'
@@ -189,8 +250,20 @@ export default function CandidateBillingPage() {
                 <div className="text-[13.5px] font-bold text-ink">
                   ₹{entry.amountRupees.toLocaleString()}
                 </div>
-                <span className="rounded-full bg-teal-tint px-2.5 py-1 text-xs font-semibold text-teal">
-                  {t('billing.statusPaid')}
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    entry.status === 'PAID'
+                      ? 'bg-teal-tint text-teal'
+                      : entry.status === 'FAILED'
+                        ? 'bg-[#FDECEC] text-danger'
+                        : 'bg-amber-tint text-amber'
+                  }`}
+                >
+                  {entry.status === 'PAID'
+                    ? t('billing.statusPaid')
+                    : entry.status === 'FAILED'
+                      ? t('billing.statusFailed')
+                      : t('billing.statusPending')}
                 </span>
                 <a
                   href="#invoice"

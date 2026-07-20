@@ -2,6 +2,9 @@ package com.openopportunity.billing;
 
 import com.openopportunity.billing.dto.CandidateBillingSummary;
 import com.openopportunity.billing.dto.ChangePlanRequest;
+import com.openopportunity.billing.dto.CheckoutSummary;
+import com.openopportunity.billing.dto.InitiateCheckoutRequest;
+import com.openopportunity.billing.dto.VerifyCheckoutRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,9 +29,25 @@ public class CandidateBillingController {
         return candidateBillingService.getBilling(currentUserId());
     }
 
+    /** Downgrade-to-Free only now — see CandidateBillingService.changePlan. */
     @PostMapping("/plan")
     public CandidateBillingSummary changePlan(@Valid @RequestBody ChangePlanRequest request) {
         return candidateBillingService.changePlan(currentUserId(), request.plan());
+    }
+
+    @PostMapping("/checkout")
+    public CheckoutSummary checkout(@Valid @RequestBody InitiateCheckoutRequest request) {
+        return candidateBillingService.initiateCheckout(currentUserId(), request.plan());
+    }
+
+    @PostMapping("/checkout/verify")
+    public CandidateBillingSummary verifyCheckout(@Valid @RequestBody VerifyCheckoutRequest request) {
+        return candidateBillingService.verifyCheckout(
+                currentUserId(),
+                request.transactionId(),
+                request.razorpayOrderId(),
+                request.razorpayPaymentId(),
+                request.razorpaySignature());
     }
 
     private UUID currentUserId() {

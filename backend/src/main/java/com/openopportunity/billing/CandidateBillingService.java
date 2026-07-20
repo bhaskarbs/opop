@@ -2,25 +2,60 @@ package com.openopportunity.billing;
 
 import com.openopportunity.billing.dto.BillingTransactionSummary;
 import com.openopportunity.billing.dto.CandidateBillingSummary;
+import com.openopportunity.billing.dto.CheckoutSummary;
+import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
+import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
+import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
+import com.openopportunity.billing.exception.PaymentVerificationFailedException;
 import com.openopportunity.billing.exception.SamePlanException;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+import com.razorpay.Utils;
 import java.util.List;
 import java.util.UUID;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** No real payment gateway exists in this phase (see docs/DEVELOPMENT_ROADMAP.md) — changePlan
- * is the entire upgrade/downgrade flow, recording an immediately-successful mock transaction. */
+/** Free downgrades are instant (no money involved). Upgrading to a paid plan requires an actual
+ * successful Razorpay payment: initiateCheckout creates a real Order and a PENDING transaction;
+ * the plan only changes once verifyCheckout (the client-side checkout callback, the fast path) or
+ * handleWebhookEvent (the server-to-server fallback, in case the browser never calls back) marks
+ * that transaction PAID. See docs/DEVELOPMENT_ROADMAP.md for why one-time Orders rather than
+ * Razorpay Subscriptions — no auto-renewal in this phase. */
 @Service
 public class CandidateBillingService {
 
     private final CandidateSubscriptionRepository subscriptionRepository;
     private final BillingTransactionRepository transactionRepository;
+    private final String razorpayKeyId;
+    private final String razorpayKeySecret;
+    private final String razorpayWebhookSecret;
+    private final RazorpayClient razorpayClient;
 
     public CandidateBillingService(
             CandidateSubscriptionRepository subscriptionRepository,
-            BillingTransactionRepository transactionRepository) {
+            BillingTransactionRepository transactionRepository,
+            @Value("${app.razorpay.key-id}") String razorpayKeyId,
+            @Value("${app.razorpay.key-secret}") String razorpayKeySecret,
+            @Value("${app.razorpay.webhook-secret}") String razorpayWebhookSecret) {
         this.subscriptionRepository = subscriptionRepository;
         this.transactionRepository = transactionRepository;
+        this.razorpayKeyId = razorpayKeyId;
+        this.razorpayKeySecret = razorpayKeySecret;
+        this.razorpayWebhookSecret = razorpayWebhookSecret;
+
+        RazorpayClient created;
+        try {
+            created = razorpayKeyId.isBlank() || razorpayKeySecret.isBlank()
+                    ? null
+                    : new RazorpayClient(razorpayKeyId, razorpayKeySecret);
+        } catch (RazorpayException ex) {
+            created = null;
+        }
+        this.razorpayClient = created;
     }
 
     @Transactional(readOnly = true)
@@ -35,10 +70,14 @@ public class CandidateBillingService {
         return currentPlan(candidateId);
     }
 
+    /** Downgrade-to-Free only — a paid plan can no longer be granted through this path (that
+     * used to be an unauthenticated-payment security hole back when this was a full mock). */
     @Transactional
     public CandidateBillingSummary changePlan(UUID candidateId, SubscriptionPlan plan) {
-        SubscriptionPlan existingPlan = currentPlan(candidateId);
-        if (existingPlan == plan) {
+        if (plan != SubscriptionPlan.FREE) {
+            throw new PaidPlanRequiresCheckoutException();
+        }
+        if (currentPlan(candidateId) == plan) {
             throw new SamePlanException();
         }
 
@@ -47,10 +86,145 @@ public class CandidateBillingService {
                 .orElseGet(() -> new CandidateSubscription(candidateId, plan));
         subscription.changePlan(plan);
         subscriptionRepository.save(subscription);
-
         transactionRepository.save(new BillingTransaction(candidateId, plan));
 
         return new CandidateBillingSummary(plan, getHistory(candidateId));
+    }
+
+    @Transactional
+    public CheckoutSummary initiateCheckout(UUID candidateId, SubscriptionPlan plan) {
+        // Same-plan first: a redundant "upgrade" to the plan already held is a UI bug/double-click,
+        // not a real checkout — it shouldn't need a working gateway to be rejected correctly.
+        if (currentPlan(candidateId) == plan) {
+            throw new SamePlanException();
+        }
+        if (razorpayClient == null) {
+            throw new PaymentGatewayUnavailableException();
+        }
+
+        String razorpayOrderId;
+        try {
+            JSONObject orderRequest = new JSONObject();
+            orderRequest.put("amount", plan.getAmountRupees() * 100);
+            orderRequest.put("currency", "INR");
+            orderRequest.put("receipt", UUID.randomUUID().toString());
+            Order order = razorpayClient.orders.create(orderRequest);
+            razorpayOrderId = order.get("id");
+        } catch (RazorpayException ex) {
+            throw new PaymentGatewayUnavailableException();
+        }
+
+        BillingTransaction transaction = new BillingTransaction(candidateId, plan, razorpayOrderId);
+        transactionRepository.save(transaction);
+
+        return new CheckoutSummary(transaction.getId(), razorpayOrderId, razorpayKeyId, plan.getAmountRupees(), plan);
+    }
+
+    /** The client-side checkout callback — the fast confirmation path. handleWebhookEvent is the
+     * fallback for when this never fires (browser closed before the callback ran). */
+    @Transactional
+    public CandidateBillingSummary verifyCheckout(
+            UUID candidateId,
+            UUID transactionId,
+            String razorpayOrderId,
+            String razorpayPaymentId,
+            String razorpaySignature) {
+        BillingTransaction transaction = transactionRepository
+                .findById(transactionId)
+                .filter(existing -> existing.getCandidateId().equals(candidateId))
+                .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
+
+        if (transaction.getStatus() != TransactionStatus.PENDING) {
+            // Already settled — most likely the webhook got there first. Same end state either
+            // way, so just report the current plan rather than erroring.
+            return new CandidateBillingSummary(currentPlan(candidateId), getHistory(candidateId));
+        }
+
+        JSONObject attributes = new JSONObject();
+        attributes.put("razorpay_order_id", razorpayOrderId);
+        attributes.put("razorpay_payment_id", razorpayPaymentId);
+        attributes.put("razorpay_signature", razorpaySignature);
+
+        boolean valid;
+        try {
+            valid = razorpayClient != null && Utils.verifyPaymentSignature(attributes, razorpayKeySecret);
+        } catch (RazorpayException ex) {
+            valid = false;
+        }
+
+        if (!valid) {
+            transaction.markFailed();
+            transactionRepository.save(transaction);
+            throw new PaymentVerificationFailedException();
+        }
+
+        applyPaidTransaction(transaction, razorpayPaymentId);
+        return new CandidateBillingSummary(transaction.getPlan(), getHistory(candidateId));
+    }
+
+    /** Server-to-server fallback for verifyCheckout — always verify-then-ignore rather than
+     * throwing, since Razorpay retries on any non-2xx response and an unrecognized/unverifiable
+     * event isn't actionable here anyway (see RazorpayWebhookController, which always returns
+     * 200). */
+    @Transactional
+    public void handleWebhookEvent(String rawPayload, String signatureHeader) {
+        if (razorpayWebhookSecret.isBlank() || signatureHeader == null) {
+            return;
+        }
+        boolean valid;
+        try {
+            valid = Utils.verifyWebhookSignature(rawPayload, signatureHeader, razorpayWebhookSecret);
+        } catch (RazorpayException ex) {
+            valid = false;
+        }
+        if (!valid) {
+            return;
+        }
+
+        JSONObject payload = new JSONObject(rawPayload);
+        String event = payload.optString("event", "");
+        JSONObject payloadEntity = payload.optJSONObject("payload");
+        if (payloadEntity == null) {
+            return;
+        }
+
+        if ("payment.captured".equals(event) || "order.paid".equals(event)) {
+            JSONObject payment = extractEntity(payloadEntity, "payment");
+            String orderId = payment == null ? null : payment.optString("order_id", null);
+            String paymentId = payment == null ? null : payment.optString("id", null);
+            if (orderId == null) return;
+            transactionRepository.findByRazorpayOrderId(orderId).ifPresent(transaction -> {
+                if (transaction.getStatus() == TransactionStatus.PENDING) {
+                    applyPaidTransaction(transaction, paymentId);
+                }
+            });
+        } else if ("payment.failed".equals(event)) {
+            JSONObject payment = extractEntity(payloadEntity, "payment");
+            String orderId = payment == null ? null : payment.optString("order_id", null);
+            if (orderId == null) return;
+            transactionRepository.findByRazorpayOrderId(orderId).ifPresent(transaction -> {
+                if (transaction.getStatus() == TransactionStatus.PENDING) {
+                    transaction.markFailed();
+                    transactionRepository.save(transaction);
+                }
+            });
+        }
+    }
+
+    private JSONObject extractEntity(JSONObject payloadEntity, String key) {
+        JSONObject wrapper = payloadEntity.optJSONObject(key);
+        return wrapper == null ? null : wrapper.optJSONObject("entity");
+    }
+
+    private void applyPaidTransaction(BillingTransaction transaction, String razorpayPaymentId) {
+        transaction.markPaid(razorpayPaymentId);
+        transactionRepository.save(transaction);
+
+        CandidateSubscription subscription = subscriptionRepository
+                .findByCandidateId(transaction.getCandidateId())
+                .orElseGet(() -> new CandidateSubscription(transaction.getCandidateId(), transaction.getPlan()));
+        subscription.changePlan(transaction.getPlan());
+        subscriptionRepository.save(subscription);
     }
 
     private SubscriptionPlan currentPlan(UUID candidateId) {
