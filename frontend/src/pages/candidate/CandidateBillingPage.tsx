@@ -1,42 +1,102 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ApiError } from '../../lib/apiClient'
+import {
+  billingApi,
+  type BackendSubscriptionPlan,
+  type BillingTransactionSummary,
+} from '../../lib/billingApi'
 
 type PlanKey = 'free' | 'plus' | 'pro'
 
-const PLAN_KEYS: PlanKey[] = ['free', 'plus', 'pro']
+// 'pro' commented out per request — Pro plan hidden from candidates for now. Its content stays
+// in candidate.json's billing.plans.pro so it's a one-line change to bring back.
+const PLAN_KEYS: PlanKey[] = ['free', 'plus' /* , 'pro' */]
 
-// No billing/subscription backend exists yet — the candidate's plan is a fixed mock, same
-// treatment as billing history below.
-const CURRENT_PLAN: PlanKey = 'free'
+function toPlanKey(plan: BackendSubscriptionPlan): PlanKey {
+  return plan.toLowerCase() as PlanKey
+}
 
-const HISTORY = [
-  {
-    plan: 'Plus — Monthly',
-    date: 'Jul 1, 2026',
-    amount: '₹499',
-    statusKey: 'billing.statusPaid' as const,
-  },
-  {
-    plan: 'Plus — Monthly',
-    date: 'Jun 1, 2026',
-    amount: '₹499',
-    statusKey: 'billing.statusPaid' as const,
-  },
-  { plan: 'Free', date: 'May 1, 2026', amount: '₹0', statusKey: 'billing.statusPaid' as const },
-]
+function toBackendPlan(key: PlanKey): BackendSubscriptionPlan {
+  return key.toUpperCase() as BackendSubscriptionPlan
+}
 
 export default function CandidateBillingPage() {
   const { t } = useTranslation('candidate')
+
+  const [currentPlan, setCurrentPlan] = useState<PlanKey>('free')
+  const [history, setHistory] = useState<BillingTransactionSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [changingPlan, setChangingPlan] = useState<PlanKey | null>(null)
+  const [changeError, setChangeError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    billingApi
+      .mine()
+      .then((summary) => {
+        if (cancelled) return
+        setCurrentPlan(toPlanKey(summary.currentPlan))
+        setHistory(summary.history)
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setLoadError(caught instanceof ApiError ? caught.message : t('billing.loadError'))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [t])
+
+  async function handleChangePlan(key: PlanKey) {
+    setChangeError(null)
+    setChangingPlan(key)
+    try {
+      const summary = await billingApi.changePlan(toBackendPlan(key))
+      setCurrentPlan(toPlanKey(summary.currentPlan))
+      setHistory(summary.history)
+    } catch (caught) {
+      setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
+    } finally {
+      setChangingPlan(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16 text-center text-sm text-slate">
+        {t('billing.loading')}
+      </main>
+    )
+  }
 
   return (
     <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16">
       <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('billing.title')}</h1>
       <p className="mb-6 text-sm text-slate">
-        {t('billing.currentPlan', { plan: t(`billing.plans.${CURRENT_PLAN}.name`) })}
+        {t('billing.currentPlan', { plan: t(`billing.plans.${currentPlan}.name`) })}
       </p>
+
+      {loadError && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {loadError}
+        </div>
+      )}
+      {changeError && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {changeError}
+        </div>
+      )}
 
       <div className="mb-9 grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
         {PLAN_KEYS.map((key) => {
-          const isCurrent = key === CURRENT_PLAN
+          const isCurrent = key === currentPlan
+          const isChanging = changingPlan === key
           const features = t(`billing.plans.${key}.features`, { returnObjects: true }) as string[]
           return (
             <div
@@ -79,18 +139,21 @@ export default function CandidateBillingPage() {
               </div>
               <button
                 type="button"
-                disabled={isCurrent}
-                className={`rounded-[9px] border py-2.5 text-[13.5px] font-bold ${
+                disabled={isCurrent || changingPlan !== null}
+                onClick={() => handleChangePlan(key)}
+                className={`rounded-[9px] border py-2.5 text-[13.5px] font-bold disabled:cursor-not-allowed ${
                   isCurrent
                     ? 'border-border bg-neutral-tint text-fog'
-                    : 'border-ink bg-ink text-white'
+                    : 'border-ink bg-ink text-white disabled:opacity-60'
                 }`}
               >
                 {isCurrent
                   ? t('billing.currentPlanBadge')
-                  : key === 'free'
-                    ? t('billing.downgrade')
-                    : t('billing.upgrade')}
+                  : isChanging
+                    ? t('billing.changing')
+                    : key === 'free'
+                      ? t('billing.downgrade')
+                      : t('billing.upgrade')}
               </button>
             </div>
           )
@@ -98,28 +161,49 @@ export default function CandidateBillingPage() {
       </div>
 
       <h2 className="mb-3.5 text-[16.5px] font-bold text-ink">{t('billing.billingHistory')}</h2>
-      <div className="flex flex-col gap-2.5">
-        {HISTORY.map((entry, index) => (
-          <div
-            key={`${entry.plan}-${index}`}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
-          >
-            <div className="text-[13.5px] font-semibold text-ink">{entry.plan}</div>
-            <div className="text-[13px] text-fog">{entry.date}</div>
-            <div className="text-[13.5px] font-bold text-ink">{entry.amount}</div>
-            <span className="rounded-full bg-teal-tint px-2.5 py-1 text-xs font-semibold text-teal">
-              {t(entry.statusKey)}
-            </span>
-            <a
-              href="#invoice"
-              onClick={(event) => event.preventDefault()}
-              className="text-[12.5px] font-bold no-underline"
-            >
-              {t('billing.downloadInvoice')}
-            </a>
-          </div>
-        ))}
-      </div>
+      {history.length === 0 ? (
+        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+          {t('billing.noHistory')}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {history.map((entry) => {
+            const planKey = toPlanKey(entry.plan)
+            const planLabel =
+              planKey === 'free'
+                ? t(`billing.plans.${planKey}.name`)
+                : `${t(`billing.plans.${planKey}.name`)} — Monthly`
+            return (
+              <div
+                key={entry.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
+              >
+                <div className="text-[13.5px] font-semibold text-ink">{planLabel}</div>
+                <div className="text-[13px] text-fog">
+                  {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </div>
+                <div className="text-[13.5px] font-bold text-ink">
+                  ₹{entry.amountRupees.toLocaleString()}
+                </div>
+                <span className="rounded-full bg-teal-tint px-2.5 py-1 text-xs font-semibold text-teal">
+                  {t('billing.statusPaid')}
+                </span>
+                <a
+                  href="#invoice"
+                  onClick={(event) => event.preventDefault()}
+                  className="text-[12.5px] font-bold no-underline"
+                >
+                  {t('billing.downloadInvoice')}
+                </a>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </main>
   )
 }
