@@ -1,7 +1,11 @@
 package com.openopportunity.idea;
 
+import com.openopportunity.auth.CandidateProfile;
+import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.billing.CandidateBillingService;
+import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.idea.dto.IdeaDetail;
 import com.openopportunity.idea.dto.IdeaInterestRequest;
 import com.openopportunity.idea.dto.IdeaInterestSummary;
@@ -27,16 +31,22 @@ public class IdeaService {
     private final UserRepository userRepository;
     private final IdeaInterestRepository ideaInterestRepository;
     private final NotificationService notificationService;
+    private final CandidateProfileRepository candidateProfileRepository;
+    private final CandidateBillingService candidateBillingService;
 
     public IdeaService(
             IdeaRepository ideaRepository,
             UserRepository userRepository,
             IdeaInterestRepository ideaInterestRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            CandidateProfileRepository candidateProfileRepository,
+            CandidateBillingService candidateBillingService) {
         this.ideaRepository = ideaRepository;
         this.userRepository = userRepository;
         this.ideaInterestRepository = ideaInterestRepository;
         this.notificationService = notificationService;
+        this.candidateProfileRepository = candidateProfileRepository;
+        this.candidateBillingService = candidateBillingService;
     }
 
     @Transactional
@@ -187,18 +197,22 @@ public class IdeaService {
                     interestedUser.getFullName() + " expressed interest in your idea \"" + idea.getTitle() + "\".",
                     "/partnerships/ideas/" + idea.getId());
         }
-        return toInterestSummary(interest);
+        return toInterestSummary(interest, false);
     }
 
-    /** Only the idea's own submitter can see who has expressed interest in it. */
+    /** Only the idea's own submitter can see who has expressed interest in it. Contact numbers
+     * are an extra gate on top of that: only included when the caller is a candidate on the
+     * Plus (or higher) plan — see CandidateBillingService. A company owner (no subscription
+     * concept exists for companies yet) simply resolves to FREE and never sees them. */
     @Transactional(readOnly = true)
     public List<IdeaInterestSummary> getInterests(UUID ideaId, UUID callerId) {
         Idea idea = ideaRepository.findById(ideaId).orElseThrow(() -> new IdeaNotFoundException(ideaId));
         if (!idea.getSubmitterId().equals(callerId)) {
             throw new IdeaAccessDeniedException();
         }
+        boolean canSeeContactNumbers = candidateBillingService.getCurrentPlan(callerId) != SubscriptionPlan.FREE;
         return ideaInterestRepository.findByIdeaIdOrderByCreatedAtDesc(ideaId).stream()
-                .map(this::toInterestSummary)
+                .map(interest -> toInterestSummary(interest, canSeeContactNumbers))
                 .toList();
     }
 
@@ -220,13 +234,20 @@ public class IdeaService {
                 .toList();
     }
 
-    private IdeaInterestSummary toInterestSummary(IdeaInterest interest) {
+    private IdeaInterestSummary toInterestSummary(IdeaInterest interest, boolean includeContactNumber) {
+        String contactNumber = includeContactNumber
+                ? candidateProfileRepository
+                        .findByUserId(interest.getInterestedUserId())
+                        .map(CandidateProfile::getMobile)
+                        .orElse(null)
+                : null;
         return new IdeaInterestSummary(
                 interest.getId(),
                 interest.getInterestedUserName(),
                 interest.getRole(),
                 interest.getTicketSize(),
                 interest.getMessage(),
+                contactNumber,
                 interest.getCreatedAt());
     }
 

@@ -28,6 +28,13 @@ public class CandidateBillingService {
         return new CandidateBillingSummary(currentPlan(candidateId), getHistory(candidateId));
     }
 
+    /** For other services gating a paid perk (see IdeaService's contact-number gate on the
+     * Plus plan) — cheaper than getBilling() when the caller only needs the plan, not history. */
+    @Transactional(readOnly = true)
+    public SubscriptionPlan getCurrentPlan(UUID candidateId) {
+        return currentPlan(candidateId);
+    }
+
     @Transactional
     public CandidateBillingSummary changePlan(UUID candidateId, SubscriptionPlan plan) {
         SubscriptionPlan existingPlan = currentPlan(candidateId);

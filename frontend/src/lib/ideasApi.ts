@@ -70,6 +70,10 @@ export interface IdeaInterestSummary {
   role: BackendIdeaInterestRole
   ticketSize: string | null
   message: string | null
+  // Only ever populated for the idea owner's own view, and only when they're entitled to see
+  // it — a candidate on the Plus (or higher) plan (see billingApi). Null both when not entitled
+  // and when the interested user has no mobile on file.
+  contactNumber: string | null
   createdAt: string
 }
 

@@ -104,6 +104,8 @@
     "noApplicants": "No one has expressed interest yet.",
     "ticketSizeLabel": "Ticket size: {{amount}}",
     "appliedMeta": "Applied {{date}}",
+    "contactNumber": "Contact: {{number}}",
+    "upgradeForContact": "Upgrade to Plus to see contact details →",
     "statuses": {
       "approved": "Approved",
       "pendingReview": "Pending review",
