@@ -5,6 +5,7 @@ import { DEFAULT_LANGUAGE, isSupportedLanguage, type SupportedLanguage } from '.
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { authApi } from '../../lib/apiClient'
 import { cn } from '../../lib/cn'
+import { notificationsApi, type NotificationSummary } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { AVATAR_BG_CLASS, DEFAULT_USER_NAME, NAV_BY_VARIANT, USER_MENU_BY_VARIANT } from './navData'
@@ -61,7 +62,12 @@ export function Header({
 
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationSummary[]>([])
+  const [notifLoading, setNotifLoading] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const notifRef = useRef<HTMLDivElement>(null)
   const clearSession = useAuthStore((state) => state.clearSession)
   const navigate = useNavigate()
   const localize = useLocalizedPath()
@@ -90,11 +96,84 @@ export function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [userMenuOpen])
 
+  useEffect(() => {
+    if (!notifOpen) return
+    function handleClickOutside(event: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [notifOpen])
+
+  // Badge only — the full list loads lazily when the dropdown is opened (see
+  // toggleNotifications), so this stays a single lightweight call per page load.
+  useEffect(() => {
+    if (isGuest) return
+    let cancelled = false
+    notificationsApi
+      .unreadCount()
+      .then((result) => {
+        if (!cancelled) setUnreadCount(result.count)
+      })
+      .catch(() => {
+        // Best-effort — the badge just stays hidden if this fails.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isGuest])
+
+  function toggleNotifications() {
+    const next = !notifOpen
+    setNotifOpen(next)
+    if (next) {
+      setNotifLoading(true)
+      notificationsApi
+        .mine()
+        .then(setNotifications)
+        .catch(() => {
+          // Best-effort — the dropdown just stays empty if this fails.
+        })
+        .finally(() => setNotifLoading(false))
+    }
+  }
+
+  function handleNotificationClick(notification: NotificationSummary) {
+    setNotifOpen(false)
+    if (!notification.read) {
+      notificationsApi.markRead(notification.id).catch(() => {
+        // Best-effort — the item just stays marked unread locally if this fails.
+      })
+      setNotifications((prev) =>
+        prev.map((existing) =>
+          existing.id === notification.id ? { ...existing, read: true } : existing,
+        ),
+      )
+      setUnreadCount((prev) => Math.max(0, prev - 1))
+    }
+    if (notification.link) {
+      navigate(localize(notification.link))
+    }
+  }
+
+  function handleMarkAllRead() {
+    notificationsApi.markAllRead().catch(() => {
+      // Best-effort — the badge/list just stay as-is if this fails.
+    })
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
+    setUnreadCount(0)
+  }
+
   return (
     <header className={cn('z-50 border-b border-border bg-surface', sticky && 'sticky top-0')}>
       <div className="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between gap-4 px-6">
         <div className="flex min-w-0 items-center gap-8">
-          <Link to={localize(ROUTES.home)} className="flex shrink-0 items-center gap-2.5 no-underline">
+          <Link
+            to={localize(ROUTES.home)}
+            className="flex shrink-0 items-center gap-2.5 no-underline"
+          >
             <Logo context="header" />
           </Link>
           <nav className="header:flex hidden items-center gap-1">
@@ -137,25 +216,88 @@ export function Header({
             )
           ) : (
             <>
-              <button
-                type="button"
-                aria-label={t('aria.notifications')}
-                className="relative flex h-[38px] w-[38px] items-center justify-center rounded-control border border-border bg-surface"
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  className="text-slate"
+              <div ref={notifRef} className="relative">
+                <button
+                  type="button"
+                  onClick={toggleNotifications}
+                  aria-label={t('aria.notifications')}
+                  className="relative flex h-[38px] w-[38px] items-center justify-center rounded-control border border-border bg-surface"
                 >
-                  <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <span className="absolute top-2 right-2 h-[7px] w-[7px] rounded-full bg-danger" />
-              </button>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    className="text-slate"
+                  >
+                    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2 h-[7px] w-[7px] rounded-full bg-danger" />
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="absolute top-[46px] right-0 max-h-[420px] w-[340px] overflow-y-auto rounded-[10px] border border-border bg-surface p-1.5 text-left shadow-elevated">
+                    <div className="flex items-center justify-between px-2 py-1.5">
+                      <span className="text-[13px] font-bold text-ink">
+                        {t('notifications.title')}
+                      </span>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleMarkAllRead}
+                          className="text-[12px] font-bold text-primary"
+                        >
+                          {t('notifications.markAllRead')}
+                        </button>
+                      )}
+                    </div>
+                    {notifLoading ? (
+                      <div className="px-2 py-4 text-center text-[13px] text-slate">
+                        {t('notifications.loading')}
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="px-2 py-4 text-center text-[13px] text-slate">
+                        {t('notifications.empty')}
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => handleNotificationClick(notification)}
+                          className={cn(
+                            'block w-full rounded-md px-2.5 py-2.5 text-left',
+                            !notification.read && 'bg-primary-tint/40',
+                          )}
+                        >
+                          <div className="flex items-start gap-2">
+                            {!notification.read && (
+                              <span className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                            )}
+                            <div className="min-w-0">
+                              <div className="text-[13px] leading-[1.4] text-ink">
+                                {notification.message}
+                              </div>
+                              <div className="mt-0.5 text-[11.5px] text-fog">
+                                {new Date(notification.createdAt).toLocaleString(undefined, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div ref={userMenuRef} className="relative">
                 <button

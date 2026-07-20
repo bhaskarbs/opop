@@ -11,6 +11,8 @@ import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -25,14 +27,17 @@ public class JobService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
     private final CompanyProfileRepository companyProfileRepository;
+    private final NotificationService notificationService;
 
     public JobService(
             JobRepository jobRepository,
             UserRepository userRepository,
-            CompanyProfileRepository companyProfileRepository) {
+            CompanyProfileRepository companyProfileRepository,
+            NotificationService notificationService) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -135,6 +140,11 @@ public class JobService {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.approve();
         jobRepository.save(job);
+        notificationService.notify(
+                job.getCompanyId(),
+                NotificationType.JOB_APPROVED,
+                "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
+                "/company/dashboard");
         return toDetail(job);
     }
 
@@ -143,6 +153,11 @@ public class JobService {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.reject();
         jobRepository.save(job);
+        notificationService.notify(
+                job.getCompanyId(),
+                NotificationType.JOB_REJECTED,
+                "Your job posting \"" + job.getTitle() + "\" was not approved.",
+                "/company/dashboard");
         return toDetail(job);
     }
 
