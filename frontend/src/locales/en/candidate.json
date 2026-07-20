@@ -151,11 +151,16 @@
   },
   "billing": {
     "title": "Billing & plans",
+    "loading": "Loading your billing details…",
+    "loadError": "Could not load your billing details.",
+    "changeError": "Couldn't change your plan. Please try again.",
+    "changing": "Please wait…",
     "currentPlan": "You're currently on the {{plan}} plan.",
     "currentPlanBadge": "Current plan",
     "downgrade": "Downgrade",
     "upgrade": "Upgrade",
     "billingHistory": "Billing history",
+    "noHistory": "No billing history yet.",
     "downloadInvoice": "Download invoice",
     "statusPaid": "Paid",
     "statusFailed": "Failed",
@@ -168,19 +173,20 @@
           "Post ideas freely",
           "Apply to jobs, partnerships & community roles",
           "Basic profile visibility",
-          "2 mock interviews / month"
+          "3 mock interviews / month"
         ]
       },
       "plus": {
         "name": "Plus",
-        "price": "₹499",
+        "price": "₹249",
         "period": "/month",
         "features": [
           "Everything in Free",
           "Profile top-listed in candidate search",
           "Free access to income-type trainings",
           "Priority application review",
-          "Featured listing when you post an idea"
+          "Featured listing when you post an idea",
+          "Access to contact numbers of candidates who applied for ideas"
         ]
       },
       "pro": {

@@ -16,6 +16,7 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.billing.exception.SamePlanException;
 import com.openopportunity.community.exception.EmailDeliveryException;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
@@ -196,6 +197,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateMockInterviewQuestionException.class)
     public ResponseEntity<ApiError> handleDuplicateMockInterviewQuestion(DuplicateMockInterviewQuestionException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(SamePlanException.class)
+    public ResponseEntity<ApiError> handleSamePlan(SamePlanException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 
