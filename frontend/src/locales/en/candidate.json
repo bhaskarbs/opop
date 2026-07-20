@@ -37,8 +37,17 @@
     "mockInterviews": "Mock interviews",
     "mockInterviewsBody": "Practice on camera and review your recorded sessions anytime.",
     "startMockInterview": "Start a mock interview",
+    "recordingQuestions": "{{count}} questions",
     "watch": "Watch",
-    "applicationActivity": "Application activity"
+    "applicationActivity": "Application activity",
+    "activity": {
+      "appliedToJob": "Applied to {{jobTitle}} at {{company}}",
+      "underReview": "Application to {{jobTitle}} is under review",
+      "notSelected": "Not selected for {{jobTitle}}",
+      "withdrawn": "Withdrew application to {{jobTitle}}",
+      "appliedToPartnership": "Applied for partnership on {{ideaTitle}}",
+      "empty": "No application activity yet."
+    }
   },
   "profile": {
     "loading": "Loading your profile…",

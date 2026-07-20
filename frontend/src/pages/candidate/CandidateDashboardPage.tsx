@@ -1,32 +1,61 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { applicationsApi } from '../../lib/applicationsApi'
+import {
+  applicationsApi,
+  type ApplicationStatus,
+  type ApplicationSummary,
+} from '../../lib/applicationsApi'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
 import {
   deriveCompletedSections,
   profileCompletionPercent,
 } from '../../lib/candidateProfileCompletion'
-import { ideasApi, type IdeaSummary } from '../../lib/ideasApi'
+import { ideasApi, type IdeaSummary, type MyIdeaInterestSummary } from '../../lib/ideasApi'
 import { jobsApi } from '../../lib/jobsApi'
+import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
 import { toDisplayJob, type DisplayJob } from '../job-search/jobDisplay'
 import { ROUTES } from '../../routes/paths'
 
 const NUDGE_MIN_DAYS = 30
 const MS_PER_DAY = 86_400_000
+const MAX_RECENT_RECORDINGS = 2
 
-const RECORDINGS = [
-  { title: 'Frontend behavioral round', date: 'Jul 2, 2026' },
-  { title: 'System design practice', date: 'Jun 24, 2026' },
-]
+const ACTIVITY_STATUS_COLOR_CLASS: Record<ApplicationStatus, string> = {
+  APPLIED: 'bg-primary',
+  UNDER_REVIEW: 'bg-teal',
+  REJECTED: 'bg-danger',
+  WITHDRAWN: 'bg-fog',
+}
 
-const ACTIVITY = [
-  { text: 'Application to Nimbus Cloud viewed by recruiter', colorClass: 'bg-primary' },
-  { text: 'Interview scheduled with Skyline Systems', colorClass: 'bg-teal' },
-  { text: 'Profile viewed 6 times this week', colorClass: 'bg-fog' },
-]
+interface ActivityEntry {
+  id: string
+  timestamp: string
+  text: string
+  colorClass: string
+}
+
+function activityTextForApplication(
+  t: TFunction<'candidate'>,
+  application: ApplicationSummary,
+): string {
+  switch (application.status) {
+    case 'APPLIED':
+      return t('dashboard.activity.appliedToJob', {
+        jobTitle: application.jobTitle,
+        company: application.companyName,
+      })
+    case 'UNDER_REVIEW':
+      return t('dashboard.activity.underReview', { jobTitle: application.jobTitle })
+    case 'REJECTED':
+      return t('dashboard.activity.notSelected', { jobTitle: application.jobTitle })
+    case 'WITHDRAWN':
+      return t('dashboard.activity.withdrawn', { jobTitle: application.jobTitle })
+  }
+}
 
 export default function CandidateDashboardPage() {
   const { t } = useTranslation('candidate')
@@ -36,6 +65,11 @@ export default function CandidateDashboardPage() {
   const [profile, setProfile] = useState<CandidateProfileResponse | null>(null)
   const [jobs, setJobs] = useState<DisplayJob[]>([])
   const [ideas, setIdeas] = useState<IdeaSummary[]>([])
+  const [applications, setApplications] = useState<ApplicationSummary[]>([])
+  const [myInterests, setMyInterests] = useState<MyIdeaInterestSummary[]>([])
+  const [mockInterviewSessions, setMockInterviewSessions] = useState<MockInterviewSessionSummary[]>(
+    [],
+  )
   // The "no offer yet" nudge only makes sense once the candidate has actually had time to
   // hear back — 30+ days since they started applying (their earliest application), or since
   // they registered if they haven't applied to anything yet. Computed once when the data
@@ -50,24 +84,38 @@ export default function CandidateDashboardPage() {
       jobsApi.search({}),
       applicationsApi.mine(),
       ideasApi.browse(),
+      ideasApi.myInterests(),
+      mockInterviewApi.mine(),
     ])
-      .then(([profileData, jobResults, applications, ideaResults]) => {
-        if (cancelled) return
-        setProfile(profileData)
-        setJobs(jobResults.map(toDisplayJob))
-        setIdeas(ideaResults)
-        const earliestAppliedAt = applications.reduce<string | null>(
-          (earliestSoFar, application) =>
-            !earliestSoFar || application.appliedAt < earliestSoFar
-              ? application.appliedAt
-              : earliestSoFar,
-          null,
-        )
-        const searchStartedAt = earliestAppliedAt ?? profileData.createdAt
-        setDaysSinceSearchStarted(
-          Math.floor((Date.now() - new Date(searchStartedAt).getTime()) / MS_PER_DAY),
-        )
-      })
+      .then(
+        ([
+          profileData,
+          jobResults,
+          applicationResults,
+          ideaResults,
+          interestResults,
+          sessionResults,
+        ]) => {
+          if (cancelled) return
+          setProfile(profileData)
+          setJobs(jobResults.map(toDisplayJob))
+          setIdeas(ideaResults)
+          setApplications(applicationResults)
+          setMyInterests(interestResults)
+          setMockInterviewSessions(sessionResults)
+          const earliestAppliedAt = applicationResults.reduce<string | null>(
+            (earliestSoFar, application) =>
+              !earliestSoFar || application.appliedAt < earliestSoFar
+                ? application.appliedAt
+                : earliestSoFar,
+            null,
+          )
+          const searchStartedAt = earliestAppliedAt ?? profileData.createdAt
+          setDaysSinceSearchStarted(
+            Math.floor((Date.now() - new Date(searchStartedAt).getTime()) / MS_PER_DAY),
+          )
+        },
+      )
       .catch(() => {
         // Best-effort — an empty dashboard (no matches, 0% complete) is a reasonable fallback
         // rather than blocking the whole page on either call failing.
@@ -100,6 +148,34 @@ export default function CandidateDashboardPage() {
       })
       .slice(0, 3)
   }, [profile, ideas])
+
+  // Real activity feed: recent job applications (status-aware) merged with recent partnership
+  // interests, newest first — no "viewed by recruiter" / "profile views" tracking exists in the
+  // backend, so unlike the earlier mock this only surfaces events we actually record.
+  const recentActivity = useMemo<ActivityEntry[]>(() => {
+    const jobEntries: ActivityEntry[] = applications.map((application) => ({
+      id: application.id,
+      timestamp: application.appliedAt,
+      text: activityTextForApplication(t, application),
+      colorClass: ACTIVITY_STATUS_COLOR_CLASS[application.status],
+    }))
+    const partnershipEntries: ActivityEntry[] = myInterests.map((interest) => ({
+      id: interest.id,
+      timestamp: interest.createdAt,
+      text: t('dashboard.activity.appliedToPartnership', { ideaTitle: interest.ideaTitle }),
+      colorClass: 'bg-amber',
+    }))
+    return [...jobEntries, ...partnershipEntries]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 3)
+  }, [applications, myInterests, t])
+
+  // mockInterviewApi.mine() already returns newest-first (see
+  // MockInterviewSessionRepository.findByCandidateIdOrderByRecordedAtDesc) — just take the top few.
+  const recentRecordings = useMemo(
+    () => mockInterviewSessions.slice(0, MAX_RECENT_RECORDINGS),
+    [mockInterviewSessions],
+  )
 
   if (loading) {
     return (
@@ -366,36 +442,51 @@ export default function CandidateDashboardPage() {
             >
               {t('dashboard.startMockInterview')}
             </Link>
-            {RECORDINGS.map((recording) => (
-              <div
-                key={recording.title}
-                className="flex items-center justify-between border-t border-[#F0F1F3] py-2"
-              >
-                <div>
-                  <div className="text-[13px] font-semibold text-ink">{recording.title}</div>
-                  <div className="text-xs text-fog">{recording.date}</div>
-                </div>
-                <a
-                  href="#"
-                  onClick={(event) => event.preventDefault()}
-                  className="text-[12.5px] font-bold text-primary no-underline"
+            {recentRecordings.length === 0 ? (
+              <p className="text-[13px] text-slate">{t('mockInterview.noSessions')}</p>
+            ) : (
+              recentRecordings.map((session) => (
+                <div
+                  key={session.id}
+                  className="flex items-center justify-between border-t border-[#F0F1F3] py-2"
                 >
-                  {t('dashboard.watch')}
-                </a>
-              </div>
-            ))}
+                  <div>
+                    <div className="text-[13px] font-semibold text-ink">
+                      {t('dashboard.recordingQuestions', { count: session.questionCount })}
+                    </div>
+                    <div className="text-xs text-fog">
+                      {new Date(session.recordedAt).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                  <Link
+                    to={localize(ROUTES.candidateMockInterview)}
+                    className="text-[12.5px] font-bold text-primary no-underline"
+                  >
+                    {t('dashboard.watch')}
+                  </Link>
+                </div>
+              ))
+            )}
           </Card>
 
           <Card className="p-5">
             <h3 className="mb-3 text-[14.5px] font-bold text-ink">
               {t('dashboard.applicationActivity')}
             </h3>
-            {ACTIVITY.map((entry) => (
-              <div key={entry.text} className="flex gap-2.5 border-t border-[#F0F1F3] py-2">
-                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${entry.colorClass}`} />
-                <div className="text-[13px] leading-[1.5] text-[#3A414D]">{entry.text}</div>
-              </div>
-            ))}
+            {recentActivity.length === 0 ? (
+              <p className="py-2 text-[13px] text-slate">{t('dashboard.activity.empty')}</p>
+            ) : (
+              recentActivity.map((entry) => (
+                <div key={entry.id} className="flex gap-2.5 border-t border-[#F0F1F3] py-2">
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${entry.colorClass}`} />
+                  <div className="text-[13px] leading-[1.5] text-[#3A414D]">{entry.text}</div>
+                </div>
+              ))
+            )}
           </Card>
         </aside>
       </div>
