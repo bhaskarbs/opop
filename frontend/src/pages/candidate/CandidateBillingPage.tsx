@@ -15,6 +15,10 @@ const PLAN_KEYS: PlanKey[] = ['free', 'plus' /* , 'pro' */]
 
 const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js'
 
+// Billing history accrues one row per renewal, so it can grow long for an old account — show a
+// first page and let the candidate reveal the rest instead of dumping the full list at once.
+const HISTORY_PAGE_SIZE = 5
+
 function toPlanKey(plan: BackendSubscriptionPlan): PlanKey {
   return plan.toLowerCase() as PlanKey
 }
@@ -58,6 +62,7 @@ export default function CandidateBillingPage() {
   const [changeError, setChangeError] = useState<string | null>(null)
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null)
   const [invoiceError, setInvoiceError] = useState<string | null>(null)
+  const [historyShown, setHistoryShown] = useState(HISTORY_PAGE_SIZE)
 
   useEffect(() => {
     let cancelled = false
@@ -275,7 +280,7 @@ export default function CandidateBillingPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {history.map((entry) => {
+          {history.slice(0, historyShown).map((entry) => {
             const planKey = toPlanKey(entry.plan)
             const planLabel =
               planKey === 'free'
@@ -321,6 +326,15 @@ export default function CandidateBillingPage() {
               </div>
             )
           })}
+          {historyShown < history.length && (
+            <button
+              type="button"
+              onClick={() => setHistoryShown((prev) => prev + HISTORY_PAGE_SIZE)}
+              className="mt-1 self-center text-[13px] font-bold text-primary"
+            >
+              {t('billing.showMoreHistory')}
+            </button>
+          )}
         </div>
       )}
     </main>
