@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
-import { Button, Input } from '../../components/ui'
+import { Button, Input, PasswordInput } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
@@ -82,11 +82,12 @@ export default function CompanyLoginPage() {
         </div>
 
         <div className="mb-[18px]">
-          <Input
+          <PasswordInput
             label={t('fields.password')}
-            type="password"
             placeholder="••••••••"
             error={errors.password?.message}
+            showPasswordLabel={t('fields.showPassword')}
+            hidePasswordLabel={t('fields.hidePassword')}
             {...register('password')}
           />
           <div className="mt-2 text-right">
