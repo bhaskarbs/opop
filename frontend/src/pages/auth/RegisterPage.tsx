@@ -6,8 +6,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { candidateApi } from '../../lib/candidateApi'
-import { Button, Input } from '../../components/ui'
+import { Button, Input, SkillsTagInput } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { FileDropInput } from './shared/FileDropInput'
@@ -21,7 +22,7 @@ const registerSchema = z.object({
     .min(1, 'Mobile number is required')
     .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  skills: z.string().min(2, 'List at least one skill'),
+  skills: z.array(z.string()).min(1, 'Add at least one skill'),
   resume: z.instanceof(File).optional(),
   agreeTerms: z
     .boolean()
@@ -30,7 +31,11 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 
-const BENEFIT_KEYS = ['register.benefits.jobs', 'register.benefits.partnerships', 'register.benefits.community']
+const BENEFIT_KEYS = [
+  'register.benefits.jobs',
+  'register.benefits.partnerships',
+  'register.benefits.community',
+]
 
 export default function RegisterPage() {
   const { t } = useTranslation('auth')
@@ -50,7 +55,7 @@ export default function RegisterPage() {
       email: '',
       mobile: '',
       password: '',
-      skills: '',
+      skills: [],
       agreeTerms: false,
     },
   })
@@ -64,10 +69,7 @@ export default function RegisterPage() {
         fullName: values.fullName,
         role: 'candidate',
         mobile: values.mobile,
-        skills: values.skills
-          .split(',')
-          .map((skill) => skill.trim())
-          .filter(Boolean),
+        skills: values.skills,
         resumeFileName: values.resume?.name,
       })
       setSession(response.accessToken, response.user)
@@ -128,11 +130,20 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-3.5">
-              <Input
-                label={t('fields.skills')}
-                placeholder={t('register.skillsPlaceholder')}
-                error={errors.skills?.message}
-                {...register('skills')}
+              <Controller
+                name="skills"
+                control={control}
+                render={({ field }) => (
+                  <SkillsTagInput
+                    label={t('fields.skills')}
+                    placeholder={t('register.skillsPlaceholder')}
+                    error={errors.skills?.message}
+                    value={field.value}
+                    onChange={field.onChange}
+                    suggestions={SKILL_SUGGESTIONS}
+                    removeSkillLabel={(skill) => t('register.removeSkill', { skill })}
+                  />
+                )}
               />
             </div>
 
@@ -197,9 +208,7 @@ export default function RegisterPage() {
 
         <aside className="auth:order-none order-first">
           <div className="rounded-card bg-primary-tint p-[22px]">
-            <h3 className="mb-3 text-[14.5px] font-bold text-ink">
-              {t('register.whyOneProfile')}
-            </h3>
+            <h3 className="mb-3 text-[14.5px] font-bold text-ink">{t('register.whyOneProfile')}</h3>
             {BENEFIT_KEYS.map((benefitKey) => (
               <div key={benefitKey} className="mb-3.5 flex gap-2.5">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
