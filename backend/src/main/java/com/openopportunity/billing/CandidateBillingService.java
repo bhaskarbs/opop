@@ -1,5 +1,7 @@
 package com.openopportunity.billing;
 
+import com.openopportunity.auth.User;
+import com.openopportunity.auth.UserRepository;
 import com.openopportunity.billing.dto.BillingTransactionSummary;
 import com.openopportunity.billing.dto.CandidateBillingSummary;
 import com.openopportunity.billing.dto.CheckoutSummary;
@@ -30,6 +32,7 @@ public class CandidateBillingService {
 
     private final CandidateSubscriptionRepository subscriptionRepository;
     private final BillingTransactionRepository transactionRepository;
+    private final UserRepository userRepository;
     private final String razorpayKeyId;
     private final String razorpayKeySecret;
     private final String razorpayWebhookSecret;
@@ -38,11 +41,13 @@ public class CandidateBillingService {
     public CandidateBillingService(
             CandidateSubscriptionRepository subscriptionRepository,
             BillingTransactionRepository transactionRepository,
+            UserRepository userRepository,
             @Value("${app.razorpay.key-id}") String razorpayKeyId,
             @Value("${app.razorpay.key-secret}") String razorpayKeySecret,
             @Value("${app.razorpay.webhook-secret}") String razorpayWebhookSecret) {
         this.subscriptionRepository = subscriptionRepository;
         this.transactionRepository = transactionRepository;
+        this.userRepository = userRepository;
         this.razorpayKeyId = razorpayKeyId;
         this.razorpayKeySecret = razorpayKeySecret;
         this.razorpayWebhookSecret = razorpayWebhookSecret;
@@ -160,6 +165,23 @@ public class CandidateBillingService {
 
         applyPaidTransaction(transaction, razorpayPaymentId);
         return new CandidateBillingSummary(transaction.getPlan(), getHistory(candidateId));
+    }
+
+    /** Only PAID transactions have a real invoice — same 404-for-not-found-and-not-owned pattern
+     * as verifyCheckout also covers "exists but never completed payment" by reusing the same
+     * not-found exception, since the frontend only ever links this for PAID history rows. */
+    @Transactional(readOnly = true)
+    public byte[] generateInvoice(UUID candidateId, UUID transactionId) {
+        BillingTransaction transaction = transactionRepository
+                .findById(transactionId)
+                .filter(existing -> existing.getCandidateId().equals(candidateId))
+                .filter(existing -> existing.getStatus() == TransactionStatus.PAID)
+                .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
+        User candidate = userRepository
+                .findById(candidateId)
+                .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
+
+        return InvoicePdfGenerator.generate(transaction, candidate);
     }
 
     /** Server-to-server fallback for verifyCheckout — always verify-then-ignore rather than

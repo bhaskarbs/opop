@@ -162,6 +162,8 @@
     "billingHistory": "Billing history",
     "noHistory": "No billing history yet.",
     "downloadInvoice": "Download invoice",
+    "downloadingInvoice": "Downloading…",
+    "invoiceError": "Couldn't download the invoice. Please try again.",
     "statusPaid": "Paid",
     "statusFailed": "Failed",
     "statusPending": "Pending",

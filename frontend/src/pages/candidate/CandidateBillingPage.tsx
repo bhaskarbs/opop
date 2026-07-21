@@ -47,6 +47,8 @@ export default function CandidateBillingPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [changingPlan, setChangingPlan] = useState<PlanKey | null>(null)
   const [changeError, setChangeError] = useState<string | null>(null)
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null)
+  const [invoiceError, setInvoiceError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -128,6 +130,24 @@ export default function CandidateBillingPage() {
     }
   }
 
+  async function handleDownloadInvoice(transactionId: string) {
+    setInvoiceError(null)
+    setDownloadingInvoiceId(transactionId)
+    try {
+      const blob = await billingApi.invoice(transactionId)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `invoice-${transactionId.slice(0, 8)}.pdf`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (caught) {
+      setInvoiceError(caught instanceof ApiError ? caught.message : t('billing.invoiceError'))
+    } finally {
+      setDownloadingInvoiceId(null)
+    }
+  }
+
   if (loading) {
     return (
       <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16 text-center text-sm text-slate">
@@ -151,6 +171,11 @@ export default function CandidateBillingPage() {
       {changeError && (
         <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
           {changeError}
+        </div>
+      )}
+      {invoiceError && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {invoiceError}
         </div>
       )}
 
@@ -265,13 +290,18 @@ export default function CandidateBillingPage() {
                       ? t('billing.statusFailed')
                       : t('billing.statusPending')}
                 </span>
-                <a
-                  href="#invoice"
-                  onClick={(event) => event.preventDefault()}
-                  className="text-[12.5px] font-bold no-underline"
-                >
-                  {t('billing.downloadInvoice')}
-                </a>
+                {entry.status === 'PAID' && (
+                  <button
+                    type="button"
+                    disabled={downloadingInvoiceId === entry.id}
+                    onClick={() => handleDownloadInvoice(entry.id)}
+                    className="text-[12.5px] font-bold text-primary disabled:opacity-60"
+                  >
+                    {downloadingInvoiceId === entry.id
+                      ? t('billing.downloadingInvoice')
+                      : t('billing.downloadInvoice')}
+                  </button>
+                )}
               </div>
             )
           })}
