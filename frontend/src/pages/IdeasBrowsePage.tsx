@@ -9,6 +9,8 @@ import { IDEA_CATEGORIES } from '../mocks/ideas'
 import { ideaRoutesFor, ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 
+const IDEAS_PAGE_SIZE = 6
+
 const STAGE_KEYS: Record<BackendIdeaStage, string> = {
   CONCEPT: 'browse.stages.concept',
   PROTOTYPE: 'browse.stages.prototype',
@@ -36,6 +38,7 @@ export default function IdeasBrowsePage() {
   const [stage, setStage] = useState<BackendIdeaStage | ''>('')
 
   const [ideas, setIdeas] = useState<IdeaSummary[]>([])
+  const [ideasShown, setIdeasShown] = useState(IDEAS_PAGE_SIZE)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [appliedIdeaIds, setAppliedIdeaIds] = useState<Set<string>>(new Set())
@@ -50,7 +53,10 @@ export default function IdeasBrowsePage() {
           category: category || undefined,
           stage: stage || undefined,
         })
-        .then(setIdeas)
+        .then((results) => {
+          setIdeas(results)
+          setIdeasShown(IDEAS_PAGE_SIZE)
+        })
         .catch((caught) => {
           setError(caught instanceof ApiError ? caught.message : t('browse.errorLoading'))
         })
@@ -155,7 +161,7 @@ export default function IdeasBrowsePage() {
         {error && <p className="mb-4 text-center text-sm text-danger">{error}</p>}
 
         <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
-          {ideas.map((idea) => {
+          {ideas.slice(0, ideasShown).map((idea) => {
             const applied = appliedIdeaIds.has(idea.id)
             return (
               <div
@@ -223,6 +229,18 @@ export default function IdeasBrowsePage() {
             </div>
           )}
         </div>
+
+        {ideasShown < ideas.length && (
+          <div className="mt-7 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setIdeasShown((prev) => prev + IDEAS_PAGE_SIZE)}
+              className="rounded-lg border border-border bg-surface px-5 py-2.5 text-[13.5px] font-bold text-ink"
+            >
+              {t('browse.showMore')}
+            </button>
+          </div>
+        )}
       </div>
     </main>
   )

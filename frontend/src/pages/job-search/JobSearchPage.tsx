@@ -12,7 +12,7 @@ import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './
 import { ResultCard } from './ResultCard'
 import { toDisplayJob, type DisplayJob } from './jobDisplay'
 
-const PAGE_SIZE = 6
+const PAGE_SIZE = 10
 
 type SortOption = 'relevant' | 'newest' | 'salary'
 
@@ -36,7 +36,7 @@ export default function JobSearchPage() {
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery || initialLocation))
   const [filters, setFilters] = useState<FilterState>(createDefaultFilterState())
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
-  const [page, setPage] = useState(1)
+  const [jobsShown, setJobsShown] = useState(PAGE_SIZE)
 
   const [jobs, setJobs] = useState<DisplayJob[]>([])
   const [loading, setLoading] = useState(false)
@@ -90,7 +90,7 @@ export default function JobSearchPage() {
         })
         .then((results) => {
           setJobs(results.map(toDisplayJob))
-          setPage(1)
+          setJobsShown(PAGE_SIZE)
         })
         .catch((caught) => {
           setError(caught instanceof ApiError ? caught.message : t('jobSearch.errorLoading'))
@@ -100,9 +100,7 @@ export default function JobSearchPage() {
     return () => clearTimeout(timeoutId)
   }, [hasSearched, query, location, filters, sortBy, t])
 
-  const pageCount = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE))
-  const currentPage = Math.min(page, pageCount)
-  const pageResults = jobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const visibleJobs = jobs.slice(0, jobsShown)
 
   function runSearch() {
     if (query.trim() || location.trim()) {
@@ -251,28 +249,21 @@ export default function JobSearchPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-3.5">
-                {pageResults.map((job) => (
+                {visibleJobs.map((job) => (
                   <ResultCard key={job.id} job={job} applied={appliedJobIds.has(job.id)} />
                 ))}
               </div>
             )}
 
-            {pageCount > 1 && (
-              <div className="mt-7 flex justify-center gap-2">
-                {Array.from({ length: pageCount }, (_, i) => i + 1).map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    type="button"
-                    onClick={() => setPage(pageNumber)}
-                    className={
-                      pageNumber === currentPage
-                        ? 'h-9 w-9 rounded-lg border border-border bg-primary text-sm font-semibold text-white'
-                        : 'h-9 w-9 rounded-lg border border-border bg-surface text-sm font-semibold text-ink'
-                    }
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
+            {jobsShown < jobs.length && (
+              <div className="mt-7 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setJobsShown((prev) => prev + PAGE_SIZE)}
+                  className="rounded-lg border border-border bg-surface px-5 py-2.5 text-[13.5px] font-bold text-ink"
+                >
+                  {t('jobSearch.showMore')}
+                </button>
               </div>
             )}
           </div>

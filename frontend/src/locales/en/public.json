@@ -73,7 +73,8 @@
       "salary": "Salary: high to low"
     },
     "noResults": "No jobs match your filters. Try clearing some filters or searching a different keyword.",
-    "errorLoading": "Something went wrong loading jobs."
+    "errorLoading": "Something went wrong loading jobs.",
+    "showMore": "Show more jobs"
   },
   "filters": {
     "heading": "Filters",
