@@ -190,6 +190,23 @@ public class CandidateBillingService {
         return InvoicePdfGenerator.generate(transaction, candidate);
     }
 
+    /** Only PAID transactions have a real invoice — same 404-for-not-found-and-not-owned pattern
+     * as verifyCheckout also covers "exists but never completed payment" by reusing the same
+     * not-found exception, since the frontend only ever links this for PAID history rows. */
+    @Transactional(readOnly = true)
+    public byte[] generateInvoice(UUID candidateId, UUID transactionId) {
+        BillingTransaction transaction = transactionRepository
+                .findById(transactionId)
+                .filter(existing -> existing.getCandidateId().equals(candidateId))
+                .filter(existing -> existing.getStatus() == TransactionStatus.PAID)
+                .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
+        User candidate = userRepository
+                .findById(candidateId)
+                .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
+
+        return InvoicePdfGenerator.generate(transaction, candidate);
+    }
+
     /** Server-to-server fallback for verifyCheckout — always verify-then-ignore rather than
      * throwing, since Razorpay retries on any non-2xx response and an unrecognized/unverifiable
      * event isn't actionable here anyway (see RazorpayWebhookController, which always returns
