@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ApiError } from '../../lib/apiClient'
+import { adminApi, type AdminCandidateSubscriptionSummary } from '../../lib/adminApi'
 
 type UpgradeDecision = 'approved' | 'rejected'
 type SubTab = 'candidates' | 'companies'
 
-// No billing/subscription backend exists yet — every figure on this page is a fixed mock,
-// same treatment as AdminDashboardPage's platform stats.
+// No aggregate revenue/MRR backend exists yet — these figures are a fixed mock, same treatment
+// as AdminDashboardPage's platform stats. The candidate subscriptions list below this, though,
+// is wired to the real admin candidate-billing endpoints.
 const STATS = [
   {
     labelKey: 'billing.stats.mrr',
@@ -48,13 +51,6 @@ const REQUESTS = [
     to: 'Enterprise',
     date: '5 days ago',
   },
-]
-
-const CANDIDATE_SUBS = [
-  { name: 'Rohan Mehta', plan: 'Plus', since: 'Jun 1, 2026' },
-  { name: 'Anita Sharma', plan: 'Free', since: 'May 20, 2026' },
-  { name: 'Karan Patel', plan: 'Pro', since: 'Apr 12, 2026' },
-  { name: 'Meera Iyer', plan: 'Free', since: 'Jul 4, 2026' },
 ]
 
 const COMPANY_SUBS = [
@@ -102,12 +98,69 @@ const PLAN_BADGE_CLASSES: Record<string, string> = {
   Enterprise: 'bg-[#FFF6E9] text-[#8A5A0F]',
 }
 
+const PLAN_LABELS: Record<AdminCandidateSubscriptionSummary['plan'], string> = {
+  FREE: 'Free',
+  PLUS: 'Plus',
+  PRO: 'Pro',
+}
+
+function formatValidUntil(locale: string, validUntil: string | null): string | null {
+  if (!validUntil) return null
+  return new Date(validUntil).toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 export default function AdminBillingPage() {
-  const { t } = useTranslation('admin')
+  const { t, i18n } = useTranslation('admin')
   const [tab, setTab] = useState<SubTab>('candidates')
   const [decisions, setDecisions] = useState<Record<string, UpgradeDecision>>({})
 
+  const [candidates, setCandidates] = useState<AdminCandidateSubscriptionSummary[]>([])
+  const [candidatesLoading, setCandidatesLoading] = useState(true)
+  const [candidatesError, setCandidatesError] = useState<string | null>(null)
+  const [actioningCandidateId, setActioningCandidateId] = useState<string | null>(null)
+
   const requests = REQUESTS.map((request) => ({ ...request, decision: decisions[request.id] }))
+
+  useEffect(() => {
+    let cancelled = false
+    adminApi
+      .candidateSubscriptions()
+      .then((result) => {
+        if (!cancelled) setCandidates(result)
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setCandidatesError(
+            caught instanceof ApiError ? caught.message : t('billing.candidatePlans.loadError'),
+          )
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCandidatesLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [t])
+
+  async function handleSetCandidatePlan(candidateId: string, plan: 'FREE' | 'PLUS') {
+    if (plan === 'FREE' && !window.confirm(t('billing.candidatePlans.confirmDowngrade'))) return
+    setActioningCandidateId(candidateId)
+    try {
+      const updated = await adminApi.setCandidatePlan(candidateId, plan)
+      setCandidates((prev) =>
+        prev.map((existing) => (existing.candidateId === candidateId ? updated : existing)),
+      )
+    } catch {
+      // Best-effort — the row simply keeps its current plan if the call fails.
+    } finally {
+      setActioningCandidateId(null)
+    }
+  }
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
@@ -208,20 +261,92 @@ export default function AdminBillingPage() {
       </div>
 
       <div className="mb-8 flex flex-col gap-2.5">
-        {(tab === 'candidates' ? CANDIDATE_SUBS : COMPANY_SUBS).map((sub) => (
-          <div
-            key={sub.name}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
-          >
-            <div className="text-[13.5px] font-bold text-ink">{sub.name}</div>
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-bold ${PLAN_BADGE_CLASSES[sub.plan]}`}
+        {tab === 'companies' &&
+          COMPANY_SUBS.map((sub) => (
+            <div
+              key={sub.name}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
             >
-              {sub.plan}
-            </span>
-            <div className="text-[13px] text-fog">{t('billing.since', { date: sub.since })}</div>
+              <div className="text-[13.5px] font-bold text-ink">{sub.name}</div>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-bold ${PLAN_BADGE_CLASSES[sub.plan]}`}
+              >
+                {sub.plan}
+              </span>
+              <div className="text-[13px] text-fog">{t('billing.since', { date: sub.since })}</div>
+            </div>
+          ))}
+
+        {tab === 'candidates' && candidatesError && (
+          <div className="rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+            {candidatesError}
           </div>
-        ))}
+        )}
+
+        {tab === 'candidates' && candidatesLoading && (
+          <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
+            {t('billing.candidatePlans.loading')}
+          </div>
+        )}
+
+        {tab === 'candidates' &&
+          !candidatesLoading &&
+          !candidatesError &&
+          candidates.map((candidate) => {
+            const planLabel = PLAN_LABELS[candidate.plan]
+            const validUntil = formatValidUntil(i18n.language, candidate.validUntil)
+            const isActioning = actioningCandidateId === candidate.candidateId
+            return (
+              <div
+                key={candidate.candidateId}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
+              >
+                <div>
+                  <div className="text-[13.5px] font-bold text-ink">{candidate.fullName}</div>
+                  <div className="text-[12.5px] text-fog">{candidate.email}</div>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${PLAN_BADGE_CLASSES[planLabel]}`}
+                >
+                  {planLabel}
+                </span>
+                <div className="text-[13px] text-fog">
+                  {validUntil ? t('billing.since', { date: validUntil }) : ''}
+                </div>
+                <div className="flex gap-2">
+                  {candidate.plan !== 'FREE' && (
+                    <button
+                      type="button"
+                      disabled={isActioning}
+                      onClick={() => handleSetCandidatePlan(candidate.candidateId, 'FREE')}
+                      className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                    >
+                      {t('billing.candidatePlans.downgradeToFree')}
+                    </button>
+                  )}
+                  {candidate.plan !== 'PLUS' && (
+                    <button
+                      type="button"
+                      disabled={isActioning}
+                      onClick={() => handleSetCandidatePlan(candidate.candidateId, 'PLUS')}
+                      className="rounded-md border border-border bg-primary-tint px-3.5 py-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
+                    >
+                      {t('billing.candidatePlans.upgradeToPlus')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+        {tab === 'candidates' &&
+          !candidatesLoading &&
+          !candidatesError &&
+          candidates.length === 0 && (
+            <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
+              {t('billing.candidatePlans.none')}
+            </div>
+          )}
       </div>
 
       <h2 className="mb-3.5 text-[16.5px] font-bold text-ink">{t('billing.invoiceHistory')}</h2>

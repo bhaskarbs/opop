@@ -1,5 +1,6 @@
 import { useAuthStore } from '../stores/authStore'
 import { request } from './apiClient'
+import type { BackendSubscriptionPlan } from './billingApi'
 import type { IdeaSummary } from './ideasApi'
 import type { BackendExperienceLevel, JobSummary } from './jobsApi'
 
@@ -64,6 +65,18 @@ export interface CreateMockInterviewQuestionPayload {
   industry: string | null
   experienceLevel: BackendExperienceLevel | null
 }
+
+export interface AdminCandidateSubscriptionSummary {
+  candidateId: string
+  fullName: string
+  email: string
+  plan: BackendSubscriptionPlan
+  validUntil: string | null
+}
+
+// The backend only lets an admin comp Free or Plus directly (see
+// PlanNotAdminAssignableException) — Pro always has to go through a real Razorpay checkout.
+export type AdminAssignableSubscriptionPlan = 'FREE' | 'PLUS'
 
 function authHeaders(): Record<string, string> {
   const token = useAuthStore.getState().accessToken
@@ -164,4 +177,15 @@ export const adminApi = {
         headers: authHeaders(),
       },
     ),
+
+  candidateSubscriptions: () =>
+    request<AdminCandidateSubscriptionSummary[]>('/api/admin/candidate-billing', {
+      headers: authHeaders(),
+    }),
+  setCandidatePlan: (candidateId: string, plan: AdminAssignableSubscriptionPlan) =>
+    request<AdminCandidateSubscriptionSummary>(`/api/admin/candidate-billing/${candidateId}/plan`, {
+      method: 'POST',
+      body: JSON.stringify({ plan }),
+      headers: authHeaders(),
+    }),
 }
