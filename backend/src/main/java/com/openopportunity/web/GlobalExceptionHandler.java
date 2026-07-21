@@ -17,9 +17,11 @@ import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
+import com.openopportunity.billing.exception.CandidateNotFoundException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
+import com.openopportunity.billing.exception.PlanNotAdminAssignableException;
 import com.openopportunity.billing.exception.SamePlanException;
 import com.openopportunity.community.exception.EmailDeliveryException;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
@@ -226,6 +228,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PaidPlanRequiresCheckoutException.class)
     public ResponseEntity<ApiError> handlePaidPlanRequiresCheckout(PaidPlanRequiresCheckoutException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CandidateNotFoundException.class)
+    public ResponseEntity<ApiError> handleCandidateNotFound(CandidateNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(PlanNotAdminAssignableException.class)
+    public ResponseEntity<ApiError> handlePlanNotAdminAssignable(PlanNotAdminAssignableException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 

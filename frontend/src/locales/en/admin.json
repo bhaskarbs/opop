@@ -218,6 +218,14 @@
     "statusPaid": "Paid",
     "statusFailed": "Failed",
     "invoiceHistory": "Invoice history",
-    "since": "Since {{date}}"
+    "since": "Since {{date}}",
+    "candidatePlans": {
+      "loading": "Loading candidate subscriptions…",
+      "loadError": "Couldn't load candidate subscriptions.",
+      "none": "No candidate subscriptions yet.",
+      "downgradeToFree": "Downgrade to Free",
+      "upgradeToPlus": "Upgrade to Plus",
+      "confirmDowngrade": "Downgrade this candidate to the Free plan?"
+    }
   }
 }

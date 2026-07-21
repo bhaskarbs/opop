@@ -2,13 +2,17 @@ package com.openopportunity.billing;
 
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
+import com.openopportunity.billing.dto.AdminCandidateSubscriptionSummary;
 import com.openopportunity.billing.dto.BillingTransactionSummary;
 import com.openopportunity.billing.dto.CandidateBillingSummary;
 import com.openopportunity.billing.dto.CheckoutSummary;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
+import com.openopportunity.billing.exception.CandidateNotFoundException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
+import com.openopportunity.billing.exception.PlanNotAdminAssignableException;
 import com.openopportunity.billing.exception.SamePlanException;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -104,6 +108,49 @@ public class CandidateBillingService {
         return summaryFor(candidateId);
     }
 
+    /** Admin view of every candidate's current plan (absent subscription row = FREE). Filters
+     * in memory like AdminUserService — fine for this phase's small local dataset. */
+    @Transactional(readOnly = true)
+    public List<AdminCandidateSubscriptionSummary> adminListCandidateSubscriptions() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRole() == UserRole.CANDIDATE)
+                .map(user -> {
+                    CandidateSubscription subscription =
+                            subscriptionRepository.findByCandidateId(user.getId()).orElse(null);
+                    SubscriptionPlan plan = subscription == null ? SubscriptionPlan.FREE : subscription.getPlan();
+                    Instant validUntil = subscription == null ? null : subscription.getCurrentPeriodEnd();
+                    return new AdminCandidateSubscriptionSummary(
+                            user.getId(), user.getFullName(), user.getEmail(), plan, validUntil);
+                })
+                .toList();
+    }
+
+    /** Admin-only direct plan change (comps / support fixes) — deliberately bypasses the paid
+     * Razorpay checkout the public path requires. Free and Plus only; granting Plus gets a fresh
+     * PAID_PLAN_PERIOD so the daily expiry sweep treats it exactly like a purchased period, and a
+     * ₹0 comp transaction is recorded for the audit trail. */
+    @Transactional
+    public AdminCandidateSubscriptionSummary adminSetPlan(UUID candidateId, SubscriptionPlan plan) {
+        if (plan != SubscriptionPlan.FREE && plan != SubscriptionPlan.PLUS) {
+            throw new PlanNotAdminAssignableException(plan);
+        }
+        User candidate = userRepository
+                .findById(candidateId)
+                .filter(user -> user.getRole() == UserRole.CANDIDATE)
+                .orElseThrow(() -> new CandidateNotFoundException(candidateId));
+
+        Instant currentPeriodEnd = plan == SubscriptionPlan.FREE ? null : Instant.now().plus(PAID_PLAN_PERIOD);
+        CandidateSubscription subscription = subscriptionRepository
+                .findByCandidateId(candidateId)
+                .orElseGet(() -> new CandidateSubscription(candidateId, plan));
+        subscription.changePlan(plan, currentPeriodEnd);
+        subscriptionRepository.save(subscription);
+        transactionRepository.save(BillingTransaction.adminGrant(candidateId, plan));
+
+        return new AdminCandidateSubscriptionSummary(
+                candidate.getId(), candidate.getFullName(), candidate.getEmail(), plan, currentPeriodEnd);
+    }
+
     /** Deliberately allows checkout for a plan the candidate already holds — that's a renewal
      * (plans now expire after PAID_PLAN_PERIOD, see applyPaidTransaction), not a redundant
      * no-op, so it must go through the same paid flow as any other upgrade. */
@@ -171,23 +218,6 @@ public class CandidateBillingService {
 
         applyPaidTransaction(transaction, razorpayPaymentId);
         return summaryFor(candidateId);
-    }
-
-    /** Only PAID transactions have a real invoice — same 404-for-not-found-and-not-owned pattern
-     * as verifyCheckout also covers "exists but never completed payment" by reusing the same
-     * not-found exception, since the frontend only ever links this for PAID history rows. */
-    @Transactional(readOnly = true)
-    public byte[] generateInvoice(UUID candidateId, UUID transactionId) {
-        BillingTransaction transaction = transactionRepository
-                .findById(transactionId)
-                .filter(existing -> existing.getCandidateId().equals(candidateId))
-                .filter(existing -> existing.getStatus() == TransactionStatus.PAID)
-                .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
-        User candidate = userRepository
-                .findById(candidateId)
-                .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
-
-        return InvoicePdfGenerator.generate(transaction, candidate);
     }
 
     /** Only PAID transactions have a real invoice — same 404-for-not-found-and-not-owned pattern
