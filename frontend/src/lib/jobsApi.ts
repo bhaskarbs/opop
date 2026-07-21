@@ -48,8 +48,8 @@ export interface JobRequestPayload {
 }
 
 export interface JobSearchParams {
-  q?: string
-  location?: string
+  q?: string[]
+  location?: string[]
   level?: BackendExperienceLevel[]
   mode?: BackendWorkMode[]
   minSalaryLakhs?: number
@@ -63,8 +63,8 @@ function authHeaders(): Record<string, string> {
 
 function buildQuery(params: JobSearchParams): string {
   const search = new URLSearchParams()
-  if (params.q) search.set('q', params.q)
-  if (params.location) search.set('location', params.location)
+  params.q?.forEach((keyword) => search.append('q', keyword))
+  params.location?.forEach((location) => search.append('location', location))
   if (params.minSalaryLakhs != null) search.set('minSalaryLakhs', String(params.minSalaryLakhs))
   if (params.sort) search.set('sort', params.sort)
   params.level?.forEach((level) => search.append('level', level))

@@ -42,16 +42,16 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public List<JobSummary> search(
-            String q,
-            String location,
+            List<String> keywords,
+            List<String> locations,
             List<ExperienceLevel> levels,
             List<WorkMode> modes,
             BigDecimal minSalaryLakhs,
             String sort) {
         Specification<Job> spec = Specification.allOf(
                 JobSpecifications.hasStatus(JobStatus.ACTIVE),
-                JobSpecifications.matchesKeyword(q),
-                JobSpecifications.matchesLocation(location),
+                JobSpecifications.matchesAnyKeyword(keywords),
+                JobSpecifications.matchesAnyLocation(locations),
                 JobSpecifications.hasLevelIn(levels),
                 JobSpecifications.hasModeIn(modes),
                 JobSpecifications.hasMinSalaryAtLeast(minSalaryLakhs));
