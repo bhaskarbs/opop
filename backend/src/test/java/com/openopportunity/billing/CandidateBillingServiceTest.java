@@ -3,6 +3,7 @@ package com.openopportunity.billing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,6 +17,8 @@ import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.SamePlanException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +27,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -67,6 +71,20 @@ class CandidateBillingServiceTest {
     }
 
     @Test
+    void changePlanClearsTheValidityPeriodOnDowngradeToFree() {
+        UUID candidateId = UUID.randomUUID();
+        CandidateSubscription existing = new CandidateSubscription(candidateId, SubscriptionPlan.PLUS);
+        existing.changePlan(SubscriptionPlan.PLUS, Instant.now().plus(Duration.ofDays(10)));
+        when(subscriptionRepository.findByCandidateId(candidateId)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByCandidateIdOrderByCreatedAtDesc(candidateId)).thenReturn(List.of());
+
+        CandidateBillingSummary summary = billingService.changePlan(candidateId, SubscriptionPlan.FREE);
+
+        assertThat(summary.currentPlanValidUntil()).isNull();
+        assertThat(existing.getCurrentPeriodEnd()).isNull();
+    }
+
+    @Test
     void changePlanRejectsSwitchingToTheSamePlan() {
         UUID candidateId = UUID.randomUUID();
         when(subscriptionRepository.findByCandidateId(candidateId)).thenReturn(Optional.empty());
@@ -88,20 +106,22 @@ class CandidateBillingServiceTest {
     @Test
     void initiateCheckoutFailsCleanlyWhenNoGatewayIsConfigured() {
         UUID candidateId = UUID.randomUUID();
-        when(subscriptionRepository.findByCandidateId(candidateId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> billingService.initiateCheckout(candidateId, SubscriptionPlan.PLUS))
                 .isInstanceOf(PaymentGatewayUnavailableException.class);
     }
 
     @Test
-    void initiateCheckoutRejectsAlreadyBeingOnTheTargetPlan() {
+    void initiateCheckoutAllowsRenewingTheCurrentPlan() {
+        // No RazorpayClient is configured in this test (blank creds), so any initiateCheckout
+        // call fails with PaymentGatewayUnavailableException regardless of plan — the point here
+        // is that it must NOT fail earlier with SamePlanException just because the candidate
+        // already holds this plan. Since plans now expire (see expireOverdueSubscriptions),
+        // checking out for the plan you already have is a legitimate renewal, not a no-op.
         UUID candidateId = UUID.randomUUID();
-        CandidateSubscription existing = new CandidateSubscription(candidateId, SubscriptionPlan.PLUS);
-        when(subscriptionRepository.findByCandidateId(candidateId)).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> billingService.initiateCheckout(candidateId, SubscriptionPlan.PLUS))
-                .isInstanceOf(SamePlanException.class);
+                .isInstanceOf(PaymentGatewayUnavailableException.class);
     }
 
     @Test
@@ -207,6 +227,87 @@ class CandidateBillingServiceTest {
         assertThat(transaction.getStatus()).isEqualTo(TransactionStatus.PAID);
         assertThat(transaction.getRazorpayPaymentId()).isEqualTo("pay_webhook_1");
         verify(subscriptionRepository).save(any());
+    }
+
+    @Test
+    void handleWebhookEventSetsA30DayValidityPeriodOnTheSubscription() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        BillingTransaction transaction = new BillingTransaction(candidateId, SubscriptionPlan.PLUS, "order_period_1");
+        when(transactionRepository.findByRazorpayOrderId("order_period_1")).thenReturn(Optional.of(transaction));
+        when(subscriptionRepository.findByCandidateId(candidateId)).thenReturn(Optional.empty());
+        ArgumentCaptor<CandidateSubscription> savedSubscription = ArgumentCaptor.forClass(CandidateSubscription.class);
+
+        String payload =
+                "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{"
+                        + "\"id\":\"pay_period_1\",\"order_id\":\"order_period_1\"}}}}";
+        String signature = hmacSha256Hex(payload, WEBHOOK_SECRET);
+
+        billingService.handleWebhookEvent(payload, signature);
+
+        verify(subscriptionRepository).save(savedSubscription.capture());
+        Instant validUntil = savedSubscription.getValue().getCurrentPeriodEnd();
+        assertThat(validUntil).isAfter(Instant.now().plus(Duration.ofDays(29)));
+        assertThat(validUntil).isBefore(Instant.now().plus(Duration.ofDays(31)));
+    }
+
+    @Test
+    void handleWebhookEventStacksRemainingDaysWhenRenewingBeforeExpiry() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        CandidateSubscription existing = new CandidateSubscription(candidateId, SubscriptionPlan.PLUS);
+        Instant tenDaysLeft = Instant.now().plus(Duration.ofDays(10));
+        existing.changePlan(SubscriptionPlan.PLUS, tenDaysLeft);
+        when(subscriptionRepository.findByCandidateId(candidateId)).thenReturn(Optional.of(existing));
+        BillingTransaction transaction = new BillingTransaction(candidateId, SubscriptionPlan.PLUS, "order_stack_1");
+        when(transactionRepository.findByRazorpayOrderId("order_stack_1")).thenReturn(Optional.of(transaction));
+
+        String payload =
+                "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{"
+                        + "\"id\":\"pay_stack_1\",\"order_id\":\"order_stack_1\"}}}}";
+        String signature = hmacSha256Hex(payload, WEBHOOK_SECRET);
+
+        billingService.handleWebhookEvent(payload, signature);
+
+        // Should land ~40 days out (10 remaining + a fresh 30), not just ~30.
+        Instant validUntil = existing.getCurrentPeriodEnd();
+        assertThat(validUntil).isAfter(Instant.now().plus(Duration.ofDays(39)));
+        assertThat(validUntil).isBefore(Instant.now().plus(Duration.ofDays(41)));
+    }
+
+    @Test
+    void handleWebhookEventDoesNotStackWhenThePreviousPeriodAlreadyLapsed() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        CandidateSubscription existing = new CandidateSubscription(candidateId, SubscriptionPlan.PLUS);
+        existing.changePlan(SubscriptionPlan.PLUS, Instant.now().minus(Duration.ofDays(5)));
+        when(subscriptionRepository.findByCandidateId(candidateId)).thenReturn(Optional.of(existing));
+        BillingTransaction transaction = new BillingTransaction(candidateId, SubscriptionPlan.PLUS, "order_lapsed_1");
+        when(transactionRepository.findByRazorpayOrderId("order_lapsed_1")).thenReturn(Optional.of(transaction));
+
+        String payload =
+                "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{"
+                        + "\"id\":\"pay_lapsed_1\",\"order_id\":\"order_lapsed_1\"}}}}";
+        String signature = hmacSha256Hex(payload, WEBHOOK_SECRET);
+
+        billingService.handleWebhookEvent(payload, signature);
+
+        Instant validUntil = existing.getCurrentPeriodEnd();
+        assertThat(validUntil).isAfter(Instant.now().plus(Duration.ofDays(29)));
+        assertThat(validUntil).isBefore(Instant.now().plus(Duration.ofDays(31)));
+    }
+
+    @Test
+    void expireOverdueSubscriptionsDowngradesLapsedPlansAndRecordsAFreeTransaction() {
+        UUID candidateId = UUID.randomUUID();
+        CandidateSubscription lapsed = new CandidateSubscription(candidateId, SubscriptionPlan.PLUS);
+        lapsed.changePlan(SubscriptionPlan.PLUS, Instant.now().minus(Duration.ofDays(1)));
+        when(subscriptionRepository.findByCurrentPeriodEndBeforeAndPlanNot(any(), eq(SubscriptionPlan.FREE)))
+                .thenReturn(List.of(lapsed));
+
+        billingService.expireOverdueSubscriptions();
+
+        assertThat(lapsed.getPlan()).isEqualTo(SubscriptionPlan.FREE);
+        assertThat(lapsed.getCurrentPeriodEnd()).isNull();
+        verify(subscriptionRepository).save(lapsed);
+        verify(transactionRepository).save(any());
     }
 
     @Test

@@ -14,10 +14,13 @@ import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Utils;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
  * Razorpay Subscriptions — no auto-renewal in this phase. */
 @Service
 public class CandidateBillingService {
+
+    // Each paid period is 30 days. Renewing before the current period lapses stacks the new
+    // 30 days on top of whatever's left (see applyPaidTransaction) rather than discarding the
+    // remaining time; renewing after it's already lapsed just starts a fresh 30 days from now.
+    private static final Duration PAID_PLAN_PERIOD = Duration.ofDays(30);
 
     private final CandidateSubscriptionRepository subscriptionRepository;
     private final BillingTransactionRepository transactionRepository;
@@ -65,7 +73,7 @@ public class CandidateBillingService {
 
     @Transactional(readOnly = true)
     public CandidateBillingSummary getBilling(UUID candidateId) {
-        return new CandidateBillingSummary(currentPlan(candidateId), getHistory(candidateId));
+        return summaryFor(candidateId);
     }
 
     /** For other services gating a paid perk (see IdeaService's contact-number gate on the
@@ -89,20 +97,18 @@ public class CandidateBillingService {
         CandidateSubscription subscription = subscriptionRepository
                 .findByCandidateId(candidateId)
                 .orElseGet(() -> new CandidateSubscription(candidateId, plan));
-        subscription.changePlan(plan);
+        subscription.changePlan(plan, null);
         subscriptionRepository.save(subscription);
         transactionRepository.save(new BillingTransaction(candidateId, plan));
 
-        return new CandidateBillingSummary(plan, getHistory(candidateId));
+        return summaryFor(candidateId);
     }
 
+    /** Deliberately allows checkout for a plan the candidate already holds — that's a renewal
+     * (plans now expire after PAID_PLAN_PERIOD, see applyPaidTransaction), not a redundant
+     * no-op, so it must go through the same paid flow as any other upgrade. */
     @Transactional
     public CheckoutSummary initiateCheckout(UUID candidateId, SubscriptionPlan plan) {
-        // Same-plan first: a redundant "upgrade" to the plan already held is a UI bug/double-click,
-        // not a real checkout — it shouldn't need a working gateway to be rejected correctly.
-        if (currentPlan(candidateId) == plan) {
-            throw new SamePlanException();
-        }
         if (razorpayClient == null) {
             throw new PaymentGatewayUnavailableException();
         }
@@ -142,7 +148,7 @@ public class CandidateBillingService {
         if (transaction.getStatus() != TransactionStatus.PENDING) {
             // Already settled — most likely the webhook got there first. Same end state either
             // way, so just report the current plan rather than erroring.
-            return new CandidateBillingSummary(currentPlan(candidateId), getHistory(candidateId));
+            return summaryFor(candidateId);
         }
 
         JSONObject attributes = new JSONObject();
@@ -164,7 +170,7 @@ public class CandidateBillingService {
         }
 
         applyPaidTransaction(transaction, razorpayPaymentId);
-        return new CandidateBillingSummary(transaction.getPlan(), getHistory(candidateId));
+        return summaryFor(candidateId);
     }
 
     /** Only PAID transactions have a real invoice — same 404-for-not-found-and-not-owned pattern
@@ -245,8 +251,30 @@ public class CandidateBillingService {
         CandidateSubscription subscription = subscriptionRepository
                 .findByCandidateId(transaction.getCandidateId())
                 .orElseGet(() -> new CandidateSubscription(transaction.getCandidateId(), transaction.getPlan()));
-        subscription.changePlan(transaction.getPlan());
+
+        Instant now = Instant.now();
+        Instant currentPeriodEnd = subscription.getCurrentPeriodEnd();
+        // Renewing before the current period lapses stacks the new period on top of the
+        // remaining days; renewing after it's lapsed (or never had one) just starts fresh.
+        Instant renewalBase = currentPeriodEnd != null && currentPeriodEnd.isAfter(now) ? currentPeriodEnd : now;
+        subscription.changePlan(transaction.getPlan(), renewalBase.plus(PAID_PLAN_PERIOD));
         subscriptionRepository.save(subscription);
+    }
+
+    /** Daily sweep for paid plans whose period has lapsed with no renewal — downgrades them to
+     * Free and records the same kind of ₹0 "settled" BillingTransaction a manual Free downgrade
+     * produces, so it reads identically in billing history. */
+    @Scheduled(cron = "0 0 3 * * *")
+    @Transactional
+    public void expireOverdueSubscriptions() {
+        Instant now = Instant.now();
+        List<CandidateSubscription> overdue =
+                subscriptionRepository.findByCurrentPeriodEndBeforeAndPlanNot(now, SubscriptionPlan.FREE);
+        for (CandidateSubscription subscription : overdue) {
+            subscription.changePlan(SubscriptionPlan.FREE, null);
+            subscriptionRepository.save(subscription);
+            transactionRepository.save(new BillingTransaction(subscription.getCandidateId(), SubscriptionPlan.FREE));
+        }
     }
 
     private SubscriptionPlan currentPlan(UUID candidateId) {
@@ -254,6 +282,13 @@ public class CandidateBillingService {
                 .findByCandidateId(candidateId)
                 .map(CandidateSubscription::getPlan)
                 .orElse(SubscriptionPlan.FREE);
+    }
+
+    private CandidateBillingSummary summaryFor(UUID candidateId) {
+        CandidateSubscription subscription = subscriptionRepository.findByCandidateId(candidateId).orElse(null);
+        SubscriptionPlan plan = subscription == null ? SubscriptionPlan.FREE : subscription.getPlan();
+        Instant validUntil = subscription == null ? null : subscription.getCurrentPeriodEnd();
+        return new CandidateBillingSummary(plan, validUntil, getHistory(candidateId));
     }
 
     private List<BillingTransactionSummary> getHistory(UUID candidateId) {

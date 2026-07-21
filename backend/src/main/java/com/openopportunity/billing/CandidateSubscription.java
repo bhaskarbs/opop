@@ -28,6 +28,12 @@ public class CandidateSubscription {
     @Column(nullable = false, length = 20)
     private SubscriptionPlan plan;
 
+    // Null for Free (or a candidate who's never subscribed) — no active paid period. Set to
+    // ~30 days out on every successful paid checkout; a lapsed row here is what
+    // CandidateBillingService.expireOverdueSubscriptions sweeps back to Free.
+    @Column(name = "current_period_end")
+    private Instant currentPeriodEnd;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -42,8 +48,9 @@ public class CandidateSubscription {
         this.updatedAt = Instant.now();
     }
 
-    public void changePlan(SubscriptionPlan plan) {
+    public void changePlan(SubscriptionPlan plan, Instant currentPeriodEnd) {
         this.plan = plan;
+        this.currentPeriodEnd = currentPeriodEnd;
     }
 
     @PreUpdate
@@ -61,6 +68,10 @@ public class CandidateSubscription {
 
     public SubscriptionPlan getPlan() {
         return plan;
+    }
+
+    public Instant getCurrentPeriodEnd() {
+        return currentPeriodEnd;
     }
 
     public Instant getUpdatedAt() {
