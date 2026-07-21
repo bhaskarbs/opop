@@ -109,6 +109,7 @@
     "statuses": {
       "approved": "Approved",
       "pendingReview": "Pending review",
+      "updatedPendingReview": "Updated — changes pending review",
       "rejected": "Rejected"
     },
     "empty": "You haven't submitted any ideas yet."

@@ -272,6 +272,7 @@ public class IdeaService {
                 idea.getTeamSize(),
                 idea.getTimeline(),
                 idea.getStatus(),
+                idea.isEdited(),
                 idea.getInterestedCount(),
                 idea.getCreatedAt());
     }
@@ -294,6 +295,7 @@ public class IdeaService {
                 idea.getVideoLink(),
                 idea.getContactEmail(),
                 idea.getStatus(),
+                idea.isEdited(),
                 idea.getInterestedCount(),
                 idea.getCreatedAt());
     }
