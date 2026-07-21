@@ -23,6 +23,8 @@ import { ROUTES } from '../../routes/paths'
 const NUDGE_MIN_DAYS = 30
 const MS_PER_DAY = 86_400_000
 const MAX_RECENT_RECORDINGS = 2
+const MAX_MATCHED_JOBS = 4
+const MAX_FEATURED_STARTUPS = 3
 
 const ACTIVITY_STATUS_COLOR_CLASS: Record<ApplicationStatus, string> = {
   APPLIED: 'bg-primary',
@@ -64,7 +66,10 @@ export default function CandidateDashboardPage() {
 
   const [profile, setProfile] = useState<CandidateProfileResponse | null>(null)
   const [jobs, setJobs] = useState<DisplayJob[]>([])
-  const [ideas, setIdeas] = useState<IdeaSummary[]>([])
+  // Ideas have no structured skills list (unlike jobs), so there's no reliable signal to match
+  // them against a candidate's profile — a random sample is picked once when the data arrives
+  // (not during render, since Math.random() is impure) rather than filtered by skill.
+  const [featuredStartups, setFeaturedStartups] = useState<IdeaSummary[]>([])
   const [applications, setApplications] = useState<ApplicationSummary[]>([])
   const [myInterests, setMyInterests] = useState<MyIdeaInterestSummary[]>([])
   const [mockInterviewSessions, setMockInterviewSessions] = useState<MockInterviewSessionSummary[]>(
@@ -99,7 +104,9 @@ export default function CandidateDashboardPage() {
           if (cancelled) return
           setProfile(profileData)
           setJobs(jobResults.map(toDisplayJob))
-          setIdeas(ideaResults)
+          setFeaturedStartups(
+            [...ideaResults].sort(() => Math.random() - 0.5).slice(0, MAX_FEATURED_STARTUPS),
+          )
           setApplications(applicationResults)
           setMyInterests(interestResults)
           setMockInterviewSessions(sessionResults)
@@ -131,23 +138,10 @@ export default function CandidateDashboardPage() {
   const matchedJobs = useMemo(() => {
     if (!profile) return []
     const skillSet = new Set(profile.skills.map((skill) => skill.toLowerCase()))
-    return jobs.filter((job) => job.tags.some((tag) => skillSet.has(tag.toLowerCase())))
+    return jobs
+      .filter((job) => job.tags.some((tag) => skillSet.has(tag.toLowerCase())))
+      .slice(0, MAX_MATCHED_JOBS)
   }, [profile, jobs])
-
-  // Ideas have no structured skills list (unlike jobs), so matching falls back to checking
-  // whether a skill shows up in the idea's own problem statement — the closest real signal
-  // available from IdeaSummary.
-  const matchedStartups = useMemo(() => {
-    if (!profile) return []
-    const skills = profile.skills.map((skill) => skill.toLowerCase()).filter(Boolean)
-    if (skills.length === 0) return []
-    return ideas
-      .filter((idea) => {
-        const problem = idea.problem.toLowerCase()
-        return skills.some((skill) => problem.includes(skill))
-      })
-      .slice(0, 3)
-  }, [profile, ideas])
 
   // Real activity feed: recent job applications (status-aware) merged with recent partnership
   // interests, newest first — no "viewed by recruiter" / "profile views" tracking exists in the
@@ -331,7 +325,7 @@ export default function CandidateDashboardPage() {
               {t('dashboard.seeAll')}
             </Link>
           </div>
-          {matchedStartups.length === 0 ? (
+          {featuredStartups.length === 0 ? (
             <div className="mb-7 rounded-xl border border-dashed border-[#D7DBE2] bg-surface p-7 text-center">
               <div className="mx-auto mb-3.5 flex h-11 w-11 items-center justify-center rounded-[10px] bg-neutral-tint">
                 <svg
@@ -360,7 +354,7 @@ export default function CandidateDashboardPage() {
             </div>
           ) : (
             <div className="mb-7 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3.5">
-              {matchedStartups.map((idea) => (
+              {featuredStartups.map((idea) => (
                 <div
                   key={idea.id}
                   className="rounded-xl border border-border bg-surface px-[18px] py-4"

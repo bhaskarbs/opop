@@ -18,12 +18,12 @@
       "broadenSearch": "Broaden your search"
     },
     "viewJob": "View job",
-    "startupsMatched": "Startups matching your skill set",
+    "startupsMatched": "Startup ideas you might like",
     "seeAll": "See all →",
     "applyForPartnership": "Apply for partnership",
     "noMatchedStartups": {
-      "title": "No startups matching your skills right now",
-      "body": "We'll surface a startup idea here as soon as one matches your skills. Meanwhile, explore what's already posted.",
+      "title": "No startup ideas posted yet",
+      "body": "We'll surface a startup idea here as soon as one is posted. Meanwhile, explore what's already posted.",
       "explore": "Explore partnerships"
     },
     "communityBanner": {
