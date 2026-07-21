@@ -2,5 +2,6 @@ export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from '.
 export { LinkButton, type LinkButtonProps } from './LinkButton'
 export { Card, CardTitle, CardDescription, type CardProps } from './Card'
 export { Input, type InputProps } from './Input'
+export { PasswordInput, type PasswordInputProps } from './PasswordInput'
 export { Badge, type BadgeProps, type BadgeVariant } from './Badge'
 export { Tag, type TagProps, type TagVariant } from './Tag'
