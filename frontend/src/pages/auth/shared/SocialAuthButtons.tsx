@@ -21,18 +21,6 @@ function GoogleIcon() {
   )
 }
 
-function LinkedInIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="#0A66C2">
-      <rect x="2" y="2" width="20" height="20" rx="3" />
-      <path
-        fill="#FFFFFF"
-        d="M7.3 9.7h2.7v8.3H7.3zM8.65 8.4a1.55 1.55 0 1 1 0-3.1 1.55 1.55 0 0 1 0 3.1zM12.1 9.7h2.6v1.14c.37-.6 1.15-1.34 2.5-1.34 2.7 0 3.2 1.78 3.2 4.1v4.4h-2.7v-3.9c0-.93-.02-2.1-1.3-2.1-1.3 0-1.5 1-1.5 2.05v3.95h-2.8z"
-      />
-    </svg>
-  )
-}
-
 export function SocialAuthButtons({
   onGoogleCredential,
 }: {
@@ -62,13 +50,6 @@ export function SocialAuthButtons({
             {t('social.continueWithGoogle')}
           </button>
         )}
-        <button
-          type="button"
-          className="flex items-center justify-center gap-2.5 rounded-control border border-border bg-surface py-2.5 text-sm font-semibold text-ink"
-        >
-          <LinkedInIcon />
-          {t('social.continueWithLinkedIn')}
-        </button>
       </div>
     </>
   )
