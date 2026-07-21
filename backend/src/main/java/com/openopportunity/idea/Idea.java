@@ -74,6 +74,11 @@ public class Idea {
     @Column(name = "interested_count", nullable = false)
     private int interestedCount;
 
+    // Flips to true the first time the submitter edits the idea (see update()) and stays true —
+    // it marks "this PENDING state is a re-review after an edit," not "brand new submission."
+    @Column(nullable = false)
+    private boolean edited;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -118,10 +123,12 @@ public class Idea {
         this.contactEmail = contactEmail;
         this.status = IdeaStatus.PENDING;
         this.interestedCount = 0;
+        this.edited = false;
     }
 
     /** Edits send the idea back to PENDING — an approved/rejected idea's content may have
-     * changed enough to need another look, and there's no partial-edit tracking to tell. */
+     * changed enough to need another look, and there's no partial-edit tracking to tell. Also
+     * flips `edited`, so the UI can tell this apart from a first-time submission. */
     public void update(
             String title,
             String category,
@@ -148,6 +155,7 @@ public class Idea {
         this.videoLink = videoLink;
         this.contactEmail = contactEmail;
         this.status = IdeaStatus.PENDING;
+        this.edited = true;
     }
 
     public void approve() {
@@ -244,6 +252,10 @@ public class Idea {
 
     public int getInterestedCount() {
         return interestedCount;
+    }
+
+    public boolean isEdited() {
+        return edited;
     }
 
     public Instant getCreatedAt() {

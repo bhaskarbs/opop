@@ -26,6 +26,13 @@ const STATUS_KEYS: Record<BackendIdeaStatus, string> = {
   REJECTED: 'myIdeas.statuses.rejected',
 }
 
+/** A PENDING idea that's been edited before is back in the review queue because of that edit,
+ * not because it's a fresh submission — call that out separately from a first-time PENDING. */
+function statusLabelKey(idea: IdeaSummary): string {
+  if (idea.status === 'PENDING' && idea.edited) return 'myIdeas.statuses.updatedPendingReview'
+  return STATUS_KEYS[idea.status]
+}
+
 const STATUS_BADGE_CLASSES: Record<BackendIdeaStatus, string> = {
   APPROVED: 'bg-teal-tint text-teal',
   PENDING: 'bg-amber-tint text-amber',
@@ -164,7 +171,7 @@ export default function MyIdeasPage() {
                       <span
                         className={`rounded-full px-2.5 py-[3px] text-[11px] font-bold ${STATUS_BADGE_CLASSES[idea.status]}`}
                       >
-                        {t(STATUS_KEYS[idea.status])}
+                        {t(statusLabelKey(idea))}
                       </span>
                     </div>
                     <div className="text-[13px] text-slate">

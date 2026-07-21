@@ -74,7 +74,9 @@ export default function AdminIdeaApprovalsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">{error}</div>
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {error}
+        </div>
       )}
 
       {loading ? (
@@ -110,7 +112,9 @@ export default function AdminIdeaApprovalsPage() {
                   </div>
                 </div>
                 <span className="h-fit rounded-full bg-amber-tint px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-amber">
-                  {t('myIdeas.statuses.pendingReview')}
+                  {idea.edited
+                    ? t('myIdeas.statuses.updatedPendingReview')
+                    : t('myIdeas.statuses.pendingReview')}
                 </span>
               </div>
 
@@ -121,7 +125,9 @@ export default function AdminIdeaApprovalsPage() {
                   <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
                     {t('adminApprovals.stage')}
                   </div>
-                  <div className="text-[13px] font-semibold text-ink">{t(STAGE_KEYS[idea.stage])}</div>
+                  <div className="text-[13px] font-semibold text-ink">
+                    {t(STAGE_KEYS[idea.stage])}
+                  </div>
                 </div>
                 <div>
                   <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">

@@ -18,6 +18,9 @@ export interface IdeaSummary {
   teamSize: number | null
   timeline: string | null
   status: BackendIdeaStatus
+  // True once the submitter has edited the idea at least once — the frontend uses this to tell
+  // a re-review-after-edit PENDING idea apart from a brand new submission.
+  edited: boolean
   interestedCount: number
   createdAt: string
 }
@@ -39,6 +42,7 @@ export interface IdeaDetail {
   videoLink: string | null
   contactEmail: string
   status: BackendIdeaStatus
+  edited: boolean
   interestedCount: number
   createdAt: string
 }
