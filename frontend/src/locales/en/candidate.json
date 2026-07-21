@@ -19,8 +19,7 @@
     },
     "viewJob": "View job",
     "startupsMatched": "Startup ideas you might like",
-    "seeAll": "See all →",
-    "applyForPartnership": "Apply for partnership",
+    "learnMore": "Learn more →",
     "noMatchedStartups": {
       "title": "No startup ideas posted yet",
       "body": "We'll surface a startup idea here as soon as one is posted. Meanwhile, explore what's already posted.",

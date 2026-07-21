@@ -322,7 +322,7 @@ export default function CandidateDashboardPage() {
               to={localize(ROUTES.partnerships)}
               className="text-[13.5px] font-bold text-primary no-underline"
             >
-              {t('dashboard.seeAll')}
+              {t('dashboard.learnMore')}
             </Link>
           </div>
           {featuredStartups.length === 0 ? (
@@ -365,13 +365,7 @@ export default function CandidateDashboardPage() {
                     </div>
                     <div className="text-[14.5px] font-bold text-ink">{idea.submitterName}</div>
                   </div>
-                  <p className="mb-3 text-[13px] leading-[1.5] text-slate">{idea.problem}</p>
-                  <Link
-                    to={localize(ROUTES.ideaDetail(idea.id))}
-                    className="block rounded-lg bg-amber-tint py-2 text-center text-[13px] font-bold text-amber no-underline"
-                  >
-                    {t('dashboard.applyForPartnership')}
-                  </Link>
+                  <p className="text-[13px] leading-[1.5] text-slate">{idea.problem}</p>
                 </div>
               ))}
             </div>
