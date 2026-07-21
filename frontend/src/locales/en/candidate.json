@@ -164,6 +164,7 @@
     "validUntilNote": "This plan doesn't renew automatically — come back before then to keep your benefits.",
     "billingHistory": "Billing history",
     "noHistory": "No billing history yet.",
+    "showMoreHistory": "Show more",
     "downloadInvoice": "Download invoice",
     "downloadingInvoice": "Downloading…",
     "invoiceError": "Couldn't download the invoice. Please try again.",
