@@ -74,7 +74,11 @@
     },
     "noResults": "No jobs match your filters. Try clearing some filters or searching a different keyword.",
     "errorLoading": "Something went wrong loading jobs.",
-    "showMore": "Show more jobs"
+    "showMore": "Show more jobs",
+    "skillsPlaceholder": "Add a job title, skill, or keyword",
+    "locationsPlaceholder": "Add a city or remote",
+    "removeSkill": "Remove {{value}}",
+    "removeLocation": "Remove {{value}}"
   },
   "filters": {
     "heading": "Filters",

@@ -2,6 +2,8 @@ import { type SubmitEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
+import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
+import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ApiError } from '../../lib/apiClient'
 import { applicationsApi } from '../../lib/applicationsApi'
 import { jobsApi } from '../../lib/jobsApi'
@@ -10,9 +12,14 @@ import { useAuthStore } from '../../stores/authStore'
 import { FilterSidebar } from './FilterSidebar'
 import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './filterState'
 import { ResultCard } from './ResultCard'
+import { SearchTagAutocompleteField } from './SearchTagAutocompleteField'
 import { toDisplayJob, type DisplayJob } from './jobDisplay'
 
 const PAGE_SIZE = 10
+
+// Keyword suggestions combine job roles (TRENDING_SKILLS, despite the name) with individual
+// technical/soft skills, since candidates search by either — deduplicated in case of overlap.
+const KEYWORD_SUGGESTIONS = [...new Set([...TRENDING_SKILLS, ...SKILL_SUGGESTIONS])]
 
 type SortOption = 'relevant' | 'newest' | 'salary'
 
@@ -31,8 +38,11 @@ export default function JobSearchPage() {
   const authStatus = useAuthStore((state) => state.status)
   const user = useAuthStore((state) => state.user)
 
-  const [query, setQuery] = useState(initialQuery)
-  const [location, setLocation] = useState(initialLocation)
+  // Each is a set of tags rather than free text — typing a candidate skill/keyword doesn't
+  // reach this state at all (it lives inside SearchTagAutocompleteField's own draft state)
+  // until it's actually added as a tag, so the search effect below never fires on a keystroke.
+  const [skills, setSkills] = useState<string[]>(initialQuery ? [initialQuery] : [])
+  const [locations, setLocations] = useState<string[]>(initialLocation ? [initialLocation] : [])
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery || initialLocation))
   const [filters, setFilters] = useState<FilterState>(createDefaultFilterState())
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
@@ -80,8 +90,8 @@ export default function JobSearchPage() {
       setError(null)
       jobsApi
         .search({
-          q: query.trim() || undefined,
-          location: location.trim() || undefined,
+          q: skills.length > 0 ? skills : undefined,
+          location: locations.length > 0 ? locations : undefined,
           level: [...filters.levels].map(experienceLevelToBackend),
           mode: [...filters.modes].map(workModeToBackend),
           minSalaryLakhs:
@@ -98,12 +108,22 @@ export default function JobSearchPage() {
         .finally(() => setLoading(false))
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [hasSearched, query, location, filters, sortBy, t])
+  }, [hasSearched, skills, locations, filters, sortBy, t])
 
   const visibleJobs = jobs.slice(0, jobsShown)
 
+  function handleSkillsChange(next: string[]) {
+    setSkills(next)
+    if (next.length > 0 || locations.length > 0) setHasSearched(true)
+  }
+
+  function handleLocationsChange(next: string[]) {
+    setLocations(next)
+    if (skills.length > 0 || next.length > 0) setHasSearched(true)
+  }
+
   function runSearch() {
-    if (query.trim() || location.trim()) {
+    if (skills.length > 0 || locations.length > 0) {
       setHasSearched(true)
     }
   }
@@ -114,7 +134,7 @@ export default function JobSearchPage() {
   }
 
   function searchTrendingSkill(skill: string) {
-    setQuery(skill)
+    setSkills((prev) => (prev.includes(skill) ? prev : [...prev, skill]))
     setHasSearched(true)
   }
 
@@ -125,48 +145,50 @@ export default function JobSearchPage() {
           onSubmit={handleSubmit}
           className="mx-auto flex max-w-[1280px] flex-wrap gap-2.5 px-6 py-5"
         >
-          <label className="flex min-w-[220px] flex-[2] items-center gap-2.5 rounded-control border border-border px-3.5 py-2.5">
-            <svg
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="shrink-0 text-fog"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4.3-4.3" />
-            </svg>
-            <input
-              type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t('landing.search.jobPlaceholder')}
-              className="w-full text-[14.5px] text-ink outline-none"
-            />
-          </label>
-          <label className="flex min-w-[160px] flex-1 items-center gap-2.5 rounded-control border border-border px-3.5 py-2.5">
-            <svg
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="shrink-0 text-fog"
-            >
-              <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            <input
-              type="text"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              placeholder={t('landing.search.locationPlaceholder')}
-              className="w-full text-[14.5px] text-ink outline-none"
-            />
-          </label>
+          <SearchTagAutocompleteField
+            values={skills}
+            onChange={handleSkillsChange}
+            suggestions={KEYWORD_SUGGESTIONS}
+            placeholder={t('jobSearch.skillsPlaceholder')}
+            removeLabel={(value) => t('jobSearch.removeSkill', { value })}
+            containerClassName="min-w-[220px] flex-[2]"
+            icon={
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="shrink-0 text-fog"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+            }
+          />
+          <SearchTagAutocompleteField
+            values={locations}
+            onChange={handleLocationsChange}
+            suggestions={LOCATION_SUGGESTIONS}
+            placeholder={t('jobSearch.locationsPlaceholder')}
+            removeLabel={(value) => t('jobSearch.removeLocation', { value })}
+            containerClassName="min-w-[160px] flex-1"
+            icon={
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="shrink-0 text-fog"
+              >
+                <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            }
+          />
           <button
             type="submit"
             className="min-h-[44px] rounded-control bg-primary px-[26px] text-[14.5px] font-bold text-white hover:bg-primary/90"

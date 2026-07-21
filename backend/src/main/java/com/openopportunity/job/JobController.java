@@ -32,8 +32,8 @@ public class JobController {
 
     @GetMapping
     public List<JobSummary> search(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String location,
+            @RequestParam(required = false) List<String> q,
+            @RequestParam(required = false) List<String> location,
             @RequestParam(required = false) List<ExperienceLevel> level,
             @RequestParam(required = false) List<WorkMode> mode,
             @RequestParam(required = false) BigDecimal minSalaryLakhs,
