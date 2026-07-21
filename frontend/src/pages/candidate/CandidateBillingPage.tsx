@@ -23,6 +23,14 @@ function toBackendPlan(key: PlanKey): BackendSubscriptionPlan {
   return key.toUpperCase() as BackendSubscriptionPlan
 }
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 /** Loads the Razorpay Checkout script at most once per page load — cheap to call from every
  * upgrade click, since a second call is a no-op once the tag is already in the DOM. */
 function loadRazorpayCheckoutScript(): Promise<void> {
@@ -42,6 +50,7 @@ export default function CandidateBillingPage() {
   const { t } = useTranslation('candidate')
 
   const [currentPlan, setCurrentPlan] = useState<PlanKey>('free')
+  const [currentPlanValidUntil, setCurrentPlanValidUntil] = useState<string | null>(null)
   const [history, setHistory] = useState<BillingTransactionSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -57,6 +66,7 @@ export default function CandidateBillingPage() {
       .then((summary) => {
         if (cancelled) return
         setCurrentPlan(toPlanKey(summary.currentPlan))
+        setCurrentPlanValidUntil(summary.currentPlanValidUntil)
         setHistory(summary.history)
       })
       .catch((caught) => {
@@ -80,6 +90,7 @@ export default function CandidateBillingPage() {
     try {
       const summary = await billingApi.changePlan('FREE')
       setCurrentPlan(toPlanKey(summary.currentPlan))
+      setCurrentPlanValidUntil(summary.currentPlanValidUntil)
       setHistory(summary.history)
     } catch (caught) {
       setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
@@ -112,6 +123,7 @@ export default function CandidateBillingPage() {
             })
             .then((summary) => {
               setCurrentPlan(toPlanKey(summary.currentPlan))
+              setCurrentPlanValidUntil(summary.currentPlanValidUntil)
               setHistory(summary.history)
             })
             .catch((caught) => {
@@ -159,9 +171,17 @@ export default function CandidateBillingPage() {
   return (
     <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16">
       <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('billing.title')}</h1>
-      <p className="mb-6 text-sm text-slate">
+      <p className={`text-sm text-slate ${currentPlanValidUntil ? 'mb-1' : 'mb-6'}`}>
         {t('billing.currentPlan', { plan: t(`billing.plans.${currentPlan}.name`) })}
       </p>
+      {currentPlanValidUntil && (
+        <p className="mb-6 text-[15px] text-fog">
+          <span className="font-bold">
+            {t('billing.validUntil', { date: formatDate(currentPlanValidUntil) })}
+          </span>{' '}
+          {t('billing.validUntilNote')}
+        </p>
+      )}
 
       {loadError && (
         <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
@@ -225,21 +245,23 @@ export default function CandidateBillingPage() {
               </div>
               <button
                 type="button"
-                disabled={isCurrent || changingPlan !== null}
+                disabled={(isCurrent && key === 'free') || changingPlan !== null}
                 onClick={() => (key === 'free' ? handleDowngradeToFree() : handleUpgrade(key))}
                 className={`rounded-[9px] border py-2.5 text-[13.5px] font-bold disabled:cursor-not-allowed ${
-                  isCurrent
+                  isCurrent && key === 'free'
                     ? 'border-border bg-neutral-tint text-fog'
                     : 'border-ink bg-ink text-white disabled:opacity-60'
                 }`}
               >
-                {isCurrent
+                {isCurrent && key === 'free'
                   ? t('billing.currentPlanBadge')
                   : isChanging
                     ? t('billing.changing')
                     : key === 'free'
                       ? t('billing.downgrade')
-                      : t('billing.upgrade')}
+                      : isCurrent
+                        ? t('billing.renew')
+                        : t('billing.upgrade')}
               </button>
             </div>
           )
@@ -262,21 +284,15 @@ export default function CandidateBillingPage() {
             return (
               <div
                 key={entry.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
+                className="grid grid-cols-[1.4fr_1fr_0.8fr_0.8fr_1.2fr] items-center gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
               >
                 <div className="text-[13.5px] font-semibold text-ink">{planLabel}</div>
-                <div className="text-[13px] text-fog">
-                  {new Date(entry.createdAt).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </div>
+                <div className="text-[13px] text-fog">{formatDate(entry.createdAt)}</div>
                 <div className="text-[13.5px] font-bold text-ink">
                   ₹{entry.amountRupees.toLocaleString()}
                 </div>
                 <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${
                     entry.status === 'PAID'
                       ? 'bg-teal-tint text-teal'
                       : entry.status === 'FAILED'
@@ -295,7 +311,7 @@ export default function CandidateBillingPage() {
                     type="button"
                     disabled={downloadingInvoiceId === entry.id}
                     onClick={() => handleDownloadInvoice(entry.id)}
-                    className="text-[12.5px] font-bold text-primary disabled:opacity-60"
+                    className="justify-self-end text-[12.5px] font-bold text-primary disabled:opacity-60"
                   >
                     {downloadingInvoiceId === entry.id
                       ? t('billing.downloadingInvoice')

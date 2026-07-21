@@ -14,6 +14,9 @@ export interface BillingTransactionSummary {
 
 export interface CandidateBillingSummary {
   currentPlan: BackendSubscriptionPlan
+  // Null for Free (or a candidate who's never subscribed). Paid plans expire 30 days after the
+  // payment that (re)activated them — see CandidateBillingService.expireOverdueSubscriptions.
+  currentPlanValidUntil: string | null
   history: BillingTransactionSummary[]
 }
 
