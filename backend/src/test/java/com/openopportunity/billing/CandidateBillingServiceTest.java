@@ -7,6 +7,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.auth.User;
+import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
 import com.openopportunity.billing.dto.CandidateBillingSummary;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
@@ -35,6 +38,9 @@ class CandidateBillingServiceTest {
     @Mock
     private BillingTransactionRepository transactionRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private CandidateBillingService billingService;
 
     @BeforeEach
@@ -42,8 +48,8 @@ class CandidateBillingServiceTest {
         // Blank key id/secret — razorpayClient stays null, same as a real deployment with no
         // Razorpay creds configured. Only handleWebhookEvent needs a real (non-blank) secret,
         // since that path never touches the Razorpay HTTP client.
-        billingService =
-                new CandidateBillingService(subscriptionRepository, transactionRepository, "", "", WEBHOOK_SECRET);
+        billingService = new CandidateBillingService(
+                subscriptionRepository, transactionRepository, userRepository, "", "", WEBHOOK_SECRET);
     }
 
     @Test
@@ -137,9 +143,47 @@ class CandidateBillingServiceTest {
     }
 
     @Test
+    void generateInvoiceProducesAPdfForAPaidTransaction() {
+        UUID candidateId = UUID.randomUUID();
+        BillingTransaction transaction = new BillingTransaction(candidateId, SubscriptionPlan.PLUS, "order_1");
+        transaction.markPaid("pay_1");
+        transaction.onCreate(); // normally set by JPA's @PrePersist on save; this test never persists
+        when(transactionRepository.findById(transaction.getId())).thenReturn(Optional.of(transaction));
+        when(userRepository.findById(candidateId))
+                .thenReturn(Optional.of(new User("candidate@example.com", "hash", "Jordan Candidate", UserRole.CANDIDATE)));
+
+        byte[] pdf = billingService.generateInvoice(candidateId, transaction.getId());
+
+        assertThat(pdf).isNotEmpty();
+        assertThat(new String(pdf, 0, 5, StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+    }
+
+    @Test
+    void generateInvoiceRejectsATransactionThatWasNeverPaid() {
+        UUID candidateId = UUID.randomUUID();
+        BillingTransaction transaction = new BillingTransaction(candidateId, SubscriptionPlan.PLUS, "order_1");
+        when(transactionRepository.findById(transaction.getId())).thenReturn(Optional.of(transaction));
+
+        assertThatThrownBy(() -> billingService.generateInvoice(candidateId, transaction.getId()))
+                .isInstanceOf(BillingTransactionNotFoundException.class);
+    }
+
+    @Test
+    void generateInvoiceRejectsATransactionOwnedBySomeoneElse() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        BillingTransaction transaction = new BillingTransaction(ownerId, SubscriptionPlan.PLUS, "order_1");
+        transaction.markPaid("pay_1");
+        when(transactionRepository.findById(transaction.getId())).thenReturn(Optional.of(transaction));
+
+        assertThatThrownBy(() -> billingService.generateInvoice(otherId, transaction.getId()))
+                .isInstanceOf(BillingTransactionNotFoundException.class);
+    }
+
+    @Test
     void handleWebhookEventIgnoresEventsWhenNoWebhookSecretIsConfigured() {
-        CandidateBillingService noSecretService =
-                new CandidateBillingService(subscriptionRepository, transactionRepository, "", "", "");
+        CandidateBillingService noSecretService = new CandidateBillingService(
+                subscriptionRepository, transactionRepository, userRepository, "", "", "");
 
         noSecretService.handleWebhookEvent("{\"event\":\"payment.captured\"}", "any-signature");
 

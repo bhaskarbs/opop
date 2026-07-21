@@ -1,5 +1,5 @@
 import { useAuthStore } from '../stores/authStore'
-import { request } from './apiClient'
+import { blobRequest, request } from './apiClient'
 
 export type BackendSubscriptionPlan = 'FREE' | 'PLUS' | 'PRO'
 export type BillingTransactionStatus = 'PENDING' | 'PAID' | 'FAILED'
@@ -60,4 +60,7 @@ export const billingApi = {
       body: JSON.stringify(payload),
       headers: authHeaders(),
     }),
+  // Only ever called for PAID history rows — see CandidateBillingService.generateInvoice.
+  invoice: (transactionId: string) =>
+    blobRequest(`/api/candidate/billing/transactions/${transactionId}/invoice`, authHeaders()),
 }

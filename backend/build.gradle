@@ -34,8 +34,10 @@ dependencies {
 	implementation 'com.google.api-client:google-api-client:2.7.0'
 	// Generates mock-interview questions via the Claude API (com.openopportunity.mockinterview.MockInterviewQuestionService).
 	implementation 'com.anthropic:anthropic-java:2.49.0'
-	// Candidate billing checkout/payments (com.openopportunity.billing.RazorpayConfig).
+	// Candidate billing checkout/payments (com.openopportunity.billing.CandidateBillingService).
 	implementation 'com.razorpay:razorpay-java:1.4.9'
+	// Generates the candidate billing invoice PDF (com.openopportunity.billing.InvoicePdfGenerator).
+	implementation 'org.apache.pdfbox:pdfbox:2.0.37'
 	runtimeOnly 'org.postgresql:postgresql'
 	// Lets the JDBC URL connect through the Unix socket Cloud Run mounts at /cloudsql
 	// (see infra/run.tf) instead of a raw TCP host:port — only exercised in that
