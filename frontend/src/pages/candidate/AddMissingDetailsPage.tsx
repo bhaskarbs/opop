@@ -5,7 +5,10 @@ import { Button } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
-import { deriveCompletedSections, profileCompletionPercent } from '../../lib/candidateProfileCompletion'
+import {
+  deriveCompletedSections,
+  profileCompletionPercent,
+} from '../../lib/candidateProfileCompletion'
 import { PROFILE_CHECKLIST, type ChecklistKey } from '../../mocks/candidateProfile'
 import { ROUTES } from '../../routes/paths'
 
@@ -246,18 +249,10 @@ export default function AddMissingDetailsPage() {
                 onChange={(event) => setMobile(event.target.value)}
                 className="min-w-[160px] flex-1 rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
               />
-              {/* No real OTP/SMS provider is wired up — this stays a cosmetic no-op, matching
-                  the mock, while "Verify & save" below does the real persistence. */}
-              <button
-                type="button"
-                className="rounded-control border border-border px-[18px] text-[13.5px] font-bold text-primary"
-              >
-                {t('addDetails.sendOtp')}
-              </button>
             </div>
             {mobileError && <p className="mb-3 text-[13px] text-danger">{mobileError}</p>}
             <Button type="button" onClick={saveMobile} disabled={savingMobile}>
-              {t('addDetails.verifyAndSave')}
+              {t('addDetails.save')}
             </Button>
           </SectionCard>
 

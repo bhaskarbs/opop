@@ -21,6 +21,7 @@ const NAV_SECTIONS = [
   { labelKey: 'profile.nav.resume', href: '#resume' },
   { labelKey: 'profile.nav.skills', href: '#skills' },
   { labelKey: 'profile.nav.lifeGoals', href: '#goals' },
+  { labelKey: 'profile.nav.workPreferences', href: '#preferences' },
   { labelKey: 'profile.nav.accountSettings', href: '#account' },
 ]
 
@@ -72,6 +73,12 @@ export default function CandidateProfilePage() {
   const [goalsError, setGoalsError] = useState<string | null>(null)
   const [savedGoals, setSavedGoals] = useState(false)
 
+  const [workMode, setWorkMode] = useState('Remote')
+  const [openTo, setOpenTo] = useState('Jobs only')
+  const [savingPrefs, setSavingPrefs] = useState(false)
+  const [prefsError, setPrefsError] = useState<string | null>(null)
+  const [savedPrefs, setSavedPrefs] = useState(false)
+
   useEffect(() => {
     let cancelled = false
     candidateApi
@@ -94,6 +101,8 @@ export default function CandidateProfilePage() {
         setSkills(data.skills)
         setLifeGoals(data.lifeGoals ?? '')
         setWorkCulture(data.workCulture ?? '')
+        setWorkMode(data.workModePreference ?? 'Remote')
+        setOpenTo(data.openToPreference ?? 'Jobs only')
       })
       .catch((error) => {
         if (!cancelled) {
@@ -186,6 +195,21 @@ export default function CandidateProfilePage() {
       setGoalsError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {
       setSavingGoals(false)
+    }
+  }
+
+  async function handleSavePrefs() {
+    setPrefsError(null)
+    setSavingPrefs(true)
+    try {
+      const updated = await candidateApi.updatePreferences({ workMode, openTo })
+      setProfile(updated)
+      setSavedPrefs(true)
+      setTimeout(() => setSavedPrefs(false), 2000)
+    } catch (error) {
+      setPrefsError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    } finally {
+      setSavingPrefs(false)
     }
   }
 
@@ -444,7 +468,7 @@ export default function CandidateProfilePage() {
             />
           </Card>
 
-          <Card id="goals" className="p-[26px]">
+          <Card id="goals" className="mb-[18px] p-[26px]">
             <h2 className="mb-1.5 text-base font-bold text-ink">{t('profile.nav.lifeGoals')}</h2>
             <p className="mb-3.5 text-[13px] text-fog">{t('profile.lifeGoalsBody')}</p>
             <textarea
@@ -467,6 +491,58 @@ export default function CandidateProfilePage() {
                 {t('profile.saveChanges')}
               </Button>
               {savedGoals && (
+                <span className="text-sm font-semibold text-teal">{t('profile.saved')}</span>
+              )}
+            </div>
+          </Card>
+
+          <Card id="preferences" className="p-[26px]">
+            <h2 className="mb-1.5 text-base font-bold text-ink">
+              {t('profile.nav.workPreferences')}
+            </h2>
+            <p className="mb-3.5 text-[13px] text-fog">{t('profile.workPreferencesBody')}</p>
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div className="flex flex-col">
+                <label htmlFor="workMode" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('public:filters.workMode.heading')}
+                </label>
+                <select
+                  id="workMode"
+                  value={workMode}
+                  onChange={(event) => setWorkMode(event.target.value)}
+                  className="rounded-control border border-border bg-surface px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                >
+                  <option value="Remote">{t('public:filters.workMode.remote')}</option>
+                  <option value="Hybrid">{t('public:filters.workMode.hybrid')}</option>
+                  <option value="On-site">{t('public:filters.workMode.onSite')}</option>
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="openTo" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('addDetails.openTo')}
+                </label>
+                <select
+                  id="openTo"
+                  value={openTo}
+                  onChange={(event) => setOpenTo(event.target.value)}
+                  className="rounded-control border border-border bg-surface px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                >
+                  <option value="Jobs only">{t('addDetails.openToOptions.jobsOnly')}</option>
+                  <option value="Jobs & partnerships">
+                    {t('addDetails.openToOptions.jobsAndPartnerships')}
+                  </option>
+                  <option value="Jobs, partnerships & community roles">
+                    {t('addDetails.openToOptions.jobsPartnershipsAndCommunity')}
+                  </option>
+                </select>
+              </div>
+            </div>
+            {prefsError && <p className="mt-3.5 text-[13px] text-danger">{prefsError}</p>}
+            <div className="mt-[18px] flex items-center gap-3">
+              <Button type="button" onClick={handleSavePrefs} disabled={savingPrefs}>
+                {t('profile.saveChanges')}
+              </Button>
+              {savedPrefs && (
                 <span className="text-sm font-semibold text-teal">{t('profile.saved')}</span>
               )}
             </div>

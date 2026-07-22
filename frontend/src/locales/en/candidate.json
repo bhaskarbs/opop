@@ -60,6 +60,7 @@
       "resume": "Resume",
       "skills": "Skills",
       "lifeGoals": "Life goals & values",
+      "workPreferences": "Work preferences",
       "accountSettings": "Account settings"
     },
     "fields": {
@@ -81,6 +82,7 @@
     "lifeGoalsBody": "Shared with startups when you apply for a partnership.",
     "lifeGoalsPlaceholder": "What are you working toward?",
     "workCulturePlaceholder": "What ethics and work culture matter most to you?",
+    "workPreferencesBody": "Helps us match jobs, partnerships, and community roles to how you want to work.",
     "saveChanges": "Save changes",
     "saved": "Saved ✓"
   },
@@ -100,9 +102,7 @@
     "subtitle": "Finish these to unlock better job, partnership, and community matches.",
     "goalsDescription": "Shared with startups when you apply for a partnership — helps them assess fit beyond your resume.",
     "save": "Save",
-    "mobileDescription": "Verify your number so employers and startups can reach you and you receive OTP logins.",
-    "sendOtp": "Send OTP",
-    "verifyAndSave": "Verify & save",
+    "mobileDescription": "So employers and startups can reach you.",
     "prefsDescription": "Helps us match jobs, partnerships, and community roles to how you want to work.",
     "openTo": "Open to",
     "openToOptions": {
