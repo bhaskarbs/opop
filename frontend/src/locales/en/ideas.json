@@ -91,6 +91,8 @@
     "title": "My ideas",
     "subtitle": "Track the review status of every idea you've submitted.",
     "submitNew": "+ Submit new idea",
+    "ideasCount": "{{count}} of {{max}} ideas",
+    "ideaLimitReached": "You've reached the maximum of 5 ideas. Delete an existing idea to post a new one.",
     "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Delete this idea? This can't be undone.",

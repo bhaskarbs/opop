@@ -14,6 +14,11 @@ import {
 import { ideaRoutesFor, ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 
+// Mirrors IdeaService's flat MAX_IDEAS_PER_SUBMITTER cap on the backend — applies to candidates
+// and companies alike (see this page's own doc comment below), same client-side-constant
+// precedent as MockInterviewPage's session limit.
+const MAX_IDEAS = 5
+
 const STAGE_KEYS: Record<BackendIdeaStage, string> = {
   CONCEPT: 'browse.stages.concept',
   PROTOTYPE: 'browse.stages.prototype',
@@ -77,6 +82,8 @@ export default function MyIdeasPage() {
   const [interestsLoading, setInterestsLoading] = useState(false)
   const [interestsError, setInterestsError] = useState<string | null>(null)
 
+  const atIdeaLimit = !loading && ideas.length >= MAX_IDEAS
+
   useEffect(() => {
     let cancelled = false
     ideasApi
@@ -135,13 +142,27 @@ export default function MyIdeasPage() {
         <div>
           <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('myIdeas.title')}</h1>
           <p className="text-sm text-slate">{t('myIdeas.subtitle')}</p>
+          {!loading && (
+            <p className="mt-1 text-[12.5px] text-fog">
+              {t('myIdeas.ideasCount', { count: ideas.length, max: MAX_IDEAS })}
+            </p>
+          )}
         </div>
-        <Link
-          to={localize(routes.submit)}
-          className="rounded-[9px] bg-primary px-5 py-2.5 text-[13.5px] font-bold text-white no-underline"
-        >
-          {t('myIdeas.submitNew')}
-        </Link>
+        {atIdeaLimit ? (
+          <span
+            title={t('myIdeas.ideaLimitReached')}
+            className="cursor-not-allowed rounded-[9px] bg-neutral-tint px-5 py-2.5 text-[13.5px] font-bold text-fog"
+          >
+            {t('myIdeas.submitNew')}
+          </span>
+        ) : (
+          <Link
+            to={localize(routes.submit)}
+            className="rounded-[9px] bg-primary px-5 py-2.5 text-[13.5px] font-bold text-white no-underline"
+          >
+            {t('myIdeas.submitNew')}
+          </Link>
+        )}
       </div>
 
       {error && (

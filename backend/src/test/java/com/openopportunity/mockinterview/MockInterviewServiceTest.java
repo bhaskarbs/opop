@@ -9,6 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.billing.CandidateBillingService;
+import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
@@ -34,11 +36,15 @@ class MockInterviewServiceTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @Mock
+    private CandidateBillingService candidateBillingService;
+
     private MockInterviewService mockInterviewService;
 
     @BeforeEach
     void setUp() {
-        mockInterviewService = new MockInterviewService(mockInterviewSessionRepository, fileStorageService);
+        mockInterviewService =
+                new MockInterviewService(mockInterviewSessionRepository, fileStorageService, candidateBillingService);
     }
 
     private MockMultipartFile sampleVideo() {
@@ -61,6 +67,7 @@ class MockInterviewServiceTest {
     void createStoresTheVideoAndSavesASession() throws Exception {
         UUID candidateId = UUID.randomUUID();
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.FREE);
         when(fileStorageService.store(any(), anyString())).thenReturn("mock-interviews/" + candidateId + "/x.webm");
         when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -76,6 +83,7 @@ class MockInterviewServiceTest {
         UUID candidateId = UUID.randomUUID();
         MockMultipartFile thumbnail = new MockMultipartFile("thumbnail", "thumb.jpg", "image/jpeg", new byte[] {9});
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.FREE);
         when(fileStorageService.store(any(), anyString())).thenReturn("mock-interviews/x");
         when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -87,9 +95,10 @@ class MockInterviewServiceTest {
     }
 
     @Test
-    void createRejectsAFourthSession() throws Exception {
+    void createRejectsAFourthSessionOnFreePlan() throws Exception {
         UUID candidateId = UUID.randomUUID();
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(3L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.FREE);
 
         assertThatThrownBy(() -> mockInterviewService.create(candidateId, sampleVideo(), null, 1, 10))
                 .isInstanceOf(MockInterviewSessionLimitReachedException.class);
@@ -97,9 +106,47 @@ class MockInterviewServiceTest {
     }
 
     @Test
+    void createAllowsAFourthSessionOnPlusPlan() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(3L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.PLUS);
+        when(fileStorageService.store(any(), anyString())).thenReturn("mock-interviews/x.webm");
+        when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MockInterviewSessionSummary summary = mockInterviewService.create(candidateId, sampleVideo(), null, 1, 10);
+
+        assertThat(summary.questionCount()).isEqualTo(1);
+    }
+
+    @Test
+    void createRejectsAnEleventhSessionOnPlusPlan() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(10L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.PLUS);
+
+        assertThatThrownBy(() -> mockInterviewService.create(candidateId, sampleVideo(), null, 1, 10))
+                .isInstanceOf(MockInterviewSessionLimitReachedException.class);
+        verify(fileStorageService, never()).store(any(), anyString());
+    }
+
+    @Test
+    void createNeverHitsTheLimitOnProPlan() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(1_000L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.PRO);
+        when(fileStorageService.store(any(), anyString())).thenReturn("mock-interviews/x.webm");
+        when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MockInterviewSessionSummary summary = mockInterviewService.create(candidateId, sampleVideo(), null, 1, 10);
+
+        assertThat(summary.questionCount()).isEqualTo(1);
+    }
+
+    @Test
     void createRejectsARecordingLongerThanTwentyMinutes() {
         UUID candidateId = UUID.randomUUID();
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.FREE);
 
         assertThatThrownBy(
                         () -> mockInterviewService.create(candidateId, sampleVideo(), null, 1, 20 * 60 + 120))
@@ -110,6 +157,7 @@ class MockInterviewServiceTest {
     void createRejectsAnEmptyRecording() {
         UUID candidateId = UUID.randomUUID();
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.FREE);
         MockMultipartFile empty = new MockMultipartFile("video", "interview.webm", "video/webm", new byte[0]);
 
         assertThatThrownBy(() -> mockInterviewService.create(candidateId, empty, null, 1, 10))
@@ -120,6 +168,7 @@ class MockInterviewServiceTest {
     void createRejectsANonVideoContentType() {
         UUID candidateId = UUID.randomUUID();
         when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        when(candidateBillingService.getCurrentPlan(candidateId)).thenReturn(SubscriptionPlan.FREE);
         MockMultipartFile notVideo = new MockMultipartFile("video", "notes.txt", "text/plain", new byte[] {1});
 
         assertThatThrownBy(() -> mockInterviewService.create(candidateId, notVideo, null, 1, 10))

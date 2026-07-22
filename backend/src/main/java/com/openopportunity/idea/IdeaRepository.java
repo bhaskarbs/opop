@@ -10,4 +10,6 @@ public interface IdeaRepository extends JpaRepository<Idea, UUID>, JpaSpecificat
     List<Idea> findByStatusOrderByCreatedAtDesc(IdeaStatus status);
 
     List<Idea> findBySubmitterIdOrderByCreatedAtDesc(UUID submitterId);
+
+    long countBySubmitterId(UUID submitterId);
 }
