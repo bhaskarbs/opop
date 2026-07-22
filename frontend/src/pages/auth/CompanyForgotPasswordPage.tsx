@@ -10,15 +10,18 @@ import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ROUTES } from '../../routes/paths'
 import { AuthCard } from './shared/AuthCard'
 
-const forgotPasswordSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+const companyForgotPasswordSchema = z.object({
+  workEmail: z.string().min(1, 'Work email is required').email('Enter a valid work email'),
 })
 
-type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+type CompanyForgotPasswordFormValues = z.infer<typeof companyForgotPasswordSchema>
 
-/** Candidate counterpart to CompanyForgotPasswordPage — same role-generic backend endpoint
- * (AuthService.requestPasswordReset), just candidate email terminology and login links. */
-export default function ForgotPasswordPage() {
+/** Company counterpart to ForgotPasswordPage — same backend endpoint (role-generic, see
+ * AuthService.requestPasswordReset), just workEmail terminology and company login links to
+ * match CompanyLoginPage. ResetPasswordPage itself needs no company-specific variant: the
+ * emailed link carries `role` as a query param so it can point its own fallback links correctly
+ * regardless of which forgot-password page sent the email. */
+export default function CompanyForgotPasswordPage() {
   const { t } = useTranslation('auth')
   const localize = useLocalizedPath()
   const [formError, setFormError] = useState<string | null>(null)
@@ -27,15 +30,15 @@ export default function ForgotPasswordPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: { email: '' },
+  } = useForm<CompanyForgotPasswordFormValues>({
+    resolver: zodResolver(companyForgotPasswordSchema),
+    defaultValues: { workEmail: '' },
   })
 
-  async function onSubmit(values: ForgotPasswordFormValues) {
+  async function onSubmit(values: CompanyForgotPasswordFormValues) {
     setFormError(null)
     try {
-      await authApi.forgotPassword({ email: values.email, role: 'candidate' })
+      await authApi.forgotPassword({ email: values.workEmail, role: 'company' })
       setSubmitted(true)
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('errors.generic'))
@@ -51,7 +54,7 @@ export default function ForgotPasswordPage() {
           </h1>
           <p className="mb-6 text-sm text-slate">{t('forgotPassword.sentBody')}</p>
           <Link
-            to={localize(ROUTES.login)}
+            to={localize(ROUTES.companyLogin)}
             className="text-[13.5px] font-bold text-primary no-underline"
           >
             {t('forgotPassword.backToLogin')}
@@ -71,11 +74,11 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="mb-[18px]">
           <Input
-            label={t('fields.email')}
+            label={t('fields.workEmail')}
             type="email"
-            placeholder="rohan@email.com"
-            error={errors.email?.message}
-            {...register('email')}
+            placeholder="you@company.com"
+            error={errors.workEmail?.message}
+            {...register('workEmail')}
           />
         </div>
 
@@ -87,7 +90,7 @@ export default function ForgotPasswordPage() {
       </form>
 
       <p className="text-center text-[13.5px] text-slate">
-        <Link to={localize(ROUTES.login)} className="font-bold text-primary no-underline">
+        <Link to={localize(ROUTES.companyLogin)} className="font-bold text-primary no-underline">
           {t('forgotPassword.backToLogin')}
         </Link>
       </p>

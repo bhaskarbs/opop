@@ -21,6 +21,7 @@ export const ROUTES = {
   verifyEmailPending: '/verify-email-pending',
   companyLogin: '/company/login',
   companyRegister: '/company/register',
+  companyForgotPassword: '/company/forgot-password',
 
   candidateDashboard: '/candidate/dashboard',
   candidateProfile: '/candidate/profile',

@@ -27,6 +27,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import CompanyForgotPasswordPage from './pages/auth/CompanyForgotPasswordPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import VerifyEmailPage from './pages/auth/VerifyEmailPage'
 import VerifyEmailPendingPage from './pages/auth/VerifyEmailPendingPage'
@@ -125,6 +126,7 @@ function App() {
               <Route path="verify-email-pending" element={<VerifyEmailPendingPage />} />
               <Route path="company/login" element={<CompanyLoginPage />} />
               <Route path="company/register" element={<CompanyRegisterPage />} />
+              <Route path="company/forgot-password" element={<CompanyForgotPasswordPage />} />
               <Route path="admin/login" element={<AdminLoginPage />} />
             </Route>
 

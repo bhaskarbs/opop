@@ -283,8 +283,10 @@ public class AuthService {
 
         // No stored locale preference to route to — defaults to /en (see DEFAULT_LANGUAGE on
         // the frontend); a candidate who prefers Hindi still lands on a working page, just in
-        // English.
-        String resetLink = frontendBaseUrl + "/en/reset-password?token=" + rawToken;
+        // English. role is carried through so ResetPasswordPage can point its "back to login" /
+        // "request a new link" fallbacks at the right login flow (candidate vs. company).
+        String resetLink = frontendBaseUrl + "/en/reset-password?token=" + rawToken + "&role="
+                + role.name().toLowerCase();
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
         message.setTo(user.getEmail());

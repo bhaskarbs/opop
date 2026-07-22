@@ -91,13 +91,12 @@ export default function CompanyLoginPage() {
             {...register('password')}
           />
           <div className="mt-2 text-right">
-            <a
-              href="#forgot"
-              onClick={(event) => event.preventDefault()}
+            <Link
+              to={localize(ROUTES.companyForgotPassword)}
               className="text-[13px] font-semibold text-primary no-underline"
             >
               {t('login.forgotPassword')}
-            </a>
+            </Link>
           </div>
         </div>
 
