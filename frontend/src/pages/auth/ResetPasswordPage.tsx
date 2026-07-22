@@ -27,6 +27,12 @@ export default function ResetPasswordPage() {
   const localize = useLocalizedPath()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
+  // Carried through by the emailed link (see AuthService.requestPasswordReset) so the fallback
+  // links below point at the right login/forgot-password flow — defaults to candidate for any
+  // link sent before this param existed.
+  const isCompany = searchParams.get('role') === 'company'
+  const loginRoute = isCompany ? ROUTES.companyLogin : ROUTES.login
+  const forgotPasswordRoute = isCompany ? ROUTES.companyForgotPassword : ROUTES.forgotPassword
   const [formError, setFormError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const {
@@ -58,7 +64,7 @@ export default function ResetPasswordPage() {
           </h1>
           <p className="mb-6 text-sm text-slate">{t('resetPassword.invalidBody')}</p>
           <Link
-            to={localize(ROUTES.forgotPassword)}
+            to={localize(forgotPasswordRoute)}
             className="text-[13.5px] font-bold text-primary no-underline"
           >
             {t('resetPassword.requestNewLink')}
@@ -77,7 +83,7 @@ export default function ResetPasswordPage() {
           </h1>
           <p className="mb-6 text-sm text-slate">{t('resetPassword.doneBody')}</p>
           <Link
-            to={localize(ROUTES.login)}
+            to={localize(loginRoute)}
             className="text-[13.5px] font-bold text-primary no-underline"
           >
             {t('forgotPassword.backToLogin')}
