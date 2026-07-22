@@ -14,6 +14,7 @@ import com.openopportunity.idea.dto.IdeaSummary;
 import com.openopportunity.idea.dto.MyIdeaInterestSummary;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
+import com.openopportunity.idea.exception.IdeaLimitReachedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
@@ -26,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class IdeaService {
+
+    // Applies to any submitter (candidate or company) — a single flat cap, not plan-gated.
+    private static final long MAX_IDEAS_PER_SUBMITTER = 5;
 
     private final IdeaRepository ideaRepository;
     private final UserRepository userRepository;
@@ -51,6 +55,9 @@ public class IdeaService {
 
     @Transactional
     public IdeaDetail create(UUID submitterId, IdeaRequest request) {
+        if (ideaRepository.countBySubmitterId(submitterId) >= MAX_IDEAS_PER_SUBMITTER) {
+            throw new IdeaLimitReachedException();
+        }
         User submitter = userRepository.findById(submitterId).orElseThrow();
         Idea idea = new Idea(
                 submitterId,

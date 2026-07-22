@@ -28,6 +28,7 @@ import com.openopportunity.billing.exception.SamePlanException;
 import com.openopportunity.community.exception.EmailDeliveryException;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
+import com.openopportunity.idea.exception.IdeaLimitReachedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
@@ -179,6 +180,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateIdeaInterestException.class)
     public ResponseEntity<ApiError> handleDuplicateIdeaInterest(DuplicateIdeaInterestException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(IdeaLimitReachedException.class)
+    public ResponseEntity<ApiError> handleIdeaLimitReached(IdeaLimitReachedException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 

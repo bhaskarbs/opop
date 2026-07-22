@@ -1,5 +1,7 @@
 package com.openopportunity.mockinterview;
 
+import com.openopportunity.billing.CandidateBillingService;
+import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
@@ -18,7 +20,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class MockInterviewService {
 
     private static final long MAX_VIDEO_SIZE_BYTES = 150L * 1024 * 1024;
-    private static final int MAX_SESSIONS_PER_CANDIDATE = 3;
+    // Free stays at the original cap; Plus gets a higher one; Pro is "unlimited" per its own
+    // billing-plan marketing copy (see candidate.json) — Integer.MAX_VALUE is a plain sentinel
+    // for that rather than a real number anyone will ever reach.
+    private static final int FREE_MAX_SESSIONS = 3;
+    private static final int PLUS_MAX_SESSIONS = 10;
     // The frontend auto-stops recording at 20 minutes (see MockInterviewPage); this is a
     // defensive server-side backstop against a modified/buggy client, with slack for the time
     // between the auto-stop firing and the upload actually landing.
@@ -26,17 +32,22 @@ public class MockInterviewService {
 
     private final MockInterviewSessionRepository mockInterviewSessionRepository;
     private final FileStorageService fileStorageService;
+    private final CandidateBillingService candidateBillingService;
 
     public MockInterviewService(
-            MockInterviewSessionRepository mockInterviewSessionRepository, FileStorageService fileStorageService) {
+            MockInterviewSessionRepository mockInterviewSessionRepository,
+            FileStorageService fileStorageService,
+            CandidateBillingService candidateBillingService) {
         this.mockInterviewSessionRepository = mockInterviewSessionRepository;
         this.fileStorageService = fileStorageService;
+        this.candidateBillingService = candidateBillingService;
     }
 
     @Transactional
     public MockInterviewSessionSummary create(
             UUID candidateId, MultipartFile video, MultipartFile thumbnail, int questionCount, int durationSeconds) {
-        if (mockInterviewSessionRepository.countByCandidateId(candidateId) >= MAX_SESSIONS_PER_CANDIDATE) {
+        SubscriptionPlan plan = candidateBillingService.getCurrentPlan(candidateId);
+        if (mockInterviewSessionRepository.countByCandidateId(candidateId) >= maxSessionsFor(plan)) {
             throw new MockInterviewSessionLimitReachedException();
         }
         if (durationSeconds > MAX_DURATION_SECONDS) {
@@ -101,6 +112,14 @@ public class MockInterviewService {
             throw new UncheckedIOException("Failed to delete mock interview files", ex);
         }
         mockInterviewSessionRepository.delete(session);
+    }
+
+    private int maxSessionsFor(SubscriptionPlan plan) {
+        return switch (plan) {
+            case FREE -> FREE_MAX_SESSIONS;
+            case PLUS -> PLUS_MAX_SESSIONS;
+            case PRO -> Integer.MAX_VALUE;
+        };
     }
 
     private MockInterviewSession findOwned(UUID sessionId, UUID candidateId) {
