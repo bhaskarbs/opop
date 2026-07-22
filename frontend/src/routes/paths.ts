@@ -15,6 +15,8 @@ export const ROUTES = {
   termsOfService: '/terms-of-service',
   login: '/login',
   register: '/register',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
   companyLogin: '/company/login',
   companyRegister: '/company/register',
 

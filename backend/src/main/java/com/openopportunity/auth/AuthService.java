@@ -1,17 +1,21 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.AuthResponse;
+import com.openopportunity.auth.dto.ForgotPasswordRequest;
 import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
+import com.openopportunity.auth.dto.ResetPasswordRequest;
 import com.openopportunity.auth.dto.UserSummary;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
+import com.openopportunity.auth.exception.InvalidOrExpiredResetTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.auth.exception.PasswordResetEmailException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,6 +27,9 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,14 +37,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
 
+    // Reset links are single-use and short-lived on purpose — long enough for someone to check
+    // their inbox, short enough that a leaked-but-unused link stops being useful quickly.
+    private static final long RESET_TOKEN_EXPIRY_MINUTES = 60;
+
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final CompanyProfileRepository companyProfileRepository;
     private final CandidateProfileRepository candidateProfileRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleTokenVerifierService googleTokenVerifierService;
+    private final JavaMailSender mailSender;
     private final long refreshTokenExpiryDays;
+    private final String mailFromAddress;
+    private final String frontendBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(
@@ -45,18 +60,26 @@ public class AuthService {
             RefreshTokenRepository refreshTokenRepository,
             CompanyProfileRepository companyProfileRepository,
             CandidateProfileRepository candidateProfileRepository,
+            PasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             GoogleTokenVerifierService googleTokenVerifierService,
-            @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays) {
+            JavaMailSender mailSender,
+            @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays,
+            @Value("${app.mail.from}") String mailFromAddress,
+            @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.companyProfileRepository = companyProfileRepository;
         this.candidateProfileRepository = candidateProfileRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.googleTokenVerifierService = googleTokenVerifierService;
+        this.mailSender = mailSender;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
+        this.mailFromAddress = mailFromAddress;
+        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     /** The raw refresh token is only ever handed to the controller to set as an httpOnly cookie. */
@@ -201,6 +224,69 @@ public class AuthService {
             token.revoke();
             refreshTokenRepository.save(token);
         });
+    }
+
+    /** Always succeeds from the caller's point of view whether or not the email/role pair
+     * matches an account — the controller returns 204 either way (see AuthController) so a
+     * response can't be used to enumerate registered emails. An unrecognized role is treated
+     * the same as "no such account" for the same reason. */
+    @Transactional
+    public void requestPasswordReset(ForgotPasswordRequest request) {
+        UserRole role;
+        try {
+            role = UserRole.valueOf(request.role().trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return;
+        }
+        User user = userRepository.findByEmailAndRole(request.email(), role).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        String rawToken = generateRawToken();
+        Instant expiresAt = Instant.now().plus(RESET_TOKEN_EXPIRY_MINUTES, ChronoUnit.MINUTES);
+        passwordResetTokenRepository.save(new PasswordResetToken(user.getId(), hash(rawToken), expiresAt));
+
+        // No stored locale preference to route to — defaults to /en (see DEFAULT_LANGUAGE on
+        // the frontend); a candidate who prefers Hindi still lands on a working page, just in
+        // English.
+        String resetLink = frontendBaseUrl + "/en/reset-password?token=" + rawToken;
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(mailFromAddress);
+        message.setTo(user.getEmail());
+        message.setSubject("Reset your OpenOpportunity password");
+        message.setText(
+                "We received a request to reset your OpenOpportunity password.\n\n"
+                        + "Reset it here (link expires in 1 hour): " + resetLink + "\n\n"
+                        + "If you didn't request this, you can safely ignore this email.");
+        try {
+            mailSender.send(message);
+        } catch (MailException e) {
+            throw new PasswordResetEmailException(e);
+        }
+    }
+
+    /** Consumes the token, updates the password, and revokes every active session for the
+     * account — a password reset should log the candidate out everywhere else too. */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findByTokenHash(hash(request.token()))
+                .filter(PasswordResetToken::isActive)
+                .orElseThrow(InvalidOrExpiredResetTokenException::new);
+
+        User user = userRepository
+                .findById(resetToken.getUserId())
+                .orElseThrow(InvalidOrExpiredResetTokenException::new);
+        user.updatePasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        resetToken.markUsed();
+        passwordResetTokenRepository.save(resetToken);
+
+        List<RefreshToken> activeSessions = refreshTokenRepository.findByUserIdAndRevokedAtIsNull(user.getId());
+        activeSessions.forEach(RefreshToken::revoke);
+        refreshTokenRepository.saveAll(activeSessions);
     }
 
     private Issued issueTokens(User user) {

@@ -84,13 +84,12 @@ export default function LoginPage() {
             {...register('password')}
           />
           <div className="mt-2 text-right">
-            <a
-              href="#forgot"
-              onClick={(event) => event.preventDefault()}
+            <Link
+              to={localize(ROUTES.forgotPassword)}
               className="text-[13px] font-semibold text-primary no-underline"
             >
               {t('login.forgotPassword')}
-            </a>
+            </Link>
           </div>
         </div>
 

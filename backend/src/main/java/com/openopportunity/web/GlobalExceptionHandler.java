@@ -12,10 +12,12 @@ import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
+import com.openopportunity.auth.exception.InvalidOrExpiredResetTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidProfilePhotoException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
+import com.openopportunity.auth.exception.PasswordResetEmailException;
 import com.openopportunity.auth.exception.ProfilePhotoNotFoundException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
@@ -71,6 +73,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidGoogleTokenException.class)
     public ResponseEntity<ApiError> handleInvalidGoogleToken(InvalidGoogleTokenException ex) {
         return error(HttpStatus.UNAUTHORIZED, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidOrExpiredResetTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidOrExpiredResetToken(InvalidOrExpiredResetTokenException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(PasswordResetEmailException.class)
+    public ResponseEntity<ApiError> handlePasswordResetEmail(PasswordResetEmailException ex) {
+        return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(InvalidRegistrationRoleException.class)

@@ -1,9 +1,11 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.AuthResponse;
+import com.openopportunity.auth.dto.ForgotPasswordRequest;
 import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
+import com.openopportunity.auth.dto.ResetPasswordRequest;
 import com.openopportunity.auth.dto.UserSummary;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -67,6 +69,18 @@ public class AuthController {
     public ResponseEntity<AuthResponse> refresh(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken) {
         return withRefreshCookie(authService.refresh(refreshToken), HttpStatus.OK);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.requestPasswordReset(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/logout")

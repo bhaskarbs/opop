@@ -26,6 +26,8 @@ import IdeaDetailPage from './pages/IdeaDetailPage'
 import NotFoundPage from './pages/NotFoundPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import CompanyLoginPage from './pages/auth/CompanyLoginPage'
 import CompanyRegisterPage from './pages/auth/CompanyRegisterPage'
 import AdminLoginPage from './pages/auth/AdminLoginPage'
@@ -114,6 +116,8 @@ function App() {
               <Route path="terms-of-service" element={<TermsOfServicePage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
+              <Route path="forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="reset-password" element={<ResetPasswordPage />} />
               <Route path="company/login" element={<CompanyLoginPage />} />
               <Route path="company/register" element={<CompanyRegisterPage />} />
               <Route path="admin/login" element={<AdminLoginPage />} />

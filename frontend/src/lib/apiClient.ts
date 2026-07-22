@@ -154,4 +154,11 @@ export const authApi = {
     }),
   refresh: () => request<AuthResponse>('/api/auth/refresh', { method: 'POST' }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
+  // Always resolves (backend responds 204 whether or not the email/role pair matches an
+  // account) — see AuthService.requestPasswordReset. A rejection here means a genuine
+  // delivery/network failure, not "no such account".
+  forgotPassword: (payload: { email: string; role: 'candidate' | 'company' | 'admin' }) =>
+    request<void>('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify(payload) }),
+  resetPassword: (payload: { token: string; newPassword: string }) =>
+    request<void>('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(payload) }),
 }

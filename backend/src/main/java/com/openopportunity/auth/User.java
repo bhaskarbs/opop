@@ -89,6 +89,10 @@ public class User {
         this.fullName = fullName;
     }
 
+    public void updatePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public UUID getId() {
         return id;
     }
