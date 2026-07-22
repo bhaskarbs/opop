@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/authStore'
+
 export type UserRole = 'CANDIDATE' | 'COMPANY' | 'ADMIN'
 
 export interface UserSummary {
@@ -5,6 +7,9 @@ export interface UserSummary {
   email: string
   fullName: string
   role: UserRole
+  // Candidate-only in practice (see AuthService.register/User) — companies and admins are
+  // always true, since there's no verification concept for them.
+  emailVerified: boolean
 }
 
 export interface AuthResponse {
@@ -161,4 +166,15 @@ export const authApi = {
     request<void>('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify(payload) }),
   resetPassword: (payload: { token: string; newPassword: string }) =>
     request<void>('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(payload) }),
+  verifyEmail: (payload: { token: string }) =>
+    request<void>('/api/auth/verify-email', { method: 'POST', body: JSON.stringify(payload) }),
+  // Always the caller's own account (see AuthController.resendVerification) — needs the bearer
+  // token, unlike forgotPassword/resetPassword which are reachable while logged out.
+  resendVerification: () =>
+    request<void>('/api/auth/resend-verification', { method: 'POST', headers: authHeaders() }),
+}
+
+function authHeaders(): Record<string, string> {
+  const token = useAuthStore.getState().accessToken
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
