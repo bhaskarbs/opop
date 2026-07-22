@@ -12,7 +12,16 @@ interface AuthState {
    * session survives a hard page reload rather than bouncing straight to /login.
    */
   status: AuthStatus
+  // Candidate-only, populated separately from `user` since login/session responses don't carry
+  // it (see AuthenticatedLayout, which fetches it once, and CandidateProfilePage, which updates
+  // it on upload) — kept here rather than page-local state so the header's avatar and the
+  // profile page's avatar always show the same photo without needing a page reload.
+  // candidatePhotoVersion is a cache-busting timestamp: candidatePhotoUrl is a stable path, so a
+  // replacement photo wouldn't otherwise change the <img> src the browser/React see.
+  candidatePhotoUrl: string | null
+  candidatePhotoVersion: number
   setSession: (accessToken: string, user: UserSummary) => void
+  setCandidatePhoto: (photoUrl: string | null) => void
   clearSession: () => void
 }
 
@@ -24,6 +33,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   user: null,
   status: 'checking',
+  candidatePhotoUrl: null,
+  candidatePhotoVersion: 0,
   setSession: (accessToken, user) => set({ accessToken, user, status: 'authenticated' }),
-  clearSession: () => set({ accessToken: null, user: null, status: 'unauthenticated' }),
+  setCandidatePhoto: (photoUrl) =>
+    set({ candidatePhotoUrl: photoUrl, candidatePhotoVersion: Date.now() }),
+  clearSession: () =>
+    set({
+      accessToken: null,
+      user: null,
+      status: 'unauthenticated',
+      candidatePhotoUrl: null,
+      candidatePhotoVersion: 0,
+    }),
 }))

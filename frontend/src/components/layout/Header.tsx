@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { DEFAULT_LANGUAGE, isSupportedLanguage, type SupportedLanguage } from '../../i18n'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { authApi } from '../../lib/apiClient'
+import { API_BASE_URL, authApi } from '../../lib/apiClient'
 import { cn } from '../../lib/cn'
 import { notificationsApi, type NotificationSummary } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
@@ -38,6 +38,10 @@ export interface HeaderProps {
   /** Label of the currently active nav item, if any. */
   activeItem?: string
   userName?: string
+  /** Candidate-only (see AuthenticatedLayout) — falls back to the initials avatar when absent. */
+  userPhotoUrl?: string | null
+  /** Cache-busting timestamp paired with userPhotoUrl — see authStore.setCandidatePhoto. */
+  userPhotoVersion?: number
   /** Set to false to render inline instead of `position: sticky` (e.g. in a preview). */
   sticky?: boolean
   /** Hides the guest Log in/Register CTAs — e.g. on the company login page itself, where
@@ -50,6 +54,8 @@ export function Header({
   variant = 'guest',
   activeItem,
   userName,
+  userPhotoUrl,
+  userPhotoVersion,
   sticky = true,
   showGuestAuthLinks = true,
 }: HeaderProps) {
@@ -305,14 +311,22 @@ export function Header({
                   onClick={() => setUserMenuOpen((open) => !open)}
                   className="flex items-center gap-2 rounded-control border border-border bg-surface py-[5px] pr-2.5 pl-[5px]"
                 >
-                  <span
-                    className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-full text-[12.5px] font-bold text-white',
-                      avatarBgClass,
-                    )}
-                  >
-                    {userInitial}
-                  </span>
+                  {userPhotoUrl ? (
+                    <img
+                      src={`${API_BASE_URL}${userPhotoUrl}?v=${userPhotoVersion}`}
+                      alt={resolvedUserName}
+                      className="h-7 w-7 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span
+                      className={cn(
+                        'flex h-7 w-7 items-center justify-center rounded-full text-[12.5px] font-bold text-white',
+                        avatarBgClass,
+                      )}
+                    >
+                      {userInitial}
+                    </span>
+                  )}
                   <span className="text-sm font-semibold text-ink">{resolvedUserName}</span>
                   <svg
                     width="14"
