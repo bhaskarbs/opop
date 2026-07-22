@@ -1,6 +1,6 @@
-import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Card } from '../../components/ui'
+import { Button, Card, SkillsTagInput } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
 import {
@@ -13,6 +13,7 @@ import {
   experienceLevelToBackend,
   type ExperienceLevelLabel,
 } from '../../lib/jobEnums'
+import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 
 const NAV_SECTIONS = [
   { labelKey: 'profile.nav.personalDetails', href: '#personal' },
@@ -52,7 +53,6 @@ export default function CandidateProfilePage() {
   const resumeInputRef = useRef<HTMLInputElement>(null)
 
   const [skills, setSkills] = useState<string[]>([])
-  const [newSkill, setNewSkill] = useState('')
   const [skillsError, setSkillsError] = useState<string | null>(null)
 
   const [lifeGoals, setLifeGoals] = useState('')
@@ -144,20 +144,6 @@ export default function CandidateProfilePage() {
       setSkills(previous)
       setSkillsError(error instanceof ApiError ? error.message : t('profile.saveError'))
     }
-  }
-
-  function addSkill(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== 'Enter') return
-    event.preventDefault()
-    const trimmed = newSkill.trim()
-    if (trimmed && !skills.includes(trimmed)) {
-      persistSkills([...skills, trimmed])
-    }
-    setNewSkill('')
-  }
-
-  function removeSkill(skill: string) {
-    persistSkills(skills.filter((s) => s !== skill))
   }
 
   async function handleSaveGoals() {
@@ -383,31 +369,13 @@ export default function CandidateProfilePage() {
           <Card id="skills" className="mb-[18px] p-[26px]">
             <h2 className="mb-1.5 text-base font-bold text-ink">{t('profile.nav.skills')}</h2>
             <p className="mb-3.5 text-[13px] text-fog">{t('profile.skillsBody')}</p>
-            {skillsError && <p className="mb-3.5 text-[13px] text-danger">{skillsError}</p>}
-            <div className="mb-3.5 flex flex-wrap gap-2">
-              {skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="flex items-center gap-1.5 rounded-full bg-neutral-tint px-3.5 py-1.5 text-sm font-semibold text-[#3A414D]"
-                >
-                  {skill}
-                  <button
-                    type="button"
-                    onClick={() => removeSkill(skill)}
-                    aria-label={t('profile.removeSkill', { skill })}
-                    className="cursor-pointer text-fog"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <input
-              value={newSkill}
-              onChange={(event) => setNewSkill(event.target.value)}
-              onKeyDown={addSkill}
+            <SkillsTagInput
+              value={skills}
+              onChange={persistSkills}
+              suggestions={SKILL_SUGGESTIONS}
               placeholder={t('profile.addSkillPlaceholder')}
-              className="w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+              error={skillsError ?? undefined}
+              removeSkillLabel={(skill) => t('profile.removeSkill', { skill })}
             />
           </Card>
 
