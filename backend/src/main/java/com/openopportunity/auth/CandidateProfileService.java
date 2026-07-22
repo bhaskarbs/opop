@@ -1,19 +1,24 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.CandidateProfileResponse;
+import com.openopportunity.auth.dto.PhotoUploadResponse;
 import com.openopportunity.auth.dto.ResumeUploadResponse;
 import com.openopportunity.auth.dto.UpdateGoalsRequest;
 import com.openopportunity.auth.dto.UpdateMobileRequest;
 import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
 import com.openopportunity.auth.dto.UpdatePreferencesRequest;
 import com.openopportunity.auth.dto.UpdateSkillsRequest;
+import com.openopportunity.auth.exception.InvalidProfilePhotoException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
+import com.openopportunity.auth.exception.ProfilePhotoNotFoundException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +28,9 @@ public class CandidateProfileService {
 
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".pdf", ".doc", ".docx");
     private static final long MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
+    private static final List<String> ALLOWED_PHOTO_CONTENT_TYPES =
+            List.of("image/jpeg", "image/png", "image/webp");
+    private static final long MAX_PHOTO_SIZE_BYTES = 5L * 1024 * 1024;
 
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
@@ -105,6 +113,41 @@ public class CandidateProfileService {
         return new ResumeUploadResponse(profile.getResumeFileName(), uploadedAt, file.getSize());
     }
 
+    @Transactional
+    public PhotoUploadResponse uploadPhoto(UUID userId, MultipartFile file) {
+        validatePhoto(file);
+        CandidateProfile profile = findProfile(userId);
+
+        String storageKey;
+        try {
+            storageKey = fileStorageService.store(file, "photos/" + userId);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to store profile photo", ex);
+        }
+
+        profile.updatePhoto(storageKey, file.getContentType());
+        candidateProfileRepository.save(profile);
+        return new PhotoUploadResponse(photoUrl(userId));
+    }
+
+    /** Public (unauthenticated) lookup — see CandidatePhotoController, which serves this
+     * straight to an &lt;img&gt; tag with no bearer token attached. */
+    @Transactional(readOnly = true)
+    public CandidatePhotoContent getPhoto(UUID userId) {
+        CandidateProfile profile = candidateProfileRepository
+                .findByUserId(userId)
+                .filter(existing -> existing.getPhotoStorageKey() != null)
+                .orElseThrow(() -> new ProfilePhotoNotFoundException(userId));
+        try {
+            Resource resource = fileStorageService.load(profile.getPhotoStorageKey());
+            return new CandidatePhotoContent(resource, profile.getPhotoContentType());
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to load profile photo", ex);
+        }
+    }
+
+    public record CandidatePhotoContent(Resource resource, String contentType) {}
+
     // Auto-provisions a blank profile for accounts registered before candidate_profiles
     // existed (or any other legacy gap) rather than 404ing — every candidate ends up with a
     // row on first touch, which they then fill in via the usual update endpoints.
@@ -128,6 +171,7 @@ public class CandidateProfileService {
                 profile.getResumeFileName(),
                 profile.getResumeUploadedAt(),
                 profile.getResumeSizeBytes(),
+                profile.getPhotoStorageKey() == null ? null : photoUrl(profile.getUserId()),
                 profile.getLifeGoals(),
                 profile.getWorkCulture(),
                 profile.getWorkModePreference(),
@@ -148,5 +192,22 @@ public class CandidateProfileService {
         if (!allowedExtension) {
             throw new InvalidResumeFileException("Resume must be a PDF or Word document (.pdf, .doc, .docx)");
         }
+    }
+
+    private void validatePhoto(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new InvalidProfilePhotoException("Photo file is empty");
+        }
+        if (file.getSize() > MAX_PHOTO_SIZE_BYTES) {
+            throw new InvalidProfilePhotoException("Photo must be 5MB or smaller");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_PHOTO_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+            throw new InvalidProfilePhotoException("Photo must be a JPEG, PNG, or WEBP image");
+        }
+    }
+
+    private String photoUrl(UUID userId) {
+        return "/api/candidates/" + userId + "/photo";
     }
 }

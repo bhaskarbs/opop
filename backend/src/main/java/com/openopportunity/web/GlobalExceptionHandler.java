@@ -13,8 +13,10 @@ import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
+import com.openopportunity.auth.exception.InvalidProfilePhotoException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
+import com.openopportunity.auth.exception.ProfilePhotoNotFoundException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
 import com.openopportunity.billing.exception.CandidateNotFoundException;
@@ -93,6 +95,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidResumeFileException.class)
     public ResponseEntity<ApiError> handleInvalidResumeFile(InvalidResumeFileException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidProfilePhotoException.class)
+    public ResponseEntity<ApiError> handleInvalidProfilePhoto(InvalidProfilePhotoException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(ProfilePhotoNotFoundException.class)
+    public ResponseEntity<ApiError> handleProfilePhotoNotFound(ProfilePhotoNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

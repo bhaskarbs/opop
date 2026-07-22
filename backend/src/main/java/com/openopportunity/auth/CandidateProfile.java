@@ -47,6 +47,15 @@ public class CandidateProfile {
     @Column(name = "resume_size_bytes")
     private Long resumeSizeBytes;
 
+    // Where FileStorageService put the uploaded photo bytes, and its content type (needed to
+    // set the right Content-Type header when CandidatePhotoController serves it back) — both
+    // null until a photo is uploaded.
+    @Column(name = "photo_storage_key", length = 500)
+    private String photoStorageKey;
+
+    @Column(name = "photo_content_type", length = 100)
+    private String photoContentType;
+
     // Filled in from the candidate profile page, not registration — nullable since neither
     // is collected up front (see RegisterPage).
     @Column(length = 255)
@@ -148,6 +157,11 @@ public class CandidateProfile {
         this.openToPreference = openToPreference;
     }
 
+    public void updatePhoto(String photoStorageKey, String photoContentType) {
+        this.photoStorageKey = photoStorageKey;
+        this.photoContentType = photoContentType;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -178,6 +192,14 @@ public class CandidateProfile {
 
     public Long getResumeSizeBytes() {
         return resumeSizeBytes;
+    }
+
+    public String getPhotoStorageKey() {
+        return photoStorageKey;
+    }
+
+    public String getPhotoContentType() {
+        return photoContentType;
     }
 
     public String getLocation() {

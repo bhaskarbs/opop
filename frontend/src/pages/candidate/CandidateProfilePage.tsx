@@ -1,7 +1,7 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, SkillsTagInput } from '../../components/ui'
-import { ApiError } from '../../lib/apiClient'
+import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
 import {
   deriveCompletedSections,
@@ -52,6 +52,17 @@ export default function CandidateProfilePage() {
   const [resumeError, setResumeError] = useState<string | null>(null)
   const resumeInputRef = useRef<HTMLInputElement>(null)
 
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  // photoUrl is a stable path (`/api/candidates/{id}/photo`) — re-uploading a replacement photo
+  // doesn't change that string, so the <img> src wouldn't change and the browser would just
+  // keep showing its cached response for that URL. This gets bumped on every load/upload and
+  // appended as a cache-busting query param so a new photo actually shows without a manual
+  // refresh.
+  const [photoVersion, setPhotoVersion] = useState(0)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+
   const [skills, setSkills] = useState<string[]>([])
   const [skillsError, setSkillsError] = useState<string | null>(null)
 
@@ -79,6 +90,8 @@ export default function CandidateProfilePage() {
         setResumeFileName(data.resumeFileName)
         setResumeUploadedAt(data.resumeUploadedAt)
         setResumeSizeBytes(data.resumeSizeBytes)
+        setPhotoUrl(data.photoUrl)
+        setPhotoVersion(Date.now())
         setSkills(data.skills)
         setLifeGoals(data.lifeGoals ?? '')
         setWorkCulture(data.workCulture ?? '')
@@ -130,6 +143,23 @@ export default function CandidateProfilePage() {
       setResumeSizeBytes(uploaded.resumeSizeBytes)
     } catch (error) {
       setResumeError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    }
+  }
+
+  async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setPhotoError(null)
+    setUploadingPhoto(true)
+    try {
+      const uploaded = await candidateApi.uploadPhoto(file)
+      setPhotoUrl(uploaded.photoUrl)
+      setPhotoVersion(Date.now())
+    } catch (error) {
+      setPhotoError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    } finally {
+      setUploadingPhoto(false)
     }
   }
 
@@ -185,9 +215,46 @@ export default function CandidateProfilePage() {
       <div className="profile:grid-cols-[240px_minmax(0,1fr)] grid grid-cols-1 gap-6">
         <aside className="profile:order-none order-first">
           <Card className="mb-4 p-[22px] text-center">
-            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-[22px] font-bold text-white">
-              {initial}
+            <div className="relative mx-auto mb-3 h-16 w-16">
+              {photoUrl ? (
+                <img
+                  src={`${API_BASE_URL}${photoUrl}?v=${photoVersion}`}
+                  alt={fullName}
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-[22px] font-bold text-white">
+                  {initial}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                aria-label={t('profile.changePhoto')}
+                className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-ink text-white disabled:opacity-60"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
             </div>
+            {photoError && <p className="mb-2 text-[12.5px] text-danger">{photoError}</p>}
             <div className="text-base font-bold text-ink">{fullName}</div>
             <div className="mt-0.5 text-[13px] text-fog">
               {title || location ? `${title}${title && location ? ' · ' : ''}${location}` : null}
