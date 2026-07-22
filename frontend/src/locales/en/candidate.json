@@ -147,7 +147,10 @@
     "loading": "Loading your applications…",
     "empty": "No applications yet.",
     "appliedPrefix": "{{org}} · Applied {{applied}}",
-    "withdraw": "Withdraw"
+    "moreDetails": "More details",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
   },
   "billing": {
     "title": "Billing & plans",

@@ -147,7 +147,10 @@
     "loading": "आपके आवेदन लोड हो रहे हैं…",
     "empty": "अभी तक कोई आवेदन नहीं है।",
     "appliedPrefix": "{{org}} · {{applied}} आवेदन किया",
-    "withdraw": "वापस लें"
+    "moreDetails": "अधिक जानकारी",
+    "previousPage": "← पिछला",
+    "nextPage": "अगला →",
+    "pageLabel": "पृष्ठ {{page}} / {{total}}"
   },
   "billing": {
     "title": "बिलिंग और प्लान",

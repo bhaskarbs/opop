@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { Link } from 'react-router-dom'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import {
   applicationsApi,
   type ApplicationStatus as BackendApplicationStatus,
 } from '../../lib/applicationsApi'
 import { ideasApi, type BackendIdeaInterestRole } from '../../lib/ideasApi'
+import { ROUTES } from '../../routes/paths'
+
+const PAGE_SIZE = 10
 
 type ApplicationType = 'Job' | 'Partnership'
 
@@ -19,6 +24,10 @@ interface Application {
   applied: string
   type: ApplicationType
   status: ApplicationStatus
+  // Points to the job detail page (Job rows) or idea detail page (Partnership rows) — see
+  // ROUTES.jobDetail/ROUTES.ideaDetail, built from ApplicationSummary.jobId/
+  // MyIdeaInterestSummary.ideaId at load time below.
+  detailPath: string
   // Only set for Partnership rows (investor/participant on an idea) — idea interests have no
   // review workflow of their own (see IdeaService.submitInterest), so status is always a fixed
   // 'Applied'; this is what actually distinguishes one row from another.
@@ -114,7 +123,9 @@ const TAB_LABEL_KEYS: Record<TabFilter, string> = {
 
 export default function ApplicationsPage() {
   const { t } = useTranslation('candidate')
+  const localize = useLocalizedPath()
   const [activeTab, setActiveTab] = useState<TabFilter>('All')
+  const [page, setPage] = useState(1)
   const [jobApplications, setJobApplications] = useState<Application[]>([])
   const [partnershipApplications, setPartnershipApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
@@ -141,6 +152,7 @@ export default function ApplicationsPage() {
             applied: formatAppliedLabel(t, application.appliedAt),
             type: 'Job',
             status: BACKEND_STATUS_LABELS[application.status],
+            detailPath: ROUTES.jobDetail(application.jobId),
           })),
         )
       }
@@ -154,6 +166,7 @@ export default function ApplicationsPage() {
             type: 'Partnership',
             status: 'Applied',
             roleLabel: interest.role,
+            detailPath: ROUTES.ideaDetail(interest.ideaId),
           })),
         )
       }
@@ -175,19 +188,6 @@ export default function ApplicationsPage() {
     }
   }, [t])
 
-  async function handleWithdraw(applicationId: string) {
-    try {
-      await applicationsApi.withdraw(applicationId)
-      setJobApplications((prev) =>
-        prev.map((application) =>
-          application.id === applicationId ? { ...application, status: 'Withdrawn' } : application,
-        ),
-      )
-    } catch {
-      // Best-effort — the row simply keeps its current status if the withdraw call fails.
-    }
-  }
-
   const allApplications = [...jobApplications, ...partnershipApplications]
 
   function tabCount(tab: TabFilter): number {
@@ -195,10 +195,19 @@ export default function ApplicationsPage() {
     return allApplications.filter((application) => application.type === TAB_TO_TYPE[tab]).length
   }
 
-  const visible =
+  const filtered =
     activeTab === 'All'
       ? allApplications
       : allApplications.filter((application) => application.type === TAB_TO_TYPE[activeTab])
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function switchTab(tab: TabFilter) {
+    setActiveTab(tab)
+    setPage(1)
+  }
 
   return (
     <main className="mx-auto max-w-[1000px] px-6 pt-7 pb-16">
@@ -210,7 +219,7 @@ export default function ApplicationsPage() {
           <button
             key={tab}
             type="button"
-            onClick={() => setActiveTab(tab)}
+            onClick={() => switchTab(tab)}
             className={`rounded-full border px-4 py-2 text-[13.5px] font-semibold ${
               tab === activeTab
                 ? 'border-ink bg-ink text-white'
@@ -281,15 +290,12 @@ export default function ApplicationsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  {application.type === 'Job' && application.status !== 'Withdrawn' && (
-                    <button
-                      type="button"
-                      onClick={() => handleWithdraw(application.id)}
-                      className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
-                    >
-                      {t('applications.withdraw')}
-                    </button>
-                  )}
+                  <Link
+                    to={localize(application.detailPath)}
+                    className="text-[12.5px] font-bold text-primary no-underline"
+                  >
+                    {t('applications.moreDetails')}
+                  </Link>
                   <span
                     className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-bold whitespace-nowrap ${STATUS_CLASSES[application.status]}`}
                   >
@@ -302,6 +308,29 @@ export default function ApplicationsPage() {
           {visible.length === 0 && (
             <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
               {t('applications.empty')}
+            </div>
+          )}
+          {pageCount > 1 && (
+            <div className="mt-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('applications.previousPage')}
+              </button>
+              <span className="text-[13px] text-slate">
+                {t('applications.pageLabel', { page: currentPage, total: pageCount })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))}
+                disabled={currentPage === pageCount}
+                className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('applications.nextPage')}
+              </button>
             </div>
           )}
         </div>
