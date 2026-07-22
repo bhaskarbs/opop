@@ -196,8 +196,7 @@
           "Free access to income-type trainings",
           "Priority application review",
           "Featured listing when you post an idea",
-          "Access to contact numbers of candidates who applied for ideas",
-          "10 mock interviews / month"
+          "Access to contact numbers of candidates who applied for ideas"
         ]
       },
       "pro": {
@@ -206,7 +205,6 @@
         "period": "/month",
         "features": [
           "Everything in Plus",
-          "Unlimited mock interviews with detailed feedback",
           "Monthly 1:1 career coaching session",
           "Early access to new partnership listings",
           "Dedicated application status updates"
@@ -218,7 +216,6 @@
     "title": "Mock interviews",
     "subtitle": "Practice on camera, then review your recorded sessions anytime.",
     "limitsNotice": "You can record up to {{max}} sessions, each up to 20 minutes — recording stops automatically at the 20-minute mark.",
-    "limitsNoticeUnlimited": "Unlimited sessions on your plan — each up to 20 minutes, recording stops automatically at the 20-minute mark.",
     "autoStopped": "Recording stopped automatically at 20 minutes and was saved.",
     "cameraPreview": "[ camera preview ]",
     "cameraUnavailable": "Camera unavailable — check your browser permissions.",
@@ -239,7 +236,6 @@
     "uploadError": "Couldn't save your recording. Please try again.",
     "recordedLogs": "Recorded logs",
     "sessionsCount": "{{count}} of {{max}} sessions",
-    "sessionsCountUnlimited": "{{count}} sessions recorded",
     "recordingMeta": "{{date}} · {{count}} questions",
     "loadingSessions": "Loading your sessions…",
     "noSessions": "You haven't recorded any mock interviews yet.",

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../lib/apiClient'
-import { billingApi, type BackendSubscriptionPlan } from '../../lib/billingApi'
 import { candidateApi } from '../../lib/candidateApi'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
@@ -24,14 +23,10 @@ const FALLBACK_QUESTIONS: string[] = [
 ]
 
 const QUESTIONS_PER_SESSION = 8
-// Mirrors MockInterviewService's per-plan caps on the backend — kept as a plain client-side
-// constant (same precedent as the old flat MAX_SESSIONS) rather than a dedicated endpoint,
-// since the backend is the actual source of truth/enforcement either way.
-const MAX_SESSIONS_BY_PLAN: Record<BackendSubscriptionPlan, number> = {
-  FREE: 3,
-  PLUS: 10,
-  PRO: Infinity,
-}
+// Flat across every plan — mirrors MockInterviewService.MAX_SESSIONS on the backend, kept as a
+// plain client-side constant rather than a dedicated endpoint since the backend is the actual
+// source of truth/enforcement either way.
+const MAX_SESSIONS = 3
 const MAX_DURATION_SECONDS = 20 * 60
 
 type TemplateInput = 'skill' | 'experienceLevel' | 'industry'
@@ -196,10 +191,6 @@ export default function MockInterviewPage() {
 
   const [sessions, setSessions] = useState<MockInterviewSessionSummary[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(true)
-  // Defaults to the Free-plan cap while the billing plan is still loading — the backend is the
-  // real enforcement either way, so an overly-conservative default just briefly disables the
-  // "Start" button rather than letting anyone bypass their real limit.
-  const [maxSessions, setMaxSessions] = useState(MAX_SESSIONS_BY_PLAN.FREE)
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [skills, setSkills] = useState<string[]>([])
@@ -287,21 +278,6 @@ export default function MockInterviewPage() {
     }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    billingApi
-      .mine()
-      .then((billing) => {
-        if (!cancelled) setMaxSessions(MAX_SESSIONS_BY_PLAN[billing.currentPlan])
-      })
-      .catch(() => {
-        // Best-effort — stays at the conservative Free-plan default if this fails.
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   function toggleSkillSelected(skill: string) {
     setSelectedSkills((prev) =>
       prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill],
@@ -374,7 +350,7 @@ export default function MockInterviewPage() {
   }
 
   async function handleStart(repeat = false) {
-    if (sessions.length >= maxSessions) return
+    if (sessions.length >= MAX_SESSIONS) return
     setCameraError(null)
     setUploadError(null)
     setAutoStopped(false)
@@ -530,17 +506,15 @@ export default function MockInterviewPage() {
     }
   }
 
-  const atSessionLimit = sessions.length >= maxSessions
-  const unlimitedSessions = maxSessions === Infinity
-  const limitsNoticeKey = unlimitedSessions
-    ? 'mockInterview.limitsNoticeUnlimited'
-    : 'mockInterview.limitsNotice'
+  const atSessionLimit = sessions.length >= MAX_SESSIONS
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 pt-7 pb-16">
       <h1 className="mb-1 text-xl font-extrabold text-ink">{t('mockInterview.title')}</h1>
       <p className="mb-1.5 text-sm text-slate">{t('mockInterview.subtitle')}</p>
-      <p className="mb-6 text-[13px] text-fog">{t(limitsNoticeKey, { max: maxSessions })}</p>
+      <p className="mb-6 text-[13px] text-fog">
+        {t('mockInterview.limitsNotice', { max: MAX_SESSIONS })}
+      </p>
 
       <div className="mb-9 grid grid-cols-1 gap-6 profile:grid-cols-[minmax(0,1fr)_320px]">
         <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-footer">
@@ -664,7 +638,7 @@ export default function MockInterviewPage() {
             ) : (
               <div className="text-[15px] leading-normal font-bold text-ink">
                 {atSessionLimit
-                  ? t(limitsNoticeKey, { max: maxSessions })
+                  ? t('mockInterview.limitsNotice', { max: MAX_SESSIONS })
                   : t('mockInterview.readyToStart')}
               </div>
             )}
@@ -744,9 +718,7 @@ export default function MockInterviewPage() {
       <div className="mb-3.5 flex items-baseline justify-between">
         <h2 className="text-base font-bold text-ink">{t('mockInterview.recordedLogs')}</h2>
         <span className="text-[13px] text-fog">
-          {unlimitedSessions
-            ? t('mockInterview.sessionsCountUnlimited', { count: sessions.length })
-            : t('mockInterview.sessionsCount', { count: sessions.length, max: maxSessions })}
+          {t('mockInterview.sessionsCount', { count: sessions.length, max: MAX_SESSIONS })}
         </span>
       </div>
       {playbackError && (
