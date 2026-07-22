@@ -14,8 +14,9 @@ export interface SkillsTagInputProps {
 const MAX_SUGGESTIONS = 8
 
 /** Enter-to-add tag input (same interaction as CandidateProfilePage/PostJobPage's hand-rolled
- * skill tagging) plus a filtered suggestion dropdown fed by `suggestions` — click a suggestion
- * or press Enter on free text to add it. */
+ * skill tagging) plus a filtered suggestion dropdown fed by `suggestions` — click a suggestion,
+ * or press Enter to add it. Arrow keys move a highlighted suggestion; Enter on a highlighted
+ * option adds that one instead of the raw typed text. */
 export function SkillsTagInput({
   value,
   onChange,
@@ -27,10 +28,12 @@ export function SkillsTagInput({
 }: SkillsTagInputProps) {
   const inputId = useId()
   const [draft, setDraft] = useState('')
+  const [dismissed, setDismissed] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
 
   const trimmedDraft = draft.trim().toLowerCase()
   const filteredSuggestions =
-    trimmedDraft === ''
+    trimmedDraft === '' || dismissed
       ? []
       : suggestions
           .filter((skill) => !value.includes(skill) && skill.toLowerCase().includes(trimmedDraft))
@@ -42,16 +45,38 @@ export function SkillsTagInput({
       onChange([...value, trimmed])
     }
     setDraft('')
+    setDismissed(true)
+    setHighlightedIndex(-1)
   }
 
   function removeSkill(skill: string) {
     onChange(value.filter((existing) => existing !== skill))
   }
 
+  function handleDraftChange(next: string) {
+    setDraft(next)
+    setDismissed(false)
+    setHighlightedIndex(-1)
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== 'Enter') return
-    event.preventDefault()
-    addSkill(draft)
+    const hasSuggestions = filteredSuggestions.length > 0
+    if (event.key === 'ArrowDown' && hasSuggestions) {
+      event.preventDefault()
+      setHighlightedIndex((prev) => Math.min(prev + 1, filteredSuggestions.length - 1))
+    } else if (event.key === 'ArrowUp' && hasSuggestions) {
+      event.preventDefault()
+      setHighlightedIndex((prev) => Math.max(prev - 1, -1))
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      if (hasSuggestions && highlightedIndex >= 0) {
+        addSkill(filteredSuggestions[highlightedIndex])
+      } else {
+        addSkill(draft)
+      }
+    } else if (event.key === 'Escape') {
+      setDismissed(true)
+    }
   }
 
   return (
@@ -85,7 +110,7 @@ export function SkillsTagInput({
         <input
           id={inputId}
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => handleDraftChange(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={cn(
@@ -97,13 +122,16 @@ export function SkillsTagInput({
         />
         {filteredSuggestions.length > 0 && (
           <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-control border border-border bg-surface py-1 shadow-md">
-            {filteredSuggestions.map((skill) => (
+            {filteredSuggestions.map((skill, index) => (
               <li key={skill}>
                 <button
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setHighlightedIndex(index)}
                   onClick={() => addSkill(skill)}
-                  className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-neutral-tint"
+                  className={`block w-full px-3 py-2 text-left text-sm text-ink ${
+                    index === highlightedIndex ? 'bg-neutral-tint' : 'hover:bg-neutral-tint'
+                  }`}
                 >
                   {skill}
                 </button>

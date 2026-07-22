@@ -4,5 +4,9 @@ export { Card, CardTitle, CardDescription, type CardProps } from './Card'
 export { Input, type InputProps } from './Input'
 export { PasswordInput, type PasswordInputProps } from './PasswordInput'
 export { SkillsTagInput, type SkillsTagInputProps } from './SkillsTagInput'
+export {
+  SearchAutocompleteInput,
+  type SearchAutocompleteInputProps,
+} from './SearchAutocompleteInput'
 export { Badge, type BadgeProps, type BadgeVariant } from './Badge'
 export { Tag, type TagProps, type TagVariant } from './Tag'
