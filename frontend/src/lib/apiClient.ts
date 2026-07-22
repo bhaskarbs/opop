@@ -31,7 +31,10 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+// Exported so pages can build a full URL for a plain <img src> (relative paths like
+// CandidateProfileResponse.photoUrl won't resolve on their own — the frontend dev server and
+// backend run on different origins/ports).
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

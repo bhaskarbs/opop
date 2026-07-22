@@ -20,6 +20,8 @@ public record CandidateProfileResponse(
         String resumeFileName,
         Instant resumeUploadedAt,
         Long resumeSizeBytes,
+        // Relative path (see PhotoUploadResponse) — null until a photo is uploaded.
+        String photoUrl,
         String lifeGoals,
         String workCulture,
         String workModePreference,

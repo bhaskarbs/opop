@@ -44,6 +44,11 @@ public class SecurityConfig {
                                 // Security. See RazorpayWebhookController.
                                 "/api/webhooks/razorpay")
                         .permitAll()
+                        // Public so a plain <img src> can load it with no bearer token — see
+                        // CandidatePhotoController. Distinct from the singular "/api/candidate/**"
+                        // (that candidate's own authenticated profile) below.
+                        .requestMatchers(HttpMethod.GET, "/api/candidates/*/photo")
+                        .permitAll()
                         // /mine and /pending must be declared before the general GET
                         // /api/jobs/** permitAll rule below — authorizeHttpRequests matches in
                         // declaration order, and both would otherwise also match that broader

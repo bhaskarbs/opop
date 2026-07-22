@@ -74,6 +74,7 @@
     },
     "replace": "Replace",
     "resumeUploaded": "Uploaded {{uploaded}} · {{size}}",
+    "changePhoto": "Change profile photo",
     "skillsBody": "Technical or soft — these power matches across jobs, partnerships, and community roles.",
     "removeSkill": "Remove {{skill}}",
     "addSkillPlaceholder": "Add a skill and press enter",

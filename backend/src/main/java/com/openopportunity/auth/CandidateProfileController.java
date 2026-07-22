@@ -1,6 +1,7 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.CandidateProfileResponse;
+import com.openopportunity.auth.dto.PhotoUploadResponse;
 import com.openopportunity.auth.dto.ResumeUploadResponse;
 import com.openopportunity.auth.dto.UpdateGoalsRequest;
 import com.openopportunity.auth.dto.UpdateMobileRequest;
@@ -65,6 +66,11 @@ public class CandidateProfileController {
     @PostMapping("/resume")
     public ResponseEntity<ResumeUploadResponse> uploadResume(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(candidateProfileService.uploadResume(currentUserId(), file));
+    }
+
+    @PostMapping("/photo")
+    public ResponseEntity<PhotoUploadResponse> uploadPhoto(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(candidateProfileService.uploadPhoto(currentUserId(), file));
     }
 
     private UUID currentUserId() {
