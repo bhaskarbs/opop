@@ -14,6 +14,7 @@ import {
   type ExperienceLevelLabel,
 } from '../../lib/jobEnums'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
+import { useAuthStore } from '../../stores/authStore'
 
 const NAV_SECTIONS = [
   { labelKey: 'profile.nav.personalDetails', href: '#personal' },
@@ -52,13 +53,12 @@ export default function CandidateProfilePage() {
   const [resumeError, setResumeError] = useState<string | null>(null)
   const resumeInputRef = useRef<HTMLInputElement>(null)
 
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  // photoUrl is a stable path (`/api/candidates/{id}/photo`) — re-uploading a replacement photo
-  // doesn't change that string, so the <img> src wouldn't change and the browser would just
-  // keep showing its cached response for that URL. This gets bumped on every load/upload and
-  // appended as a cache-busting query param so a new photo actually shows without a manual
-  // refresh.
-  const [photoVersion, setPhotoVersion] = useState(0)
+  // Lives in the shared auth store (not page-local state) so the header's avatar and this
+  // page's avatar always show the same photo, including immediately after an upload here —
+  // see authStore.setCandidatePhoto and AuthenticatedLayout.
+  const photoUrl = useAuthStore((state) => state.candidatePhotoUrl)
+  const photoVersion = useAuthStore((state) => state.candidatePhotoVersion)
+  const setCandidatePhoto = useAuthStore((state) => state.setCandidatePhoto)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -90,8 +90,7 @@ export default function CandidateProfilePage() {
         setResumeFileName(data.resumeFileName)
         setResumeUploadedAt(data.resumeUploadedAt)
         setResumeSizeBytes(data.resumeSizeBytes)
-        setPhotoUrl(data.photoUrl)
-        setPhotoVersion(Date.now())
+        setCandidatePhoto(data.photoUrl)
         setSkills(data.skills)
         setLifeGoals(data.lifeGoals ?? '')
         setWorkCulture(data.workCulture ?? '')
@@ -107,7 +106,7 @@ export default function CandidateProfilePage() {
     return () => {
       cancelled = true
     }
-  }, [t])
+  }, [t, setCandidatePhoto])
 
   async function handleSavePersonal() {
     setPersonalError(null)
@@ -154,8 +153,7 @@ export default function CandidateProfilePage() {
     setUploadingPhoto(true)
     try {
       const uploaded = await candidateApi.uploadPhoto(file)
-      setPhotoUrl(uploaded.photoUrl)
-      setPhotoVersion(Date.now())
+      setCandidatePhoto(uploaded.photoUrl)
     } catch (error) {
       setPhotoError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {

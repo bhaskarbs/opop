@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import type { UserRole } from '../lib/apiClient'
 import { Footer, Header, getActiveNavLabel, type HeaderVariant } from '../components/layout'
+import { useCandidatePhotoSync } from '../hooks/useCandidatePhotoSync'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 
@@ -32,6 +33,9 @@ export default function PublicLayout() {
   // The candidate Log in/Register CTAs are confusing on the company login page itself — a
   // company visitor is already looking at a login form, just not this one.
   const showGuestAuthLinks = !location.pathname.endsWith(ROUTES.companyLogin)
+  const { candidatePhotoUrl, candidatePhotoVersion } = useCandidatePhotoSync(
+    variant === 'candidate',
+  )
 
   return (
     <>
@@ -39,6 +43,8 @@ export default function PublicLayout() {
         variant={variant}
         activeItem={activeItem}
         userName={user?.fullName}
+        userPhotoUrl={candidatePhotoUrl}
+        userPhotoVersion={candidatePhotoVersion}
         showGuestAuthLinks={showGuestAuthLinks}
       />
       <Outlet />
