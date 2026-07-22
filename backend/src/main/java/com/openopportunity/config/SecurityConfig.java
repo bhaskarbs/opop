@@ -38,6 +38,8 @@ public class SecurityConfig {
                                 "/api/auth/google/company",
                                 "/api/auth/refresh",
                                 "/api/auth/logout",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
                                 "/api/community/interest",
                                 // Razorpay calls this server-to-server with no JWT — auth is the
                                 // HMAC signature check inside CandidateBillingService, not Spring
