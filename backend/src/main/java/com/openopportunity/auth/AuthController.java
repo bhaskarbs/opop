@@ -7,6 +7,7 @@ import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.dto.ResetPasswordRequest;
 import com.openopportunity.auth.dto.UserSummary;
+import com.openopportunity.auth.dto.VerifyEmailRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -83,6 +84,22 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        authService.verifyEmail(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Authenticated (see class-level SecurityConfig — this path falls under the default
+     * "anyRequest().authenticated()" rule, not the permitAll list) — always the caller's own
+     * account, so no email/role is taken as input. */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification() {
+        UUID userId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        authService.resendVerificationEmail(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken) {
@@ -102,7 +119,8 @@ public class AuthController {
     public ResponseEntity<UserSummary> me() {
         UUID userId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userRepository.findById(userId).orElseThrow();
-        return ResponseEntity.ok(new UserSummary(user.getId(), user.getEmail(), user.getFullName(), user.getRole()));
+        return ResponseEntity.ok(
+                new UserSummary(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.isEmailVerified()));
     }
 
     private ResponseEntity<AuthResponse> withRefreshCookie(AuthService.Issued issued, HttpStatus status) {

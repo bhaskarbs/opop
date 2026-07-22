@@ -28,6 +28,8 @@ import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import VerifyEmailPage from './pages/auth/VerifyEmailPage'
+import VerifyEmailPendingPage from './pages/auth/VerifyEmailPendingPage'
 import CompanyLoginPage from './pages/auth/CompanyLoginPage'
 import CompanyRegisterPage from './pages/auth/CompanyRegisterPage'
 import AdminLoginPage from './pages/auth/AdminLoginPage'
@@ -55,6 +57,7 @@ import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminMockInterviewQuestionsPage from './pages/admin/AdminMockInterviewQuestionsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import AdminBillingPage from './pages/admin/AdminBillingPage'
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
@@ -118,6 +121,8 @@ function App() {
               <Route path="register" element={<RegisterPage />} />
               <Route path="forgot-password" element={<ForgotPasswordPage />} />
               <Route path="reset-password" element={<ResetPasswordPage />} />
+              <Route path="verify-email" element={<VerifyEmailPage />} />
+              <Route path="verify-email-pending" element={<VerifyEmailPendingPage />} />
               <Route path="company/login" element={<CompanyLoginPage />} />
               <Route path="company/register" element={<CompanyRegisterPage />} />
               <Route path="admin/login" element={<AdminLoginPage />} />
@@ -168,6 +173,7 @@ function App() {
                 />
                 <Route path="admin/reports" element={<AdminReportsPage />} />
                 <Route path="admin/billing" element={<AdminBillingPage />} />
+                <Route path="admin/settings" element={<AdminSettingsPage />} />
               </Route>
             </Route>
 

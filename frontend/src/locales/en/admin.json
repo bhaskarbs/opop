@@ -227,5 +227,18 @@
       "upgradeToPlus": "Upgrade to Plus",
       "confirmDowngrade": "Downgrade this candidate to the Free plan?"
     }
+  },
+  "settings": {
+    "title": "Platform settings",
+    "subtitle": "Live feature toggles for the whole platform — changes take effect immediately.",
+    "loading": "Loading settings…",
+    "loadError": "Couldn't load platform settings.",
+    "saveError": "Couldn't save this setting. Please try again.",
+    "emailVerification": {
+      "title": "Require candidates to verify their email",
+      "body": "When on, a new candidate can't apply to jobs, post ideas, or use any other feature until they click the link in their verification email.",
+      "statusOn": "On — new candidates must verify before using the platform.",
+      "statusOff": "Off — candidates can use the platform without verifying their email."
+    }
   }
 }

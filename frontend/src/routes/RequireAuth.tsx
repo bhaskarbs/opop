@@ -31,5 +31,12 @@ export function RequireAuth({ role }: RequireAuthProps) {
     return <Navigate to={localize(LOGIN_ROUTE_BY_ROLE[role])} state={{ from: location }} replace />
   }
 
+  // Candidate-only gate (see EmailVerificationFilter on the backend, which enforces the same
+  // thing server-side) — a candidate who hasn't verified their email can't reach any candidate
+  // route until they do, not just a nag banner on top of the real page.
+  if (role === 'CANDIDATE' && !user.emailVerified) {
+    return <Navigate to={localize(ROUTES.verifyEmailPending)} replace />
+  }
+
   return <Outlet />
 }

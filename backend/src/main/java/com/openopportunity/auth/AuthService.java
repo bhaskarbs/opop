@@ -7,16 +7,20 @@ import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.auth.dto.ResetPasswordRequest;
 import com.openopportunity.auth.dto.UserSummary;
+import com.openopportunity.auth.dto.VerifyEmailRequest;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
+import com.openopportunity.auth.exception.EmailVerificationEmailException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidOrExpiredResetTokenException;
+import com.openopportunity.auth.exception.InvalidOrExpiredVerificationTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.PasswordResetEmailException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.settings.PlatformSettingsService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,6 +30,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -40,12 +45,17 @@ public class AuthService {
     // Reset links are single-use and short-lived on purpose — long enough for someone to check
     // their inbox, short enough that a leaked-but-unused link stops being useful quickly.
     private static final long RESET_TOKEN_EXPIRY_MINUTES = 60;
+    // Verification links get a longer window than reset links — there's no urgency to force
+    // (unlike a password reset, nobody's locked out while waiting), just an inbox to check.
+    private static final long VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final CompanyProfileRepository companyProfileRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final PlatformSettingsService platformSettingsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleTokenVerifierService googleTokenVerifierService;
@@ -61,6 +71,8 @@ public class AuthService {
             CompanyProfileRepository companyProfileRepository,
             CandidateProfileRepository candidateProfileRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
+            EmailVerificationTokenRepository emailVerificationTokenRepository,
+            PlatformSettingsService platformSettingsService,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             GoogleTokenVerifierService googleTokenVerifierService,
@@ -73,6 +85,8 @@ public class AuthService {
         this.companyProfileRepository = companyProfileRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+        this.platformSettingsService = platformSettingsService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.googleTokenVerifierService = googleTokenVerifierService;
@@ -99,8 +113,14 @@ public class AuthService {
             requireCandidateProfileFields(request, cleanedSkills);
         }
 
+        boolean requireEmailVerification =
+                role == UserRole.CANDIDATE && platformSettingsService.isEmailVerificationEnabled();
+
         User user =
                 new User(request.email(), passwordEncoder.encode(request.password()), request.fullName(), role);
+        if (requireEmailVerification) {
+            user.markEmailUnverified();
+        }
         userRepository.save(user);
 
         if (role == UserRole.COMPANY) {
@@ -120,6 +140,20 @@ public class AuthService {
             CandidateProfile profile = new CandidateProfile(
                     user.getId(), request.mobile(), cleanedSkills, request.resumeFileName());
             candidateProfileRepository.save(profile);
+
+            if (requireEmailVerification) {
+                // Best-effort — a candidate whose verification email doesn't go out (SMTP
+                // hiccup, no credentials configured locally) still gets an account; they can
+                // retry via "Resend verification email" (see resendVerificationEmail), which
+                // does propagate a failure since that's an explicit user-initiated retry rather
+                // than registration itself.
+                String rawToken = createVerificationToken(user);
+                try {
+                    mailSender.send(verificationEmailMessage(user, rawToken));
+                } catch (MailException ignored) {
+                    // See comment above.
+                }
+            }
         }
 
         return issueTokens(user);
@@ -289,13 +323,70 @@ public class AuthService {
         refreshTokenRepository.saveAll(activeSessions);
     }
 
+    /** Authenticated action (the caller is always the account owner — see AuthController) so,
+     * unlike requestPasswordReset, there's no email/role ambiguity or enumeration concern to
+     * design around. A no-op if the account is already verified. */
+    @Transactional
+    public void resendVerificationEmail(UUID userId) {
+        User user = userRepository.findById(userId).orElseThrow(InvalidCredentialsException::new);
+        if (user.isEmailVerified()) {
+            return;
+        }
+        String rawToken = createVerificationToken(user);
+        try {
+            mailSender.send(verificationEmailMessage(user, rawToken));
+        } catch (MailException e) {
+            throw new EmailVerificationEmailException(e);
+        }
+    }
+
+    @Transactional
+    public void verifyEmail(VerifyEmailRequest request) {
+        EmailVerificationToken token = emailVerificationTokenRepository
+                .findByTokenHash(hash(request.token()))
+                .filter(EmailVerificationToken::isActive)
+                .orElseThrow(InvalidOrExpiredVerificationTokenException::new);
+
+        User user = userRepository
+                .findById(token.getUserId())
+                .orElseThrow(InvalidOrExpiredVerificationTokenException::new);
+        user.markEmailVerified();
+        userRepository.save(user);
+
+        token.markUsed();
+        emailVerificationTokenRepository.save(token);
+    }
+
+    private String createVerificationToken(User user) {
+        String rawToken = generateRawToken();
+        Instant expiresAt = Instant.now().plus(VERIFICATION_TOKEN_EXPIRY_HOURS, ChronoUnit.HOURS);
+        emailVerificationTokenRepository.save(new EmailVerificationToken(user.getId(), hash(rawToken), expiresAt));
+        return rawToken;
+    }
+
+    private SimpleMailMessage verificationEmailMessage(User user, String rawToken) {
+        // No stored locale preference to route to — defaults to /en, same as the password reset
+        // link (see requestPasswordReset).
+        String verifyLink = frontendBaseUrl + "/en/verify-email?token=" + rawToken;
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(mailFromAddress);
+        message.setTo(user.getEmail());
+        message.setSubject("Verify your OpenOpportunity email");
+        message.setText(
+                "Welcome to OpenOpportunity! Verify your email to start applying to jobs, partnerships, "
+                        + "and community roles.\n\n"
+                        + "Verify it here (link expires in 24 hours): " + verifyLink);
+        return message;
+    }
+
     private Issued issueTokens(User user) {
         String accessToken = jwtService.generateAccessToken(user);
         String rawRefreshToken = generateRawToken();
         Instant expiresAt = Instant.now().plus(refreshTokenExpiryDays, ChronoUnit.DAYS);
         refreshTokenRepository.save(new RefreshToken(user.getId(), hash(rawRefreshToken), expiresAt));
 
-        UserSummary summary = new UserSummary(user.getId(), user.getEmail(), user.getFullName(), user.getRole());
+        UserSummary summary = new UserSummary(
+                user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.isEmailVerified());
         AuthResponse response =
                 new AuthResponse(accessToken, "Bearer", jwtService.getAccessTokenExpirySeconds(), summary);
         long refreshTokenExpirySeconds = refreshTokenExpiryDays * 24 * 60 * 60;

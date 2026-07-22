@@ -62,7 +62,7 @@ export const USER_MENU_BY_VARIANT: Partial<Record<HeaderVariant, NavItem[]>> = {
     { label: 'userMenu.billing', to: ROUTES.companyBilling },
     { label: 'nav.logout' },
   ],
-  admin: [{ label: 'userMenu.adminSettings' }, { label: 'nav.logout' }],
+  admin: [{ label: 'userMenu.adminSettings', to: ROUTES.adminSettings }, { label: 'nav.logout' }],
 }
 
 export const DEFAULT_USER_NAME: Partial<Record<HeaderVariant, string>> = {
