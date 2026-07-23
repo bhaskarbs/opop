@@ -182,9 +182,10 @@ class JobServiceTest {
     }
 
     @Test
-    void getActiveDetailRejectsDraftJob() {
+    void getRejectsDraftJobFromNonOwner() {
+        UUID companyId = UUID.randomUUID();
         Job draft = new Job(
-                UUID.randomUUID(),
+                companyId,
                 "Vertex Robotics",
                 "Senior Frontend Developer",
                 EmploymentType.FULL_TIME,
@@ -201,15 +202,42 @@ class JobServiceTest {
                 JobStatus.DRAFT);
         when(jobRepository.findById(draft.getId())).thenReturn(Optional.of(draft));
 
-        assertThatThrownBy(() -> jobService.getActiveDetail(draft.getId()))
+        assertThatThrownBy(() -> jobService.get(draft.getId(), UUID.randomUUID()))
                 .isInstanceOf(JobNotFoundException.class);
+        assertThatThrownBy(() -> jobService.get(draft.getId(), null)).isInstanceOf(JobNotFoundException.class);
     }
 
     @Test
-    void getActiveDetailRejectsMissingJob() {
+    void getAllowsOwnerToViewTheirOwnDraftJob() {
+        UUID companyId = UUID.randomUUID();
+        Job draft = new Job(
+                companyId,
+                "Vertex Robotics",
+                "Senior Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "desc",
+                List.of(),
+                List.of(),
+                List.of(),
+                JobStatus.DRAFT);
+        when(jobRepository.findById(draft.getId())).thenReturn(Optional.of(draft));
+
+        JobDetail detail = jobService.get(draft.getId(), companyId);
+
+        assertThat(detail.status()).isEqualTo(JobStatus.DRAFT);
+    }
+
+    @Test
+    void getRejectsMissingJob() {
         when(jobRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> jobService.getActiveDetail(UUID.randomUUID()))
+        assertThatThrownBy(() -> jobService.get(UUID.randomUUID(), null))
                 .isInstanceOf(JobNotFoundException.class);
     }
 }

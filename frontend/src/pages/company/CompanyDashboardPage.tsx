@@ -14,16 +14,18 @@ const VERIFICATION_LABEL_KEYS: Record<CompanyProfileResponse['verificationStatus
 }
 
 // Mock content, not translated UI copy — same treatment as mock data elsewhere.
-const APPLICANTS = [
-  { name: 'Rohan Mehta', initial: 'R', skills: 'React · UI Systems · 5 yrs' },
-  { name: 'Anita Sharma', initial: 'A', skills: 'QA · Embedded · 3 yrs' },
-  { name: 'Karan Patel', initial: 'K', skills: 'Customer Success · 4 yrs' },
-]
+// Partnership applicants / seminars sections are commented out below (see CompanyDashboardPage
+// return JSX) — kept here, also commented, so both can be restored together.
+// const APPLICANTS = [
+//   { name: 'Rohan Mehta', initial: 'R', skills: 'React · UI Systems · 5 yrs' },
+//   { name: 'Anita Sharma', initial: 'A', skills: 'QA · Embedded · 3 yrs' },
+//   { name: 'Karan Patel', initial: 'K', skills: 'Customer Success · 4 yrs' },
+// ]
 
-const SEMINARS = [
-  { title: 'Partner intro session — Frontend', date: 'Jul 14, 4:00 PM', invited: 22 },
-  { title: 'Hardware QA meetup', date: 'Jul 21, 11:00 AM', invited: 12 },
-]
+// const SEMINARS = [
+//   { title: 'Partner intro session — Frontend', date: 'Jul 14, 4:00 PM', invited: 22 },
+//   { title: 'Hardware QA meetup', date: 'Jul 21, 11:00 AM', invited: 12 },
+// ]
 
 const STATUS_LABEL_KEYS: Record<JobSummary['status'], string> = {
   ACTIVE: 'dashboard.status.active',
@@ -109,7 +111,7 @@ export default function CompanyDashboardPage() {
       trend: '',
       trendColorClass: 'text-fog',
     },
-    {
+    /* {
       labelKey: 'dashboard.kpis.partnershipApplicants',
       value: '87',
       trend: '+12 this week',
@@ -120,7 +122,7 @@ export default function CompanyDashboardPage() {
       value: '34',
       trend: 'Next: Jul 14',
       trendColorClass: 'text-fog',
-    },
+    }, */
   ]
 
   return (
@@ -190,13 +192,12 @@ export default function CompanyDashboardPage() {
         <div className="rounded-card border border-border bg-surface p-[22px]">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-bold text-ink">{t('dashboard.activeJobPostings')}</h2>
-            <a
-              href="#postings"
-              onClick={(event) => event.preventDefault()}
+            <Link
+              to={localize(ROUTES.companyJobPostings)}
               className="text-[13px] font-bold text-primary no-underline"
             >
               {t('dashboard.manageAll')}
-            </a>
+            </Link>
           </div>
           {postings.map((posting) => (
             <div
@@ -220,6 +221,7 @@ export default function CompanyDashboardPage() {
             </div>
           ))}
 
+          {/*
           <div className="mt-[26px] mb-4 flex items-center justify-between">
             <h2 className="text-base font-bold text-ink">{t('dashboard.partnershipApplicants')}</h2>
             <a
@@ -260,9 +262,11 @@ export default function CompanyDashboardPage() {
               </div>
             </div>
           ))}
+          */}
         </div>
 
         <aside className="header:order-none order-first">
+          {/*
           <div className="mb-4 rounded-card border border-border bg-surface p-[22px]">
             <h3 className="mb-3 text-[14.5px] font-bold text-ink">
               {t('dashboard.upcomingSeminars')}
@@ -282,6 +286,7 @@ export default function CompanyDashboardPage() {
               {t('dashboard.scheduleNewSeminar')}
             </Link>
           </div>
+          */}
           <div className="rounded-card border border-border bg-surface p-[22px]">
             <h3 className="mb-3 text-[14.5px] font-bold text-ink">
               {t('dashboard.notificationsSent')}

@@ -37,6 +37,8 @@ export const ROUTES = {
   companyProfile: '/company/profile',
   companyPartnerships: '/company/partnerships',
   companyPostJob: '/company/post-job',
+  companyJobPostings: '/company/job-postings',
+  companyJobEdit: (jobId: string) => `/company/job-postings/${jobId}/edit`,
   companySearchCandidates: '/company/search-candidates',
   companySeminars: '/company/seminars',
   companyIdeas: '/company/ideas',

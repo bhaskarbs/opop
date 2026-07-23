@@ -39,6 +39,12 @@ const EMPLOYMENT_TYPE_TO_BACKEND: Record<EmploymentTypeLabel, BackendEmploymentT
   Contract: 'CONTRACT',
   Internship: 'INTERNSHIP',
 }
+const BACKEND_TO_EMPLOYMENT_TYPE: Record<BackendEmploymentType, EmploymentTypeLabel> = {
+  FULL_TIME: 'Full-time',
+  PART_TIME: 'Part-time',
+  CONTRACT: 'Contract',
+  INTERNSHIP: 'Internship',
+}
 
 export function experienceLevelToBackend(label: ExperienceLevelLabel): BackendExperienceLevel {
   return EXPERIENCE_LEVEL_TO_BACKEND[label]
@@ -54,4 +60,7 @@ export function workModeFromBackend(value: BackendWorkMode): WorkModeLabel {
 }
 export function employmentTypeToBackend(label: EmploymentTypeLabel): BackendEmploymentType {
   return EMPLOYMENT_TYPE_TO_BACKEND[label]
+}
+export function employmentTypeFromBackend(value: BackendEmploymentType): EmploymentTypeLabel {
+  return BACKEND_TO_EMPLOYMENT_TYPE[value]
 }

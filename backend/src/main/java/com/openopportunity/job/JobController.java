@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,7 +64,7 @@ public class JobController {
 
     @GetMapping("/{id}")
     public JobDetail detail(@PathVariable UUID id) {
-        return jobService.getActiveDetail(id);
+        return jobService.get(id, currentUserIdOrNull());
     }
 
     @PostMapping
@@ -84,5 +85,14 @@ public class JobController {
 
     private UUID currentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
+    /** GET /{id} is public (permitAll, see SecurityConfig) — an anonymous request still gets an
+     * Authentication object from Spring Security, but its principal is the string "anonymousUser"
+     * rather than a UUID, so this can't reuse currentUserId()'s unchecked cast. */
+    private UUID currentUserIdOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Object principal = authentication == null ? null : authentication.getPrincipal();
+        return principal instanceof UUID userId ? userId : null;
     }
 }

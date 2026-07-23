@@ -59,10 +59,18 @@ public class JobService {
         return jobRepository.findAll(spec, resolveSort(sort)).stream().map(this::toSummary).toList();
     }
 
+    /** Mirrors IdeaService.get()'s owner-vs-everyone-else visibility split: anyone can view an
+     * ACTIVE job (the public job detail page), but a DRAFT/PENDING_APPROVAL/REJECTED/CLOSED job
+     * is only visible to the company that posted it — e.g. so PostJobPage can load an existing
+     * posting to edit regardless of its current status. callerId is null for an anonymous
+     * request (see JobController.currentUserIdOrNull). */
     @Transactional(readOnly = true)
-    public JobDetail getActiveDetail(UUID id) {
-        Job job = jobRepository.findById(id).filter(j -> j.getStatus() == JobStatus.ACTIVE).orElseThrow(
-                () -> new JobNotFoundException(id));
+    public JobDetail get(UUID id, UUID callerId) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        boolean isOwner = callerId != null && job.getCompanyId().equals(callerId);
+        if (job.getStatus() != JobStatus.ACTIVE && !isOwner) {
+            throw new JobNotFoundException(id);
+        }
         return toDetail(job);
     }
 

@@ -15,6 +15,7 @@ import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.settings.PlatformSettingsService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +53,18 @@ class AuthServiceTest {
     @Mock
     private GoogleTokenVerifierService googleTokenVerifierService;
 
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private EmailVerificationTokenRepository emailVerificationTokenRepository;
+
+    @Mock
+    private PlatformSettingsService platformSettingsService;
+
+    @Mock
+    private JavaMailSender mailSender;
+
     private AuthService authService;
 
     @BeforeEach
@@ -60,10 +74,16 @@ class AuthServiceTest {
                 refreshTokenRepository,
                 companyProfileRepository,
                 candidateProfileRepository,
+                passwordResetTokenRepository,
+                emailVerificationTokenRepository,
+                platformSettingsService,
                 passwordEncoder,
                 jwtService,
                 googleTokenVerifierService,
-                30);
+                mailSender,
+                30,
+                "no-reply@test.com",
+                "http://localhost:5173");
     }
 
     private static RegisterRequest candidateRequest() {
@@ -91,12 +111,14 @@ class AuthServiceTest {
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
         when(jwtService.generateAccessToken(any())).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+        when(platformSettingsService.isEmailVerificationEnabled()).thenReturn(true);
 
         AuthService.Issued issued = authService.register(request);
 
         assertThat(issued.response().accessToken()).isEqualTo("access-token");
         assertThat(issued.response().user().email()).isEqualTo("rohan@example.com");
         assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
+        assertThat(issued.response().user().emailVerified()).isFalse();
         assertThat(issued.rawRefreshToken()).isNotBlank();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -122,10 +144,26 @@ class AuthServiceTest {
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
         when(jwtService.generateAccessToken(any())).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+        when(platformSettingsService.isEmailVerificationEnabled()).thenReturn(true);
 
         AuthService.Issued issued = authService.register(request);
 
         assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
+    }
+
+    @Test
+    void registerSkipsVerificationWhenDisabled() {
+        RegisterRequest request = candidateRequest();
+        when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("hashed");
+        when(jwtService.generateAccessToken(any())).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+        when(platformSettingsService.isEmailVerificationEnabled()).thenReturn(false);
+
+        AuthService.Issued issued = authService.register(request);
+
+        assertThat(issued.response().user().emailVerified()).isTrue();
+        verify(mailSender, org.mockito.Mockito.never()).send(any(org.springframework.mail.SimpleMailMessage.class));
     }
 
     @Test

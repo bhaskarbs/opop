@@ -58,7 +58,7 @@ export const USER_MENU_BY_VARIANT: Partial<Record<HeaderVariant, NavItem[]>> = {
   ],
   company: [
     { label: 'userMenu.companyProfile', to: ROUTES.companyProfile },
-    { label: 'userMenu.jobPostings' },
+    { label: 'userMenu.jobPostings', to: ROUTES.companyJobPostings },
     { label: 'userMenu.myIdeas', to: ROUTES.companyIdeas },
     { label: 'userMenu.billing', to: ROUTES.companyBilling },
     { label: 'nav.logout' },

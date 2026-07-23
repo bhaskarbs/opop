@@ -2,14 +2,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { type KeyboardEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller, useForm } from 'react-hook-form'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { Button, Input } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
   employmentTypeToBackend,
+  employmentTypeFromBackend,
   experienceLevelToBackend,
+  experienceLevelFromBackend,
   workModeToBackend,
+  workModeFromBackend,
   EMPLOYMENT_TYPES,
   EXPERIENCE_LEVELS,
   WORK_MODES,
@@ -97,11 +100,14 @@ export default function PostJobPage() {
   const { t } = useTranslation('company')
   const navigate = useNavigate()
   const localize = useLocalizedPath()
+  const { jobId } = useParams()
+  const editing = !!jobId
   const [newSkill, setNewSkill] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   // Mirrors JobService.requireEligibleToPostJobs on the backend — checked here too so a
   // not-yet-eligible company sees why instead of filling out the whole form only to hit a 403.
   const [eligible, setEligible] = useState<boolean | null>(null)
+  const [loadingExisting, setLoadingExisting] = useState(editing)
 
   useEffect(() => {
     let cancelled = false
@@ -124,6 +130,7 @@ export default function PostJobPage() {
     handleSubmit,
     control,
     getValues,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PostJobFormValues>({
     resolver: zodResolver(postJobSchema),
@@ -143,13 +150,62 @@ export default function PostJobPage() {
     },
   })
 
+  // Owner-only visibility on GET /api/jobs/{id} (see JobService.get) means this loads
+  // regardless of the existing posting's status (DRAFT/PENDING_APPROVAL/ACTIVE/...), unlike the
+  // public job detail page which only ever sees ACTIVE jobs.
+  useEffect(() => {
+    if (!jobId) return
+    let cancelled = false
+    jobsApi
+      .detail(jobId)
+      .then((detail) => {
+        if (cancelled) return
+        reset({
+          title: detail.title,
+          employmentType: employmentTypeFromBackend(detail.employmentType),
+          experienceLevel: experienceLevelFromBackend(detail.experienceLevel),
+          workMode: workModeFromBackend(detail.workMode),
+          location: detail.location,
+          salaryMin: detail.salaryMinLakhs != null ? String(detail.salaryMinLakhs) : '',
+          salaryMax: detail.salaryMaxLakhs != null ? String(detail.salaryMaxLakhs) : '',
+          deadline: detail.applicationDeadline ?? '',
+          aboutRole: detail.aboutRole,
+          responsibilities: detail.responsibilities.join('\n'),
+          requirements: detail.requirements.join('\n'),
+          skills: detail.skills,
+        })
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingExisting(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [jobId, reset, t])
+
+  function goToMyJobPostings() {
+    navigate(localize(ROUTES.companyJobPostings))
+  }
+
   async function onPublish(values: PostJobFormValues) {
     setFormError(null)
     try {
       // Companies can no longer publish straight to ACTIVE — this now goes into the Step 18
-      // admin job-approval queue and only appears live once an admin approves it.
-      await jobsApi.create(toJobRequest(values, 'PENDING_APPROVAL'))
-      navigate(localize(ROUTES.companyDashboard))
+      // admin job-approval queue and only appears live once an admin approves it. Editing an
+      // already-ACTIVE job the same way sends it back for re-approval rather than leaving it
+      // live with unreviewed changes.
+      if (editing && jobId) {
+        await jobsApi.update(jobId, toJobRequest(values, 'PENDING_APPROVAL'))
+        goToMyJobPostings()
+      } else {
+        await jobsApi.create(toJobRequest(values, 'PENDING_APPROVAL'))
+        navigate(localize(ROUTES.companyDashboard))
+      }
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
     }
@@ -163,17 +219,22 @@ export default function PostJobPage() {
       return
     }
     try {
-      await jobsApi.create(toJobRequest(values, 'DRAFT'))
-      navigate(localize(ROUTES.companyDashboard))
+      if (editing && jobId) {
+        await jobsApi.update(jobId, toJobRequest(values, 'DRAFT'))
+        goToMyJobPostings()
+      } else {
+        await jobsApi.create(toJobRequest(values, 'DRAFT'))
+        navigate(localize(ROUTES.companyDashboard))
+      }
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
     }
   }
 
-  if (eligible === null) {
+  if (eligible === null || loadingExisting) {
     return (
       <main className="mx-auto max-w-[840px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {t('postJob.checkingEligibility')}
+        {loadingExisting ? t('postJob.loadingExisting') : t('postJob.checkingEligibility')}
       </main>
     )
   }
@@ -197,7 +258,9 @@ export default function PostJobPage() {
 
   return (
     <main className="mx-auto max-w-[840px] px-6 py-7 pb-16">
-      <h1 className="mb-1 text-xl font-extrabold text-ink">{t('postJob.title')}</h1>
+      <h1 className="mb-1 text-xl font-extrabold text-ink">
+        {editing ? t('postJob.titleEdit') : t('postJob.title')}
+      </h1>
       <p className="mb-6 text-sm text-slate">{t('postJob.subtitle')}</p>
 
       <form onSubmit={handleSubmit(onPublish)} noValidate>
@@ -428,7 +491,7 @@ export default function PostJobPage() {
             {t('postJob.saveDraft')}
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {t('postJob.publish')}
+            {editing ? t('postJob.saveChanges') : t('postJob.publish')}
           </Button>
         </div>
       </form>

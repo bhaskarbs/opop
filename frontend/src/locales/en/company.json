@@ -111,6 +111,15 @@
     "completeProfileBanner": "Complete your company profile to start posting jobs and contacting candidates.",
     "completeProfileCta": "Complete profile →"
   },
+  "myJobPostings": {
+    "title": "My job postings",
+    "subtitle": "Track every job you've posted, in one place.",
+    "loading": "Loading your job postings…",
+    "loadError": "Could not load your job postings.",
+    "empty": "You haven't posted any jobs yet.",
+    "manage": "Manage →",
+    "pendingReviewNotice": "This job is awaiting admin review — you can't edit it until that's done."
+  },
   "postJob": {
     "employmentType": {
       "fullTime": "Full-time",
@@ -121,9 +130,11 @@
     "errorGeneric": "Something went wrong. Try again.",
     "errorTitleRequired": "Enter a job title before saving a draft.",
     "checkingEligibility": "Checking your company's verification status…",
+    "loadingExisting": "Loading this job posting…",
     "notEligibleTitle": "You can't post a job yet",
     "notEligibleBody": "Complete your company profile and wait for admin verification before posting a job. You can still search candidates in the meantime.",
     "title": "Post a job",
+    "titleEdit": "Edit job posting",
     "subtitle": "Reach candidates directly — and surface your listing to skill-matched partnership and community applicants too.",
     "roleDetails": "Role details",
     "fields": {
@@ -142,7 +153,8 @@
     "requiredSkillsBody": "Technical or soft — used to match this role to relevant candidates, and to surface it to skilled partnership/community applicants.",
     "matchNotice": "Candidates who match these skills but haven't landed similar roles will also see this listing alongside relevant startup partnerships and community opportunities.",
     "saveDraft": "Save as draft",
-    "publish": "Publish job"
+    "publish": "Publish job",
+    "saveChanges": "Save changes"
   },
   "searchCandidates": {
     "intent": {
