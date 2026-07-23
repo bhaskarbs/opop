@@ -94,10 +94,28 @@ function App() {
     // Silently try to re-establish a session from the httpOnly refresh cookie on load —
     // the access token itself is never persisted (see authStore), so this is the only
     // way a session survives a hard page reload.
+    //
+    // This call is already in flight the moment /login mounts. If the user submits the login
+    // form and it resolves *faster* than this one does, setSession() from the login flow runs
+    // first (status -> 'authenticated', dashboard renders) — but this call was fired before
+    // any cookie existed, so it then resolves as a failure and its clearSession() would
+    // immediately wipe out the freshly-established session, bouncing RequireAuth back to
+    // /login. That's exactly the "dashboard doesn't load after login, but a refresh fixes it"
+    // bug: a hard reload re-runs this same bootstrap with no stale call left to race against.
+    // Guarding on status still being 'checking' means this stale response is simply ignored
+    // once something else (login/logout) has already settled the auth state.
     authApi
       .refresh()
-      .then((response) => setSession(response.accessToken, response.user))
-      .catch(() => clearSession())
+      .then((response) => {
+        if (useAuthStore.getState().status === 'checking') {
+          setSession(response.accessToken, response.user)
+        }
+      })
+      .catch(() => {
+        if (useAuthStore.getState().status === 'checking') {
+          clearSession()
+        }
+      })
   }, [setSession, clearSession])
 
   return (
