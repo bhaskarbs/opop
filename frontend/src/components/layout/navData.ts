@@ -77,3 +77,11 @@ export const AVATAR_BG_CLASS: Partial<Record<HeaderVariant, string>> = {
   company: 'bg-teal',
   admin: 'bg-ink',
 }
+
+/** A light per-role tint on the header bar itself — the cheapest possible visual cue for which
+ * side you're on, especially with a candidate tab and a company tab open side by side. Reuses
+ * the same teal already assigned to the company avatar (see AVATAR_BG_CLASS) rather than
+ * introducing a new color. Falls back to the plain white bg-surface for guest/candidate/admin. */
+export const HEADER_BG_CLASS: Partial<Record<HeaderVariant, string>> = {
+  company: 'bg-teal-tint',
+}

@@ -8,7 +8,13 @@ import { cn } from '../../lib/cn'
 import { notificationsApi, type NotificationSummary } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
-import { AVATAR_BG_CLASS, DEFAULT_USER_NAME, NAV_BY_VARIANT, USER_MENU_BY_VARIANT } from './navData'
+import {
+  AVATAR_BG_CLASS,
+  DEFAULT_USER_NAME,
+  HEADER_BG_CLASS,
+  NAV_BY_VARIANT,
+  USER_MENU_BY_VARIANT,
+} from './navData'
 import { Logo } from './Logo'
 import { RouteLink } from './RouteLink'
 
@@ -65,6 +71,7 @@ export function Header({
   const resolvedUserName = userName ?? DEFAULT_USER_NAME[variant] ?? 'Rohan Mehta'
   const userInitial = resolvedUserName.charAt(0).toUpperCase()
   const avatarBgClass = AVATAR_BG_CLASS[variant] ?? 'bg-primary'
+  const headerBgClass = HEADER_BG_CLASS[variant] ?? 'bg-surface'
 
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -173,7 +180,7 @@ export function Header({
   }
 
   return (
-    <header className={cn('z-50 border-b border-border bg-surface', sticky && 'sticky top-0')}>
+    <header className={cn('z-50 border-b border-border', headerBgClass, sticky && 'sticky top-0')}>
       <div className="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between gap-4 px-6">
         <div className="flex min-w-0 items-center gap-8">
           <Link
