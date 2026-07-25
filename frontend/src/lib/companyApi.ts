@@ -53,6 +53,10 @@ export interface RevealCandidateContactResponse {
   contactNumber: string
 }
 
+export interface ResumeHtmlResponse {
+  html: string
+}
+
 // Richer than CandidateSearchSummary (see backend CandidateProfileForCompany) — still no
 // email/mobile up front, same boundary the search card already draws; resumeFileName is null
 // until the candidate has uploaded one.
@@ -114,4 +118,11 @@ export const companyApi = {
   // entirely client-side from this one Blob (see CandidateProfileViewPage).
   getCandidateResume: (userId: string) =>
     blobRequest(`/api/company/candidates/${userId}/resume`, authHeaders()),
+  // Backend reads the resume file (.pdf/.docx/.doc) server-side and returns it as an HTML
+  // fragment — used for the "view as web view" preview so non-PDF resumes render too, since a
+  // browser can't display .docx/.doc natively the way it can drop a PDF into an <iframe>.
+  getCandidateResumeHtml: (userId: string) =>
+    request<ResumeHtmlResponse>(`/api/company/candidates/${userId}/resume/html`, {
+      headers: authHeaders(),
+    }),
 }

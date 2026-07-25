@@ -2,6 +2,7 @@ package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.CandidateProfileForCompany;
 import com.openopportunity.auth.dto.CandidateSearchSummary;
+import com.openopportunity.auth.dto.ResumeHtmlResponse;
 import com.openopportunity.auth.dto.RevealCandidateContactResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -57,6 +58,11 @@ public class CandidateSearchController {
                         HttpHeaders.CONTENT_DISPOSITION,
                         safeDisposition + "; filename*=UTF-8''" + encodedFileName)
                 .body(resume.resource());
+    }
+
+    @GetMapping("/{userId}/resume/html")
+    public ResumeHtmlResponse getResumeHtml(@PathVariable UUID userId) {
+        return new ResumeHtmlResponse(candidateSearchService.getResumeHtml(currentUserId(), userId));
     }
 
     @PostMapping("/{userId}/reveal-contact")

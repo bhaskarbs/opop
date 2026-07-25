@@ -35,12 +35,6 @@ function formatDate(iso: string): string {
   })
 }
 
-// Only a PDF can actually render inline in an <iframe> — a browser has no native viewer for
-// .doc/.docx, so those only ever get the download action.
-function isPreviewable(fileName: string): boolean {
-  return fileName.toLowerCase().endsWith('.pdf')
-}
-
 export default function CandidateProfileViewPage() {
   const { t } = useTranslation('company')
   const localize = useLocalizedPath()
@@ -54,6 +48,13 @@ export default function CandidateProfileViewPage() {
   const [resumeUrl, setResumeUrl] = useState<string | null>(null)
   const [resumeLoading, setResumeLoading] = useState(false)
   const [resumeError, setResumeError] = useState<string | null>(null)
+
+  // The "view as web view" preview: the backend reads the resume file (.pdf/.docx/.doc)
+  // server-side and hands back an HTML fragment, so this renders the same for every supported
+  // file type — unlike dropping the raw file into an <iframe>, which only ever worked for PDFs.
+  const [resumeHtml, setResumeHtml] = useState<string | null>(null)
+  const [resumeHtmlLoading, setResumeHtmlLoading] = useState(false)
+  const [resumeHtmlError, setResumeHtmlError] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
 
   useEffect(() => {
@@ -129,8 +130,22 @@ export default function CandidateProfileViewPage() {
       setPreviewOpen(false)
       return
     }
-    const url = await ensureResumeLoaded()
-    if (url) setPreviewOpen(true)
+    if (!resumeHtml && userId) {
+      setResumeHtmlError(null)
+      setResumeHtmlLoading(true)
+      try {
+        const result = await companyApi.getCandidateResumeHtml(userId)
+        setResumeHtml(result.html)
+      } catch (caught) {
+        setResumeHtmlError(
+          caught instanceof ApiError ? caught.message : t('candidateProfile.resumeError'),
+        )
+        return
+      } finally {
+        setResumeHtmlLoading(false)
+      }
+    }
+    setPreviewOpen(true)
   }
 
   if (loading) {
@@ -260,19 +275,19 @@ export default function CandidateProfileViewPage() {
                 )}
               </div>
               <div className="flex gap-2">
-                {isPreviewable(profile.resumeFileName) && (
-                  <button
-                    type="button"
-                    disabled={!canContact || resumeLoading}
-                    onClick={handleTogglePreview}
-                    title={canContact ? undefined : t('searchCandidates.contactDisabledHint')}
-                    className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {previewOpen
+                <button
+                  type="button"
+                  disabled={!canContact || resumeHtmlLoading}
+                  onClick={handleTogglePreview}
+                  title={canContact ? undefined : t('searchCandidates.contactDisabledHint')}
+                  className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {resumeHtmlLoading
+                    ? t('candidateProfile.resumeLoading')
+                    : previewOpen
                       ? t('candidateProfile.hidePreview')
                       : t('candidateProfile.viewResume')}
-                  </button>
-                )}
+                </button>
                 <button
                   type="button"
                   disabled={!canContact || resumeLoading}
@@ -288,12 +303,16 @@ export default function CandidateProfileViewPage() {
             </div>
 
             {resumeError && <p className="mb-3 text-[13px] text-danger">{resumeError}</p>}
+            {resumeHtmlError && <p className="mb-3 text-[13px] text-danger">{resumeHtmlError}</p>}
 
-            {previewOpen && resumeUrl && (
-              <iframe
-                src={resumeUrl}
-                title={profile.resumeFileName}
-                className="h-[600px] w-full rounded-lg border border-border"
+            {previewOpen && resumeHtml && (
+              <div
+                className="max-h-[600px] overflow-y-auto rounded-lg border border-border p-5 text-[13.5px] text-ink [&_li]:mb-1 [&_p]:mb-2.5 [&_table]:my-2.5 [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1 [&_ul]:list-disc [&_ul]:pl-5"
+                // Safe: resumeHtml comes from our own backend, which only ever emits a small
+                // allow-listed set of tags (p/strong/em/u/li/ul/table/tr/td) and HTML-escapes
+                // every piece of extracted resume text before wrapping it (see
+                // ResumeHtmlRenderer) — never raw, unescaped file content.
+                dangerouslySetInnerHTML={{ __html: resumeHtml }}
               />
             )}
           </>
