@@ -7,6 +7,7 @@ import com.openopportunity.application.exception.ApplicationAccessDeniedExceptio
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
+import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
 import com.openopportunity.auth.exception.EmailVerificationEmailException;
@@ -116,6 +117,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CandidateProfileNotFoundException.class)
     public ResponseEntity<ApiError> handleCandidateProfileNotFound(CandidateProfileNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CandidateResumeNotFoundException.class)
+    public ResponseEntity<ApiError> handleCandidateResumeNotFound(CandidateResumeNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 

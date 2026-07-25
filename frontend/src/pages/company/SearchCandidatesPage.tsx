@@ -66,6 +66,7 @@ function CandidateCard({
   onRevealContact: () => void
 }) {
   const { t } = useTranslation('company')
+  const localize = useLocalizedPath()
   const meta = [candidate.title, candidate.location].filter(Boolean).join(' · ')
   return (
     <div className="flex flex-wrap justify-between gap-4 rounded-card border border-border bg-surface px-5 py-[18px]">
@@ -92,12 +93,12 @@ function CandidateCard({
       </div>
       <div className="flex flex-col items-end gap-2">
         <div className="flex gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink"
+          <Link
+            to={localize(ROUTES.companyCandidateProfile(candidate.userId))}
+            className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink no-underline"
           >
             {t('dashboard.viewProfile')}
-          </button>
+          </Link>
           {candidate.contactNumber ? (
             // Replaces the button entirely, same spot — the number itself is the "already
             // revealed" state, kept that way by the backend across visits (see

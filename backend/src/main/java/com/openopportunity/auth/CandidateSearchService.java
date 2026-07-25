@@ -1,15 +1,21 @@
 package com.openopportunity.auth;
 
+import com.openopportunity.auth.dto.CandidateProfileForCompany;
 import com.openopportunity.auth.dto.CandidateSearchSummary;
 import com.openopportunity.auth.dto.RevealCandidateContactResponse;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
+import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
+import com.openopportunity.storage.FileStorageService;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,16 +30,19 @@ public class CandidateSearchService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final CompanyProfileRepository companyProfileRepository;
     private final CandidateContactRevealRepository candidateContactRevealRepository;
+    private final FileStorageService fileStorageService;
 
     public CandidateSearchService(
             UserRepository userRepository,
             CandidateProfileRepository candidateProfileRepository,
             CompanyProfileRepository companyProfileRepository,
-            CandidateContactRevealRepository candidateContactRevealRepository) {
+            CandidateContactRevealRepository candidateContactRevealRepository,
+            FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.companyProfileRepository = companyProfileRepository;
         this.candidateContactRevealRepository = candidateContactRevealRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -59,6 +68,67 @@ public class CandidateSearchService {
                         usersById.get(profile.getUserId()),
                         revealedCandidateIds.contains(profile.getUserId())))
                 .toList();
+    }
+
+    /** Backs the "View profile" page — freely viewable like search() above (no eligibility
+     * gate); only the resume bytes themselves (getResume below) and the phone number
+     * (revealContact) are gated behind company eligibility. */
+    @Transactional(readOnly = true)
+    public CandidateProfileForCompany get(UUID candidateUserId) {
+        CandidateProfile profile = candidateProfileRepository
+                .findByUserId(candidateUserId)
+                .orElseThrow(() -> new CandidateProfileNotFoundException(candidateUserId));
+        User user = userRepository
+                .findById(candidateUserId)
+                .orElseThrow(() -> new CandidateProfileNotFoundException(candidateUserId));
+        return new CandidateProfileForCompany(
+                user.getId(),
+                user.getFullName(),
+                profile.getPhotoStorageKey() == null ? null : photoUrl(candidateUserId),
+                profile.getTitle(),
+                profile.getLocation(),
+                profile.getExperienceLevel(),
+                profile.getIndustry(),
+                profile.getSkills(),
+                profile.getWorkModePreference(),
+                profile.getOpenToPreference(),
+                user.getCreatedAt(),
+                profile.getResumeFileName(),
+                profile.getResumeUploadedAt(),
+                profile.getResumeSizeBytes());
+    }
+
+    /** Same eligibility gate as revealContact — a resume is at least as sensitive as a phone
+     * number, so it gets the same "complete + verified company profile" requirement. */
+    @Transactional(readOnly = true)
+    public LoadedResume getResume(UUID companyId, UUID candidateUserId) {
+        requireEligibleToContactCandidates(companyId);
+        CandidateProfile profile = candidateProfileRepository
+                .findByUserId(candidateUserId)
+                .filter(existing -> existing.getResumeStorageKey() != null)
+                .orElseThrow(() -> new CandidateResumeNotFoundException(candidateUserId));
+        try {
+            Resource resource = fileStorageService.load(profile.getResumeStorageKey());
+            return new LoadedResume(resource, profile.getResumeFileName(), contentTypeFor(profile.getResumeFileName()));
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to load resume", ex);
+        }
+    }
+
+    public record LoadedResume(Resource resource, String fileName, String contentType) {}
+
+    private String contentTypeFor(String fileName) {
+        String lower = fileName == null ? "" : fileName.toLowerCase();
+        if (lower.endsWith(".pdf")) {
+            return "application/pdf";
+        }
+        if (lower.endsWith(".docx")) {
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+        if (lower.endsWith(".doc")) {
+            return "application/msword";
+        }
+        return "application/octet-stream";
     }
 
     /** Idempotent — a company clicking "View contact" again on an already-revealed candidate
@@ -106,6 +176,10 @@ public class CandidateSearchService {
             return true;
         }
         return profile.getLocation() != null && profile.getLocation().toLowerCase().contains(normalizedLocation);
+    }
+
+    private String photoUrl(UUID userId) {
+        return "/api/candidates/" + userId + "/photo";
     }
 
     private CandidateSearchSummary toSummary(CandidateProfile profile, User user, boolean contactRevealed) {
