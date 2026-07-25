@@ -75,7 +75,11 @@ function buildQuery(params: JobSearchParams): string {
 
 export const jobsApi = {
   search: (params: JobSearchParams = {}) => request<JobSummary[]>(`/api/jobs${buildQuery(params)}`),
-  detail: (id: string) => request<JobDetail>(`/api/jobs/${id}`),
+  // GET /{id} is public (an anonymous visitor only ever sees an ACTIVE job — see
+  // JobService.get), but attaching the auth header when we have one lets a logged-in company
+  // load its own DRAFT/PENDING_APPROVAL/REJECTED/CLOSED posting too (see PostJobPage's edit
+  // mode) — otherwise the backend has no way to recognize the caller as the owner and 404s.
+  detail: (id: string) => request<JobDetail>(`/api/jobs/${id}`, { headers: authHeaders() }),
   mine: () => request<JobSummary[]>('/api/jobs/mine', { headers: authHeaders() }),
   create: (payload: JobRequestPayload) =>
     request<JobDetail>('/api/jobs', {
