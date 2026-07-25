@@ -170,8 +170,11 @@
       "bucket8plus": "8+ वर्ष"
     },
     "candidateMeta": "{{title}} · {{location}} · {{years}} वर्ष का अनुभव",
-    "contacted": "संपर्क किया गया ✓",
-    "contact": "संपर्क करें",
+    "viewContact": "संपर्क देखें",
+    "revealingContact": "दिखाया जा रहा है…",
+    "openWhatsApp": "WhatsApp चैट खोलें",
+    "callCandidate": "उम्मीदवार को कॉल करें",
+    "revealError": "इस उम्मीदवार का संपर्क नंबर नहीं दिखाया जा सका। कृपया फिर से कोशिश करें।",
     "contactDisabledHint": "उम्मीदवारों से संपर्क करने से पहले अपनी कंपनी प्रोफ़ाइल पूरी करें और एडमिन सत्यापन प्राप्त करें।",
     "searchPlaceholder": "हुनर, टाइटल, या कीवर्ड से खोजें",
     "lookingFor": "किसकी तलाश है",

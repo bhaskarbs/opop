@@ -1,8 +1,13 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.CandidateSearchSummary;
+import com.openopportunity.auth.dto.RevealCandidateContactResponse;
+import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
+import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -17,15 +22,22 @@ public class CandidateSearchService {
 
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
+    private final CompanyProfileRepository companyProfileRepository;
+    private final CandidateContactRevealRepository candidateContactRevealRepository;
 
     public CandidateSearchService(
-            UserRepository userRepository, CandidateProfileRepository candidateProfileRepository) {
+            UserRepository userRepository,
+            CandidateProfileRepository candidateProfileRepository,
+            CompanyProfileRepository companyProfileRepository,
+            CandidateContactRevealRepository candidateContactRevealRepository) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
+        this.companyProfileRepository = companyProfileRepository;
+        this.candidateContactRevealRepository = candidateContactRevealRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<CandidateSearchSummary> search(String q, String location) {
+    public List<CandidateSearchSummary> search(UUID companyId, String q, String location) {
         String normalizedQuery = q == null ? null : q.trim().toLowerCase();
         String normalizedLocation = location == null ? null : location.trim().toLowerCase();
 
@@ -34,13 +46,46 @@ public class CandidateSearchService {
                 .findAllById(profiles.stream().map(CandidateProfile::getUserId).toList())
                 .stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
+        Set<UUID> revealedCandidateIds = candidateContactRevealRepository.findByCompanyId(companyId).stream()
+                .map(CandidateContactReveal::getCandidateId)
+                .collect(Collectors.toCollection(HashSet::new));
 
         return profiles.stream()
                 .filter(profile -> usersById.containsKey(profile.getUserId()))
                 .filter(profile -> matchesQuery(profile, usersById.get(profile.getUserId()), normalizedQuery))
                 .filter(profile -> matchesLocation(profile, normalizedLocation))
-                .map(profile -> toSummary(profile, usersById.get(profile.getUserId())))
+                .map(profile -> toSummary(
+                        profile,
+                        usersById.get(profile.getUserId()),
+                        revealedCandidateIds.contains(profile.getUserId())))
                 .toList();
+    }
+
+    /** Idempotent — a company clicking "View contact" again on an already-revealed candidate
+     * just gets the same number back, no duplicate row (the unique (company_id, candidate_id)
+     * constraint backs this even if two requests somehow race). */
+    @Transactional
+    public RevealCandidateContactResponse revealContact(UUID companyId, UUID candidateUserId) {
+        requireEligibleToContactCandidates(companyId);
+        CandidateProfile profile = candidateProfileRepository
+                .findByUserId(candidateUserId)
+                .orElseThrow(() -> new CandidateProfileNotFoundException(candidateUserId));
+        if (!candidateContactRevealRepository.existsByCompanyIdAndCandidateId(companyId, candidateUserId)) {
+            candidateContactRevealRepository.save(new CandidateContactReveal(companyId, candidateUserId));
+        }
+        return new RevealCandidateContactResponse(profile.getMobile());
+    }
+
+    private void requireEligibleToContactCandidates(UUID companyId) {
+        CompanyProfile profile = companyProfileRepository.findByUserId(companyId).orElseThrow();
+        if (!profile.isProfileComplete()) {
+            throw new CompanyNotEligibleToContactCandidatesException(
+                    "Complete your company profile before contacting candidates");
+        }
+        if (!profile.isVerified()) {
+            throw new CompanyNotEligibleToContactCandidatesException(
+                    "Your company profile is awaiting admin verification before you can contact candidates");
+        }
     }
 
     private boolean matchesQuery(CandidateProfile profile, User user, String normalizedQuery) {
@@ -63,8 +108,13 @@ public class CandidateSearchService {
         return profile.getLocation() != null && profile.getLocation().toLowerCase().contains(normalizedLocation);
     }
 
-    private CandidateSearchSummary toSummary(CandidateProfile profile, User user) {
+    private CandidateSearchSummary toSummary(CandidateProfile profile, User user, boolean contactRevealed) {
         return new CandidateSearchSummary(
-                user.getId(), user.getFullName(), profile.getTitle(), profile.getLocation(), profile.getSkills());
+                user.getId(),
+                user.getFullName(),
+                profile.getTitle(),
+                profile.getLocation(),
+                profile.getSkills(),
+                contactRevealed ? profile.getMobile() : null);
     }
 }
