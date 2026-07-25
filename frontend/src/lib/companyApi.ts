@@ -1,5 +1,6 @@
 import { useAuthStore } from '../stores/authStore'
-import { request } from './apiClient'
+import { blobRequest, request } from './apiClient'
+import type { BackendExperienceLevel } from './jobsApi'
 
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 
@@ -52,6 +53,26 @@ export interface RevealCandidateContactResponse {
   contactNumber: string
 }
 
+// Richer than CandidateSearchSummary (see backend CandidateProfileForCompany) — still no
+// email/mobile up front, same boundary the search card already draws; resumeFileName is null
+// until the candidate has uploaded one.
+export interface CandidateProfileForCompany {
+  userId: string
+  fullName: string
+  photoUrl: string | null
+  title: string | null
+  location: string | null
+  experienceLevel: BackendExperienceLevel | null
+  industry: string | null
+  skills: string[]
+  workModePreference: string | null
+  openToPreference: string | null
+  memberSince: string
+  resumeFileName: string | null
+  resumeUploadedAt: string | null
+  resumeSizeBytes: number | null
+}
+
 function authHeaders(): Record<string, string> {
   const token = useAuthStore.getState().accessToken
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -83,4 +104,14 @@ export const companyApi = {
       method: 'POST',
       headers: authHeaders(),
     }),
+  getCandidateProfile: (userId: string) =>
+    request<CandidateProfileForCompany>(`/api/company/candidates/${userId}`, {
+      headers: authHeaders(),
+    }),
+  // Same bytes regardless of the disposition query param the backend accepts — that header
+  // only matters for a browser navigating to the URL directly, which can't happen here since
+  // the endpoint requires a bearer token. Callers decide "download" vs "inline preview"
+  // entirely client-side from this one Blob (see CandidateProfileViewPage).
+  getCandidateResume: (userId: string) =>
+    blobRequest(`/api/company/candidates/${userId}/resume`, authHeaders()),
 }

@@ -156,6 +156,23 @@
     "publish": "Publish job",
     "saveChanges": "Save changes"
   },
+  "candidateProfile": {
+    "backToSearch": "← Back to search",
+    "loading": "Loading profile…",
+    "loadError": "Could not load this candidate's profile.",
+    "memberSince": "Member since {{date}}",
+    "industry": "Industry",
+    "preferences": "Preferences",
+    "skills": "Skills",
+    "resume": "Resume",
+    "noResume": "This candidate hasn't uploaded a resume yet.",
+    "resumeMeta": "Uploaded {{date}} · {{size}}",
+    "downloadResume": "Download resume",
+    "viewResume": "View resume",
+    "hidePreview": "Hide preview",
+    "resumeLoading": "Loading…",
+    "resumeError": "Could not load this candidate's resume. Please try again."
+  },
   "searchCandidates": {
     "intent": {
       "jobs": "Open to jobs",

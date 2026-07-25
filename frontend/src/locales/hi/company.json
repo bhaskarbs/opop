@@ -156,6 +156,23 @@
     "publish": "नौकरी पब्लिश करें",
     "saveChanges": "बदलाव सेव करें"
   },
+  "candidateProfile": {
+    "backToSearch": "← खोज पर वापस जाएं",
+    "loading": "प्रोफ़ाइल लोड हो रही है…",
+    "loadError": "इस उम्मीदवार की प्रोफ़ाइल लोड नहीं हो सकी।",
+    "memberSince": "{{date}} से सदस्य",
+    "industry": "इंडस्ट्री",
+    "preferences": "प्राथमिकताएं",
+    "skills": "हुनर",
+    "resume": "रिज़्यूमे",
+    "noResume": "इस उम्मीदवार ने अभी तक कोई रिज़्यूमे अपलोड नहीं किया है।",
+    "resumeMeta": "{{date}} को अपलोड किया गया · {{size}}",
+    "downloadResume": "रिज़्यूमे डाउनलोड करें",
+    "viewResume": "रिज़्यूमे देखें",
+    "hidePreview": "प्रीव्यू छुपाएं",
+    "resumeLoading": "लोड हो रहा है…",
+    "resumeError": "इस उम्मीदवार का रिज़्यूमे लोड नहीं हो सका। कृपया फिर से कोशिश करें।"
+  },
   "searchCandidates": {
     "intent": {
       "jobs": "नौकरियों के लिए तैयार",

@@ -40,6 +40,7 @@ export const ROUTES = {
   companyJobPostings: '/company/job-postings',
   companyJobEdit: (jobId: string) => `/company/job-postings/${jobId}/edit`,
   companySearchCandidates: '/company/search-candidates',
+  companyCandidateProfile: (userId: string) => `/company/candidates/${userId}`,
   companySeminars: '/company/seminars',
   companyIdeas: '/company/ideas',
   companyIdeaSubmit: '/company/ideas/submit',
