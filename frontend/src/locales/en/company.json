@@ -198,6 +198,9 @@
     "location": "Location",
     "showingCount": "Showing {{count}} candidates matching your filters",
     "noResults": "No candidates match your filters. Try clearing some filters or searching a different keyword.",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}",
     "loading": "Loading candidates…",
     "loadError": "Could not load candidates."
   },

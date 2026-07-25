@@ -144,11 +144,14 @@ function CandidateCard({
   )
 }
 
+const PAGE_SIZE = 10
+
 export default function SearchCandidatesPage() {
   const { t } = useTranslation('company')
   const localize = useLocalizedPath()
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
+  const [page, setPage] = useState(1)
 
   const [candidates, setCandidates] = useState<CandidateSearchSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -176,6 +179,7 @@ export default function SearchCandidatesPage() {
     const timeoutId = setTimeout(() => {
       setLoading(true)
       setError(null)
+      setPage(1)
       companyApi
         .searchCandidates({ q: query.trim() || undefined, location: location.trim() || undefined })
         .then(setCandidates)
@@ -219,6 +223,10 @@ export default function SearchCandidatesPage() {
         })
       })
   }
+
+  const pageCount = Math.max(1, Math.ceil(candidates.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const visibleCandidates = candidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   return (
     <main>
@@ -298,7 +306,7 @@ export default function SearchCandidatesPage() {
                 {t('searchCandidates.showingCount', { count: candidates.length })}
               </div>
               <div className="flex flex-col gap-3">
-                {candidates.map((candidate) => (
+                {visibleCandidates.map((candidate) => (
                   <CandidateCard
                     key={candidate.userId}
                     candidate={candidate}
@@ -311,6 +319,29 @@ export default function SearchCandidatesPage() {
                 {candidates.length === 0 && (
                   <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
                     {t('searchCandidates.noResults')}
+                  </div>
+                )}
+                {pageCount > 1 && (
+                  <div className="mt-2 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t('searchCandidates.previousPage')}
+                    </button>
+                    <span className="text-[13px] text-slate">
+                      {t('searchCandidates.pageLabel', { page: currentPage, total: pageCount })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))}
+                      disabled={currentPage === pageCount}
+                      className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t('searchCandidates.nextPage')}
+                    </button>
                   </div>
                 )}
               </div>
