@@ -6,8 +6,10 @@ import com.openopportunity.auth.dto.RevealCandidateContactResponse;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
+import com.openopportunity.auth.exception.ResumeRenderingFailedException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.List;
@@ -116,6 +118,24 @@ public class CandidateSearchService {
     }
 
     public record LoadedResume(Resource resource, String fileName, String contentType) {}
+
+    /** Renders the resume as an HTML fragment (see ResumeHtmlRenderer) for the "view resume as a
+     * web view" preview — same eligibility gate and file lookup as getResume above, but returns
+     * markup instead of raw bytes so .docx/.doc resumes (which a browser can't render inline in
+     * an &lt;iframe&gt; the way it can a PDF) get a real preview too. */
+    @Transactional(readOnly = true)
+    public String getResumeHtml(UUID companyId, UUID candidateUserId) {
+        requireEligibleToContactCandidates(companyId);
+        CandidateProfile profile = candidateProfileRepository
+                .findByUserId(candidateUserId)
+                .filter(existing -> existing.getResumeStorageKey() != null)
+                .orElseThrow(() -> new CandidateResumeNotFoundException(candidateUserId));
+        try (InputStream in = fileStorageService.load(profile.getResumeStorageKey()).getInputStream()) {
+            return ResumeHtmlRenderer.render(in, profile.getResumeFileName());
+        } catch (IOException | RuntimeException ex) {
+            throw new ResumeRenderingFailedException(candidateUserId, ex);
+        }
+    }
 
     private String contentTypeFor(String fileName) {
         String lower = fileName == null ? "" : fileName.toLowerCase();

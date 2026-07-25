@@ -23,6 +23,7 @@ import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.PasswordResetEmailException;
 import com.openopportunity.auth.exception.ProfilePhotoNotFoundException;
+import com.openopportunity.auth.exception.ResumeRenderingFailedException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
 import com.openopportunity.billing.exception.CandidateNotFoundException;
@@ -123,6 +124,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CandidateResumeNotFoundException.class)
     public ResponseEntity<ApiError> handleCandidateResumeNotFound(CandidateResumeNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(ResumeRenderingFailedException.class)
+    public ResponseEntity<ApiError> handleResumeRenderingFailed(ResumeRenderingFailedException ex) {
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(InvalidResumeFileException.class)
