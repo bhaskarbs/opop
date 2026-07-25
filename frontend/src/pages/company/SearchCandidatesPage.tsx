@@ -8,6 +8,29 @@ import { ROUTES } from '../../routes/paths'
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
 
+const SUGGESTIONS_LIMIT = 8
+
+// Simple autocomplete: suggests distinct titles/skills drawn from the currently loaded search
+// results (no separate endpoint or dataset — just what's already on screen) that contain
+// whatever's been typed so far.
+function buildSuggestions(candidates: CandidateSearchSummary[], query: string): string[] {
+  const trimmedQuery = query.trim().toLowerCase()
+  if (!trimmedQuery) return []
+  const values = candidates.flatMap((candidate) =>
+    [candidate.title, ...candidate.skills].filter((value): value is string => !!value),
+  )
+  const seen = new Set<string>()
+  const suggestions: string[] = []
+  for (const value of values) {
+    const lower = value.toLowerCase()
+    if (lower === trimmedQuery || !lower.includes(trimmedQuery) || seen.has(lower)) continue
+    seen.add(lower)
+    suggestions.push(value)
+    if (suggestions.length === SUGGESTIONS_LIMIT) break
+  }
+  return suggestions
+}
+
 function colorForName(name: string): string {
   const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
   return AVATAR_COLOR_CLASSES[hash % AVATAR_COLOR_CLASSES.length]
@@ -150,8 +173,14 @@ export default function SearchCandidatesPage() {
   const { t } = useTranslation('company')
   const localize = useLocalizedPath()
   const [query, setQuery] = useState('')
+  // What's actually sent to the backend — only updated on Enter/submit/picking a suggestion, so
+  // typing alone never fires a search (see the effect below, which depends on this rather than
+  // on `query`).
+  const [submittedQuery, setSubmittedQuery] = useState('')
   const [location, setLocation] = useState('')
   const [page, setPage] = useState(1)
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
 
   const [candidates, setCandidates] = useState<CandidateSearchSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -175,13 +204,26 @@ export default function SearchCandidatesPage() {
       .catch(() => setCanContact(false))
   }, [])
 
+  // Fills the box and (immediately) runs the search with that exact term — used whether the
+  // suggestion was picked with the mouse or confirmed via the keyboard (see the input's
+  // onKeyDown below).
+  function submitSearch(nextQuery: string = query) {
+    setQuery(nextQuery)
+    setSubmittedQuery(nextQuery)
+    setSuggestionsOpen(false)
+    setActiveSuggestionIndex(-1)
+  }
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setLoading(true)
       setError(null)
       setPage(1)
       companyApi
-        .searchCandidates({ q: query.trim() || undefined, location: location.trim() || undefined })
+        .searchCandidates({
+          q: submittedQuery.trim() || undefined,
+          location: location.trim() || undefined,
+        })
         .then(setCandidates)
         .catch((caught) => {
           setError(caught instanceof ApiError ? caught.message : t('searchCandidates.loadError'))
@@ -189,7 +231,7 @@ export default function SearchCandidatesPage() {
         .finally(() => setLoading(false))
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [query, location, t])
+  }, [submittedQuery, location, t])
 
   function handleRevealContact(userId: string) {
     setRevealingIds((prev) => new Set(prev).add(userId))
@@ -228,32 +270,90 @@ export default function SearchCandidatesPage() {
   const currentPage = Math.min(page, pageCount)
   const visibleCandidates = candidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
+  const suggestions = buildSuggestions(candidates, query)
+
   return (
     <main>
       <div className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-[1280px] flex-wrap gap-2.5 px-6 py-5">
-          <label className="flex min-w-[220px] flex-1 items-center gap-2.5 rounded-control border border-border px-3.5 py-2.5">
-            <svg
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="shrink-0 text-fog"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4.3-4.3" />
-            </svg>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t('searchCandidates.searchPlaceholder')}
-              className="w-full text-[14.5px] text-ink outline-none"
-            />
-          </label>
+          <div
+            className="relative min-w-[220px] flex-1"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                setSuggestionsOpen(false)
+                setActiveSuggestionIndex(-1)
+              }
+            }}
+          >
+            <label className="flex items-center gap-2.5 rounded-control border border-border px-3.5 py-2.5">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="shrink-0 text-fog"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+              <input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value)
+                  setSuggestionsOpen(true)
+                  setActiveSuggestionIndex(-1)
+                }}
+                onFocus={() => setSuggestionsOpen(true)}
+                onKeyDown={(event) => {
+                  if (!suggestionsOpen || suggestions.length === 0) {
+                    if (event.key === 'Enter') submitSearch()
+                    return
+                  }
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault()
+                    setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length)
+                  } else if (event.key === 'ArrowUp') {
+                    event.preventDefault()
+                    setActiveSuggestionIndex((prev) =>
+                      prev <= 0 ? suggestions.length - 1 : prev - 1,
+                    )
+                  } else if (event.key === 'Enter') {
+                    event.preventDefault()
+                    submitSearch(
+                      activeSuggestionIndex >= 0 ? suggestions[activeSuggestionIndex] : query,
+                    )
+                  } else if (event.key === 'Escape') {
+                    setSuggestionsOpen(false)
+                    setActiveSuggestionIndex(-1)
+                  }
+                }}
+                placeholder={t('searchCandidates.searchPlaceholder')}
+                className="w-full text-[14.5px] text-ink outline-none"
+              />
+            </label>
+            {suggestionsOpen && suggestions.length > 0 && (
+              <div className="absolute top-full right-0 left-0 z-10 mt-1.5 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
+                {suggestions.map((value, index) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => submitSearch(value)}
+                    onMouseEnter={() => setActiveSuggestionIndex(index)}
+                    className={`block w-full truncate px-3.5 py-2 text-left text-[13.5px] text-ink ${
+                      index === activeSuggestionIndex ? 'bg-neutral-tint' : 'hover:bg-neutral-tint'
+                    }`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="button"
+            onClick={() => submitSearch()}
             className="min-h-[44px] rounded-control bg-ink px-[26px] text-[14.5px] font-bold text-white"
           >
             {t('landing.search.submit', { ns: 'public' })}
