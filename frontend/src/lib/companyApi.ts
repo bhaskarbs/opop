@@ -37,11 +37,19 @@ export interface CandidateSearchSummary {
   title: string | null
   location: string | null
   skills: string[]
+  // Null until this company has clicked "View contact" for this candidate (see
+  // revealCandidateContact) — once revealed, the backend keeps returning it on every later
+  // search too, so it stays visible on a return visit instead of needing another click.
+  contactNumber: string | null
 }
 
 export interface CandidateSearchParams {
   q?: string
   location?: string
+}
+
+export interface RevealCandidateContactResponse {
+  contactNumber: string
 }
 
 function authHeaders(): Record<string, string> {
@@ -68,6 +76,11 @@ export const companyApi = {
     }),
   searchCandidates: (params: CandidateSearchParams = {}) =>
     request<CandidateSearchSummary[]>(`/api/company/candidates${buildQuery(params)}`, {
+      headers: authHeaders(),
+    }),
+  revealCandidateContact: (userId: string) =>
+    request<RevealCandidateContactResponse>(`/api/company/candidates/${userId}/reveal-contact`, {
+      method: 'POST',
       headers: authHeaders(),
     }),
 }

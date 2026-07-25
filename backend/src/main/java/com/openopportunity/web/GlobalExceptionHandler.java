@@ -7,6 +7,7 @@ import com.openopportunity.application.exception.ApplicationAccessDeniedExceptio
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
+import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
 import com.openopportunity.auth.exception.EmailVerificationEmailException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
@@ -160,6 +161,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CompanyNotEligibleToPostJobsException.class)
     public ResponseEntity<ApiError> handleCompanyNotEligibleToPostJobs(CompanyNotEligibleToPostJobsException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyNotEligibleToContactCandidatesException.class)
+    public ResponseEntity<ApiError> handleCompanyNotEligibleToContactCandidates(
+            CompanyNotEligibleToContactCandidatesException ex) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
     }
 

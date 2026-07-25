@@ -170,8 +170,11 @@
       "bucket8plus": "8+ yrs"
     },
     "candidateMeta": "{{title}} · {{location}} · {{years}} yrs experience",
-    "contacted": "Contacted ✓",
-    "contact": "Contact",
+    "viewContact": "View contact",
+    "revealingContact": "Revealing…",
+    "openWhatsApp": "Open WhatsApp chat",
+    "callCandidate": "Call candidate",
+    "revealError": "Couldn't reveal this candidate's contact number. Please try again.",
     "contactDisabledHint": "Complete your company profile and get admin-verified before contacting candidates.",
     "searchPlaceholder": "Search by skill, title, or keyword",
     "lookingFor": "Looking for",
