@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
+import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
 import { companyApi, type CandidateProfileForCompany } from '../../lib/companyApi'
@@ -43,7 +44,7 @@ export default function CandidateProfileViewPage() {
   const [profile, setProfile] = useState<CandidateProfileForCompany | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [canContact, setCanContact] = useState(false)
+  const { canContact, hint: contactHint } = useContactEligibility()
 
   const [resumeUrl, setResumeUrl] = useState<string | null>(null)
   const [resumeLoading, setResumeLoading] = useState(false)
@@ -56,15 +57,6 @@ export default function CandidateProfileViewPage() {
   const [resumeHtmlLoading, setResumeHtmlLoading] = useState(false)
   const [resumeHtmlError, setResumeHtmlError] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
-
-  useEffect(() => {
-    companyApi
-      .getProfile()
-      .then((company) =>
-        setCanContact(company.profileComplete && company.verificationStatus === 'VERIFIED'),
-      )
-      .catch(() => setCanContact(false))
-  }, [])
 
   useEffect(() => {
     if (!userId) return
@@ -175,9 +167,9 @@ export default function CandidateProfileViewPage() {
         {t('candidateProfile.backToSearch')}
       </Link>
 
-      {!canContact && (
+      {!canContact && contactHint && (
         <div className="mb-4 rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] text-[#8A5A0F]">
-          {t('searchCandidates.contactDisabledHint')}
+          {contactHint}
         </div>
       )}
 
@@ -279,7 +271,7 @@ export default function CandidateProfileViewPage() {
                   type="button"
                   disabled={!canContact || resumeHtmlLoading}
                   onClick={handleTogglePreview}
-                  title={canContact ? undefined : t('searchCandidates.contactDisabledHint')}
+                  title={canContact ? undefined : (contactHint ?? undefined)}
                   className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {resumeHtmlLoading
@@ -292,7 +284,7 @@ export default function CandidateProfileViewPage() {
                   type="button"
                   disabled={!canContact || resumeLoading}
                   onClick={handleDownload}
-                  title={canContact ? undefined : t('searchCandidates.contactDisabledHint')}
+                  title={canContact ? undefined : (contactHint ?? undefined)}
                   className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {resumeLoading

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ContactRevealControl } from '../../components/company/ContactRevealControl'
+import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import {
@@ -58,12 +59,14 @@ function CandidateCard({
   revealing,
   revealError,
   canContact,
+  contactHint,
   onRevealContact,
 }: {
   candidate: CandidateSearchSummary
   revealing: boolean
   revealError: string | null
   canContact: boolean
+  contactHint: string | null
   onRevealContact: () => void
 }) {
   const { t } = useTranslation('company')
@@ -94,16 +97,26 @@ function CandidateCard({
       </div>
       <div className="flex flex-col items-end gap-2">
         <div className="flex gap-2">
-          <Link
-            to={localize(ROUTES.companyCandidateProfile(candidate.userId))}
-            className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink no-underline"
-          >
-            {t('dashboard.viewProfile')}
-          </Link>
+          {canContact ? (
+            <Link
+              to={localize(ROUTES.companyCandidateProfile(candidate.userId))}
+              className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink no-underline"
+            >
+              {t('dashboard.viewProfile')}
+            </Link>
+          ) : (
+            <span
+              title={contactHint ?? undefined}
+              className="cursor-not-allowed rounded-lg border border-border bg-neutral-tint px-3.5 py-2 text-[12.5px] font-bold text-fog"
+            >
+              {t('dashboard.viewProfile')}
+            </span>
+          )}
           <ContactRevealControl
             contactNumber={candidate.contactNumber}
             revealing={revealing}
             canContact={canContact}
+            hint={contactHint}
             onReveal={onRevealContact}
           />
         </div>
@@ -138,24 +151,16 @@ export default function SearchCandidatesPage() {
   const [candidates, setCandidates] = useState<CandidateSearchSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // Search itself has no eligibility gate — only revealing a candidate's contact does (see
-  // JobService.requireEligibleToPostJobs for the equivalent job-posting gate on the backend;
-  // CandidateSearchService.requireEligibleToContactCandidates mirrors it for reveal-contact).
-  const [canContact, setCanContact] = useState(false)
+  // Search itself has no eligibility gate — only "View contact"/"View profile" do (complete +
+  // verified company profile, paid plan, contact-reveal quota remaining this billing period —
+  // see CandidateSearchService.requireEligibleToContactCandidates, which enforces the same
+  // combination server-side).
+  const { canContact, hint: contactHint, reason: contactReason, quota } = useContactEligibility()
 
   // Per-candidate reveal-in-flight/error state — keyed by userId, separate from `candidates`
   // itself since a reveal failure shouldn't touch the already-loaded card data.
   const [revealingIds, setRevealingIds] = useState<Set<string>>(new Set())
   const [revealErrors, setRevealErrors] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    companyApi
-      .getProfile()
-      .then((profile) =>
-        setCanContact(profile.profileComplete && profile.verificationStatus === 'VERIFIED'),
-      )
-      .catch(() => setCanContact(false))
-  }, [])
 
   // Fills the box and (immediately) runs the search with that exact term — used whether the
   // suggestion was picked with the mouse or confirmed via the keyboard (see the input's
@@ -350,15 +355,29 @@ export default function SearchCandidatesPage() {
         </aside>
 
         <div>
-          {!canContact && (
+          {!canContact && contactHint && (
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] text-[#8A5A0F]">
-              <span>{t('searchCandidates.contactDisabledHint')}</span>
+              <span>{contactHint}</span>
               <Link
-                to={localize(ROUTES.companyProfile)}
+                to={localize(
+                  contactReason === 'incomplete-profile'
+                    ? ROUTES.companyProfile
+                    : ROUTES.companyBilling,
+                )}
                 className="font-bold whitespace-nowrap text-primary no-underline"
               >
-                {t('dashboard.completeProfileCta')}
+                {contactReason === 'incomplete-profile'
+                  ? t('dashboard.completeProfileCta')
+                  : t('searchCandidates.upgradePlanCta')}
               </Link>
+            </div>
+          )}
+          {canContact && quota && quota.plan !== 'FREE' && (
+            <div className="mb-4 text-[12.5px] text-fog">
+              {t('searchCandidates.contactsRemaining', {
+                remaining: quota.remaining,
+                limit: quota.limit,
+              })}
             </div>
           )}
           {error && (
@@ -399,6 +418,7 @@ export default function SearchCandidatesPage() {
                     revealing={revealingIds.has(candidate.userId)}
                     revealError={revealErrors[candidate.userId] ?? null}
                     canContact={canContact}
+                    contactHint={contactHint}
                     onRevealContact={() => handleRevealContact(candidate.userId)}
                   />
                 ))}

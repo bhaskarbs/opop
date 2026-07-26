@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { ContactRevealControl } from '../../components/company/ContactRevealControl'
+import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
   applicationsApi,
@@ -52,19 +53,10 @@ export default function JobApplicantsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   // Same eligibility gate as SearchCandidatesPage — applying to a job doesn't waive it.
-  const [canContact, setCanContact] = useState(false)
+  const { canContact, hint: contactHint, reason: contactReason, quota } = useContactEligibility()
 
   const [revealingIds, setRevealingIds] = useState<Set<string>>(new Set())
   const [revealErrors, setRevealErrors] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    companyApi
-      .getProfile()
-      .then((profile) =>
-        setCanContact(profile.profileComplete && profile.verificationStatus === 'VERIFIED'),
-      )
-      .catch(() => setCanContact(false))
-  }, [])
 
   useEffect(() => {
     if (!jobId) return
@@ -136,9 +128,29 @@ export default function JobApplicantsPage() {
       </h1>
       <p className="mb-5 text-sm text-slate">{t('jobApplicants.subtitle')}</p>
 
-      {!canContact && (
-        <div className="mb-4 rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] text-[#8A5A0F]">
-          {t('searchCandidates.contactDisabledHint')}
+      {!canContact && contactHint && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] text-[#8A5A0F]">
+          <span>{contactHint}</span>
+          <Link
+            to={localize(
+              contactReason === 'incomplete-profile'
+                ? ROUTES.companyProfile
+                : ROUTES.companyBilling,
+            )}
+            className="font-bold whitespace-nowrap text-primary no-underline"
+          >
+            {contactReason === 'incomplete-profile'
+              ? t('dashboard.completeProfileCta')
+              : t('searchCandidates.upgradePlanCta')}
+          </Link>
+        </div>
+      )}
+      {canContact && quota && quota.plan !== 'FREE' && (
+        <div className="mb-4 text-[12.5px] text-fog">
+          {t('searchCandidates.contactsRemaining', {
+            remaining: quota.remaining,
+            limit: quota.limit,
+          })}
         </div>
       )}
 
@@ -200,16 +212,26 @@ export default function JobApplicantsPage() {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex gap-2">
-                    <Link
-                      to={localize(ROUTES.companyCandidateProfile(applicant.candidateUserId))}
-                      className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink no-underline"
-                    >
-                      {t('dashboard.viewProfile')}
-                    </Link>
+                    {canContact ? (
+                      <Link
+                        to={localize(ROUTES.companyCandidateProfile(applicant.candidateUserId))}
+                        className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink no-underline"
+                      >
+                        {t('dashboard.viewProfile')}
+                      </Link>
+                    ) : (
+                      <span
+                        title={contactHint ?? undefined}
+                        className="cursor-not-allowed rounded-lg border border-border bg-neutral-tint px-3.5 py-2 text-[12.5px] font-bold text-fog"
+                      >
+                        {t('dashboard.viewProfile')}
+                      </span>
+                    )}
                     <ContactRevealControl
                       contactNumber={applicant.contactNumber}
                       revealing={revealingIds.has(applicant.candidateUserId)}
                       canContact={canContact}
+                      hint={contactHint}
                       onReveal={() => handleRevealContact(applicant.candidateUserId)}
                     />
                   </div>

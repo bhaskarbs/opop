@@ -28,6 +28,13 @@ public class CompanySubscription {
     @Column(nullable = false, length = 20)
     private CompanySubscriptionPlan plan;
 
+    // Null for Free (or a company who's never subscribed) — the moment the current paid period
+    // was (re)activated. Marks the start of the current contact-quota window (see
+    // CandidateSearchService.getContactQuota): every checkout/renewal resets it to "now", so the
+    // quota starts fresh each billing period rather than accumulating across renewals.
+    @Column(name = "current_period_start")
+    private Instant currentPeriodStart;
+
     // Null for Free (or a company who's never subscribed) — no active paid period. Set to
     // ~30 days out on every successful paid checkout; a lapsed row here is what
     // CompanyBillingService.expireOverdueSubscriptions sweeps back to Free.
@@ -48,8 +55,9 @@ public class CompanySubscription {
         this.updatedAt = Instant.now();
     }
 
-    public void changePlan(CompanySubscriptionPlan plan, Instant currentPeriodEnd) {
+    public void changePlan(CompanySubscriptionPlan plan, Instant currentPeriodStart, Instant currentPeriodEnd) {
         this.plan = plan;
+        this.currentPeriodStart = currentPeriodStart;
         this.currentPeriodEnd = currentPeriodEnd;
     }
 
@@ -68,6 +76,10 @@ public class CompanySubscription {
 
     public CompanySubscriptionPlan getPlan() {
         return plan;
+    }
+
+    public Instant getCurrentPeriodStart() {
+        return currentPeriodStart;
     }
 
     public Instant getCurrentPeriodEnd() {
