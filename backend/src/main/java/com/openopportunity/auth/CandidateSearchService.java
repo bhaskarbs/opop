@@ -11,6 +11,7 @@ import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class CandidateSearchService {
     }
 
     @Transactional(readOnly = true)
-    public List<CandidateSearchSummary> search(UUID companyId, String q, List<String> locations) {
+    public List<CandidateSearchSummary> search(UUID companyId, String q, List<String> locations, String sort) {
         String normalizedQuery = q == null ? null : q.trim().toLowerCase();
         List<String> normalizedLocations = normalizeLocations(locations);
 
@@ -65,11 +66,31 @@ public class CandidateSearchService {
                 .filter(profile -> usersById.containsKey(profile.getUserId()))
                 .filter(profile -> matchesQuery(profile, usersById.get(profile.getUserId()), normalizedQuery))
                 .filter(profile -> matchesAnyLocation(profile, normalizedLocations))
+                .sorted(resolveSort(sort, usersById, revealedCandidateIds))
                 .map(profile -> toSummary(
                         profile,
                         usersById.get(profile.getUserId()),
                         revealedCandidateIds.contains(profile.getUserId())))
                 .toList();
+    }
+
+    /** "name" sorts alphabetically; "contacted" puts candidates whose contact this company has
+     * already revealed (see revealContact) first; "newest" and the default ("relevant" — no
+     * ranking model exists yet) both fall back to recency, same reasoning as
+     * JobService.resolveSort. */
+    private Comparator<CandidateProfile> resolveSort(
+            String sort, Map<UUID, User> usersById, Set<UUID> revealedCandidateIds) {
+        if ("name".equals(sort)) {
+            return Comparator.comparing(
+                    profile -> usersById.get(profile.getUserId()).getFullName().toLowerCase());
+        }
+        if ("contacted".equals(sort)) {
+            return Comparator.comparing(
+                    (CandidateProfile profile) -> revealedCandidateIds.contains(profile.getUserId()) ? 0 : 1);
+        }
+        return Comparator.comparing(
+                        (CandidateProfile profile) -> usersById.get(profile.getUserId()).getCreatedAt())
+                .reversed();
     }
 
     /** Backs the "View profile" page — freely viewable like search() above (no eligibility

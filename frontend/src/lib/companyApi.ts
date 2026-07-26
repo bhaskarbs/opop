@@ -44,9 +44,12 @@ export interface CandidateSearchSummary {
   contactNumber: string | null
 }
 
+export type CandidateSortOption = 'relevant' | 'newest' | 'name' | 'contacted'
+
 export interface CandidateSearchParams {
   q?: string
   location?: string[]
+  sort?: CandidateSortOption
 }
 
 export interface RevealCandidateContactResponse {
@@ -86,6 +89,7 @@ function buildQuery(params: CandidateSearchParams): string {
   const search = new URLSearchParams()
   if (params.q) search.set('q', params.q)
   params.location?.forEach((location) => search.append('location', location))
+  if (params.sort) search.set('sort', params.sort)
   const query = search.toString()
   return query ? `?${query}` : ''
 }
