@@ -32,6 +32,11 @@ export const notificationsApi = {
   mine: () => request<NotificationSummary[]>('/api/notifications', { headers: authHeaders() }),
   unreadCount: () =>
     request<{ count: number }>('/api/notifications/unread-count', { headers: authHeaders() }),
+  // Real count of notifications actually emailed to the caller (see
+  // NotificationService.notify/sendEmail) — backs the company dashboard's "Notifications sent"
+  // stat, distinct from the in-app unread count above.
+  emailSentCount: () =>
+    request<{ count: number }>('/api/notifications/email-sent-count', { headers: authHeaders() }),
   markRead: (id: string) =>
     request<NotificationSummary>(`/api/notifications/${id}/read`, {
       method: 'POST',
