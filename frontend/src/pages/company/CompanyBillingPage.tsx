@@ -1,42 +1,211 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ApiError } from '../../lib/apiClient'
+import {
+  companyBillingApi,
+  type BackendCompanySubscriptionPlan,
+  type CompanyBillingTransactionSummary,
+} from '../../lib/companyBillingApi'
 
 type PlanKey = 'free' | 'growth' | 'enterprise'
 
 const PLAN_KEYS: PlanKey[] = ['free', 'growth', 'enterprise']
 
-// No billing/subscription backend exists yet — the company's plan is a fixed mock, same
-// treatment as billing history below.
-const CURRENT_PLAN: PlanKey = 'free'
+const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js'
 
-const HISTORY = [
-  {
-    plan: 'Growth — Monthly',
-    date: 'Jul 1, 2026',
-    amount: '₹4,999',
-    statusKey: 'billing.statusPaid' as const,
-  },
-  {
-    plan: 'Growth — Monthly',
-    date: 'Jun 1, 2026',
-    amount: '₹4,999',
-    statusKey: 'billing.statusPaid' as const,
-  },
-  { plan: 'Free', date: 'May 1, 2026', amount: '₹0', statusKey: 'billing.statusPaid' as const },
-]
+// Billing history accrues one row per renewal, so it can grow long for an old account — show a
+// first page and let the company reveal the rest instead of dumping the full list at once.
+const HISTORY_PAGE_SIZE = 5
+
+function toPlanKey(plan: BackendCompanySubscriptionPlan): PlanKey {
+  return plan.toLowerCase() as PlanKey
+}
+
+function toBackendPlan(key: PlanKey): BackendCompanySubscriptionPlan {
+  return key.toUpperCase() as BackendCompanySubscriptionPlan
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+/** Loads the Razorpay Checkout script at most once per page load — cheap to call from every
+ * upgrade click, since a second call is a no-op once the tag is already in the DOM. */
+function loadRazorpayCheckoutScript(): Promise<void> {
+  if (document.querySelector(`script[src="${RAZORPAY_CHECKOUT_SRC}"]`)) {
+    return Promise.resolve()
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = RAZORPAY_CHECKOUT_SRC
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Failed to load Razorpay checkout script'))
+    document.body.appendChild(script)
+  })
+}
 
 export default function CompanyBillingPage() {
   const { t } = useTranslation('company')
 
+  const [currentPlan, setCurrentPlan] = useState<PlanKey>('free')
+  const [currentPlanValidUntil, setCurrentPlanValidUntil] = useState<string | null>(null)
+  const [history, setHistory] = useState<CompanyBillingTransactionSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [changingPlan, setChangingPlan] = useState<PlanKey | null>(null)
+  const [changeError, setChangeError] = useState<string | null>(null)
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null)
+  const [invoiceError, setInvoiceError] = useState<string | null>(null)
+  const [historyShown, setHistoryShown] = useState(HISTORY_PAGE_SIZE)
+
+  useEffect(() => {
+    let cancelled = false
+    companyBillingApi
+      .mine()
+      .then((summary) => {
+        if (cancelled) return
+        setCurrentPlan(toPlanKey(summary.currentPlan))
+        setCurrentPlanValidUntil(summary.currentPlanValidUntil)
+        setHistory(summary.history)
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setLoadError(caught instanceof ApiError ? caught.message : t('billing.loadError'))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [t])
+
+  /** Free is the only instant path — no money involved. Upgrading to a paid plan goes through
+   * handleUpgrade's real Razorpay checkout instead (see CompanyBillingService.changePlan). */
+  async function handleDowngradeToFree() {
+    setChangeError(null)
+    setChangingPlan('free')
+    try {
+      const summary = await companyBillingApi.changePlan('FREE')
+      setCurrentPlan(toPlanKey(summary.currentPlan))
+      setCurrentPlanValidUntil(summary.currentPlanValidUntil)
+      setHistory(summary.history)
+    } catch (caught) {
+      setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
+    } finally {
+      setChangingPlan(null)
+    }
+  }
+
+  async function handleUpgrade(key: PlanKey) {
+    setChangeError(null)
+    setChangingPlan(key)
+    try {
+      await loadRazorpayCheckoutScript()
+      const checkout = await companyBillingApi.checkout(toBackendPlan(key))
+
+      const razorpay = new window.Razorpay({
+        key: checkout.razorpayKeyId,
+        amount: checkout.amountRupees * 100,
+        currency: 'INR',
+        order_id: checkout.razorpayOrderId,
+        name: 'OpenOpportunity',
+        description: t(`billing.plans.${key}.name`),
+        handler: (response) => {
+          companyBillingApi
+            .verifyCheckout({
+              transactionId: checkout.transactionId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            })
+            .then((summary) => {
+              setCurrentPlan(toPlanKey(summary.currentPlan))
+              setCurrentPlanValidUntil(summary.currentPlanValidUntil)
+              setHistory(summary.history)
+            })
+            .catch((caught) => {
+              setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
+            })
+            .finally(() => setChangingPlan(null))
+        },
+        modal: {
+          ondismiss: () => setChangingPlan(null),
+        },
+      })
+      razorpay.open()
+    } catch (caught) {
+      setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))
+      setChangingPlan(null)
+    }
+  }
+
+  async function handleDownloadInvoice(transactionId: string) {
+    setInvoiceError(null)
+    setDownloadingInvoiceId(transactionId)
+    try {
+      const blob = await companyBillingApi.invoice(transactionId)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `invoice-${transactionId.slice(0, 8)}.pdf`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (caught) {
+      setInvoiceError(caught instanceof ApiError ? caught.message : t('billing.invoiceError'))
+    } finally {
+      setDownloadingInvoiceId(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16 text-center text-sm text-slate">
+        {t('billing.loading')}
+      </main>
+    )
+  }
+
   return (
     <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16">
       <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('billing.title')}</h1>
-      <p className="mb-6 text-sm text-slate">
-        {t('billing.currentPlan', { plan: t(`billing.plans.${CURRENT_PLAN}.name`) })}
+      <p className={`text-sm text-slate ${currentPlanValidUntil ? 'mb-1' : 'mb-6'}`}>
+        {t('billing.currentPlan', { plan: t(`billing.plans.${currentPlan}.name`) })}
       </p>
+      {currentPlanValidUntil && (
+        <p className="mb-6 text-[15px] text-fog">
+          <span className="font-bold">
+            {t('billing.validUntil', { date: formatDate(currentPlanValidUntil) })}
+          </span>{' '}
+          {t('billing.validUntilNote')}
+        </p>
+      )}
+
+      {loadError && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {loadError}
+        </div>
+      )}
+      {changeError && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {changeError}
+        </div>
+      )}
+      {invoiceError && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {invoiceError}
+        </div>
+      )}
 
       <div className="mb-9 grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
         {PLAN_KEYS.map((key) => {
-          const isCurrent = key === CURRENT_PLAN
+          const isCurrent = key === currentPlan
+          const isChanging = changingPlan === key
           const features = t(`billing.plans.${key}.features`, { returnObjects: true }) as string[]
           return (
             <div
@@ -79,18 +248,23 @@ export default function CompanyBillingPage() {
               </div>
               <button
                 type="button"
-                disabled={isCurrent}
-                className={`rounded-[9px] border py-2.5 text-[13.5px] font-bold ${
-                  isCurrent
+                disabled={(isCurrent && key === 'free') || changingPlan !== null}
+                onClick={() => (key === 'free' ? handleDowngradeToFree() : handleUpgrade(key))}
+                className={`rounded-[9px] border py-2.5 text-[13.5px] font-bold disabled:cursor-not-allowed ${
+                  isCurrent && key === 'free'
                     ? 'border-border bg-neutral-tint text-fog'
-                    : 'border-ink bg-ink text-white'
+                    : 'border-ink bg-ink text-white disabled:opacity-60'
                 }`}
               >
-                {isCurrent
+                {isCurrent && key === 'free'
                   ? t('billing.currentPlanBadge')
-                  : key === 'free'
-                    ? t('billing.downgrade')
-                    : t('billing.upgrade')}
+                  : isChanging
+                    ? t('billing.changing')
+                    : key === 'free'
+                      ? t('billing.downgrade')
+                      : isCurrent
+                        ? t('billing.renew')
+                        : t('billing.upgrade')}
               </button>
             </div>
           )
@@ -98,28 +272,69 @@ export default function CompanyBillingPage() {
       </div>
 
       <h2 className="mb-3.5 text-[16.5px] font-bold text-ink">{t('billing.billingHistory')}</h2>
-      <div className="flex flex-col gap-2.5">
-        {HISTORY.map((entry, index) => (
-          <div
-            key={`${entry.plan}-${index}`}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
-          >
-            <div className="text-[13.5px] font-semibold text-ink">{entry.plan}</div>
-            <div className="text-[13px] text-fog">{entry.date}</div>
-            <div className="text-[13.5px] font-bold text-ink">{entry.amount}</div>
-            <span className="rounded-full bg-teal-tint px-2.5 py-1 text-xs font-semibold text-teal">
-              {t(entry.statusKey)}
-            </span>
-            <a
-              href="#invoice"
-              onClick={(event) => event.preventDefault()}
-              className="text-[12.5px] font-bold no-underline"
+      {history.length === 0 ? (
+        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+          {t('billing.noHistory')}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {history.slice(0, historyShown).map((entry) => {
+            const planKey = toPlanKey(entry.plan)
+            const planLabel =
+              planKey === 'free'
+                ? t(`billing.plans.${planKey}.name`)
+                : `${t(`billing.plans.${planKey}.name`)} — Monthly`
+            return (
+              <div
+                key={entry.id}
+                className="grid grid-cols-[1.4fr_1fr_0.8fr_0.8fr_1.2fr] items-center gap-3 rounded-xl border border-border bg-surface px-[18px] py-3.5"
+              >
+                <div className="text-[13.5px] font-semibold text-ink">{planLabel}</div>
+                <div className="text-[13px] text-fog">{formatDate(entry.createdAt)}</div>
+                <div className="text-[13.5px] font-bold text-ink">
+                  ₹{entry.amountRupees.toLocaleString()}
+                </div>
+                <span
+                  className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    entry.status === 'PAID'
+                      ? 'bg-teal-tint text-teal'
+                      : entry.status === 'FAILED'
+                        ? 'bg-[#FDECEC] text-danger'
+                        : 'bg-amber-tint text-amber'
+                  }`}
+                >
+                  {entry.status === 'PAID'
+                    ? t('billing.statusPaid')
+                    : entry.status === 'FAILED'
+                      ? t('billing.statusFailed')
+                      : t('billing.statusPending')}
+                </span>
+                {entry.status === 'PAID' && (
+                  <button
+                    type="button"
+                    disabled={downloadingInvoiceId === entry.id}
+                    onClick={() => handleDownloadInvoice(entry.id)}
+                    className="justify-self-end text-[12.5px] font-bold text-primary disabled:opacity-60"
+                  >
+                    {downloadingInvoiceId === entry.id
+                      ? t('billing.downloadingInvoice')
+                      : t('billing.downloadInvoice')}
+                  </button>
+                )}
+              </div>
+            )
+          })}
+          {historyShown < history.length && (
+            <button
+              type="button"
+              onClick={() => setHistoryShown((prev) => prev + HISTORY_PAGE_SIZE)}
+              className="mt-1 self-center text-[13px] font-bold text-primary"
             >
-              {t('billing.downloadInvoice')}
-            </a>
-          </div>
-        ))}
-      </div>
+              {t('billing.showMoreHistory')}
+            </button>
+          )}
+        </div>
+      )}
     </main>
   )
 }

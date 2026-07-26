@@ -29,6 +29,7 @@ import com.openopportunity.auth.exception.ResumeRenderingFailedException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
 import com.openopportunity.billing.exception.CandidateNotFoundException;
+import com.openopportunity.billing.exception.CompanyPaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
@@ -308,6 +309,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PaidPlanRequiresCheckoutException.class)
     public ResponseEntity<ApiError> handlePaidPlanRequiresCheckout(PaidPlanRequiresCheckoutException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyPaidPlanRequiresCheckoutException.class)
+    public ResponseEntity<ApiError> handleCompanyPaidPlanRequiresCheckout(CompanyPaidPlanRequiresCheckoutException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 

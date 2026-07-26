@@ -259,47 +259,48 @@
   },
   "billing": {
     "title": "Billing & plans",
+    "loading": "Loading your billing details…",
+    "loadError": "Could not load your billing details.",
+    "changeError": "Couldn't change your plan. Please try again.",
+    "changing": "Please wait…",
     "currentPlan": "Your company is currently on the {{plan}} plan.",
     "currentPlanBadge": "Current plan",
     "downgrade": "Downgrade",
     "upgrade": "Upgrade",
+    "renew": "Renew",
+    "validUntil": "Valid until {{date}}.",
+    "validUntilNote": "This plan doesn't renew automatically — come back before then to keep your benefits.",
     "billingHistory": "Billing history",
+    "noHistory": "No billing history yet.",
+    "showMoreHistory": "Show more",
     "downloadInvoice": "Download invoice",
+    "downloadingInvoice": "Downloading…",
+    "invoiceError": "Couldn't download the invoice. Please try again.",
     "statusPaid": "Paid",
     "statusFailed": "Failed",
+    "statusPending": "Pending",
     "plans": {
       "free": {
         "name": "Free",
         "price": "₹0",
         "period": "/month",
         "features": [
-          "Post jobs with all categories",
+          "Post 10 jobs with all categories",
           "List partnership opportunities",
           "Basic company profile"
         ]
       },
       "growth": {
         "name": "Growth",
-        "price": "₹4,999",
+        "price": "₹399",
         "period": "/month",
-        "features": [
-          "Everything in Free",
-          "Contact candidates directly for 1 month per search",
-          "Featured / boosted job posts",
-          "Seminar & meetup scheduling tools"
-        ]
+        "features": ["Everything in Free", "Contact 50 candidates directly for 1 month per search"]
       },
       "enterprise": {
         "name": "Enterprise",
-        "price": "₹14,999",
+        "price": "₹899",
         "period": "/month",
-        "features": [
-          "Everything in Growth",
-          "Unlimited candidate search & unlock contacts",
-          "Analytics dashboard on applicants",
-          "Dedicated account manager",
-          "Bulk job posting"
-        ]
+        "features": ["Everything in Growth", "Unlimited candidate search & 250 unlock contacts"]
       }
     }
   }
