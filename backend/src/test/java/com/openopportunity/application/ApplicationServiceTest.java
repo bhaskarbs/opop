@@ -12,6 +12,9 @@ import com.openopportunity.application.dto.ApplicationSummary;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
+import com.openopportunity.auth.CandidateContactRevealRepository;
+import com.openopportunity.auth.CandidateProfileRepository;
+import com.openopportunity.auth.UserRepository;
 import com.openopportunity.job.EmploymentType;
 import com.openopportunity.job.ExperienceLevel;
 import com.openopportunity.job.Job;
@@ -41,11 +44,26 @@ class ApplicationServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private CandidateProfileRepository candidateProfileRepository;
+
+    @Mock
+    private CandidateContactRevealRepository candidateContactRevealRepository;
+
     private ApplicationService applicationService;
 
     @BeforeEach
     void setUp() {
-        applicationService = new ApplicationService(applicationRepository, jobRepository, notificationService);
+        applicationService = new ApplicationService(
+                applicationRepository,
+                jobRepository,
+                notificationService,
+                userRepository,
+                candidateProfileRepository,
+                candidateContactRevealRepository);
     }
 
     private Job activeJob(UUID companyId) {

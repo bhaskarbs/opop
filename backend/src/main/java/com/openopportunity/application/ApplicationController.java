@@ -2,6 +2,7 @@ package com.openopportunity.application;
 
 import com.openopportunity.application.dto.ApplicationSummary;
 import com.openopportunity.application.dto.ApplyRequest;
+import com.openopportunity.application.dto.JobApplicantSummary;
 import com.openopportunity.application.dto.UpdateApplicationStatusRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -50,7 +51,7 @@ public class ApplicationController {
     }
 
     @GetMapping("/job/{jobId}")
-    public List<ApplicationSummary> forJob(@PathVariable UUID jobId) {
+    public List<JobApplicantSummary> forJob(@PathVariable UUID jobId) {
         return applicationService.getForJob(jobId, currentUserId());
     }
 
