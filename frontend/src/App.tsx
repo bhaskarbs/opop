@@ -47,6 +47,7 @@ import CompanyProfilePage from './pages/company/CompanyProfilePage'
 import CompanyPartnershipsPage from './pages/company/CompanyPartnershipsPage'
 import PostJobPage from './pages/company/PostJobPage'
 import MyJobPostingsPage from './pages/company/MyJobPostingsPage'
+import JobApplicantsPage from './pages/company/JobApplicantsPage'
 import SearchCandidatesPage from './pages/company/SearchCandidatesPage'
 import CandidateProfileViewPage from './pages/company/CandidateProfileViewPage'
 import SeminarSchedulerPage from './pages/company/SeminarSchedulerPage'
@@ -172,6 +173,10 @@ function App() {
                 <Route path="company/post-job" element={<PostJobPage />} />
                 <Route path="company/job-postings" element={<MyJobPostingsPage />} />
                 <Route path="company/job-postings/:jobId/edit" element={<PostJobPage />} />
+                <Route
+                  path="company/job-postings/:jobId/applicants"
+                  element={<JobApplicantsPage />}
+                />
                 <Route path="company/search-candidates" element={<SearchCandidatesPage />} />
                 <Route path="company/candidates/:userId" element={<CandidateProfileViewPage />} />
                 <Route path="company/seminars" element={<SeminarSchedulerPage />} />

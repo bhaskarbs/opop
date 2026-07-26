@@ -115,6 +115,12 @@ export default function MyJobPostingsPage() {
                 >
                   {t(STATUS_LABEL_KEYS[posting.status])}
                 </span>
+                <Link
+                  to={localize(ROUTES.companyJobApplicants(posting.id))}
+                  className="text-[13px] font-bold text-primary no-underline"
+                >
+                  {t('myJobPostings.viewApplicants')}
+                </Link>
                 {posting.status === 'PENDING_APPROVAL' ? (
                   <span
                     title={t('myJobPostings.pendingReviewNotice')}

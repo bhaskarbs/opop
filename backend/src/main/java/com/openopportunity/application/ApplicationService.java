@@ -1,9 +1,16 @@
 package com.openopportunity.application;
 
 import com.openopportunity.application.dto.ApplicationSummary;
+import com.openopportunity.application.dto.JobApplicantSummary;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
+import com.openopportunity.auth.CandidateContactReveal;
+import com.openopportunity.auth.CandidateContactRevealRepository;
+import com.openopportunity.auth.CandidateProfile;
+import com.openopportunity.auth.CandidateProfileRepository;
+import com.openopportunity.auth.User;
+import com.openopportunity.auth.UserRepository;
 import com.openopportunity.job.Job;
 import com.openopportunity.job.JobRepository;
 import com.openopportunity.job.JobStatus;
@@ -11,7 +18,10 @@ import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,14 +31,23 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final JobRepository jobRepository;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
+    private final CandidateProfileRepository candidateProfileRepository;
+    private final CandidateContactRevealRepository candidateContactRevealRepository;
 
     public ApplicationService(
             ApplicationRepository applicationRepository,
             JobRepository jobRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            UserRepository userRepository,
+            CandidateProfileRepository candidateProfileRepository,
+            CandidateContactRevealRepository candidateContactRevealRepository) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.notificationService = notificationService;
+        this.userRepository = userRepository;
+        this.candidateProfileRepository = candidateProfileRepository;
+        this.candidateContactRevealRepository = candidateContactRevealRepository;
     }
 
     @Transactional
@@ -103,15 +122,52 @@ public class ApplicationService {
                 .toList();
     }
 
+    /** Backs the "view applicants" page reached from company/job-postings — unlike getMine()
+     * above (candidate-facing, no candidate identity needed), a company needs to see who applied,
+     * so this returns candidate details joined in from auth's User/CandidateProfile rather than
+     * just the application record itself. contactNumber is null unless this company has already
+     * revealed it (see CandidateSearchService.revealContact) — same reveal-gated pattern as
+     * candidate search, reused via the same /api/company/candidates/{userId}/reveal-contact
+     * endpoint from this page. */
     @Transactional(readOnly = true)
-    public List<ApplicationSummary> getForJob(UUID jobId, UUID companyId) {
+    public List<JobApplicantSummary> getForJob(UUID jobId, UUID companyId) {
         Job job = jobRepository.findById(jobId).orElseThrow(() -> new JobNotFoundException(jobId));
         if (!job.getCompanyId().equals(companyId)) {
             throw new ApplicationAccessDeniedException();
         }
-        return applicationRepository.findByJobIdOrderByAppliedAtDesc(jobId).stream()
-                .map(this::toSummary)
+        List<Application> applications = applicationRepository.findByJobIdOrderByAppliedAtDesc(jobId);
+        List<UUID> candidateIds = applications.stream().map(Application::getCandidateId).toList();
+
+        Map<UUID, User> usersById = userRepository.findAllById(candidateIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        Map<UUID, CandidateProfile> profilesById = candidateProfileRepository.findByUserIdIn(candidateIds).stream()
+                .collect(Collectors.toMap(CandidateProfile::getUserId, profile -> profile));
+        Set<UUID> revealedCandidateIds = candidateContactRevealRepository.findByCompanyId(companyId).stream()
+                .map(CandidateContactReveal::getCandidateId)
+                .collect(Collectors.toSet());
+
+        return applications.stream()
+                .filter(application -> usersById.containsKey(application.getCandidateId()))
+                .map(application -> toApplicantSummary(
+                        application,
+                        usersById.get(application.getCandidateId()),
+                        profilesById.get(application.getCandidateId()),
+                        revealedCandidateIds.contains(application.getCandidateId())))
                 .toList();
+    }
+
+    private JobApplicantSummary toApplicantSummary(
+            Application application, User user, CandidateProfile profile, boolean contactRevealed) {
+        return new JobApplicantSummary(
+                application.getId(),
+                user.getId(),
+                user.getFullName(),
+                profile == null ? null : profile.getTitle(),
+                profile == null ? null : profile.getLocation(),
+                profile == null ? List.of() : profile.getSkills(),
+                application.getStatus(),
+                application.getAppliedAt(),
+                contactRevealed && profile != null ? profile.getMobile() : null);
     }
 
     private ApplicationSummary toSummary(Application application) {
