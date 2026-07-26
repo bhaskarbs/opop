@@ -11,6 +11,7 @@ import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.math.BigDecimal;
@@ -23,6 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class JobService {
+
+    // Applies to every status (DRAFT/PENDING_APPROVAL/ACTIVE/REJECTED/CLOSED all count) — same
+    // flat-cap approach as IdeaService.MAX_IDEAS_PER_SUBMITTER, so drafts can't be used to dodge
+    // the limit.
+    private static final long MAX_JOB_POSTINGS_PER_COMPANY = 10;
 
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
@@ -85,6 +91,9 @@ public class JobService {
     public JobDetail create(UUID companyId, JobRequest request) {
         requireClientSettableStatus(request.status());
         requireEligibleToPostJobs(companyId);
+        if (jobRepository.countByCompanyId(companyId) >= MAX_JOB_POSTINGS_PER_COMPANY) {
+            throw new JobPostingLimitReachedException();
+        }
         User company = userRepository.findById(companyId).orElseThrow();
         Job job = new Job(
                 companyId,

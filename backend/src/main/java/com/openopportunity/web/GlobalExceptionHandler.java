@@ -41,6 +41,7 @@ import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.mockinterview.exception.DuplicateMockInterviewQuestionException;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFoundException;
@@ -174,6 +175,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CompanyNotEligibleToPostJobsException.class)
     public ResponseEntity<ApiError> handleCompanyNotEligibleToPostJobs(CompanyNotEligibleToPostJobsException ex) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(JobPostingLimitReachedException.class)
+    public ResponseEntity<ApiError> handleJobPostingLimitReached(JobPostingLimitReachedException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(CompanyNotEligibleToContactCandidatesException.class)
