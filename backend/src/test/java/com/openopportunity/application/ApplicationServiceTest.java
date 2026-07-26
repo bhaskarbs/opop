@@ -3,6 +3,7 @@ package com.openopportunity.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -14,7 +15,9 @@ import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.CandidateContactRevealRepository;
 import com.openopportunity.auth.CandidateProfileRepository;
+import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
 import com.openopportunity.job.EmploymentType;
 import com.openopportunity.job.ExperienceLevel;
 import com.openopportunity.job.Job;
@@ -23,6 +26,7 @@ import com.openopportunity.job.JobStatus;
 import com.openopportunity.job.WorkMode;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -91,6 +95,8 @@ class ApplicationServiceTest {
         Job job = activeJob(UUID.randomUUID());
         when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
         when(applicationRepository.existsByJobIdAndCandidateId(job.getId(), candidateId)).thenReturn(false);
+        when(userRepository.findById(candidateId))
+                .thenReturn(Optional.of(new User("candidate@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE)));
 
         ApplicationSummary summary = applicationService.apply(candidateId, job.getId());
 
@@ -99,6 +105,8 @@ class ApplicationServiceTest {
         assertThat(job.getApplicantCount()).isEqualTo(1);
         verify(applicationRepository).save(any(Application.class));
         verify(jobRepository).save(job);
+        verify(notificationService)
+                .notify(eq(job.getCompanyId()), eq(NotificationType.NEW_JOB_APPLICATION), any(), any());
     }
 
     @Test
