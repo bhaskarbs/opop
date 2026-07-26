@@ -75,6 +75,20 @@ public class CompanyBillingService {
         return summaryFor(companyId);
     }
 
+    /** For CandidateSearchService's contact-reveal quota gate — cheaper than getBilling() when
+     * the caller only needs the plan and the current billing period's start (to count reveals
+     * made since then), not the full history. */
+    @Transactional(readOnly = true)
+    public PlanPeriod getPlanPeriod(UUID companyId) {
+        CompanySubscription subscription = subscriptionRepository.findByCompanyId(companyId).orElse(null);
+        CompanySubscriptionPlan plan = subscription == null ? CompanySubscriptionPlan.FREE : subscription.getPlan();
+        Instant periodStart = subscription == null ? null : subscription.getCurrentPeriodStart();
+        Instant periodEnd = subscription == null ? null : subscription.getCurrentPeriodEnd();
+        return new PlanPeriod(plan, periodStart, periodEnd);
+    }
+
+    public record PlanPeriod(CompanySubscriptionPlan plan, Instant currentPeriodStart, Instant currentPeriodEnd) {}
+
     /** Downgrade-to-Free only — a paid plan can only be granted through a real checkout. */
     @Transactional
     public CompanyBillingSummary changePlan(UUID companyId, CompanySubscriptionPlan plan) {
@@ -88,7 +102,7 @@ public class CompanyBillingService {
         CompanySubscription subscription = subscriptionRepository
                 .findByCompanyId(companyId)
                 .orElseGet(() -> new CompanySubscription(companyId, plan));
-        subscription.changePlan(plan, null);
+        subscription.changePlan(plan, null, null);
         subscriptionRepository.save(subscription);
         transactionRepository.save(new CompanyBillingTransaction(companyId, plan));
 
@@ -247,7 +261,10 @@ public class CompanyBillingService {
         // Renewing before the current period lapses stacks the new period on top of the
         // remaining days; renewing after it's lapsed (or never had one) just starts fresh.
         Instant renewalBase = currentPeriodEnd != null && currentPeriodEnd.isAfter(now) ? currentPeriodEnd : now;
-        subscription.changePlan(transaction.getPlan(), renewalBase.plus(PAID_PLAN_PERIOD));
+        // currentPeriodStart always resets to this exact payment, regardless of stacking — the
+        // contact-reveal quota (see CandidateSearchService.getContactQuota) is meant to refresh
+        // with every checkout/renewal, not accumulate across them.
+        subscription.changePlan(transaction.getPlan(), now, renewalBase.plus(PAID_PLAN_PERIOD));
         subscriptionRepository.save(subscription);
     }
 
@@ -261,7 +278,7 @@ public class CompanyBillingService {
         List<CompanySubscription> overdue =
                 subscriptionRepository.findByCurrentPeriodEndBeforeAndPlanNot(now, CompanySubscriptionPlan.FREE);
         for (CompanySubscription subscription : overdue) {
-            subscription.changePlan(CompanySubscriptionPlan.FREE, null);
+            subscription.changePlan(CompanySubscriptionPlan.FREE, null, null);
             subscriptionRepository.save(subscription);
             transactionRepository.save(
                     new CompanyBillingTransaction(subscription.getCompanyId(), CompanySubscriptionPlan.FREE));

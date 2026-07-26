@@ -2,6 +2,7 @@ package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.CandidateProfileForCompany;
 import com.openopportunity.auth.dto.CandidateSearchSummary;
+import com.openopportunity.auth.dto.ContactQuotaSummary;
 import com.openopportunity.auth.dto.ResumeHtmlResponse;
 import com.openopportunity.auth.dto.RevealCandidateContactResponse;
 import java.net.URLEncoder;
@@ -38,9 +39,17 @@ public class CandidateSearchController {
         return candidateSearchService.search(currentUserId(), q, location, sort);
     }
 
+    /** Backs the "N of M contacts remaining" indicator — a static literal segment, matched ahead
+     * of "/{userId}" below regardless of declaration order (Spring ranks literal path segments
+     * as more specific than a path variable). */
+    @GetMapping("/contact-quota")
+    public ContactQuotaSummary contactQuota() {
+        return candidateSearchService.getContactQuota(currentUserId());
+    }
+
     @GetMapping("/{userId}")
     public CandidateProfileForCompany get(@PathVariable UUID userId) {
-        return candidateSearchService.get(userId);
+        return candidateSearchService.get(currentUserId(), userId);
     }
 
     /** disposition=inline (default) lets the frontend render the resume in an <iframe> for the

@@ -2,11 +2,14 @@ package com.openopportunity.auth;
 
 import com.openopportunity.auth.dto.CandidateProfileForCompany;
 import com.openopportunity.auth.dto.CandidateSearchSummary;
+import com.openopportunity.auth.dto.ContactQuotaSummary;
 import com.openopportunity.auth.dto.RevealCandidateContactResponse;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
 import com.openopportunity.auth.exception.ResumeRenderingFailedException;
+import com.openopportunity.billing.CompanyBillingService;
+import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,18 +37,21 @@ public class CandidateSearchService {
     private final CompanyProfileRepository companyProfileRepository;
     private final CandidateContactRevealRepository candidateContactRevealRepository;
     private final FileStorageService fileStorageService;
+    private final CompanyBillingService companyBillingService;
 
     public CandidateSearchService(
             UserRepository userRepository,
             CandidateProfileRepository candidateProfileRepository,
             CompanyProfileRepository companyProfileRepository,
             CandidateContactRevealRepository candidateContactRevealRepository,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            CompanyBillingService companyBillingService) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.companyProfileRepository = companyProfileRepository;
         this.candidateContactRevealRepository = candidateContactRevealRepository;
         this.fileStorageService = fileStorageService;
+        this.companyBillingService = companyBillingService;
     }
 
     @Transactional(readOnly = true)
@@ -93,11 +99,13 @@ public class CandidateSearchService {
                 .reversed();
     }
 
-    /** Backs the "View profile" page — freely viewable like search() above (no eligibility
-     * gate); only the resume bytes themselves (getResume below) and the phone number
-     * (revealContact) are gated behind company eligibility. */
+    /** Backs the "View profile" page — now gated the same as revealContact/getResume (complete +
+     * verified company profile, on a paid plan, with contact-reveal quota remaining for this
+     * billing period). Viewing a candidate's full profile is treated as sensitive as their
+     * resume/contact details, not freely browsable like the search results list. */
     @Transactional(readOnly = true)
-    public CandidateProfileForCompany get(UUID candidateUserId) {
+    public CandidateProfileForCompany get(UUID companyId, UUID candidateUserId) {
+        requireEligibleToContactCandidates(companyId);
         CandidateProfile profile = candidateProfileRepository
                 .findByUserId(candidateUserId)
                 .orElseThrow(() -> new CandidateProfileNotFoundException(candidateUserId));
@@ -122,7 +130,8 @@ public class CandidateSearchService {
     }
 
     /** Same eligibility gate as revealContact — a resume is at least as sensitive as a phone
-     * number, so it gets the same "complete + verified company profile" requirement. */
+     * number, so it gets the same "complete + verified company profile, paid plan with quota
+     * remaining" requirement. */
     @Transactional(readOnly = true)
     public LoadedResume getResume(UUID companyId, UUID candidateUserId) {
         requireEligibleToContactCandidates(companyId);
@@ -158,6 +167,21 @@ public class CandidateSearchService {
         }
     }
 
+    /** Backs the "N of M contacts remaining" indicator the frontend uses to enable/disable
+     * "View contact" and "View profile" before the company even clicks (rather than only finding
+     * out via a 403 from requireEligibleToContactCandidates). */
+    @Transactional(readOnly = true)
+    public ContactQuotaSummary getContactQuota(UUID companyId) {
+        CompanyBillingService.PlanPeriod planPeriod = companyBillingService.getPlanPeriod(companyId);
+        int limit = planPeriod.plan().getContactQuota();
+        long used = planPeriod.currentPeriodStart() == null
+                ? 0
+                : candidateContactRevealRepository.countByCompanyIdAndRevealedAtAfter(
+                        companyId, planPeriod.currentPeriodStart());
+        long remaining = Math.max(0, limit - used);
+        return new ContactQuotaSummary(planPeriod.plan(), limit, used, remaining, planPeriod.currentPeriodEnd());
+    }
+
     private String contentTypeFor(String fileName) {
         String lower = fileName == null ? "" : fileName.toLowerCase();
         if (lower.endsWith(".pdf")) {
@@ -174,14 +198,16 @@ public class CandidateSearchService {
 
     /** Idempotent — a company clicking "View contact" again on an already-revealed candidate
      * just gets the same number back, no duplicate row (the unique (company_id, candidate_id)
-     * constraint backs this even if two requests somehow race). */
+     * constraint backs this even if two requests somehow race) and no quota check, since nothing
+     * new is being unlocked. A genuinely new reveal does require eligibility (paid plan, quota
+     * remaining this billing period). */
     @Transactional
     public RevealCandidateContactResponse revealContact(UUID companyId, UUID candidateUserId) {
-        requireEligibleToContactCandidates(companyId);
         CandidateProfile profile = candidateProfileRepository
                 .findByUserId(candidateUserId)
                 .orElseThrow(() -> new CandidateProfileNotFoundException(candidateUserId));
         if (!candidateContactRevealRepository.existsByCompanyIdAndCandidateId(companyId, candidateUserId)) {
+            requireEligibleToContactCandidates(companyId);
             candidateContactRevealRepository.save(new CandidateContactReveal(companyId, candidateUserId));
         }
         return new RevealCandidateContactResponse(profile.getMobile());
@@ -196,6 +222,15 @@ public class CandidateSearchService {
         if (!profile.isVerified()) {
             throw new CompanyNotEligibleToContactCandidatesException(
                     "Your company profile is awaiting admin verification before you can contact candidates");
+        }
+        ContactQuotaSummary quota = getContactQuota(companyId);
+        if (quota.plan() == CompanySubscriptionPlan.FREE) {
+            throw new CompanyNotEligibleToContactCandidatesException(
+                    "Upgrade to a paid plan to view candidate profiles and contacts");
+        }
+        if (quota.remaining() <= 0) {
+            throw new CompanyNotEligibleToContactCandidatesException(
+                    "You've used all " + quota.limit() + " candidate contacts for this billing period");
         }
     }
 

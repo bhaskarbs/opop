@@ -43,6 +43,10 @@ export interface ContactRevealControlProps {
   contactNumber: string | null
   revealing: boolean
   canContact: boolean
+  // Shown as the disabled button's tooltip — why canContact is false right now (incomplete
+  // profile, Free plan, or exhausted contact quota; see useContactEligibility). Falls back to
+  // the generic hint if a caller doesn't pass one.
+  hint?: string | null
   onReveal: () => void
 }
 
@@ -55,6 +59,7 @@ export function ContactRevealControl({
   contactNumber,
   revealing,
   canContact,
+  hint,
   onReveal,
 }: ContactRevealControlProps) {
   const { t } = useTranslation('company')
@@ -90,7 +95,7 @@ export function ContactRevealControl({
       type="button"
       disabled={revealing || !canContact}
       onClick={onReveal}
-      title={canContact ? undefined : t('searchCandidates.contactDisabledHint')}
+      title={canContact ? undefined : (hint ?? t('searchCandidates.contactDisabledHint'))}
       className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:bg-ink/50"
     >
       {revealing ? t('searchCandidates.revealingContact') : t('searchCandidates.viewContact')}

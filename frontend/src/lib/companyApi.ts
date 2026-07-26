@@ -67,6 +67,19 @@ export interface ResumeHtmlResponse {
   html: string
 }
 
+export type CompanySubscriptionPlanKey = 'FREE' | 'GROWTH' | 'ENTERPRISE'
+
+// Backs the "N of M contacts remaining" gate on View contact/View profile — see
+// CandidateSearchService.getContactQuota. periodEnd is null on Free (or a company that's never
+// subscribed), since there's no active billing period to report.
+export interface ContactQuota {
+  plan: CompanySubscriptionPlanKey
+  limit: number
+  used: number
+  remaining: number
+  periodEnd: string | null
+}
+
 // Richer than CandidateSearchSummary (see backend CandidateProfileForCompany) — still no
 // email/mobile up front, same boundary the search card already draws; resumeFileName is null
 // until the candidate has uploaded one.
@@ -128,6 +141,8 @@ export const companyApi = {
     request<CandidateProfileForCompany>(`/api/company/candidates/${userId}`, {
       headers: authHeaders(),
     }),
+  getContactQuota: () =>
+    request<ContactQuota>('/api/company/candidates/contact-quota', { headers: authHeaders() }),
   // Same bytes regardless of the disposition query param the backend accepts — that header
   // only matters for a browser navigating to the URL directly, which can't happen here since
   // the endpoint requires a bearer token. Callers decide "download" vs "inline preview"
