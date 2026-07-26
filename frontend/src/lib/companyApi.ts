@@ -46,7 +46,7 @@ export interface CandidateSearchSummary {
 
 export interface CandidateSearchParams {
   q?: string
-  location?: string
+  location?: string[]
 }
 
 export interface RevealCandidateContactResponse {
@@ -85,7 +85,7 @@ function authHeaders(): Record<string, string> {
 function buildQuery(params: CandidateSearchParams): string {
   const search = new URLSearchParams()
   if (params.q) search.set('q', params.q)
-  if (params.location) search.set('location', params.location)
+  params.location?.forEach((location) => search.append('location', location))
   const query = search.toString()
   return query ? `?${query}` : ''
 }

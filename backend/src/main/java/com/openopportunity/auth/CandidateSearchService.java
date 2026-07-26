@@ -48,9 +48,9 @@ public class CandidateSearchService {
     }
 
     @Transactional(readOnly = true)
-    public List<CandidateSearchSummary> search(UUID companyId, String q, String location) {
+    public List<CandidateSearchSummary> search(UUID companyId, String q, List<String> locations) {
         String normalizedQuery = q == null ? null : q.trim().toLowerCase();
-        String normalizedLocation = location == null ? null : location.trim().toLowerCase();
+        List<String> normalizedLocations = normalizeLocations(locations);
 
         List<CandidateProfile> profiles = candidateProfileRepository.findAll();
         Map<UUID, User> usersById = userRepository
@@ -64,7 +64,7 @@ public class CandidateSearchService {
         return profiles.stream()
                 .filter(profile -> usersById.containsKey(profile.getUserId()))
                 .filter(profile -> matchesQuery(profile, usersById.get(profile.getUserId()), normalizedQuery))
-                .filter(profile -> matchesLocation(profile, normalizedLocation))
+                .filter(profile -> matchesAnyLocation(profile, normalizedLocations))
                 .map(profile -> toSummary(
                         profile,
                         usersById.get(profile.getUserId()),
@@ -191,11 +191,28 @@ public class CandidateSearchService {
         return profile.getSkills().stream().anyMatch(skill -> skill.toLowerCase().contains(normalizedQuery));
     }
 
-    private boolean matchesLocation(CandidateProfile profile, String normalizedLocation) {
-        if (normalizedLocation == null || normalizedLocation.isBlank()) {
+    /** Matches if ANY of the given locations is a substring of the candidate's location — same
+     * multi-value relaxation as JobSpecifications.matchesAnyLocation, for the location filter's
+     * city tags. */
+    private boolean matchesAnyLocation(CandidateProfile profile, List<String> normalizedLocations) {
+        if (normalizedLocations.isEmpty()) {
             return true;
         }
-        return profile.getLocation() != null && profile.getLocation().toLowerCase().contains(normalizedLocation);
+        if (profile.getLocation() == null) {
+            return false;
+        }
+        String lowerLocation = profile.getLocation().toLowerCase();
+        return normalizedLocations.stream().anyMatch(lowerLocation::contains);
+    }
+
+    private List<String> normalizeLocations(List<String> locations) {
+        if (locations == null || locations.isEmpty()) {
+            return List.of();
+        }
+        return locations.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> value.trim().toLowerCase())
+                .toList();
     }
 
     private String photoUrl(UUID userId) {
