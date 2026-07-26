@@ -196,6 +196,8 @@
     "searchPlaceholder": "हुनर, टाइटल, या कीवर्ड से खोजें",
     "lookingFor": "किसकी तलाश है",
     "location": "स्थान",
+    "locationsPlaceholder": "शहर जोड़ें",
+    "removeLocation": "{{value}} हटाएं",
     "showingCount": "आपके फ़िल्टर से मेल खाते {{count}} उम्मीदवार दिखाए जा रहे हैं",
     "noResults": "आपके फ़िल्टर से कोई उम्मीदवार मेल नहीं खाता। कुछ फ़िल्टर हटाकर या दूसरा कीवर्ड खोजकर देखें।",
     "previousPage": "← पिछला",

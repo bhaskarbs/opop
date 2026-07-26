@@ -4,7 +4,12 @@ import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { companyApi, type CandidateSearchSummary } from '../../lib/companyApi'
+import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { ROUTES } from '../../routes/paths'
+// Same tag-input-with-autocomplete component the /jobs search bar uses for its location filter
+// (see JobSearchPage) — reused here rather than re-implemented, so the interaction (multi-city
+// tags, arrow-key nav, backspace-to-remove-last) matches exactly.
+import { SearchTagAutocompleteField } from '../job-search/SearchTagAutocompleteField'
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
 
@@ -177,7 +182,11 @@ export default function SearchCandidatesPage() {
   // typing alone never fires a search (see the effect below, which depends on this rather than
   // on `query`).
   const [submittedQuery, setSubmittedQuery] = useState('')
-  const [location, setLocation] = useState('')
+  // A set of tags rather than free text — same pattern as JobSearchPage's `locations` state
+  // (see SearchTagAutocompleteField), so typing a city doesn't reach this state at all until
+  // it's actually added as a tag, and the search effect below only ever fires on a committed
+  // change, never on a keystroke.
+  const [locations, setLocations] = useState<string[]>([])
   const [page, setPage] = useState(1)
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
@@ -222,7 +231,7 @@ export default function SearchCandidatesPage() {
       companyApi
         .searchCandidates({
           q: submittedQuery.trim() || undefined,
-          location: location.trim() || undefined,
+          location: locations.length > 0 ? locations : undefined,
         })
         .then(setCandidates)
         .catch((caught) => {
@@ -231,7 +240,7 @@ export default function SearchCandidatesPage() {
         .finally(() => setLoading(false))
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [submittedQuery, location, t])
+  }, [submittedQuery, locations, t])
 
   function handleRevealContact(userId: string) {
     setRevealingIds((prev) => new Set(prev).add(userId))
@@ -369,11 +378,27 @@ export default function SearchCandidatesPage() {
               <div className="mb-2.5 text-[13px] font-bold text-ink">
                 {t('searchCandidates.location')}
               </div>
-              <input
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-                placeholder={t('landing.search.locationPlaceholder', { ns: 'public' })}
-                className="w-full rounded-lg border border-border px-2.5 py-2 text-[13.5px] text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+              <SearchTagAutocompleteField
+                values={locations}
+                onChange={setLocations}
+                suggestions={LOCATION_SUGGESTIONS}
+                placeholder={t('searchCandidates.locationsPlaceholder')}
+                removeLabel={(value) => t('searchCandidates.removeLocation', { value })}
+                containerClassName="w-full"
+                icon={
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    className="shrink-0 text-fog"
+                  >
+                    <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                }
               />
             </div>
           </div>

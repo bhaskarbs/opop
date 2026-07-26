@@ -196,6 +196,8 @@
     "searchPlaceholder": "Search by skill, title, or keyword",
     "lookingFor": "Looking for",
     "location": "Location",
+    "locationsPlaceholder": "Add a city",
+    "removeLocation": "Remove {{value}}",
     "showingCount": "Showing {{count}} candidates matching your filters",
     "noResults": "No candidates match your filters. Try clearing some filters or searching a different keyword.",
     "previousPage": "← Previous",
