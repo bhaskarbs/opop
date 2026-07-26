@@ -39,6 +39,11 @@ public class Notification {
     @Column(nullable = false)
     private boolean read;
 
+    // Whether NotificationService actually got a real email out for this notification (see
+    // notify()) — independent of `read`, which only tracks the in-app bell.
+    @Column(name = "email_sent", nullable = false)
+    private boolean emailSent;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -64,6 +69,10 @@ public class Notification {
         this.read = true;
     }
 
+    public void markEmailSent() {
+        this.emailSent = true;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -86,6 +95,10 @@ public class Notification {
 
     public boolean isRead() {
         return read;
+    }
+
+    public boolean isEmailSent() {
+        return emailSent;
     }
 
     public Instant getCreatedAt() {

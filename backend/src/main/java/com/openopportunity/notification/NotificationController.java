@@ -1,5 +1,6 @@
 package com.openopportunity.notification;
 
+import com.openopportunity.notification.dto.EmailSentCountResponse;
 import com.openopportunity.notification.dto.NotificationSummary;
 import com.openopportunity.notification.dto.UnreadCountResponse;
 import java.util.List;
@@ -30,6 +31,11 @@ public class NotificationController {
     @GetMapping("/unread-count")
     public UnreadCountResponse unreadCount() {
         return new UnreadCountResponse(notificationService.getUnreadCount(currentUserId()));
+    }
+
+    @GetMapping("/email-sent-count")
+    public EmailSentCountResponse emailSentCount() {
+        return new EmailSentCountResponse(notificationService.getEmailSentCount(currentUserId()));
     }
 
     @PostMapping("/{id}/read")

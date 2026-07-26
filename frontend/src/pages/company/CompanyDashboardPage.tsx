@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { companyApi, type CompanyProfileResponse } from '../../lib/companyApi'
 import { jobsApi, type JobSummary } from '../../lib/jobsApi'
+import { notificationsApi } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
 
 const VERIFICATION_LABEL_KEYS: Record<CompanyProfileResponse['verificationStatus'], string> = {
@@ -57,6 +58,7 @@ export default function CompanyDashboardPage() {
   const localize = useLocalizedPath()
   const [profile, setProfile] = useState<CompanyProfileResponse | null>(null)
   const [postings, setPostings] = useState<JobSummary[]>([])
+  const [emailsSent, setEmailsSent] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -77,6 +79,15 @@ export default function CompanyDashboardPage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  useEffect(() => {
+    notificationsApi
+      .emailSentCount()
+      .then((result) => setEmailsSent(result.count))
+      .catch(() => {
+        // Best-effort — the stat just stays at 0 if this fails.
+      })
   }, [])
 
   const activeCount = postings.filter((posting) => posting.status === 'ACTIVE').length
@@ -293,11 +304,7 @@ export default function CompanyDashboardPage() {
             </h3>
             <div className="flex justify-between border-t border-[#F0F1F3] py-2 text-sm text-slate">
               <span>{t('dashboard.email')}</span>
-              <strong className="text-ink">1,204</strong>
-            </div>
-            <div className="flex justify-between border-t border-[#F0F1F3] py-2 text-sm text-slate">
-              <span>{t('dashboard.whatsapp')}</span>
-              <strong className="text-ink">860</strong>
+              <strong className="text-ink">{emailsSent.toLocaleString()}</strong>
             </div>
           </div>
         </aside>
