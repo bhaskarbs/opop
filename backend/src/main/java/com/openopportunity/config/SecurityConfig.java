@@ -56,6 +56,12 @@ public class SecurityConfig {
                         // (that candidate's own authenticated profile) below.
                         .requestMatchers(HttpMethod.GET, "/api/candidates/*/photo")
                         .permitAll()
+                        // Same reasoning as candidate photos above, for a company's logo (see
+                        // CompanyLogoController) — plural "/api/companies/**", distinct from the
+                        // singular "/api/company/**" (that company's own authenticated profile)
+                        // below, so there's no pattern overlap to worry about ordering-wise.
+                        .requestMatchers(HttpMethod.GET, "/api/companies/*/logo")
+                        .permitAll()
                         // /mine and /pending must be declared before the general GET
                         // /api/jobs/** permitAll rule below — authorizeHttpRequests matches in
                         // declaration order, and both would otherwise also match that broader

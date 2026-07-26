@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Card } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
-import { ApiError } from '../lib/apiClient'
+import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
 import { jobsApi, type JobDetail, type JobSummary } from '../lib/jobsApi'
 import { workModeFromBackend } from '../lib/jobEnums'
@@ -184,9 +184,17 @@ export default function JobDetailPage() {
           <Card className="mb-5 p-7">
             <div className="flex flex-wrap justify-between gap-[18px]">
               <div className="flex gap-4">
-                <div className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-xl bg-primary text-xl font-bold text-white">
-                  {initial}
-                </div>
+                {job.companyLogoUrl ? (
+                  <img
+                    src={`${API_BASE_URL}${job.companyLogoUrl}`}
+                    alt={job.companyName}
+                    className="h-[58px] w-[58px] shrink-0 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-xl bg-primary text-xl font-bold text-white">
+                    {initial}
+                  </div>
+                )}
                 <div>
                   <h1 className="mb-1.5 text-[23px] font-extrabold tracking-[-0.01em] text-ink">
                     {job.title}

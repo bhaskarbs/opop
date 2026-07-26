@@ -24,4 +24,9 @@ public record JobSummary(
         List<String> skills,
         JobStatus status,
         int applicantCount,
-        Instant createdAt) {}
+        Instant createdAt,
+        // Null unless the posting company has uploaded a logo (see
+        // CompanyProfileService.uploadLogo) — derived dynamically from the job's companyId
+        // rather than denormalized onto Job, so a later logo change/removal is reflected
+        // immediately without needing to touch every existing job row.
+        String companyLogoUrl) {}

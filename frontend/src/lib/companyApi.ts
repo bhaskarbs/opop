@@ -1,5 +1,5 @@
 import { useAuthStore } from '../stores/authStore'
-import { blobRequest, request } from './apiClient'
+import { blobRequest, request, uploadRequest } from './apiClient'
 import type { BackendExperienceLevel } from './jobsApi'
 
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
@@ -20,6 +20,13 @@ export interface CompanyProfileResponse {
   // True once every field above is filled in. Posting jobs and (see SearchCandidatesPage)
   // contacting candidates both require this AND verificationStatus === 'VERIFIED'.
   profileComplete: boolean
+  // Null until the company uploads a logo (see companyApi.uploadLogo) — same lazy-fill pattern
+  // as CandidateProfileResponse.photoUrl.
+  logoUrl: string | null
+}
+
+export interface LogoUploadResponse {
+  logoUrl: string
 }
 
 export interface UpdateCompanyProfilePayload {
@@ -103,6 +110,11 @@ export const companyApi = {
       headers: authHeaders(),
       body: JSON.stringify(payload),
     }),
+  uploadLogo: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return uploadRequest<LogoUploadResponse>('/api/company/logo', formData, authHeaders())
+  },
   searchCandidates: (params: CandidateSearchParams = {}) =>
     request<CandidateSearchSummary[]>(`/api/company/candidates${buildQuery(params)}`, {
       headers: authHeaders(),

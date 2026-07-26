@@ -17,6 +17,9 @@ export interface DisplayJob {
   level: ExperienceLevelLabel
   initial: string
   avatarColorClass: string
+  // Raw relative path (e.g. "/api/companies/{id}/logo"), null if the company hasn't uploaded
+  // one — callers prefix it with API_BASE_URL themselves, same convention as Header.tsx.
+  companyLogoUrl: string | null
   tags: string[]
   salary: string
   postedLabel: string
@@ -57,6 +60,7 @@ export function toDisplayJob(job: JobSummary): DisplayJob {
     level: experienceLevelFromBackend(job.experienceLevel),
     initial: job.companyName.charAt(0).toUpperCase(),
     avatarColorClass: colorForCompany(job.companyName),
+    companyLogoUrl: job.companyLogoUrl,
     tags: job.skills,
     salary: formatSalary(job.salaryMinLakhs, job.salaryMaxLakhs),
     postedLabel: formatPostedLabel(job.createdAt),

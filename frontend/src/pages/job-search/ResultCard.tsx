@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { API_BASE_URL } from '../../lib/apiClient'
 import { ROUTES } from '../../routes/paths'
 import type { DisplayJob } from './jobDisplay'
 
@@ -12,11 +13,19 @@ export function ResultCard({ job, applied = false }: { job: DisplayJob; applied?
   return (
     <Card className={applied ? 'border-2 border-teal bg-teal-tint p-5' : 'p-5'}>
       <div className="flex gap-4">
-        <div
-          className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] text-[16px] font-bold text-white ${job.avatarColorClass}`}
-        >
-          {job.initial}
-        </div>
+        {job.companyLogoUrl ? (
+          <img
+            src={`${API_BASE_URL}${job.companyLogoUrl}`}
+            alt={job.company}
+            className="h-[46px] w-[46px] shrink-0 rounded-[10px] object-cover"
+          />
+        ) : (
+          <div
+            className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] text-[16px] font-bold text-white ${job.avatarColorClass}`}
+          >
+            {job.initial}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Link

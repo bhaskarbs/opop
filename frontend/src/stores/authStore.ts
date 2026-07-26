@@ -20,8 +20,13 @@ interface AuthState {
   // replacement photo wouldn't otherwise change the <img> src the browser/React see.
   candidatePhotoUrl: string | null
   candidatePhotoVersion: number
+  // Company-only counterpart to the two fields above — same reasoning (see
+  // useCompanyLogoSync and CompanyProfilePage, which updates this on upload).
+  companyLogoUrl: string | null
+  companyLogoVersion: number
   setSession: (accessToken: string, user: UserSummary) => void
   setCandidatePhoto: (photoUrl: string | null) => void
+  setCompanyLogo: (logoUrl: string | null) => void
   clearSession: () => void
 }
 
@@ -35,9 +40,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   status: 'checking',
   candidatePhotoUrl: null,
   candidatePhotoVersion: 0,
+  companyLogoUrl: null,
+  companyLogoVersion: 0,
   setSession: (accessToken, user) => set({ accessToken, user, status: 'authenticated' }),
   setCandidatePhoto: (photoUrl) =>
     set({ candidatePhotoUrl: photoUrl, candidatePhotoVersion: Date.now() }),
+  setCompanyLogo: (logoUrl) => set({ companyLogoUrl: logoUrl, companyLogoVersion: Date.now() }),
   clearSession: () =>
     set({
       accessToken: null,
@@ -45,5 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       status: 'unauthenticated',
       candidatePhotoUrl: null,
       candidatePhotoVersion: 0,
+      companyLogoUrl: null,
+      companyLogoVersion: 0,
     }),
 }))

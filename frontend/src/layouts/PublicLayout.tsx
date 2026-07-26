@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import type { UserRole } from '../lib/apiClient'
 import { Footer, Header, getActiveNavLabel, type HeaderVariant } from '../components/layout'
 import { useCandidatePhotoSync } from '../hooks/useCandidatePhotoSync'
+import { useCompanyLogoSync } from '../hooks/useCompanyLogoSync'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 
@@ -36,6 +37,9 @@ export default function PublicLayout() {
   const { candidatePhotoUrl, candidatePhotoVersion } = useCandidatePhotoSync(
     variant === 'candidate',
   )
+  const { companyLogoUrl, companyLogoVersion } = useCompanyLogoSync(variant === 'company')
+  const userPhotoUrl = variant === 'company' ? companyLogoUrl : candidatePhotoUrl
+  const userPhotoVersion = variant === 'company' ? companyLogoVersion : candidatePhotoVersion
 
   return (
     <>
@@ -43,8 +47,8 @@ export default function PublicLayout() {
         variant={variant}
         activeItem={activeItem}
         userName={user?.fullName}
-        userPhotoUrl={candidatePhotoUrl}
-        userPhotoVersion={candidatePhotoVersion}
+        userPhotoUrl={userPhotoUrl}
+        userPhotoVersion={userPhotoVersion}
         showGuestAuthLinks={showGuestAuthLinks}
       />
       <Outlet />
