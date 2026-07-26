@@ -33,8 +33,9 @@ public class CandidateSearchController {
     @GetMapping
     public List<CandidateSearchSummary> search(
             @RequestParam(required = false) String q,
-            @RequestParam(required = false) List<String> location) {
-        return candidateSearchService.search(currentUserId(), q, location);
+            @RequestParam(required = false) List<String> location,
+            @RequestParam(required = false, defaultValue = "relevant") String sort) {
+        return candidateSearchService.search(currentUserId(), q, location, sort);
     }
 
     @GetMapping("/{userId}")

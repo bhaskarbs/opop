@@ -3,13 +3,24 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
-import { companyApi, type CandidateSearchSummary } from '../../lib/companyApi'
+import {
+  companyApi,
+  type CandidateSearchSummary,
+  type CandidateSortOption,
+} from '../../lib/companyApi'
 import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { ROUTES } from '../../routes/paths'
 // Same tag-input-with-autocomplete component the /jobs search bar uses for its location filter
 // (see JobSearchPage) — reused here rather than re-implemented, so the interaction (multi-city
 // tags, arrow-key nav, backspace-to-remove-last) matches exactly.
 import { SearchTagAutocompleteField } from '../job-search/SearchTagAutocompleteField'
+
+const SORT_LABEL_KEYS: Record<CandidateSortOption, string> = {
+  relevant: 'searchCandidates.sort.relevant',
+  newest: 'searchCandidates.sort.newest',
+  name: 'searchCandidates.sort.name',
+  contacted: 'searchCandidates.sort.contacted',
+}
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
 
@@ -187,6 +198,7 @@ export default function SearchCandidatesPage() {
   // it's actually added as a tag, and the search effect below only ever fires on a committed
   // change, never on a keystroke.
   const [locations, setLocations] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState<CandidateSortOption>('relevant')
   const [page, setPage] = useState(1)
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
@@ -232,6 +244,7 @@ export default function SearchCandidatesPage() {
         .searchCandidates({
           q: submittedQuery.trim() || undefined,
           location: locations.length > 0 ? locations : undefined,
+          sort: sortBy,
         })
         .then(setCandidates)
         .catch((caught) => {
@@ -240,7 +253,7 @@ export default function SearchCandidatesPage() {
         .finally(() => setLoading(false))
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [submittedQuery, locations, t])
+  }, [submittedQuery, locations, sortBy, t])
 
   function handleRevealContact(userId: string) {
     setRevealingIds((prev) => new Set(prev).add(userId))
@@ -427,8 +440,24 @@ export default function SearchCandidatesPage() {
             </div>
           ) : (
             <>
-              <div className="mb-4 text-[15px] text-slate">
-                {t('searchCandidates.showingCount', { count: candidates.length })}
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="text-[15px] text-slate">
+                  {t('searchCandidates.showingCount', { count: candidates.length })}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13.5px] text-fog">{t('searchCandidates.sortBy')}</span>
+                  <select
+                    value={sortBy}
+                    onChange={(event) => setSortBy(event.target.value as CandidateSortOption)}
+                    className="rounded-lg border border-border px-2.5 py-2 text-[13.5px] text-ink"
+                  >
+                    {(Object.keys(SORT_LABEL_KEYS) as CandidateSortOption[]).map((option) => (
+                      <option key={option} value={option}>
+                        {t(SORT_LABEL_KEYS[option])}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="flex flex-col gap-3">
                 {visibleCandidates.map((candidate) => (

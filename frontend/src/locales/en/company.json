@@ -199,6 +199,13 @@
     "locationsPlaceholder": "Add a city",
     "removeLocation": "Remove {{value}}",
     "showingCount": "Showing {{count}} candidates matching your filters",
+    "sortBy": "Sort by",
+    "sort": {
+      "relevant": "Most relevant",
+      "newest": "Newest first",
+      "name": "Name (A–Z)",
+      "contacted": "Already contacted first"
+    },
     "noResults": "No candidates match your filters. Try clearing some filters or searching a different keyword.",
     "previousPage": "← Previous",
     "nextPage": "Next →",
