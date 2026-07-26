@@ -47,6 +47,14 @@ public class CompanyProfile {
     @Column(name = "verification_status", nullable = false, length = 20)
     private VerificationStatus verificationStatus;
 
+    // Where FileStorageService put the uploaded logo bytes, and its content type (needed to set
+    // the response Content-Type when serving it back) — null until a logo is uploaded.
+    @Column(name = "logo_storage_key", length = 500)
+    private String logoStorageKey;
+
+    @Column(name = "logo_content_type", length = 100)
+    private String logoContentType;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -133,6 +141,11 @@ public class CompanyProfile {
         this.verificationStatus = VerificationStatus.REJECTED;
     }
 
+    public void updateLogo(String logoStorageKey, String logoContentType) {
+        this.logoStorageKey = logoStorageKey;
+        this.logoContentType = logoContentType;
+    }
+
     private static boolean isNotBlank(String value) {
         return value != null && !value.isBlank();
     }
@@ -175,6 +188,14 @@ public class CompanyProfile {
 
     public VerificationStatus getVerificationStatus() {
         return verificationStatus;
+    }
+
+    public String getLogoStorageKey() {
+        return logoStorageKey;
+    }
+
+    public String getLogoContentType() {
+        return logoContentType;
     }
 
     public Instant getCreatedAt() {

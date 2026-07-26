@@ -2,10 +2,20 @@ package com.openopportunity.auth;
 
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
 import com.openopportunity.auth.dto.CompanyProfileResponse;
+import com.openopportunity.auth.dto.LogoUploadResponse;
 import com.openopportunity.auth.dto.UpdateCompanyProfileRequest;
+import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
+import com.openopportunity.auth.exception.InvalidCompanyLogoException;
+import com.openopportunity.storage.FileStorageService;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Self-service counterpart to AdminCompanyService — a company reading/updating its own
  * profile, as opposed to an admin reviewing/verifying someone else's. Company details are set
@@ -14,12 +24,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CompanyProfileService {
 
+    private static final List<String> ALLOWED_LOGO_CONTENT_TYPES =
+            List.of("image/jpeg", "image/png", "image/webp");
+    private static final long MAX_LOGO_SIZE_BYTES = 5L * 1024 * 1024;
+
     private final UserRepository userRepository;
     private final CompanyProfileRepository companyProfileRepository;
+    private final FileStorageService fileStorageService;
 
-    public CompanyProfileService(UserRepository userRepository, CompanyProfileRepository companyProfileRepository) {
+    public CompanyProfileService(
+            UserRepository userRepository,
+            CompanyProfileRepository companyProfileRepository,
+            FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -45,6 +64,42 @@ public class CompanyProfileService {
         return toResponse(user, profile);
     }
 
+    @Transactional
+    public LogoUploadResponse uploadLogo(UUID userId, MultipartFile file) {
+        validateLogo(file);
+        CompanyProfile profile = findProfile(userId);
+
+        String storageKey;
+        try {
+            storageKey = fileStorageService.store(file, "logos/" + userId);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to store company logo", ex);
+        }
+
+        profile.updateLogo(storageKey, file.getContentType());
+        companyProfileRepository.save(profile);
+        return new LogoUploadResponse(logoUrl(userId));
+    }
+
+    /** Public (unauthenticated) lookup — see CompanyLogoController, which serves this straight
+     * to an &lt;img&gt; tag with no bearer token attached, both in the company's own header and
+     * on job listings candidates browse. */
+    @Transactional(readOnly = true)
+    public CompanyLogoContent getLogo(UUID userId) {
+        CompanyProfile profile = companyProfileRepository
+                .findByUserId(userId)
+                .filter(existing -> existing.getLogoStorageKey() != null)
+                .orElseThrow(() -> new CompanyLogoNotFoundException(userId));
+        try {
+            Resource resource = fileStorageService.load(profile.getLogoStorageKey());
+            return new CompanyLogoContent(resource, profile.getLogoContentType());
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to load company logo", ex);
+        }
+    }
+
+    public record CompanyLogoContent(Resource resource, String contentType) {}
+
     private CompanyProfile findProfile(UUID userId) {
         return companyProfileRepository
                 .findByUserId(userId)
@@ -63,6 +118,24 @@ public class CompanyProfileService {
                 profile.getAddress(),
                 profile.getSignatoryName(),
                 profile.getVerificationStatus(),
-                profile.isProfileComplete());
+                profile.isProfileComplete(),
+                profile.getLogoStorageKey() == null ? null : logoUrl(profile.getUserId()));
+    }
+
+    private void validateLogo(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new InvalidCompanyLogoException("Logo file is empty");
+        }
+        if (file.getSize() > MAX_LOGO_SIZE_BYTES) {
+            throw new InvalidCompanyLogoException("Logo must be 5MB or smaller");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_LOGO_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+            throw new InvalidCompanyLogoException("Logo must be a JPEG, PNG, or WEBP image");
+        }
+    }
+
+    private String logoUrl(UUID userId) {
+        return "/api/companies/" + userId + "/logo";
     }
 }

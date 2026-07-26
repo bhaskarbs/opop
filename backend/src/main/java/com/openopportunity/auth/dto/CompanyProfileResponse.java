@@ -17,4 +17,7 @@ public record CompanyProfileResponse(
         // pan/industry/address/signatoryName are all filled in. A Google-signup company starts
         // false; the frontend uses this (together with verificationStatus == VERIFIED) to gate
         // job posting and contacting candidates.
-        boolean profileComplete) {}
+        boolean profileComplete,
+        // Null until the company uploads a logo (see CompanyProfileService.uploadLogo) — same
+        // lazy-fill pattern as CandidateProfileResponse.photoUrl.
+        String logoUrl) {}

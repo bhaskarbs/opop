@@ -1,5 +1,6 @@
 package com.openopportunity.auth;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,4 +11,6 @@ public interface CompanyProfileRepository extends JpaRepository<CompanyProfile, 
     Optional<CompanyProfile> findByUserId(UUID userId);
 
     List<CompanyProfile> findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus status);
+
+    List<CompanyProfile> findByUserIdIn(Collection<UUID> userIds);
 }

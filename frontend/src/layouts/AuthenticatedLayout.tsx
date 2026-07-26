@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Footer, Header, getActiveNavLabel, type HeaderVariant } from '../components/layout'
 import { useCandidatePhotoSync } from '../hooks/useCandidatePhotoSync'
+import { useCompanyLogoSync } from '../hooks/useCompanyLogoSync'
 import { useAuthStore } from '../stores/authStore'
 
 export interface AuthenticatedLayoutProps {
@@ -16,6 +17,9 @@ export default function AuthenticatedLayout({ headerVariant }: AuthenticatedLayo
   const { candidatePhotoUrl, candidatePhotoVersion } = useCandidatePhotoSync(
     headerVariant === 'candidate',
   )
+  const { companyLogoUrl, companyLogoVersion } = useCompanyLogoSync(headerVariant === 'company')
+  const userPhotoUrl = headerVariant === 'company' ? companyLogoUrl : candidatePhotoUrl
+  const userPhotoVersion = headerVariant === 'company' ? companyLogoVersion : candidatePhotoVersion
 
   return (
     <>
@@ -23,8 +27,8 @@ export default function AuthenticatedLayout({ headerVariant }: AuthenticatedLayo
         variant={headerVariant}
         activeItem={activeItem}
         userName={userName}
-        userPhotoUrl={candidatePhotoUrl}
-        userPhotoVersion={candidatePhotoVersion}
+        userPhotoUrl={userPhotoUrl}
+        userPhotoVersion={userPhotoVersion}
       />
       <Outlet />
       <Footer />

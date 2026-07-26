@@ -46,6 +46,8 @@
     "pendingBanner": "Your company profile is awaiting admin verification. You can browse and search candidates in the meantime, but can't post jobs or contact candidates yet.",
     "rejectedBanner": "Your company verification was rejected. Update your details below and resubmit for review.",
     "verifiedBanner": "Your company is verified — you can post jobs and contact candidates.",
+    "changeLogo": "Change company logo",
+    "logoError": "Could not upload your company logo. Please try again.",
     "fields": {
       "entityType": "Entity type",
       "cin": "CIN / LLPIN",

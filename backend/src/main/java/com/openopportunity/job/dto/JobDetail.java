@@ -27,4 +27,6 @@ public record JobDetail(
         List<String> skills,
         JobStatus status,
         int applicantCount,
-        Instant createdAt) {}
+        Instant createdAt,
+        // Same "derived, not denormalized" reasoning as JobSummary.companyLogoUrl.
+        String companyLogoUrl) {}

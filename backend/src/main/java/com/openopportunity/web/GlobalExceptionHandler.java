@@ -8,6 +8,7 @@ import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
+import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
 import com.openopportunity.auth.exception.EmailVerificationEmailException;
@@ -17,6 +18,7 @@ import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidOrExpiredResetTokenException;
 import com.openopportunity.auth.exception.InvalidOrExpiredVerificationTokenException;
+import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidProfilePhotoException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
@@ -144,6 +146,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ProfilePhotoNotFoundException.class)
     public ResponseEntity<ApiError> handleProfilePhotoNotFound(ProfilePhotoNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidCompanyLogoException.class)
+    public ResponseEntity<ApiError> handleInvalidCompanyLogo(InvalidCompanyLogoException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyLogoNotFoundException.class)
+    public ResponseEntity<ApiError> handleCompanyLogoNotFound(CompanyLogoNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 

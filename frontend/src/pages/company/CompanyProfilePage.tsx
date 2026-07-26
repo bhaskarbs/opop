@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Button, Input } from '../../components/ui'
-import { ApiError } from '../../lib/apiClient'
+import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import { companyApi, type CompanyProfileResponse } from '../../lib/companyApi'
+import { useAuthStore } from '../../stores/authStore'
 
 const ENTITY_TYPES = [
   'Private Limited Company',
@@ -56,6 +57,15 @@ export default function CompanyProfilePage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  // Kept in authStore (not page-local state) so the header's logo and this page's logo always
+  // show the same image without needing a page reload — see authStore.setCompanyLogo and
+  // AuthenticatedLayout/PublicLayout.
+  const logoUrl = useAuthStore((state) => state.companyLogoUrl)
+  const logoVersion = useAuthStore((state) => state.companyLogoVersion)
+  const setCompanyLogo = useAuthStore((state) => state.setCompanyLogo)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoError, setLogoError] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
   const {
     register,
     handleSubmit,
@@ -81,6 +91,7 @@ export default function CompanyProfilePage() {
       .then((data) => {
         if (cancelled) return
         setProfile(data)
+        setCompanyLogo(data.logoUrl)
         reset({
           entityType: (ENTITY_TYPES as readonly string[]).includes(data.entityType ?? '')
             ? (data.entityType as (typeof ENTITY_TYPES)[number])
@@ -102,7 +113,23 @@ export default function CompanyProfilePage() {
     return () => {
       cancelled = true
     }
-  }, [reset, t])
+  }, [reset, t, setCompanyLogo])
+
+  async function handleLogoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setLogoError(null)
+    setUploadingLogo(true)
+    try {
+      const uploaded = await companyApi.uploadLogo(file)
+      setCompanyLogo(uploaded.logoUrl)
+    } catch (error) {
+      setLogoError(error instanceof ApiError ? error.message : t('profile.logoError'))
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
 
   async function onSubmit(values: ProfileFormValues) {
     setFormError(null)
@@ -139,6 +166,52 @@ export default function CompanyProfilePage() {
       <div className="mb-6">
         <h1 className="mb-1.5 text-[22px] font-extrabold text-ink">{t('profile.title')}</h1>
         <p className="text-sm text-slate">{t('profile.subtitle')}</p>
+      </div>
+
+      <div className="mb-6 flex items-center gap-4">
+        <div className="relative h-16 w-16 shrink-0">
+          {logoUrl ? (
+            <img
+              src={`${API_BASE_URL}${logoUrl}?v=${logoVersion}`}
+              alt={profile.companyName}
+              className="h-16 w-16 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-[22px] font-bold text-white">
+              {profile.companyName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => logoInputRef.current?.click()}
+            disabled={uploadingLogo}
+            aria-label={t('profile.changeLogo')}
+            className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-ink text-white disabled:opacity-60"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleLogoChange}
+          />
+        </div>
+        <div>
+          <div className="text-base font-bold text-ink">{profile.companyName}</div>
+          {logoError && <p className="mt-1 text-[12.5px] text-danger">{logoError}</p>}
+        </div>
       </div>
 
       <div

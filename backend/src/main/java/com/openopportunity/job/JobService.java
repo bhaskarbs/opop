@@ -16,7 +16,9 @@ import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -62,7 +64,9 @@ public class JobService {
                 JobSpecifications.hasModeIn(modes),
                 JobSpecifications.hasMinSalaryAtLeast(minSalaryLakhs));
 
-        return jobRepository.findAll(spec, resolveSort(sort)).stream().map(this::toSummary).toList();
+        List<Job> jobs = jobRepository.findAll(spec, resolveSort(sort));
+        Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
+        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
     }
 
     /** Mirrors IdeaService.get()'s owner-vs-everyone-else visibility split: anyone can view an
@@ -77,13 +81,14 @@ public class JobService {
         if (job.getStatus() != JobStatus.ACTIVE && !isOwner) {
             throw new JobNotFoundException(id);
         }
-        return toDetail(job);
+        return toDetail(job, companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null));
     }
 
     @Transactional(readOnly = true)
     public List<JobSummary> getMine(UUID companyId) {
+        CompanyProfile companyProfile = companyProfileRepository.findByUserId(companyId).orElse(null);
         return jobRepository.findByCompanyIdOrderByCreatedAtDesc(companyId).stream()
-                .map(this::toSummary)
+                .map(job -> toSummary(job, companyProfile))
                 .toList();
     }
 
@@ -112,7 +117,7 @@ public class JobService {
                 nonNull(request.skills()),
                 request.status());
         jobRepository.save(job);
-        return toDetail(job);
+        return toDetail(job, companyProfileRepository.findByUserId(companyId).orElse(null));
     }
 
     @Transactional
@@ -135,7 +140,7 @@ public class JobService {
                 nonNull(request.skills()),
                 request.status());
         jobRepository.save(job);
-        return toDetail(job);
+        return toDetail(job, companyProfileRepository.findByUserId(companyId).orElse(null));
     }
 
     @Transactional
@@ -147,9 +152,9 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public List<JobSummary> getPending() {
-        return jobRepository.findByStatusOrderByCreatedAtDesc(JobStatus.PENDING_APPROVAL).stream()
-                .map(this::toSummary)
-                .toList();
+        List<Job> jobs = jobRepository.findByStatusOrderByCreatedAtDesc(JobStatus.PENDING_APPROVAL);
+        Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
+        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
     }
 
     @Transactional
@@ -162,7 +167,7 @@ public class JobService {
                 NotificationType.JOB_APPROVED,
                 "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
                 "/company/dashboard");
-        return toDetail(job);
+        return toDetail(job, companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null));
     }
 
     @Transactional
@@ -175,7 +180,7 @@ public class JobService {
                 NotificationType.JOB_REJECTED,
                 "Your job posting \"" + job.getTitle() + "\" was not approved.",
                 "/company/dashboard");
-        return toDetail(job);
+        return toDetail(job, companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null));
     }
 
     /** A company can only post once its verification profile is both complete (entityType/
@@ -219,7 +224,20 @@ public class JobService {
         return Sort.by(Sort.Direction.DESC, "createdAt");
     }
 
-    private JobSummary toSummary(Job job) {
+    private Map<UUID, CompanyProfile> companyProfilesFor(List<Job> jobs) {
+        List<UUID> companyIds = jobs.stream().map(Job::getCompanyId).distinct().toList();
+        return companyProfileRepository.findByUserIdIn(companyIds).stream()
+                .collect(Collectors.toMap(CompanyProfile::getUserId, profile -> profile));
+    }
+
+    private String companyLogoUrl(CompanyProfile companyProfile) {
+        if (companyProfile == null || companyProfile.getLogoStorageKey() == null) {
+            return null;
+        }
+        return "/api/companies/" + companyProfile.getUserId() + "/logo";
+    }
+
+    private JobSummary toSummary(Job job, CompanyProfile companyProfile) {
         return new JobSummary(
                 job.getId(),
                 job.getTitle(),
@@ -233,10 +251,11 @@ public class JobService {
                 job.getSkills(),
                 job.getStatus(),
                 job.getApplicantCount(),
-                job.getCreatedAt());
+                job.getCreatedAt(),
+                companyLogoUrl(companyProfile));
     }
 
-    private JobDetail toDetail(Job job) {
+    private JobDetail toDetail(Job job, CompanyProfile companyProfile) {
         return new JobDetail(
                 job.getId(),
                 job.getTitle(),
@@ -254,6 +273,7 @@ public class JobService {
                 job.getSkills(),
                 job.getStatus(),
                 job.getApplicantCount(),
-                job.getCreatedAt());
+                job.getCreatedAt(),
+                companyLogoUrl(companyProfile));
     }
 }

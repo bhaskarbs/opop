@@ -22,6 +22,9 @@ export interface JobSummary {
   status: BackendJobStatus
   applicantCount: number
   createdAt: string
+  // Null unless the posting company has uploaded a logo (see companyApi.uploadLogo) — used by
+  // job search results and the job detail page to show it instead of the initial-letter badge.
+  companyLogoUrl: string | null
 }
 
 export interface JobDetail extends JobSummary {
