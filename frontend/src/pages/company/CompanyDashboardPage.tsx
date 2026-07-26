@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { companyApi, type CompanyProfileResponse } from '../../lib/companyApi'
+import { companyApi, type CompanyProfileResponse, type ContactQuota } from '../../lib/companyApi'
 import { jobsApi, type JobSummary } from '../../lib/jobsApi'
 import { notificationsApi } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
@@ -44,6 +44,14 @@ const STATUS_BADGE_CLASSES: Record<JobSummary['status'], string> = {
   CLOSED: 'bg-neutral-tint text-slate',
 }
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 function formatPostedLabel(t: TFunction<'company'>, createdAt: string): string {
   const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000)
   if (days <= 0) return t('dashboard.postedToday')
@@ -59,6 +67,7 @@ export default function CompanyDashboardPage() {
   const [profile, setProfile] = useState<CompanyProfileResponse | null>(null)
   const [postings, setPostings] = useState<JobSummary[]>([])
   const [emailsSent, setEmailsSent] = useState(0)
+  const [contactQuota, setContactQuota] = useState<ContactQuota | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -87,6 +96,15 @@ export default function CompanyDashboardPage() {
       .then((result) => setEmailsSent(result.count))
       .catch(() => {
         // Best-effort — the stat just stays at 0 if this fails.
+      })
+  }, [])
+
+  useEffect(() => {
+    companyApi
+      .getContactQuota()
+      .then(setContactQuota)
+      .catch(() => {
+        // Best-effort — the card just stays hidden if this fails.
       })
   }, [])
 
@@ -298,6 +316,42 @@ export default function CompanyDashboardPage() {
             </Link>
           </div>
           */}
+          {contactQuota && (
+            <div className="mb-4 rounded-card border border-border bg-surface p-[22px]">
+              <h3 className="mb-3 text-[14.5px] font-bold text-ink">
+                {t('dashboard.contactQuotaTitle')}
+              </h3>
+              {contactQuota.plan === 'FREE' ? (
+                <>
+                  <p className="text-[13px] text-slate">
+                    {t('searchCandidates.contactDisabledFreePlan')}
+                  </p>
+                  <Link
+                    to={localize(ROUTES.companyBilling)}
+                    className="mt-2.5 inline-block text-[13px] font-bold text-primary no-underline"
+                  >
+                    {t('searchCandidates.upgradePlanCta')}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-slate">
+                    {t('searchCandidates.contactsRemaining', {
+                      remaining: contactQuota.remaining,
+                      limit: contactQuota.limit,
+                    })}
+                  </p>
+                  {contactQuota.periodEnd && (
+                    <p className="mt-1 text-[12.5px] text-fog">
+                      {t('dashboard.contactQuotaResets', {
+                        date: formatDate(contactQuota.periodEnd),
+                      })}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           <div className="rounded-card border border-border bg-surface p-[22px]">
             <h3 className="mb-3 text-[14.5px] font-bold text-ink">
               {t('dashboard.notificationsSent')}

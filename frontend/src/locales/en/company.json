@@ -110,7 +110,9 @@
     "notificationsSent": "Notifications sent",
     "email": "Email",
     "completeProfileBanner": "Complete your company profile to start posting jobs and contacting candidates.",
-    "completeProfileCta": "Complete profile →"
+    "completeProfileCta": "Complete profile →",
+    "contactQuotaTitle": "Candidate contacts",
+    "contactQuotaResets": "Resets {{date}}"
   },
   "myJobPostings": {
     "title": "My job postings",
