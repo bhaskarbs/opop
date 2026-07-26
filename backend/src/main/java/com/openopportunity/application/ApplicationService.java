@@ -63,6 +63,13 @@ public class ApplicationService {
         job.incrementApplicantCount();
         jobRepository.save(job);
 
+        User candidate = userRepository.findById(candidateId).orElseThrow();
+        notificationService.notify(
+                job.getCompanyId(),
+                NotificationType.NEW_JOB_APPLICATION,
+                candidate.getFullName() + " applied to your \"" + job.getTitle() + "\" job posting.",
+                "/company/job-postings/" + jobId + "/applicants");
+
         return toSummary(application);
     }
 

@@ -10,6 +10,7 @@ export type NotificationType =
   | 'COMPANY_VERIFIED'
   | 'COMPANY_REJECTED'
   | 'APPLICATION_STATUS_CHANGED'
+  | 'NEW_JOB_APPLICATION'
 
 export interface NotificationSummary {
   id: string
