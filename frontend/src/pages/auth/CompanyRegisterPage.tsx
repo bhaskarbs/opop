@@ -5,8 +5,9 @@ import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
-import { Button, Input } from '../../components/ui'
+import { AutocompleteInput, Button, Input } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { FileDropInput } from './shared/FileDropInput'
@@ -29,19 +30,25 @@ const ENTITY_TYPE_KEYS: Record<(typeof ENTITY_TYPES)[number], string> = {
   'Public Limited Company': 'companyRegister.entityTypes.publicLimited',
 }
 
-const companyRegisterSchema = z.object({
-  companyName: z.string().min(2, 'Enter the registered company name'),
-  entityType: z.enum(ENTITY_TYPES),
-  cin: z.string().min(15, 'Enter a valid CIN or LLPIN'),
-  gstin: z.string().regex(/^[0-9A-Z]{15}$/, 'Enter a valid 15-character GSTIN'),
-  pan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Enter a valid PAN (e.g. ABCDE1234F)'),
-  industry: z.string().min(2, 'Enter your industry or sector'),
-  address: z.string().min(10, 'Enter your registered office address'),
-  signatoryName: z.string().min(2, "Enter the authorized signatory's name"),
-  workEmail: z.string().email('Enter a valid work email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  certificate: z.instanceof(File).optional(),
-})
+const companyRegisterSchema = z
+  .object({
+    companyName: z.string().min(2, 'Enter the registered company name'),
+    entityType: z.enum(ENTITY_TYPES),
+    cin: z.string(),
+    gstin: z.string(),
+    pan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Enter a valid PAN (e.g. ABCDE1234F)'),
+    industry: z.string().min(2, 'Enter your industry or sector'),
+    address: z.string().min(10, 'Enter your registered office address'),
+    signatoryName: z.string().min(2, "Enter the authorized signatory's name"),
+    workEmail: z.string().email('Enter a valid work email'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Confirm your password'),
+    certificate: z.instanceof(File).optional(),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  })
 
 type CompanyRegisterFormValues = z.infer<typeof companyRegisterSchema>
 
@@ -75,6 +82,7 @@ export default function CompanyRegisterPage() {
       signatoryName: '',
       workEmail: '',
       password: '',
+      confirmPassword: '',
     },
   })
 
@@ -182,11 +190,19 @@ export default function CompanyRegisterPage() {
               error={errors.pan?.message}
               {...register('pan')}
             />
-            <Input
-              label={t('companyRegister.fields.industry')}
-              placeholder="Deep Tech, Healthtech, Fintech…"
-              error={errors.industry?.message}
-              {...register('industry')}
+            <Controller
+              name="industry"
+              control={control}
+              render={({ field }) => (
+                <AutocompleteInput
+                  label={t('companyRegister.fields.industry')}
+                  placeholder="Deep Tech, Healthtech, Fintech…"
+                  error={errors.industry?.message}
+                  suggestions={INDUSTRY_SUGGESTIONS}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
           </div>
 
@@ -225,13 +241,20 @@ export default function CompanyRegisterPage() {
             />
           </div>
 
-          <div className="mb-5">
+          <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
               label={t('fields.password')}
               type="password"
               placeholder={t('register.passwordPlaceholder')}
               error={errors.password?.message}
               {...register('password')}
+            />
+            <Input
+              label={t('fields.confirmPassword')}
+              type="password"
+              placeholder={t('register.confirmPasswordPlaceholder')}
+              error={errors.confirmPassword?.message}
+              {...register('confirmPassword')}
             />
           </div>
 
