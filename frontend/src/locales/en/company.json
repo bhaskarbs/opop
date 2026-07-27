@@ -82,6 +82,7 @@
       "downloading": "Downloading…",
       "delete": "Delete",
       "deleting": "Deleting…",
+      "confirmUpload": "Upload \"{{name}}\"? This will resubmit your profile for admin review.",
       "confirmDelete": "Delete \"{{name}}\"? This will resubmit your profile for admin review.",
       "none": "No documents uploaded yet.",
       "uploaded": "Uploaded {{uploaded}} · {{size}}"

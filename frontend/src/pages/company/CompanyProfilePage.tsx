@@ -204,6 +204,7 @@ export default function CompanyProfilePage() {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
+    if (!window.confirm(t('profile.certificate.confirmUpload', { name: file.name }))) return
     setCertificateError(null)
     setUploadingCertificate(true)
     try {
