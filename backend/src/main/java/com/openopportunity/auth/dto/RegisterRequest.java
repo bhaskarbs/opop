@@ -22,6 +22,10 @@ public record RegisterRequest(
         String industry,
         String address,
         String signatoryName,
+        String contactNumber,
+        // Only required when entityType is CompanyProfile.UNREGISTERED_ENTITY_TYPE — substitutes
+        // for cin/gstin as the identity check on a company that isn't formally registered yet.
+        String aadhaarNumber,
         String mobile,
         List<String> skills,
         String resumeFileName) {
@@ -38,7 +42,8 @@ public record RegisterRequest(
             String pan,
             String industry,
             String address,
-            String signatoryName) {
+            String signatoryName,
+            String contactNumber) {
         this(
                 email,
                 password,
@@ -51,6 +56,8 @@ public record RegisterRequest(
                 industry,
                 address,
                 signatoryName,
+                contactNumber,
+                null,
                 null,
                 null,
                 null);
@@ -58,12 +65,16 @@ public record RegisterRequest(
 
     /** Convenience constructor for tests/callers that need neither company nor candidate fields. */
     public RegisterRequest(String email, String password, String fullName, String role) {
-        this(email, password, fullName, role, null, null, null, null, null, null, null, null, null, null);
+        this(
+                email, password, fullName, role, null, null, null, null, null, null, null, null, null, null,
+                null, null);
     }
 
     /** Convenience constructor for candidate registrations, which never need the company fields. */
     public RegisterRequest(
             String email, String password, String fullName, String role, String mobile, List<String> skills) {
-        this(email, password, fullName, role, null, null, null, null, null, null, null, mobile, skills, null);
+        this(
+                email, password, fullName, role, null, null, null, null, null, null, null, null, null, mobile,
+                skills, null);
     }
 }

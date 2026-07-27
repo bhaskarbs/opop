@@ -43,6 +43,12 @@ public class CompanyProfile {
     @Column(name = "signatory_name")
     private String signatoryName;
 
+    @Column(name = "contact_number")
+    private String contactNumber;
+
+    @Column(name = "aadhaar_number")
+    private String aadhaarNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false, length = 20)
     private VerificationStatus verificationStatus;
@@ -61,6 +67,10 @@ public class CompanyProfile {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    // A company that hasn't formally registered yet has no CIN/GSTIN — this entityType value
+    // lets it register with an Aadhaar number instead (see isProfileComplete/requireCompanyProfileFields).
+    public static final String UNREGISTERED_ENTITY_TYPE = "Company Not Yet Registered";
+
     protected CompanyProfile() {
         // JPA
     }
@@ -73,7 +83,9 @@ public class CompanyProfile {
             String pan,
             String industry,
             String address,
-            String signatoryName) {
+            String signatoryName,
+            String contactNumber,
+            String aadhaarNumber) {
         this.id = UUID.randomUUID();
         this.userId = userId;
         this.entityType = entityType;
@@ -83,6 +95,8 @@ public class CompanyProfile {
         this.industry = industry;
         this.address = address;
         this.signatoryName = signatoryName;
+        this.contactNumber = contactNumber;
+        this.aadhaarNumber = aadhaarNumber;
         this.verificationStatus = VerificationStatus.PENDING;
     }
 
@@ -107,13 +121,19 @@ public class CompanyProfile {
      * supplies CIN/GSTIN/PAN/etc. Posting jobs and contacting candidates require this AND
      * isVerified() — see JobService.create(). */
     public boolean isProfileComplete() {
-        return isNotBlank(entityType)
-                && isNotBlank(cin)
-                && isNotBlank(gstin)
+        boolean commonFieldsComplete = isNotBlank(entityType)
                 && isNotBlank(pan)
                 && isNotBlank(industry)
                 && isNotBlank(address)
-                && isNotBlank(signatoryName);
+                && isNotBlank(signatoryName)
+                && isNotBlank(contactNumber);
+        if (!commonFieldsComplete) {
+            return false;
+        }
+        if (UNREGISTERED_ENTITY_TYPE.equals(entityType)) {
+            return isNotBlank(aadhaarNumber);
+        }
+        return isNotBlank(cin) && isNotBlank(gstin);
     }
 
     public void updateDetails(
@@ -184,6 +204,14 @@ public class CompanyProfile {
 
     public String getSignatoryName() {
         return signatoryName;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public String getAadhaarNumber() {
+        return aadhaarNumber;
     }
 
     public VerificationStatus getVerificationStatus() {

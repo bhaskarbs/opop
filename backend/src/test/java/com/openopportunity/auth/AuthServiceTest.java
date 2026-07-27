@@ -99,6 +99,8 @@ class AuthServiceTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 "9876543210",
                 List.of("React", "TypeScript"),
                 null);
@@ -173,6 +175,8 @@ class AuthServiceTest {
                 "password123",
                 "Rohan Mehta",
                 "candidate",
+                null,
+                null,
                 null,
                 null,
                 null,

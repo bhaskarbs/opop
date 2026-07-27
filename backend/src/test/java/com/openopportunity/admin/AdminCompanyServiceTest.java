@@ -51,7 +51,7 @@ class AdminCompanyServiceTest {
     void getPendingReturnsOnlyPendingProfiles() {
         User user = companyUser();
         CompanyProfile profile = new CompanyProfile(
-                user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory");
+                user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
         when(companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING))
                 .thenReturn(List.of(profile));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
@@ -67,7 +67,7 @@ class AdminCompanyServiceTest {
     void verifySetsStatusToVerified() {
         User user = companyUser();
         CompanyProfile profile = new CompanyProfile(
-                user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory");
+                user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
         when(companyProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(profile));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
@@ -80,7 +80,7 @@ class AdminCompanyServiceTest {
     void rejectSetsStatusToRejected() {
         User user = companyUser();
         CompanyProfile profile = new CompanyProfile(
-                user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory");
+                user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
         when(companyProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(profile));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
@@ -102,7 +102,7 @@ class AdminCompanyServiceTest {
         User user = companyUser();
         // Blank profile, as left by AuthService.loginWithGoogleAsCompany right after sign-in —
         // nothing here for an admin to review yet.
-        CompanyProfile blank = new CompanyProfile(user.getId(), null, null, null, null, null, null, null);
+        CompanyProfile blank = new CompanyProfile(user.getId(), null, null, null, null, null, null, null, null, null);
         when(companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING))
                 .thenReturn(List.of(blank));
 
@@ -114,7 +114,7 @@ class AdminCompanyServiceTest {
     @Test
     void verifyRejectsIncompleteProfile() {
         User user = companyUser();
-        CompanyProfile blank = new CompanyProfile(user.getId(), null, null, null, null, null, null, null);
+        CompanyProfile blank = new CompanyProfile(user.getId(), null, null, null, null, null, null, null, null, null);
         when(companyProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(blank));
 
         assertThatThrownBy(() -> adminCompanyService.verify(user.getId()))

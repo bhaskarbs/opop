@@ -132,7 +132,9 @@ public class AuthService {
                     request.pan(),
                     request.industry(),
                     request.address(),
-                    request.signatoryName());
+                    request.signatoryName(),
+                    request.contactNumber(),
+                    request.aadhaarNumber());
             companyProfileRepository.save(profile);
         }
 
@@ -222,7 +224,8 @@ public class AuthService {
             String fullName = isNotBlank(googleUser.fullName()) ? googleUser.fullName() : googleUser.email();
             user = new User(googleUser.email(), passwordEncoder.encode(generateRawToken()), fullName, UserRole.COMPANY);
             userRepository.save(user);
-            companyProfileRepository.save(new CompanyProfile(user.getId(), null, null, null, null, null, null, null));
+            companyProfileRepository.save(
+                    new CompanyProfile(user.getId(), null, null, null, null, null, null, null, null, null));
         }
 
         if (user.isSuspended()) {
@@ -424,9 +427,15 @@ public class AuthService {
                 && isNotBlank(request.pan())
                 && isNotBlank(request.industry())
                 && isNotBlank(request.address())
-                && isNotBlank(request.signatoryName());
+                && isNotBlank(request.signatoryName())
+                && isNotBlank(request.contactNumber());
         if (!complete) {
             throw new IncompleteCompanyProfileException();
+        }
+        if (CompanyProfile.UNREGISTERED_ENTITY_TYPE.equals(request.entityType())
+                && !isNotBlank(request.aadhaarNumber())) {
+            throw new IncompleteCompanyProfileException(
+                    "Enter your Aadhaar number since your company isn't registered yet");
         }
     }
 
