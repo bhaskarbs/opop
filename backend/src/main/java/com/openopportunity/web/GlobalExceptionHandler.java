@@ -8,6 +8,7 @@ import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
+import com.openopportunity.auth.exception.CompanyCertificateLimitReachedException;
 import com.openopportunity.auth.exception.CompanyCertificateNotFoundException;
 import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
@@ -170,6 +171,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CompanyCertificateNotFoundException.class)
     public ResponseEntity<ApiError> handleCompanyCertificateNotFound(CompanyCertificateNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyCertificateLimitReachedException.class)
+    public ResponseEntity<ApiError> handleCompanyCertificateLimitReached(CompanyCertificateLimitReachedException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

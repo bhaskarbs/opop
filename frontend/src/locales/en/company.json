@@ -73,18 +73,22 @@
     "saveSuccess": "Company details saved.",
     "saveError": "Could not save your company details.",
     "certificate": {
-      "label": "Certificate of incorporation",
-      "hint": "PDF, JPG, or PNG, up to 5MB. Uploading a new certificate resubmits your profile for admin review.",
-      "upload": "Upload certificate",
-      "replace": "Replace",
+      "label": "Verification documents",
+      "hint": "PDF, JPG, or PNG, up to 5MB each — up to {{limit}} documents. Uploading or removing one resubmits your profile for admin review.",
+      "limitReached": "You've reached the maximum of {{limit}} documents. Delete one to upload another.",
+      "upload": "Upload document",
       "uploading": "Uploading…",
       "download": "Download",
       "downloading": "Downloading…",
-      "none": "No certificate uploaded yet.",
+      "delete": "Delete",
+      "deleting": "Deleting…",
+      "confirmDelete": "Delete \"{{name}}\"? This will resubmit your profile for admin review.",
+      "none": "No documents uploaded yet.",
       "uploaded": "Uploaded {{uploaded}} · {{size}}"
     },
-    "certificateError": "Could not upload your certificate. Please try again.",
-    "certificateDownloadError": "Could not download your certificate. Please try again."
+    "certificateError": "Could not upload your document. Please try again.",
+    "certificateDownloadError": "Could not download your document. Please try again.",
+    "certificateDeleteError": "Could not delete your document. Please try again."
   },
   "dashboard": {
     "loading": "Loading your dashboard…",

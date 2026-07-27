@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public class CompanyCertificateNotFoundException extends RuntimeException {
 
-    public CompanyCertificateNotFoundException(UUID companyId) {
-        super("No certificate found for company " + companyId);
+    public CompanyCertificateNotFoundException(UUID certificateId) {
+        super("Certificate " + certificateId + " not found");
     }
 }
