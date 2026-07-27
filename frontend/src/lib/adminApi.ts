@@ -9,6 +9,12 @@ export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED'
 export type AdminUserRole = 'CANDIDATE' | 'COMPANY'
 
+export interface AdminDashboardStats {
+  totalCandidates: number
+  registeredCompanies: number
+  liveJobPostings: number
+}
+
 export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
@@ -114,6 +120,8 @@ export interface PlatformSettings {
 }
 
 export const adminApi = {
+  getDashboardStats: () =>
+    request<AdminDashboardStats>('/api/admin/dashboard/stats', { headers: authHeaders() }),
   getSettings: () => request<PlatformSettings>('/api/admin/settings', { headers: authHeaders() }),
   setEmailVerificationEnabled: (enabled: boolean) =>
     request<PlatformSettings>('/api/admin/settings/email-verification', {
