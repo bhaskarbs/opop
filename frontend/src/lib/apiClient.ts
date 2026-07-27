@@ -117,10 +117,14 @@ export interface RegisterPayload {
   entityType?: string
   cin?: string
   gstin?: string
+  // Only meaningful when entityType is "Company Not Yet Registered" — substitutes for
+  // cin/gstin as the identity check on a company that isn't formally registered yet.
+  aadhaarNumber?: string
   pan?: string
   industry?: string
   address?: string
   signatoryName?: string
+  contactNumber?: string
   // Required by the backend when role is 'candidate' (persisted to candidate_profiles);
   // ignored otherwise.
   mobile?: string

@@ -51,7 +51,7 @@ class JobServiceTest {
 
     private CompanyProfile eligibleProfile(UUID companyId) {
         CompanyProfile profile = new CompanyProfile(
-                companyId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory");
+                companyId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
         profile.verify();
         return profile;
     }
@@ -101,7 +101,7 @@ class JobServiceTest {
     void createRejectsIncompleteCompanyProfile() {
         UUID companyId = UUID.randomUUID();
         // Blank profile, as left by AuthService.loginWithGoogleAsCompany right after sign-in.
-        CompanyProfile blank = new CompanyProfile(companyId, null, null, null, null, null, null, null);
+        CompanyProfile blank = new CompanyProfile(companyId, null, null, null, null, null, null, null, null, null);
         when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(blank));
 
         assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.PENDING_APPROVAL)))
@@ -112,7 +112,7 @@ class JobServiceTest {
     void createRejectsUnverifiedCompanyProfile() {
         UUID companyId = UUID.randomUUID();
         CompanyProfile pending = new CompanyProfile(
-                companyId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory");
+                companyId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
         when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(pending));
 
         assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.PENDING_APPROVAL)))

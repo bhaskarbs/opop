@@ -62,7 +62,8 @@ class AdminControllerTest {
                 "ABCDE1234F",
                 "Technology",
                 "123 Test Street, Bengaluru",
-                "Test Signatory");
+                "Test Signatory",
+                "9876543210");
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

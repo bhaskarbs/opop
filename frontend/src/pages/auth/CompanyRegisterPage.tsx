@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
@@ -11,6 +11,7 @@ import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { FileDropInput } from './shared/FileDropInput'
+import { PhoneInput } from './shared/PhoneInput'
 
 const ENTITY_TYPES = [
   'Private Limited Company',
@@ -18,7 +19,12 @@ const ENTITY_TYPES = [
   'Partnership Firm',
   'Sole Proprietorship',
   'Public Limited Company',
+  'Company Not Yet Registered',
 ] as const
+
+// Matches CompanyProfile.UNREGISTERED_ENTITY_TYPE on the backend — selecting this swaps
+// CIN/GSTIN out for an Aadhaar number, since an unregistered company has neither yet.
+const UNREGISTERED_ENTITY_TYPE = 'Company Not Yet Registered'
 
 // Rendered text only — the literal values above stay as the actual form/backend enum values
 // (see companyRegisterSchema below), same pattern as FilterSidebar's EXPERIENCE_LEVEL_KEYS.
@@ -28,6 +34,7 @@ const ENTITY_TYPE_KEYS: Record<(typeof ENTITY_TYPES)[number], string> = {
   'Partnership Firm': 'companyRegister.entityTypes.partnershipFirm',
   'Sole Proprietorship': 'companyRegister.entityTypes.soleProprietorship',
   'Public Limited Company': 'companyRegister.entityTypes.publicLimited',
+  'Company Not Yet Registered': 'companyRegister.entityTypes.notYetRegistered',
 }
 
 const companyRegisterSchema = z
@@ -36,10 +43,15 @@ const companyRegisterSchema = z
     entityType: z.enum(ENTITY_TYPES),
     cin: z.string(),
     gstin: z.string(),
+    aadhaarNumber: z.string(),
     pan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Enter a valid PAN (e.g. ABCDE1234F)'),
     industry: z.string().min(2, 'Enter your industry or sector'),
     address: z.string().min(10, 'Enter your registered office address'),
     signatoryName: z.string().min(2, "Enter the authorized signatory's name"),
+    contactNumber: z
+      .string()
+      .min(1, 'Contact number is required')
+      .regex(/^\d{10}$/, 'Enter a valid 10-digit contact number'),
     workEmail: z.string().email('Enter a valid work email'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string().min(1, 'Confirm your password'),
@@ -49,6 +61,15 @@ const companyRegisterSchema = z
     message: "Passwords don't match",
     path: ['confirmPassword'],
   })
+  .refine(
+    (values) =>
+      values.entityType !== UNREGISTERED_ENTITY_TYPE ||
+      /^\d{12}$/.test(values.aadhaarNumber.trim()),
+    {
+      message: 'Enter a valid 12-digit Aadhaar number',
+      path: ['aadhaarNumber'],
+    },
+  )
 
 type CompanyRegisterFormValues = z.infer<typeof companyRegisterSchema>
 
@@ -76,15 +97,19 @@ export default function CompanyRegisterPage() {
       entityType: ENTITY_TYPES[0],
       cin: '',
       gstin: '',
+      aadhaarNumber: '',
       pan: '',
       industry: '',
       address: '',
       signatoryName: '',
+      contactNumber: '',
       workEmail: '',
       password: '',
       confirmPassword: '',
     },
   })
+  const entityType = useWatch({ control, name: 'entityType' })
+  const isUnregistered = entityType === UNREGISTERED_ENTITY_TYPE
 
   async function onSubmit(values: CompanyRegisterFormValues) {
     setFormError(null)
@@ -100,10 +125,12 @@ export default function CompanyRegisterPage() {
         entityType: values.entityType,
         cin: values.cin,
         gstin: values.gstin,
+        aadhaarNumber: values.aadhaarNumber,
         pan: values.pan,
         industry: values.industry,
         address: values.address,
         signatoryName: values.signatoryName,
+        contactNumber: values.contactNumber,
       })
       setSession(response.accessToken, response.user)
       navigate(localize(ROUTES.companyDashboard))
@@ -144,12 +171,6 @@ export default function CompanyRegisterPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <Input
-              label={t('companyRegister.fields.companyName')}
-              placeholder="Vertex Robotics Pvt. Ltd."
-              error={errors.companyName?.message}
-              {...register('companyName')}
-            />
             <div className="flex flex-col">
               <label htmlFor="entity-type" className="mb-1.5 text-[13px] font-bold text-ink">
                 {t('companyRegister.fields.entityType')}
@@ -166,22 +187,39 @@ export default function CompanyRegisterPage() {
                 ))}
               </select>
             </div>
+            <Input
+              label={t('companyRegister.fields.companyName')}
+              placeholder="Vertex Robotics Pvt. Ltd."
+              error={errors.companyName?.message}
+              {...register('companyName')}
+            />
           </div>
 
-          <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <Input
-              label={t('companyRegister.fields.cin')}
-              placeholder="U74999KA2021PTC145632"
-              error={errors.cin?.message}
-              {...register('cin')}
-            />
-            <Input
-              label={t('companyRegister.fields.gstin')}
-              placeholder="29ABCDE1234F1Z5"
-              error={errors.gstin?.message}
-              {...register('gstin')}
-            />
-          </div>
+          {isUnregistered ? (
+            <div className="mb-3.5">
+              <Input
+                label={t('companyRegister.fields.aadhaarNumber')}
+                placeholder="XXXX XXXX XXXX"
+                error={errors.aadhaarNumber?.message}
+                {...register('aadhaarNumber')}
+              />
+            </div>
+          ) : (
+            <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <Input
+                label={t('companyRegister.fields.cin')}
+                placeholder="U74999KA2021PTC145632"
+                error={errors.cin?.message}
+                {...register('cin')}
+              />
+              <Input
+                label={t('companyRegister.fields.gstin')}
+                placeholder="29ABCDE1234F1Z5"
+                error={errors.gstin?.message}
+                {...register('gstin')}
+              />
+            </div>
+          )}
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
@@ -225,13 +263,21 @@ export default function CompanyRegisterPage() {
             )}
           </div>
 
-          <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
               label={t('companyRegister.fields.signatoryName')}
               placeholder={t('companyRegister.fullNamePlaceholder')}
               error={errors.signatoryName?.message}
               {...register('signatoryName')}
             />
+            <PhoneInput
+              label={t('companyRegister.fields.contactNumber')}
+              error={errors.contactNumber?.message}
+              {...register('contactNumber')}
+            />
+          </div>
+
+          <div className="mb-5">
             <Input
               label={t('fields.workEmail')}
               type="email"

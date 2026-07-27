@@ -76,6 +76,8 @@ class ApplicationControllerTest {
                 "123 Test Street, Bengaluru",
                 "Test Signatory",
                 "9876543210",
+                null,
+                "9876543210",
                 List.of("React", "TypeScript"),
                 null);
         MvcResult result = mockMvc.perform(post("/api/auth/register")
