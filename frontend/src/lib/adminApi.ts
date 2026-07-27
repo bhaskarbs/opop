@@ -1,6 +1,7 @@
 import { useAuthStore } from '../stores/authStore'
-import { request } from './apiClient'
+import { blobRequest, request } from './apiClient'
 import type { BackendSubscriptionPlan } from './billingApi'
+import type { CompanyCertificateSummary } from './companyApi'
 import type { IdeaSummary } from './ideasApi'
 import type { BackendExperienceLevel, JobSummary } from './jobsApi'
 
@@ -15,12 +16,18 @@ export interface AdminCompanyProfileSummary {
   entityType: string
   cin: string
   gstin: string
+  // Only meaningful when entityType is "Company Not Yet Registered" — substitutes for
+  // cin/gstin as the identity check on a company that isn't formally registered yet.
+  aadhaarNumber: string | null
   pan: string
   industry: string
   address: string
   signatoryName: string
+  contactNumber: string
   verificationStatus: VerificationStatus
   submittedAt: string
+  // Verification documents on file — download via adminApi.downloadCompanyCertificate.
+  certificates: CompanyCertificateSummary[]
 }
 
 export interface AdminUserSummary {
@@ -141,6 +148,8 @@ export const adminApi = {
       method: 'POST',
       headers: authHeaders(),
     }),
+  downloadCompanyCertificate: (userId: string, certificateId: string) =>
+    blobRequest(`/api/admin/companies/${userId}/certificates/${certificateId}`, authHeaders()),
 
   users: (params: AdminUserListParams = {}) =>
     request<AdminUserSummary[]>(`/api/admin/users${buildUserListQuery(params)}`, {

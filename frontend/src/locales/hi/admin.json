@@ -69,11 +69,20 @@
     "noneWaiting": "समीक्षा के लिए कोई कंपनी प्रतीक्षा में नहीं है।",
     "companyMeta": "{{industry}} · {{entityType}} · {{submitted}} सबमिट किया गया",
     "fields": {
+      "entityType": "इकाई प्रकार",
       "cin": "CIN",
       "gstin": "GSTIN",
+      "aadhaarNumber": "आधार नंबर",
       "pan": "PAN",
-      "authorizedSignatory": "अधिकृत हस्ताक्षरकर्ता"
+      "authorizedSignatory": "अधिकृत हस्ताक्षरकर्ता",
+      "email": "ईमेल",
+      "contactNumber": "संपर्क नंबर",
+      "address": "पंजीकृत कार्यालय का पता",
+      "documents": "दस्तावेज़"
     },
+    "noDocuments": "कोई दस्तावेज़ अपलोड नहीं किया गया है।",
+    "downloadingCertificate": "डाउनलोड हो रहा है…",
+    "certificateError": "यह दस्तावेज़ डाउनलोड नहीं हो सका। कृपया फिर से कोशिश करें।",
     "verifyAndApprove": "सत्यापित करें और स्वीकृत करें"
   },
   "users": {

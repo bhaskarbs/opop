@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.openopportunity.admin.dto.AdminCompanyProfileSummary;
 import com.openopportunity.admin.exception.CompanyProfileIncompleteException;
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
+import com.openopportunity.auth.CompanyCertificateService;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
@@ -36,11 +37,15 @@ class AdminCompanyServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private CompanyCertificateService companyCertificateService;
+
     private AdminCompanyService adminCompanyService;
 
     @BeforeEach
     void setUp() {
-        adminCompanyService = new AdminCompanyService(companyProfileRepository, userRepository, notificationService);
+        adminCompanyService = new AdminCompanyService(
+                companyProfileRepository, userRepository, notificationService, companyCertificateService);
     }
 
     private User companyUser() {
@@ -55,6 +60,7 @@ class AdminCompanyServiceTest {
         when(companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING))
                 .thenReturn(List.of(profile));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(companyCertificateService.list(user.getId())).thenReturn(List.of());
 
         List<AdminCompanyProfileSummary> pending = adminCompanyService.getPending();
 
@@ -70,6 +76,7 @@ class AdminCompanyServiceTest {
                 user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
         when(companyProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(profile));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(companyCertificateService.list(user.getId())).thenReturn(List.of());
 
         AdminCompanyProfileSummary summary = adminCompanyService.verify(user.getId());
 
@@ -83,6 +90,7 @@ class AdminCompanyServiceTest {
                 user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
         when(companyProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(profile));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(companyCertificateService.list(user.getId())).thenReturn(List.of());
 
         AdminCompanyProfileSummary summary = adminCompanyService.reject(user.getId());
 
