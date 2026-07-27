@@ -71,7 +71,20 @@
     "submit": "Save company details",
     "confirmResubmit": "Saving these changes will resubmit your company profile for admin review, even if it's currently verified. Continue?",
     "saveSuccess": "Company details saved.",
-    "saveError": "Could not save your company details."
+    "saveError": "Could not save your company details.",
+    "certificate": {
+      "label": "Certificate of incorporation",
+      "hint": "PDF, JPG, or PNG, up to 5MB. Uploading a new certificate resubmits your profile for admin review.",
+      "upload": "Upload certificate",
+      "replace": "Replace",
+      "uploading": "Uploading…",
+      "download": "Download",
+      "downloading": "Downloading…",
+      "none": "No certificate uploaded yet.",
+      "uploaded": "Uploaded {{uploaded}} · {{size}}"
+    },
+    "certificateError": "Could not upload your certificate. Please try again.",
+    "certificateDownloadError": "Could not download your certificate. Please try again."
   },
   "dashboard": {
     "loading": "Loading your dashboard…",

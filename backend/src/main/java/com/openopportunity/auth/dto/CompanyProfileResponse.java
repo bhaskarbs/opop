@@ -1,6 +1,7 @@
 package com.openopportunity.auth.dto;
 
 import com.openopportunity.auth.VerificationStatus;
+import java.time.Instant;
 
 public record CompanyProfileResponse(
         String companyName,
@@ -22,4 +23,10 @@ public record CompanyProfileResponse(
         boolean profileComplete,
         // Null until the company uploads a logo (see CompanyProfileService.uploadLogo) — same
         // lazy-fill pattern as CandidateProfileResponse.photoUrl.
-        String logoUrl) {}
+        String logoUrl,
+        // Null until the company uploads a certificate of incorporation (see
+        // CompanyProfileService.uploadCertificate) — never a public URL, unlike logoUrl, since
+        // this is a private verification document.
+        String certificateFileName,
+        Instant certificateUploadedAt,
+        Long certificateSizeBytes) {}

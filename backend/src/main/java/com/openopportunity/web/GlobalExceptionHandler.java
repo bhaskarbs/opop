@@ -8,6 +8,7 @@ import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
+import com.openopportunity.auth.exception.CompanyCertificateNotFoundException;
 import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
@@ -18,6 +19,7 @@ import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidOrExpiredResetTokenException;
 import com.openopportunity.auth.exception.InvalidOrExpiredVerificationTokenException;
+import com.openopportunity.auth.exception.InvalidCompanyCertificateException;
 import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidProfilePhotoException;
@@ -157,6 +159,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CompanyLogoNotFoundException.class)
     public ResponseEntity<ApiError> handleCompanyLogoNotFound(CompanyLogoNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidCompanyCertificateException.class)
+    public ResponseEntity<ApiError> handleInvalidCompanyCertificate(InvalidCompanyCertificateException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyCertificateNotFoundException.class)
+    public ResponseEntity<ApiError> handleCompanyCertificateNotFound(CompanyCertificateNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
