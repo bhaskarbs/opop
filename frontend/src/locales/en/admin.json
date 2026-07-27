@@ -69,11 +69,20 @@
     "noneWaiting": "No companies are waiting for review.",
     "companyMeta": "{{industry}} · {{entityType}} · Submitted {{submitted}}",
     "fields": {
+      "entityType": "Entity type",
       "cin": "CIN",
       "gstin": "GSTIN",
+      "aadhaarNumber": "Aadhaar number",
       "pan": "PAN",
-      "authorizedSignatory": "Authorized signatory"
+      "authorizedSignatory": "Authorized signatory",
+      "email": "Email",
+      "contactNumber": "Contact number",
+      "address": "Registered office address",
+      "documents": "Documents"
     },
+    "noDocuments": "No documents uploaded.",
+    "downloadingCertificate": "Downloading…",
+    "certificateError": "Could not download this document. Please try again.",
     "verifyAndApprove": "Verify & approve"
   },
   "users": {

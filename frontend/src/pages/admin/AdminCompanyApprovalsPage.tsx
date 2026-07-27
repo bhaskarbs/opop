@@ -11,12 +11,20 @@ function formatSubmittedLabel(t: TFunction<'admin'>, submittedAt: string): strin
   return t('companyApprovals.daysAgo', { days })
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
 export default function AdminCompanyApprovalsPage() {
   const { t } = useTranslation('admin')
   const [companies, setCompanies] = useState<AdminCompanyProfileSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
+  const [downloadingCertificateId, setDownloadingCertificateId] = useState<string | null>(null)
+  const [certificateError, setCertificateError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -62,6 +70,30 @@ export default function AdminCompanyApprovalsPage() {
     }
   }
 
+  async function handleDownloadCertificate(
+    userId: string,
+    certificateId: string,
+    fileName: string,
+  ) {
+    setCertificateError(null)
+    setDownloadingCertificateId(certificateId)
+    try {
+      const blob = await adminApi.downloadCompanyCertificate(userId, certificateId)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (caught) {
+      setCertificateError(
+        caught instanceof ApiError ? caught.message : t('companyApprovals.certificateError'),
+      )
+    } finally {
+      setDownloadingCertificateId(null)
+    }
+  }
+
   return (
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -79,6 +111,11 @@ export default function AdminCompanyApprovalsPage() {
       {error && (
         <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
           {error}
+        </div>
+      )}
+      {certificateError && (
+        <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+          {certificateError}
         </div>
       )}
 
@@ -121,18 +158,39 @@ export default function AdminCompanyApprovalsPage() {
               <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3.5 rounded-[10px] bg-page p-4">
                 <div>
                   <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
-                    {t('companyApprovals.fields.cin')}
+                    {t('companyApprovals.fields.entityType')}
                   </div>
-                  <div className="font-mono text-[13px] font-semibold text-ink">{company.cin}</div>
+                  <div className="text-[13px] font-semibold text-ink">{company.entityType}</div>
                 </div>
-                <div>
-                  <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
-                    {t('companyApprovals.fields.gstin')}
+                {company.aadhaarNumber ? (
+                  <div>
+                    <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
+                      {t('companyApprovals.fields.aadhaarNumber')}
+                    </div>
+                    <div className="font-mono text-[13px] font-semibold text-ink">
+                      {company.aadhaarNumber}
+                    </div>
                   </div>
-                  <div className="font-mono text-[13px] font-semibold text-ink">
-                    {company.gstin}
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div>
+                      <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
+                        {t('companyApprovals.fields.cin')}
+                      </div>
+                      <div className="font-mono text-[13px] font-semibold text-ink">
+                        {company.cin}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
+                        {t('companyApprovals.fields.gstin')}
+                      </div>
+                      <div className="font-mono text-[13px] font-semibold text-ink">
+                        {company.gstin}
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div>
                   <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
                     {t('companyApprovals.fields.pan')}
@@ -145,6 +203,65 @@ export default function AdminCompanyApprovalsPage() {
                   </div>
                   <div className="text-[13px] font-semibold text-ink">{company.signatoryName}</div>
                 </div>
+                <div>
+                  <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
+                    {t('companyApprovals.fields.email')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">{company.email}</div>
+                </div>
+                <div>
+                  <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
+                    {t('companyApprovals.fields.contactNumber')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">{company.contactNumber}</div>
+                </div>
+                <div className="col-span-full">
+                  <div className="mb-0.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
+                    {t('companyApprovals.fields.address')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">{company.address}</div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="mb-1.5 text-[11.5px] tracking-[0.03em] text-fog uppercase">
+                  {t('companyApprovals.fields.documents')}
+                </div>
+                {company.certificates.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {company.certificates.map((certificate) => (
+                      <button
+                        key={certificate.id}
+                        type="button"
+                        onClick={() =>
+                          handleDownloadCertificate(
+                            company.userId,
+                            certificate.id,
+                            certificate.fileName,
+                          )
+                        }
+                        disabled={downloadingCertificateId === certificate.id}
+                        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                        </svg>
+                        {downloadingCertificateId === certificate.id
+                          ? t('companyApprovals.downloadingCertificate')
+                          : `${certificate.fileName} (${formatFileSize(certificate.sizeBytes)})`}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-fog">{t('companyApprovals.noDocuments')}</p>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2.5">

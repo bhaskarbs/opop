@@ -3,6 +3,7 @@ package com.openopportunity.admin;
 import com.openopportunity.admin.dto.AdminCompanyProfileSummary;
 import com.openopportunity.admin.exception.CompanyProfileIncompleteException;
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
+import com.openopportunity.auth.CompanyCertificateService;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
@@ -21,14 +22,17 @@ public class AdminCompanyService {
     private final CompanyProfileRepository companyProfileRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final CompanyCertificateService companyCertificateService;
 
     public AdminCompanyService(
             CompanyProfileRepository companyProfileRepository,
             UserRepository userRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            CompanyCertificateService companyCertificateService) {
         this.companyProfileRepository = companyProfileRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.companyCertificateService = companyCertificateService;
     }
 
     @Transactional(readOnly = true)
@@ -84,11 +88,14 @@ public class AdminCompanyService {
                 profile.getEntityType(),
                 profile.getCin(),
                 profile.getGstin(),
+                profile.getAadhaarNumber(),
                 profile.getPan(),
                 profile.getIndustry(),
                 profile.getAddress(),
                 profile.getSignatoryName(),
+                profile.getContactNumber(),
                 profile.getVerificationStatus(),
-                profile.getCreatedAt());
+                profile.getCreatedAt(),
+                companyCertificateService.list(profile.getUserId()));
     }
 }
