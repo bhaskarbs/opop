@@ -313,7 +313,7 @@ export default function CompanyRegisterPage() {
                   label={t('companyRegister.certificate.label')}
                   placeholder={t('companyRegister.certificate.placeholder')}
                   hint={t('companyRegister.certificate.hint')}
-                  accept=".pdf"
+                  accept=".pdf,.jpg,.jpeg,.png"
                   value={field.value}
                   onChange={field.onChange}
                 />
