@@ -421,8 +421,6 @@ public class AuthService {
 
     private void requireCompanyProfileFields(RegisterRequest request) {
         boolean complete = isNotBlank(request.entityType())
-                && isNotBlank(request.cin())
-                && isNotBlank(request.gstin())
                 && isNotBlank(request.pan())
                 && isNotBlank(request.industry())
                 && isNotBlank(request.address())

@@ -2,6 +2,7 @@ export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from '.
 export { LinkButton, type LinkButtonProps } from './LinkButton'
 export { Card, CardTitle, CardDescription, type CardProps } from './Card'
 export { Input, type InputProps } from './Input'
+export { AutocompleteInput, type AutocompleteInputProps } from './AutocompleteInput'
 export { PasswordInput, type PasswordInputProps } from './PasswordInput'
 export { SkillsTagInput, type SkillsTagInputProps } from './SkillsTagInput'
 export {
