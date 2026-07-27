@@ -49,22 +49,27 @@
     "changeLogo": "Change company logo",
     "logoError": "Could not upload your company logo. Please try again.",
     "fields": {
+      "companyName": "Company name",
       "entityType": "Entity type",
       "cin": "CIN / LLPIN",
       "gstin": "GSTIN",
+      "aadhaarNumber": "Aadhaar number",
       "pan": "PAN",
       "industry": "Industry",
       "address": "Registered office address",
-      "signatoryName": "Authorized signatory name"
+      "signatoryName": "Authorized signatory name",
+      "contactNumber": "Contact number"
     },
     "entityTypes": {
       "privateLimited": "Private Limited Company",
       "llp": "Limited Liability Partnership (LLP)",
       "partnershipFirm": "Partnership Firm",
       "soleProprietorship": "Sole Proprietorship",
-      "publicLimited": "Public Limited Company"
+      "publicLimited": "Public Limited Company",
+      "notYetRegistered": "Company Not Yet Registered"
     },
     "submit": "Save company details",
+    "confirmResubmit": "Saving these changes will resubmit your company profile for admin review, even if it's currently verified. Continue?",
     "saveSuccess": "Company details saved.",
     "saveError": "Could not save your company details."
   },
