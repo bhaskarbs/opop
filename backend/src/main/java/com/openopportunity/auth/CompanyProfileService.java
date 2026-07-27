@@ -1,15 +1,19 @@
 package com.openopportunity.auth;
 
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
+import com.openopportunity.auth.dto.CertificateUploadResponse;
 import com.openopportunity.auth.dto.CompanyProfileResponse;
 import com.openopportunity.auth.dto.LogoUploadResponse;
 import com.openopportunity.auth.dto.UpdateCompanyProfileRequest;
+import com.openopportunity.auth.exception.CompanyCertificateNotFoundException;
 import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
+import com.openopportunity.auth.exception.InvalidCompanyCertificateException;
 import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -28,6 +32,9 @@ public class CompanyProfileService {
     private static final List<String> ALLOWED_LOGO_CONTENT_TYPES =
             List.of("image/jpeg", "image/png", "image/webp");
     private static final long MAX_LOGO_SIZE_BYTES = 5L * 1024 * 1024;
+    private static final List<String> ALLOWED_CERTIFICATE_CONTENT_TYPES =
+            List.of("application/pdf", "image/jpeg", "image/png");
+    private static final long MAX_CERTIFICATE_SIZE_BYTES = 5L * 1024 * 1024;
 
     private final UserRepository userRepository;
     private final CompanyProfileRepository companyProfileRepository;
@@ -126,6 +133,44 @@ public class CompanyProfileService {
 
     public record CompanyLogoContent(Resource resource, String contentType) {}
 
+    @Transactional
+    public CertificateUploadResponse uploadCertificate(UUID userId, MultipartFile file) {
+        validateCertificate(file);
+        CompanyProfile profile = findProfile(userId);
+
+        String storageKey;
+        try {
+            storageKey = fileStorageService.store(file, "certificates/" + userId);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to store company certificate", ex);
+        }
+
+        Instant uploadedAt = Instant.now();
+        profile.updateCertificate(
+                storageKey, file.getContentType(), file.getOriginalFilename(), file.getSize(), uploadedAt);
+        companyProfileRepository.save(profile);
+        return new CertificateUploadResponse(profile.getCertificateFileName(), uploadedAt, file.getSize());
+    }
+
+    /** Authenticated download of the company's own certificate — unlike getLogo, this is never
+     * served publicly, since it's a private verification document. */
+    @Transactional(readOnly = true)
+    public CompanyCertificateContent getCertificate(UUID userId) {
+        CompanyProfile profile = companyProfileRepository
+                .findByUserId(userId)
+                .filter(existing -> existing.getCertificateStorageKey() != null)
+                .orElseThrow(() -> new CompanyCertificateNotFoundException(userId));
+        try {
+            Resource resource = fileStorageService.load(profile.getCertificateStorageKey());
+            return new CompanyCertificateContent(
+                    resource, profile.getCertificateContentType(), profile.getCertificateFileName());
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to load company certificate", ex);
+        }
+    }
+
+    public record CompanyCertificateContent(Resource resource, String contentType, String fileName) {}
+
     private CompanyProfile findProfile(UUID userId) {
         return companyProfileRepository
                 .findByUserId(userId)
@@ -147,7 +192,10 @@ public class CompanyProfileService {
                 profile.getContactNumber(),
                 profile.getVerificationStatus(),
                 profile.isProfileComplete(),
-                profile.getLogoStorageKey() == null ? null : logoUrl(profile.getUserId()));
+                profile.getLogoStorageKey() == null ? null : logoUrl(profile.getUserId()),
+                profile.getCertificateFileName(),
+                profile.getCertificateUploadedAt(),
+                profile.getCertificateSizeBytes());
     }
 
     private void validateLogo(MultipartFile file) {
@@ -160,6 +208,20 @@ public class CompanyProfileService {
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_LOGO_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
             throw new InvalidCompanyLogoException("Logo must be a JPEG, PNG, or WEBP image");
+        }
+    }
+
+    private void validateCertificate(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new InvalidCompanyCertificateException("Certificate file is empty");
+        }
+        if (file.getSize() > MAX_CERTIFICATE_SIZE_BYTES) {
+            throw new InvalidCompanyCertificateException("Certificate must be 5MB or smaller");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null
+                || !ALLOWED_CERTIFICATE_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+            throw new InvalidCompanyCertificateException("Certificate must be a PDF, JPEG, or PNG file");
         }
     }
 

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { AutocompleteInput, Button, Input } from '../../components/ui'
+import { companyApi } from '../../lib/companyApi'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
 import { ROUTES } from '../../routes/paths'
@@ -114,9 +115,6 @@ export default function CompanyRegisterPage() {
   async function onSubmit(values: CompanyRegisterFormValues) {
     setFormError(null)
     try {
-      // certificate (the uploaded PDF) has nowhere to go yet — file upload/storage is a
-      // separate, not-yet-built service — but the rest of these fields now feed the Step 18
-      // admin company-approval queue, so they're sent for real.
       const response = await authApi.register({
         email: values.workEmail,
         password: values.password,
@@ -133,6 +131,18 @@ export default function CompanyRegisterPage() {
         contactNumber: values.contactNumber,
       })
       setSession(response.accessToken, response.user)
+
+      if (values.certificate) {
+        try {
+          await companyApi.uploadCertificate(values.certificate)
+        } catch {
+          // Best-effort — the account is already created at this point, so a failed
+          // certificate upload shouldn't block the company from reaching their dashboard.
+          // They can re-upload later from their profile (see CompanyProfilePage), which uses
+          // the same POST /api/company/certificate endpoint.
+        }
+      }
+
       navigate(localize(ROUTES.companyDashboard))
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('errors.generic'))

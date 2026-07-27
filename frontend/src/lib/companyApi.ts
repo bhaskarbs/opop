@@ -27,10 +27,22 @@ export interface CompanyProfileResponse {
   // Null until the company uploads a logo (see companyApi.uploadLogo) — same lazy-fill pattern
   // as CandidateProfileResponse.photoUrl.
   logoUrl: string | null
+  // Null until the company uploads a certificate of incorporation (see
+  // companyApi.uploadCertificate) — private, unlike logoUrl; downloaded via a blob request, not
+  // a public URL.
+  certificateFileName: string | null
+  certificateUploadedAt: string | null
+  certificateSizeBytes: number | null
 }
 
 export interface LogoUploadResponse {
   logoUrl: string
+}
+
+export interface CertificateUploadResponse {
+  certificateFileName: string
+  certificateUploadedAt: string
+  certificateSizeBytes: number
 }
 
 export interface UpdateCompanyProfilePayload {
@@ -135,6 +147,16 @@ export const companyApi = {
     formData.append('file', file)
     return uploadRequest<LogoUploadResponse>('/api/company/logo', formData, authHeaders())
   },
+  uploadCertificate: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return uploadRequest<CertificateUploadResponse>(
+      '/api/company/certificate',
+      formData,
+      authHeaders(),
+    )
+  },
+  getCertificate: () => blobRequest('/api/company/certificate', authHeaders()),
   searchCandidates: (params: CandidateSearchParams = {}) =>
     request<CandidateSearchSummary[]>(`/api/company/candidates${buildQuery(params)}`, {
       headers: authHeaders(),

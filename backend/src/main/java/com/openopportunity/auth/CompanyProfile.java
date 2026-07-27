@@ -61,6 +61,23 @@ public class CompanyProfile {
     @Column(name = "logo_content_type", length = 100)
     private String logoContentType;
 
+    // Certificate of incorporation, uploaded for admin review — null until uploaded. Unlike the
+    // logo, this is never served publicly (see CompanyProfileService.getCertificate).
+    @Column(name = "certificate_storage_key", length = 500)
+    private String certificateStorageKey;
+
+    @Column(name = "certificate_content_type", length = 100)
+    private String certificateContentType;
+
+    @Column(name = "certificate_file_name")
+    private String certificateFileName;
+
+    @Column(name = "certificate_size_bytes")
+    private Long certificateSizeBytes;
+
+    @Column(name = "certificate_uploaded_at")
+    private Instant certificateUploadedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -173,6 +190,22 @@ public class CompanyProfile {
         this.logoContentType = logoContentType;
     }
 
+    /** Uploading a new certificate re-queues the profile for admin review, same as
+     * updateDetails — a new document is exactly the kind of change admin should re-check. */
+    public void updateCertificate(
+            String certificateStorageKey,
+            String certificateContentType,
+            String certificateFileName,
+            long certificateSizeBytes,
+            Instant certificateUploadedAt) {
+        this.certificateStorageKey = certificateStorageKey;
+        this.certificateContentType = certificateContentType;
+        this.certificateFileName = certificateFileName;
+        this.certificateSizeBytes = certificateSizeBytes;
+        this.certificateUploadedAt = certificateUploadedAt;
+        this.verificationStatus = VerificationStatus.PENDING;
+    }
+
     private static boolean isNotBlank(String value) {
         return value != null && !value.isBlank();
     }
@@ -231,6 +264,26 @@ public class CompanyProfile {
 
     public String getLogoContentType() {
         return logoContentType;
+    }
+
+    public String getCertificateStorageKey() {
+        return certificateStorageKey;
+    }
+
+    public String getCertificateContentType() {
+        return certificateContentType;
+    }
+
+    public String getCertificateFileName() {
+        return certificateFileName;
+    }
+
+    public Long getCertificateSizeBytes() {
+        return certificateSizeBytes;
+    }
+
+    public Instant getCertificateUploadedAt() {
+        return certificateUploadedAt;
     }
 
     public Instant getCreatedAt() {

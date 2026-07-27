@@ -70,6 +70,12 @@ const profileSchema = z
 
 type ProfileFormValues = z.infer<typeof profileSchema>
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
 const BANNER_KEY_BY_STATE: Record<'incomplete' | 'PENDING' | 'VERIFIED' | 'REJECTED', string> = {
   incomplete: 'profile.completeBanner',
   PENDING: 'profile.pendingBanner',
@@ -100,6 +106,13 @@ export default function CompanyProfilePage() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoError, setLogoError] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
+  const [certificateFileName, setCertificateFileName] = useState<string | null>(null)
+  const [certificateUploadedAt, setCertificateUploadedAt] = useState<string | null>(null)
+  const [certificateSizeBytes, setCertificateSizeBytes] = useState<number | null>(null)
+  const [uploadingCertificate, setUploadingCertificate] = useState(false)
+  const [downloadingCertificate, setDownloadingCertificate] = useState(false)
+  const [certificateError, setCertificateError] = useState<string | null>(null)
+  const certificateInputRef = useRef<HTMLInputElement>(null)
   const {
     register,
     handleSubmit,
@@ -132,6 +145,9 @@ export default function CompanyProfilePage() {
         if (cancelled) return
         setProfile(data)
         setCompanyLogo(data.logoUrl)
+        setCertificateFileName(data.certificateFileName)
+        setCertificateUploadedAt(data.certificateUploadedAt)
+        setCertificateSizeBytes(data.certificateSizeBytes)
         reset({
           companyName: data.companyName,
           entityType: (ENTITY_TYPES as readonly string[]).includes(data.entityType ?? '')
@@ -171,6 +187,46 @@ export default function CompanyProfilePage() {
       setLogoError(error instanceof ApiError ? error.message : t('profile.logoError'))
     } finally {
       setUploadingLogo(false)
+    }
+  }
+
+  async function handleCertificateChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setCertificateError(null)
+    setUploadingCertificate(true)
+    try {
+      const uploaded = await companyApi.uploadCertificate(file)
+      setCertificateFileName(uploaded.certificateFileName)
+      setCertificateUploadedAt(uploaded.certificateUploadedAt)
+      setCertificateSizeBytes(uploaded.certificateSizeBytes)
+      setProfile((prev) => (prev ? { ...prev, verificationStatus: 'PENDING' } : prev))
+    } catch (error) {
+      setCertificateError(error instanceof ApiError ? error.message : t('profile.certificateError'))
+    } finally {
+      setUploadingCertificate(false)
+    }
+  }
+
+  async function handleDownloadCertificate() {
+    if (!certificateFileName) return
+    setCertificateError(null)
+    setDownloadingCertificate(true)
+    try {
+      const blob = await companyApi.getCertificate()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = certificateFileName
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      setCertificateError(
+        error instanceof ApiError ? error.message : t('profile.certificateDownloadError'),
+      )
+    } finally {
+      setDownloadingCertificate(false)
     }
   }
 
@@ -377,6 +433,75 @@ export default function CompanyProfilePage() {
             {t('profile.submit')}
           </Button>
         </form>
+      </div>
+
+      <div className="mt-4 rounded-card border border-border bg-surface p-8">
+        <div className="mb-3.5 flex items-center justify-between">
+          <h2 className="text-base font-bold text-ink">{t('profile.certificate.label')}</h2>
+          <button
+            type="button"
+            onClick={() => certificateInputRef.current?.click()}
+            disabled={uploadingCertificate}
+            className="rounded-lg border border-border px-3.5 py-2 text-[13px] font-bold text-ink disabled:opacity-60"
+          >
+            {uploadingCertificate
+              ? t('profile.certificate.uploading')
+              : certificateFileName
+                ? t('profile.certificate.replace')
+                : t('profile.certificate.upload')}
+          </button>
+          <input
+            ref={certificateInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            className="hidden"
+            onChange={handleCertificateChange}
+          />
+        </div>
+        <p className="mb-3.5 text-[12.5px] text-fog">{t('profile.certificate.hint')}</p>
+        {certificateError && <p className="mb-3.5 text-[13px] text-danger">{certificateError}</p>}
+        {certificateFileName ? (
+          <div className="flex items-center gap-3 rounded-xl border border-border p-3.5">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#2451D6"
+              strokeWidth={1.8}
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-ink">{certificateFileName}</div>
+              {certificateUploadedAt && certificateSizeBytes != null && (
+                <div className="text-xs text-fog">
+                  {t('profile.certificate.uploaded', {
+                    uploaded: new Date(certificateUploadedAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    }),
+                    size: formatFileSize(certificateSizeBytes),
+                  })}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadCertificate}
+              disabled={downloadingCertificate}
+              className="rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:opacity-60"
+            >
+              {downloadingCertificate
+                ? t('profile.certificate.downloading')
+                : t('profile.certificate.download')}
+            </button>
+          </div>
+        ) : (
+          <p className="text-[13px] text-fog">{t('profile.certificate.none')}</p>
+        )}
       </div>
     </main>
   )
