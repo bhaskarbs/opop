@@ -1,12 +1,13 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { adminApi } from '../../lib/adminApi'
 import { ROUTES } from '../../routes/paths'
 
-const KPIS = [
-  { labelKey: 'dashboard.kpis.totalCandidates', value: '84,210', trend: '+1,204 this week' },
-  { labelKey: 'dashboard.kpis.registeredCompanies', value: '2,340', trend: '+38 this week' },
-  { labelKey: 'dashboard.kpis.liveJobPostings', value: '12,406', trend: '+312 this week' },
+// partnershipMatches/communitySignUps stay mock — this session only wired totalCandidates/
+// registeredCompanies/liveJobPostings to the real backend (see AdminDashboardPage's useEffect).
+const MOCK_KPIS = [
   { labelKey: 'dashboard.kpis.partnershipMatches', value: '3,880', trend: '+94 this week' },
   { labelKey: 'dashboard.kpis.communitySignUps', value: '9,120', trend: '+210 this week' },
 ]
@@ -81,18 +82,44 @@ const STATUS_LABEL_KEYS: Record<keyof typeof STATUS_CLASS, string> = {
 export default function AdminDashboardPage() {
   const { t } = useTranslation('admin')
   const localize = useLocalizedPath()
+  const [totalCandidates, setTotalCandidates] = useState<number | null>(null)
+  const [registeredCompanies, setRegisteredCompanies] = useState<number | null>(null)
+  const [liveJobPostings, setLiveJobPostings] = useState<number | null>(null)
+
+  useEffect(() => {
+    adminApi
+      .getDashboardStats()
+      .then((stats) => {
+        setTotalCandidates(stats.totalCandidates)
+        setRegisteredCompanies(stats.registeredCompanies)
+        setLiveJobPostings(stats.liveJobPostings)
+      })
+      .catch(() => {
+        // Best-effort — these KPI cards just stay blank if this fails.
+      })
+  }, [])
+
+  const kpis = [
+    { labelKey: 'dashboard.kpis.totalCandidates', value: totalCandidates, trend: '' },
+    { labelKey: 'dashboard.kpis.registeredCompanies', value: registeredCompanies, trend: '' },
+    { labelKey: 'dashboard.kpis.liveJobPostings', value: liveJobPostings, trend: '' },
+    ...MOCK_KPIS,
+  ]
+
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
       <h1 className="mb-5 text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
-        {KPIS.map((kpi) => (
+        {kpis.map((kpi) => (
           <div
             key={kpi.labelKey}
             className="rounded-card border border-border bg-surface px-5 py-[18px]"
           >
             <div className="mb-1.5 text-[13px] text-fog">{t(kpi.labelKey)}</div>
-            <div className="text-2xl font-extrabold text-ink">{kpi.value}</div>
+            <div className="text-2xl font-extrabold text-ink">
+              {typeof kpi.value === 'number' ? kpi.value.toLocaleString() : (kpi.value ?? '…')}
+            </div>
             <div className="mt-1 text-[12.5px] text-teal">{kpi.trend}</div>
           </div>
         ))}
