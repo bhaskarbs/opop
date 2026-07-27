@@ -12,22 +12,31 @@ import org.springframework.stereotype.Service;
 public class CommunityInterestService {
 
     private final JavaMailSender mailSender;
+    private final CommunityInterestSubmissionRepository submissionRepository;
     private final String fromAddress;
     private final String contactEmail;
 
     public CommunityInterestService(
             JavaMailSender mailSender,
+            CommunityInterestSubmissionRepository submissionRepository,
             @Value("${app.mail.from}") String fromAddress,
             @Value("${app.community.contact-email}") String contactEmail) {
         this.mailSender = mailSender;
+        this.submissionRepository = submissionRepository;
         this.fromAddress = fromAddress;
         this.contactEmail = contactEmail;
     }
 
     /** The Community page's "know more" button is public (see SecurityConfig) — an anonymous
      * visitor submits their own contact details via the form rather than this looking up an
-     * account, so it works the same whether or not they're signed in. */
+     * account, so it works the same whether or not they're signed in. Saved first, in its own
+     * implicit transaction (see SimpleJpaRepository) — deliberately NOT wrapped in a
+     * transaction spanning this whole method, so the record (counted as "Community sign-ups"
+     * on the admin dashboard) survives even if the notification email below fails to send. */
     public void notifyInterest(CommunityInterestRequest request) {
+        submissionRepository.save(new CommunityInterestSubmission(
+                request.name(), request.companyName(), request.email(), request.phone()));
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(contactEmail);
