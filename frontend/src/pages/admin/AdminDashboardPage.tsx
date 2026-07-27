@@ -2,15 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { adminApi } from '../../lib/adminApi'
+import { adminApi, type AdminDashboardStats } from '../../lib/adminApi'
 import { ROUTES } from '../../routes/paths'
-
-// partnershipMatches/communitySignUps stay mock — this session only wired totalCandidates/
-// registeredCompanies/liveJobPostings to the real backend (see AdminDashboardPage's useEffect).
-const MOCK_KPIS = [
-  { labelKey: 'dashboard.kpis.partnershipMatches', value: '3,880', trend: '+94 this week' },
-  { labelKey: 'dashboard.kpis.communitySignUps', value: '9,120', trend: '+210 this week' },
-]
 
 // Month labels ('Feb', 'Mar', ...) are short calendar abbreviations rendered as chart axis
 // ticks — left as-is rather than localized, same as elsewhere digits/dates aren't translated.
@@ -82,28 +75,23 @@ const STATUS_LABEL_KEYS: Record<keyof typeof STATUS_CLASS, string> = {
 export default function AdminDashboardPage() {
   const { t } = useTranslation('admin')
   const localize = useLocalizedPath()
-  const [totalCandidates, setTotalCandidates] = useState<number | null>(null)
-  const [registeredCompanies, setRegisteredCompanies] = useState<number | null>(null)
-  const [liveJobPostings, setLiveJobPostings] = useState<number | null>(null)
+  const [stats, setStats] = useState<AdminDashboardStats | null>(null)
 
   useEffect(() => {
     adminApi
       .getDashboardStats()
-      .then((stats) => {
-        setTotalCandidates(stats.totalCandidates)
-        setRegisteredCompanies(stats.registeredCompanies)
-        setLiveJobPostings(stats.liveJobPostings)
-      })
+      .then(setStats)
       .catch(() => {
-        // Best-effort — these KPI cards just stay blank if this fails.
+        // Best-effort — the KPI cards just stay blank if this fails.
       })
   }, [])
 
   const kpis = [
-    { labelKey: 'dashboard.kpis.totalCandidates', value: totalCandidates, trend: '' },
-    { labelKey: 'dashboard.kpis.registeredCompanies', value: registeredCompanies, trend: '' },
-    { labelKey: 'dashboard.kpis.liveJobPostings', value: liveJobPostings, trend: '' },
-    ...MOCK_KPIS,
+    { labelKey: 'dashboard.kpis.totalCandidates', value: stats?.totalCandidates ?? null },
+    { labelKey: 'dashboard.kpis.registeredCompanies', value: stats?.registeredCompanies ?? null },
+    { labelKey: 'dashboard.kpis.liveJobPostings', value: stats?.liveJobPostings ?? null },
+    { labelKey: 'dashboard.kpis.partnershipMatches', value: stats?.partnershipMatches ?? null },
+    { labelKey: 'dashboard.kpis.communitySignUps', value: stats?.communitySignUps ?? null },
   ]
 
   return (
@@ -118,9 +106,8 @@ export default function AdminDashboardPage() {
           >
             <div className="mb-1.5 text-[13px] text-fog">{t(kpi.labelKey)}</div>
             <div className="text-2xl font-extrabold text-ink">
-              {typeof kpi.value === 'number' ? kpi.value.toLocaleString() : (kpi.value ?? '…')}
+              {typeof kpi.value === 'number' ? kpi.value.toLocaleString() : '…'}
             </div>
-            <div className="mt-1 text-[12.5px] text-teal">{kpi.trend}</div>
           </div>
         ))}
       </div>

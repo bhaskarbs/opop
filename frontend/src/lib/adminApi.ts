@@ -13,6 +13,8 @@ export interface AdminDashboardStats {
   totalCandidates: number
   registeredCompanies: number
   liveJobPostings: number
+  partnershipMatches: number
+  communitySignUps: number
 }
 
 export interface AdminCompanyProfileSummary {

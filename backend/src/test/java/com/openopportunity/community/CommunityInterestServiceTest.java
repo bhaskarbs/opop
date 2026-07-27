@@ -24,12 +24,18 @@ class CommunityInterestServiceTest {
     @Mock
     private JavaMailSender mailSender;
 
+    @Mock
+    private CommunityInterestSubmissionRepository submissionRepository;
+
     private CommunityInterestService service;
 
     @BeforeEach
     void setUp() {
         service = new CommunityInterestService(
-                mailSender, "no-reply@openopportunity.com", "community@openopportunity.com");
+                mailSender,
+                submissionRepository,
+                "no-reply@openopportunity.com",
+                "community@openopportunity.com");
     }
 
     @Test
@@ -47,6 +53,32 @@ class CommunityInterestServiceTest {
                 .contains("Vertex Robotics")
                 .contains("priya@example.com")
                 .contains("9876543210");
+    }
+
+    @Test
+    void notifyInterestSavesTheSubmissionForTheAdminDashboardCount() {
+        service.notifyInterest(
+                new CommunityInterestRequest("Priya Nair", "Vertex Robotics", "priya@example.com", "9876543210"));
+
+        ArgumentCaptor<CommunityInterestSubmission> captor =
+                ArgumentCaptor.forClass(CommunityInterestSubmission.class);
+        verify(submissionRepository).save(captor.capture());
+        CommunityInterestSubmission saved = captor.getValue();
+        assertThat(saved.getName()).isEqualTo("Priya Nair");
+        assertThat(saved.getCompanyName()).isEqualTo("Vertex Robotics");
+        assertThat(saved.getEmail()).isEqualTo("priya@example.com");
+        assertThat(saved.getPhone()).isEqualTo("9876543210");
+    }
+
+    @Test
+    void notifyInterestStillSavesTheSubmissionEvenWhenTheEmailFails() {
+        doThrow(new MailSendException("smtp down")).when(mailSender).send(any(SimpleMailMessage.class));
+
+        assertThatThrownBy(() -> service.notifyInterest(
+                        new CommunityInterestRequest("Priya Nair", null, "priya@example.com", null)))
+                .isInstanceOf(EmailDeliveryException.class);
+
+        verify(submissionRepository).save(any(CommunityInterestSubmission.class));
     }
 
     @Test
