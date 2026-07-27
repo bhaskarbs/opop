@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -58,6 +58,7 @@ const companyRegisterSchema = z
     certificates: z
       .array(z.instanceof(File))
       .max(CERTIFICATE_LIMIT, `You can upload up to ${CERTIFICATE_LIMIT} documents`),
+    logo: z.instanceof(File).optional(),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Passwords don't match",
@@ -86,11 +87,13 @@ export default function CompanyRegisterPage() {
   const navigate = useNavigate()
   const localize = useLocalizedPath()
   const setSession = useAuthStore((state) => state.setSession)
+  const setCompanyLogo = useAuthStore((state) => state.setCompanyLogo)
   const [formError, setFormError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CompanyRegisterFormValues>({
     resolver: zodResolver(companyRegisterSchema),
@@ -109,11 +112,22 @@ export default function CompanyRegisterPage() {
       password: '',
       confirmPassword: '',
       certificates: [],
+      logo: undefined,
     },
   })
   const entityType = useWatch({ control, name: 'entityType' })
   const isUnregistered = entityType === UNREGISTERED_ENTITY_TYPE
   const certificateInputRef = useRef<HTMLInputElement>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const logo = useWatch({ control, name: 'logo' })
+  const companyName = useWatch({ control, name: 'companyName' })
+  const logoPreviewUrl = useMemo(() => (logo ? URL.createObjectURL(logo) : null), [logo])
+
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl)
+    }
+  }, [logoPreviewUrl])
 
   async function onSubmit(values: CompanyRegisterFormValues) {
     setFormError(null)
@@ -135,10 +149,18 @@ export default function CompanyRegisterPage() {
       })
       setSession(response.accessToken, response.user)
 
-      // Best-effort — the account is already created at this point, so a failed document
+      // Best-effort — the account is already created at this point, so a failed logo/document
       // upload shouldn't block the company from reaching their dashboard. They can re-upload
-      // later from their profile (see CompanyProfilePage), which uses the same
-      // POST /api/company/certificates endpoint for each document.
+      // later from their profile (see CompanyProfilePage), which uses the same endpoints.
+      if (values.logo) {
+        try {
+          const uploaded = await companyApi.uploadLogo(values.logo)
+          setCompanyLogo(uploaded.logoUrl)
+        } catch {
+          // The header just falls back to the initial-letter avatar until they retry.
+        }
+      }
+
       for (const file of values.certificates) {
         try {
           await companyApi.uploadCertificate(file)
@@ -184,6 +206,48 @@ export default function CompanyRegisterPage() {
         </h2>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="mb-5 flex items-center gap-4">
+            <div className="relative h-16 w-16 shrink-0">
+              {logoPreviewUrl ? (
+                <img src={logoPreviewUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-[22px] font-bold text-white">
+                  {companyName.trim().charAt(0).toUpperCase() || '?'}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                aria-label={t('companyRegister.changeLogo')}
+                className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-ink text-white"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              </button>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  event.target.value = ''
+                  if (file) setValue('logo', file)
+                }}
+              />
+            </div>
+            <div className="text-[13px] text-slate">{t('companyRegister.logoHint')}</div>
+          </div>
+
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="flex flex-col">
               <label htmlFor="entity-type" className="mb-1.5 text-[13px] font-bold text-ink">
