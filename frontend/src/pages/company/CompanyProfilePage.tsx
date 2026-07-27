@@ -5,7 +5,12 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { AutocompleteInput, Button, Input } from '../../components/ui'
 import { ApiError, API_BASE_URL } from '../../lib/apiClient'
-import { companyApi, type CompanyProfileResponse } from '../../lib/companyApi'
+import {
+  CERTIFICATE_LIMIT,
+  companyApi,
+  type CompanyCertificateSummary,
+  type CompanyProfileResponse,
+} from '../../lib/companyApi'
 import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
 import { useAuthStore } from '../../stores/authStore'
 import { PhoneInput } from '../auth/shared/PhoneInput'
@@ -106,11 +111,10 @@ export default function CompanyProfilePage() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoError, setLogoError] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
-  const [certificateFileName, setCertificateFileName] = useState<string | null>(null)
-  const [certificateUploadedAt, setCertificateUploadedAt] = useState<string | null>(null)
-  const [certificateSizeBytes, setCertificateSizeBytes] = useState<number | null>(null)
+  const [certificates, setCertificates] = useState<CompanyCertificateSummary[]>([])
   const [uploadingCertificate, setUploadingCertificate] = useState(false)
-  const [downloadingCertificate, setDownloadingCertificate] = useState(false)
+  const [downloadingCertificateId, setDownloadingCertificateId] = useState<string | null>(null)
+  const [deletingCertificateId, setDeletingCertificateId] = useState<string | null>(null)
   const [certificateError, setCertificateError] = useState<string | null>(null)
   const certificateInputRef = useRef<HTMLInputElement>(null)
   const {
@@ -145,9 +149,6 @@ export default function CompanyProfilePage() {
         if (cancelled) return
         setProfile(data)
         setCompanyLogo(data.logoUrl)
-        setCertificateFileName(data.certificateFileName)
-        setCertificateUploadedAt(data.certificateUploadedAt)
-        setCertificateSizeBytes(data.certificateSizeBytes)
         reset({
           companyName: data.companyName,
           entityType: (ENTITY_TYPES as readonly string[]).includes(data.entityType ?? '')
@@ -174,6 +175,15 @@ export default function CompanyProfilePage() {
     }
   }, [reset, t, setCompanyLogo])
 
+  useEffect(() => {
+    companyApi
+      .listCertificates()
+      .then(setCertificates)
+      .catch(() => {
+        // Best-effort — the section just starts empty if this fails.
+      })
+  }, [])
+
   async function handleLogoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -198,9 +208,7 @@ export default function CompanyProfilePage() {
     setUploadingCertificate(true)
     try {
       const uploaded = await companyApi.uploadCertificate(file)
-      setCertificateFileName(uploaded.certificateFileName)
-      setCertificateUploadedAt(uploaded.certificateUploadedAt)
-      setCertificateSizeBytes(uploaded.certificateSizeBytes)
+      setCertificates((prev) => [uploaded, ...prev])
       setProfile((prev) => (prev ? { ...prev, verificationStatus: 'PENDING' } : prev))
     } catch (error) {
       setCertificateError(error instanceof ApiError ? error.message : t('profile.certificateError'))
@@ -209,16 +217,15 @@ export default function CompanyProfilePage() {
     }
   }
 
-  async function handleDownloadCertificate() {
-    if (!certificateFileName) return
+  async function handleDownloadCertificate(certificate: CompanyCertificateSummary) {
     setCertificateError(null)
-    setDownloadingCertificate(true)
+    setDownloadingCertificateId(certificate.id)
     try {
-      const blob = await companyApi.getCertificate()
+      const blob = await companyApi.getCertificate(certificate.id)
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = certificateFileName
+      link.download = certificate.fileName
       link.click()
       URL.revokeObjectURL(url)
     } catch (error) {
@@ -226,7 +233,25 @@ export default function CompanyProfilePage() {
         error instanceof ApiError ? error.message : t('profile.certificateDownloadError'),
       )
     } finally {
-      setDownloadingCertificate(false)
+      setDownloadingCertificateId(null)
+    }
+  }
+
+  async function handleDeleteCertificate(certificate: CompanyCertificateSummary) {
+    if (!window.confirm(t('profile.certificate.confirmDelete', { name: certificate.fileName })))
+      return
+    setCertificateError(null)
+    setDeletingCertificateId(certificate.id)
+    try {
+      await companyApi.deleteCertificate(certificate.id)
+      setCertificates((prev) => prev.filter((existing) => existing.id !== certificate.id))
+      setProfile((prev) => (prev ? { ...prev, verificationStatus: 'PENDING' } : prev))
+    } catch (error) {
+      setCertificateError(
+        error instanceof ApiError ? error.message : t('profile.certificateDeleteError'),
+      )
+    } finally {
+      setDeletingCertificateId(null)
     }
   }
 
@@ -441,14 +466,12 @@ export default function CompanyProfilePage() {
           <button
             type="button"
             onClick={() => certificateInputRef.current?.click()}
-            disabled={uploadingCertificate}
+            disabled={uploadingCertificate || certificates.length >= CERTIFICATE_LIMIT}
             className="rounded-lg border border-border px-3.5 py-2 text-[13px] font-bold text-ink disabled:opacity-60"
           >
             {uploadingCertificate
               ? t('profile.certificate.uploading')
-              : certificateFileName
-                ? t('profile.certificate.replace')
-                : t('profile.certificate.upload')}
+              : t('profile.certificate.upload')}
           </button>
           <input
             ref={certificateInputRef}
@@ -458,46 +481,68 @@ export default function CompanyProfilePage() {
             onChange={handleCertificateChange}
           />
         </div>
-        <p className="mb-3.5 text-[12.5px] text-fog">{t('profile.certificate.hint')}</p>
+        <p className="mb-3.5 text-[12.5px] text-fog">
+          {t('profile.certificate.hint', { limit: CERTIFICATE_LIMIT })}
+        </p>
+        {certificates.length >= CERTIFICATE_LIMIT && (
+          <p className="mb-3.5 text-[12.5px] text-fog">
+            {t('profile.certificate.limitReached', { limit: CERTIFICATE_LIMIT })}
+          </p>
+        )}
         {certificateError && <p className="mb-3.5 text-[13px] text-danger">{certificateError}</p>}
-        {certificateFileName ? (
-          <div className="flex items-center gap-3 rounded-xl border border-border p-3.5">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#2451D6"
-              strokeWidth={1.8}
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <path d="M14 2v6h6" />
-            </svg>
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-ink">{certificateFileName}</div>
-              {certificateUploadedAt && certificateSizeBytes != null && (
-                <div className="text-xs text-fog">
-                  {t('profile.certificate.uploaded', {
-                    uploaded: new Date(certificateUploadedAt).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    }),
-                    size: formatFileSize(certificateSizeBytes),
-                  })}
+        {certificates.length > 0 ? (
+          <div className="flex flex-col gap-2.5">
+            {certificates.map((certificate) => (
+              <div
+                key={certificate.id}
+                className="flex items-center gap-3 rounded-xl border border-border p-3.5"
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2451D6"
+                  strokeWidth={1.8}
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-ink">{certificate.fileName}</div>
+                  <div className="text-xs text-fog">
+                    {t('profile.certificate.uploaded', {
+                      uploaded: new Date(certificate.uploadedAt).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      }),
+                      size: formatFileSize(certificate.sizeBytes),
+                    })}
+                  </div>
                 </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleDownloadCertificate}
-              disabled={downloadingCertificate}
-              className="rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:opacity-60"
-            >
-              {downloadingCertificate
-                ? t('profile.certificate.downloading')
-                : t('profile.certificate.download')}
-            </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCertificate(certificate)}
+                  disabled={downloadingCertificateId === certificate.id}
+                  className="rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                >
+                  {downloadingCertificateId === certificate.id
+                    ? t('profile.certificate.downloading')
+                    : t('profile.certificate.download')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCertificate(certificate)}
+                  disabled={deletingCertificateId === certificate.id}
+                  className="rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-danger disabled:opacity-60"
+                >
+                  {deletingCertificateId === certificate.id
+                    ? t('profile.certificate.deleting')
+                    : t('profile.certificate.delete')}
+                </button>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-[13px] text-fog">{t('profile.certificate.none')}</p>

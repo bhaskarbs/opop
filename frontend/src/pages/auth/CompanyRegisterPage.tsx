@@ -1,17 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { AutocompleteInput, Button, Input } from '../../components/ui'
-import { companyApi } from '../../lib/companyApi'
+import { CERTIFICATE_LIMIT, companyApi } from '../../lib/companyApi'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
-import { FileDropInput } from './shared/FileDropInput'
 import { PhoneInput } from './shared/PhoneInput'
 
 const ENTITY_TYPES = [
@@ -56,7 +55,9 @@ const companyRegisterSchema = z
     workEmail: z.string().email('Enter a valid work email'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string().min(1, 'Confirm your password'),
-    certificate: z.instanceof(File).optional(),
+    certificates: z
+      .array(z.instanceof(File))
+      .max(CERTIFICATE_LIMIT, `You can upload up to ${CERTIFICATE_LIMIT} documents`),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Passwords don't match",
@@ -107,10 +108,12 @@ export default function CompanyRegisterPage() {
       workEmail: '',
       password: '',
       confirmPassword: '',
+      certificates: [],
     },
   })
   const entityType = useWatch({ control, name: 'entityType' })
   const isUnregistered = entityType === UNREGISTERED_ENTITY_TYPE
+  const certificateInputRef = useRef<HTMLInputElement>(null)
 
   async function onSubmit(values: CompanyRegisterFormValues) {
     setFormError(null)
@@ -132,14 +135,15 @@ export default function CompanyRegisterPage() {
       })
       setSession(response.accessToken, response.user)
 
-      if (values.certificate) {
+      // Best-effort — the account is already created at this point, so a failed document
+      // upload shouldn't block the company from reaching their dashboard. They can re-upload
+      // later from their profile (see CompanyProfilePage), which uses the same
+      // POST /api/company/certificates endpoint for each document.
+      for (const file of values.certificates) {
         try {
-          await companyApi.uploadCertificate(values.certificate)
+          await companyApi.uploadCertificate(file)
         } catch {
-          // Best-effort — the account is already created at this point, so a failed
-          // certificate upload shouldn't block the company from reaching their dashboard.
-          // They can re-upload later from their profile (see CompanyProfilePage), which uses
-          // the same POST /api/company/certificate endpoint.
+          // Continue with the remaining documents even if one fails.
         }
       }
 
@@ -316,17 +320,77 @@ export default function CompanyRegisterPage() {
 
           <div className="mb-[22px]">
             <Controller
-              name="certificate"
+              name="certificates"
               control={control}
               render={({ field }) => (
-                <FileDropInput
-                  label={t('companyRegister.certificate.label')}
-                  placeholder={t('companyRegister.certificate.placeholder')}
-                  hint={t('companyRegister.certificate.hint')}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  value={field.value}
-                  onChange={field.onChange}
-                />
+                <div>
+                  <label className="mb-2 block text-[13px] font-bold text-ink">
+                    {t('companyRegister.certificate.label')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => certificateInputRef.current?.click()}
+                    disabled={field.value.length >= CERTIFICATE_LIMIT}
+                    className="w-full rounded-xl border-[1.5px] border-dashed border-[#C7CCD6] p-6 text-center disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#8891A0"
+                      strokeWidth={1.8}
+                      className="mx-auto mb-2"
+                    >
+                      <path d="M12 3v12M7 8l5-5 5 5M5 21h14" />
+                    </svg>
+                    <div className="mb-0.5 text-[13.5px] font-semibold text-ink">
+                      {t('companyRegister.certificate.placeholder')}
+                    </div>
+                    <div className="text-[12.5px] text-fog">
+                      {t('companyRegister.certificate.hint', { limit: CERTIFICATE_LIMIT })}
+                    </div>
+                  </button>
+                  <input
+                    ref={certificateInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    multiple
+                    className="hidden"
+                    onChange={(event) => {
+                      const picked = Array.from(event.target.files ?? [])
+                      event.target.value = ''
+                      field.onChange([...field.value, ...picked].slice(0, CERTIFICATE_LIMIT))
+                    }}
+                  />
+                  {field.value.length > 0 && (
+                    <ul className="mt-2.5 flex flex-col gap-1.5">
+                      {field.value.map((file, index) => (
+                        <li
+                          key={`${file.name}-${index}`}
+                          className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-[13px] text-ink"
+                        >
+                          <span className="truncate">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              field.onChange(field.value.filter((_, i) => i !== index))
+                            }
+                            aria-label={t('companyRegister.certificate.remove', {
+                              name: file.name,
+                            })}
+                            className="ml-2 shrink-0 text-fog"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {errors.certificates && (
+                    <p className="mt-1.5 text-[13px] text-danger">{errors.certificates.message}</p>
+                  )}
+                </div>
               )}
             />
           </div>
