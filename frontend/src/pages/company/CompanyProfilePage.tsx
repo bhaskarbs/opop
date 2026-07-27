@@ -1,12 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { Button, Input } from '../../components/ui'
+import { AutocompleteInput, Button, Input } from '../../components/ui'
 import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import { companyApi, type CompanyProfileResponse } from '../../lib/companyApi'
+import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
 import { useAuthStore } from '../../stores/authStore'
+import { PhoneInput } from '../auth/shared/PhoneInput'
 
 const ENTITY_TYPES = [
   'Private Limited Company',
@@ -14,7 +16,13 @@ const ENTITY_TYPES = [
   'Partnership Firm',
   'Sole Proprietorship',
   'Public Limited Company',
+  'Company Not Yet Registered',
 ] as const
+
+// Matches CompanyProfile.UNREGISTERED_ENTITY_TYPE on the backend — selecting this swaps
+// CIN/GSTIN out for an Aadhaar number, since an unregistered company has neither yet. Same
+// pattern as CompanyRegisterPage.
+const UNREGISTERED_ENTITY_TYPE = 'Company Not Yet Registered'
 
 const ENTITY_TYPE_KEYS: Record<(typeof ENTITY_TYPES)[number], string> = {
   'Private Limited Company': 'profile.entityTypes.privateLimited',
@@ -22,17 +30,43 @@ const ENTITY_TYPE_KEYS: Record<(typeof ENTITY_TYPES)[number], string> = {
   'Partnership Firm': 'profile.entityTypes.partnershipFirm',
   'Sole Proprietorship': 'profile.entityTypes.soleProprietorship',
   'Public Limited Company': 'profile.entityTypes.publicLimited',
+  'Company Not Yet Registered': 'profile.entityTypes.notYetRegistered',
 }
 
-const profileSchema = z.object({
-  entityType: z.enum(ENTITY_TYPES),
-  cin: z.string().min(15, 'Enter a valid CIN or LLPIN'),
-  gstin: z.string().regex(/^[0-9A-Z]{15}$/, 'Enter a valid 15-character GSTIN'),
-  pan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Enter a valid PAN (e.g. ABCDE1234F)'),
-  industry: z.string().min(2, 'Enter your industry or sector'),
-  address: z.string().min(10, 'Enter your registered office address'),
-  signatoryName: z.string().min(2, "Enter the authorized signatory's name"),
-})
+const profileSchema = z
+  .object({
+    companyName: z.string().min(2, 'Enter the company name'),
+    entityType: z.enum(ENTITY_TYPES),
+    cin: z.string(),
+    gstin: z.string(),
+    aadhaarNumber: z.string(),
+    pan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Enter a valid PAN (e.g. ABCDE1234F)'),
+    industry: z.string().min(2, 'Enter your industry or sector'),
+    address: z.string().min(10, 'Enter your registered office address'),
+    signatoryName: z.string().min(2, "Enter the authorized signatory's name"),
+    contactNumber: z
+      .string()
+      .min(1, 'Contact number is required')
+      .regex(/^\d{10}$/, 'Enter a valid 10-digit contact number'),
+  })
+  .refine(
+    (values) =>
+      values.entityType === UNREGISTERED_ENTITY_TYPE ||
+      (values.cin.trim().length >= 15 && /^[0-9A-Z]{15}$/.test(values.gstin.trim())),
+    {
+      message: 'Enter a valid CIN or LLPIN, and a valid 15-character GSTIN',
+      path: ['cin'],
+    },
+  )
+  .refine(
+    (values) =>
+      values.entityType !== UNREGISTERED_ENTITY_TYPE ||
+      /^\d{12}$/.test(values.aadhaarNumber.trim()),
+    {
+      message: 'Enter a valid 12-digit Aadhaar number',
+      path: ['aadhaarNumber'],
+    },
+  )
 
 type ProfileFormValues = z.infer<typeof profileSchema>
 
@@ -69,20 +103,26 @@ export default function CompanyProfilePage() {
   const {
     register,
     handleSubmit,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      companyName: '',
       entityType: ENTITY_TYPES[0],
       cin: '',
       gstin: '',
+      aadhaarNumber: '',
       pan: '',
       industry: '',
       address: '',
       signatoryName: '',
+      contactNumber: '',
     },
   })
+  const entityType = useWatch({ control, name: 'entityType' })
+  const isUnregistered = entityType === UNREGISTERED_ENTITY_TYPE
 
   useEffect(() => {
     let cancelled = false
@@ -93,15 +133,18 @@ export default function CompanyProfilePage() {
         setProfile(data)
         setCompanyLogo(data.logoUrl)
         reset({
+          companyName: data.companyName,
           entityType: (ENTITY_TYPES as readonly string[]).includes(data.entityType ?? '')
             ? (data.entityType as (typeof ENTITY_TYPES)[number])
             : ENTITY_TYPES[0],
           cin: data.cin ?? '',
           gstin: data.gstin ?? '',
+          aadhaarNumber: data.aadhaarNumber ?? '',
           pan: data.pan ?? '',
           industry: data.industry ?? '',
           address: data.address ?? '',
           signatoryName: data.signatoryName ?? '',
+          contactNumber: data.contactNumber ?? '',
         })
       })
       .catch((error) => {
@@ -132,6 +175,7 @@ export default function CompanyProfilePage() {
   }
 
   async function onSubmit(values: ProfileFormValues) {
+    if (!window.confirm(t('profile.confirmResubmit'))) return
     setFormError(null)
     setSaveSuccess(false)
     try {
@@ -240,34 +284,58 @@ export default function CompanyProfilePage() {
               </select>
             </div>
             <Input
-              label={t('profile.fields.cin')}
-              placeholder="U74999KA2021PTC145632"
-              error={errors.cin?.message}
-              {...register('cin')}
+              label={t('profile.fields.companyName')}
+              error={errors.companyName?.message}
+              {...register('companyName')}
             />
           </div>
 
+          {isUnregistered ? (
+            <div className="mb-3.5">
+              <Input
+                label={t('profile.fields.aadhaarNumber')}
+                placeholder="XXXX XXXX XXXX"
+                error={errors.aadhaarNumber?.message}
+                {...register('aadhaarNumber')}
+              />
+            </div>
+          ) : (
+            <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <Input
+                label={t('profile.fields.cin')}
+                placeholder="U74999KA2021PTC145632"
+                error={errors.cin?.message}
+                {...register('cin')}
+              />
+              <Input
+                label={t('profile.fields.gstin')}
+                placeholder="29ABCDE1234F1Z5"
+                error={errors.gstin?.message}
+                {...register('gstin')}
+              />
+            </div>
+          )}
+
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <Input
-              label={t('profile.fields.gstin')}
-              placeholder="29ABCDE1234F1Z5"
-              error={errors.gstin?.message}
-              {...register('gstin')}
-            />
             <Input
               label={t('profile.fields.pan')}
               placeholder="ABCDE1234F"
               error={errors.pan?.message}
               {...register('pan')}
             />
-          </div>
-
-          <div className="mb-3.5">
-            <Input
-              label={t('profile.fields.industry')}
-              placeholder="Deep Tech, Healthtech, Fintech…"
-              error={errors.industry?.message}
-              {...register('industry')}
+            <Controller
+              name="industry"
+              control={control}
+              render={({ field }) => (
+                <AutocompleteInput
+                  label={t('profile.fields.industry')}
+                  placeholder="Deep Tech, Healthtech, Fintech…"
+                  error={errors.industry?.message}
+                  suggestions={INDUSTRY_SUGGESTIONS}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
           </div>
 
@@ -289,11 +357,16 @@ export default function CompanyProfilePage() {
             )}
           </div>
 
-          <div className="mb-5">
+          <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <Input
               label={t('profile.fields.signatoryName')}
               error={errors.signatoryName?.message}
               {...register('signatoryName')}
+            />
+            <PhoneInput
+              label={t('profile.fields.contactNumber')}
+              error={errors.contactNumber?.message}
+              {...register('contactNumber')}
             />
           </div>
 

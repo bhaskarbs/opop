@@ -49,22 +49,27 @@
     "changeLogo": "कंपनी लोगो बदलें",
     "logoError": "आपका कंपनी लोगो अपलोड नहीं हो सका। कृपया फिर से कोशिश करें।",
     "fields": {
+      "companyName": "कंपनी का नाम",
       "entityType": "इकाई प्रकार",
       "cin": "CIN / LLPIN",
       "gstin": "GSTIN",
+      "aadhaarNumber": "आधार नंबर",
       "pan": "PAN",
       "industry": "उद्योग",
       "address": "पंजीकृत कार्यालय का पता",
-      "signatoryName": "अधिकृत हस्ताक्षरकर्ता का नाम"
+      "signatoryName": "अधिकृत हस्ताक्षरकर्ता का नाम",
+      "contactNumber": "संपर्क नंबर"
     },
     "entityTypes": {
       "privateLimited": "प्राइवेट लिमिटेड कंपनी",
       "llp": "लिमिटेड लायबिलिटी पार्टनरशिप (LLP)",
       "partnershipFirm": "पार्टनरशिप फर्म",
       "soleProprietorship": "एकल स्वामित्व",
-      "publicLimited": "पब्लिक लिमिटेड कंपनी"
+      "publicLimited": "पब्लिक लिमिटेड कंपनी",
+      "notYetRegistered": "कंपनी अभी पंजीकृत नहीं है"
     },
     "submit": "कंपनी विवरण सेव करें",
+    "confirmResubmit": "ये बदलाव सेव करने पर आपकी कंपनी प्रोफ़ाइल फिर से एडमिन समीक्षा के लिए भेज दी जाएगी, भले ही वह अभी सत्यापित हो। जारी रखें?",
     "saveSuccess": "कंपनी विवरण सेव हो गया।",
     "saveError": "आपका कंपनी विवरण सेव नहीं हो सका।"
   },

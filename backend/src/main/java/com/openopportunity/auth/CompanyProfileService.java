@@ -5,6 +5,7 @@ import com.openopportunity.auth.dto.CompanyProfileResponse;
 import com.openopportunity.auth.dto.LogoUploadResponse;
 import com.openopportunity.auth.dto.UpdateCompanyProfileRequest;
 import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
+import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
@@ -50,7 +51,9 @@ public class CompanyProfileService {
 
     @Transactional
     public CompanyProfileResponse updateProfile(UUID userId, UpdateCompanyProfileRequest request) {
+        requireValidProfileFields(request);
         User user = userRepository.findById(userId).orElseThrow();
+        user.updateFullName(request.companyName());
         CompanyProfile profile = findProfile(userId);
         profile.updateDetails(
                 request.entityType(),
@@ -59,9 +62,32 @@ public class CompanyProfileService {
                 request.pan(),
                 request.industry(),
                 request.address(),
-                request.signatoryName());
+                request.signatoryName(),
+                request.contactNumber(),
+                request.aadhaarNumber());
         companyProfileRepository.save(profile);
         return toResponse(user, profile);
+    }
+
+    /** cin+gstin are required unless entityType is CompanyProfile.UNREGISTERED_ENTITY_TYPE, in
+     * which case aadhaarNumber substitutes for them — mirrors AuthService's registration-time
+     * check (see requireCompanyProfileFields), since a Google-signup company completes these
+     * same fields here instead of at registration. */
+    private void requireValidProfileFields(UpdateCompanyProfileRequest request) {
+        if (CompanyProfile.UNREGISTERED_ENTITY_TYPE.equals(request.entityType())) {
+            if (!isNotBlank(request.aadhaarNumber())) {
+                throw new IncompleteCompanyProfileException(
+                        "Enter your Aadhaar number since your company isn't registered yet");
+            }
+            return;
+        }
+        if (!isNotBlank(request.cin()) || !isNotBlank(request.gstin())) {
+            throw new IncompleteCompanyProfileException("Enter your CIN/LLPIN and GSTIN");
+        }
+    }
+
+    private static boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     @Transactional
@@ -113,10 +139,12 @@ public class CompanyProfileService {
                 profile.getEntityType(),
                 profile.getCin(),
                 profile.getGstin(),
+                profile.getAadhaarNumber(),
                 profile.getPan(),
                 profile.getIndustry(),
                 profile.getAddress(),
                 profile.getSignatoryName(),
+                profile.getContactNumber(),
                 profile.getVerificationStatus(),
                 profile.isProfileComplete(),
                 profile.getLogoStorageKey() == null ? null : logoUrl(profile.getUserId()));

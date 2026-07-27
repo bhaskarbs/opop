@@ -143,7 +143,9 @@ public class CompanyProfile {
             String pan,
             String industry,
             String address,
-            String signatoryName) {
+            String signatoryName,
+            String contactNumber,
+            String aadhaarNumber) {
         this.entityType = entityType;
         this.cin = cin;
         this.gstin = gstin;
@@ -151,6 +153,11 @@ public class CompanyProfile {
         this.industry = industry;
         this.address = address;
         this.signatoryName = signatoryName;
+        this.contactNumber = contactNumber;
+        this.aadhaarNumber = aadhaarNumber;
+        // Any edit re-queues the profile for admin review, even if it was previously VERIFIED —
+        // see CompanyProfileService.updateProfile, which warns the company of this before saving.
+        this.verificationStatus = VerificationStatus.PENDING;
     }
 
     public void verify() {

@@ -12,10 +12,14 @@ export interface CompanyProfileResponse {
   entityType: string | null
   cin: string | null
   gstin: string | null
+  // Only meaningful when entityType is "Company Not Yet Registered" — substitutes for
+  // cin/gstin as the identity check on a company that isn't formally registered yet.
+  aadhaarNumber: string | null
   pan: string | null
   industry: string | null
   address: string | null
   signatoryName: string | null
+  contactNumber: string | null
   verificationStatus: VerificationStatus
   // True once every field above is filled in. Posting jobs and (see SearchCandidatesPage)
   // contacting candidates both require this AND verificationStatus === 'VERIFIED'.
@@ -30,13 +34,16 @@ export interface LogoUploadResponse {
 }
 
 export interface UpdateCompanyProfilePayload {
+  companyName: string
   entityType: string
   cin: string
   gstin: string
+  aadhaarNumber: string
   pan: string
   industry: string
   address: string
   signatoryName: string
+  contactNumber: string
 }
 
 export interface CandidateSearchSummary {
