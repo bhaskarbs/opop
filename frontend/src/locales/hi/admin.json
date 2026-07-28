@@ -79,7 +79,7 @@
     "loading": "लंबित कंपनियां लोड हो रही हैं…",
     "noneWaiting": "समीक्षा के लिए कोई कंपनी प्रतीक्षा में नहीं है।",
     "noMatches": "आपकी खोज से कोई लंबित कंपनी मेल नहीं खाती।",
-    "searchPlaceholder": "कंपनी का नाम, ईमेल, या मोबाइल नंबर से खोजें",
+    "searchPlaceholder": "कंपनी का नाम, ईमेल, या मोबाइल नंबर से खोजें (Enter दबाएं)",
     "companyMeta": "{{industry}} · {{entityType}} · {{submitted}} सबमिट किया गया",
     "fields": {
       "entityType": "इकाई प्रकार",

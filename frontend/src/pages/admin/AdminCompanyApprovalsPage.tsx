@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { ApiError } from '../../lib/apiClient'
@@ -19,7 +19,10 @@ function formatFileSize(bytes: number): string {
 
 export default function AdminCompanyApprovalsPage() {
   const { t } = useTranslation('admin')
-  const [query, setQuery] = useState('')
+  // queryInput tracks every keystroke (controlled input value); submittedQuery only updates on
+  // Enter and is what actually drives the search request — typing alone doesn't trigger it.
+  const [queryInput, setQueryInput] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
   const [companies, setCompanies] = useState<AdminCompanyProfileSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,11 +32,14 @@ export default function AdminCompanyApprovalsPage() {
 
   useEffect(() => {
     let cancelled = false
+    // submittedQuery only changes on Enter (see handleSearchKeyDown), so this isn't debouncing
+    // keystrokes — the setTimeout wrapper just keeps the setState calls out of the effect body
+    // proper, same as the other admin list pages.
     const timeoutId = setTimeout(() => {
       setLoading(true)
       setError(null)
       adminApi
-        .pendingCompanies(query.trim() || undefined)
+        .pendingCompanies(submittedQuery.trim() || undefined)
         .then((result) => {
           if (!cancelled) setCompanies(result)
         })
@@ -45,12 +51,18 @@ export default function AdminCompanyApprovalsPage() {
         .finally(() => {
           if (!cancelled) setLoading(false)
         })
-    }, 250)
+    }, 0)
     return () => {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [query, t])
+  }, [submittedQuery, t])
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      setSubmittedQuery(queryInput)
+    }
+  }
 
   async function handleVerify(userId: string) {
     setActioningId(userId)
@@ -129,8 +141,9 @@ export default function AdminCompanyApprovalsPage() {
             <path d="M21 21l-4.3-4.3" />
           </svg>
           <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={queryInput}
+            onChange={(event) => setQueryInput(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
             placeholder={t('companyApprovals.searchPlaceholder')}
             className="w-full text-[13.5px] text-ink outline-none"
           />
@@ -154,7 +167,7 @@ export default function AdminCompanyApprovalsPage() {
         </div>
       ) : companies.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {query.trim() ? t('companyApprovals.noMatches') : t('companyApprovals.noneWaiting')}
+          {submittedQuery.trim() ? t('companyApprovals.noMatches') : t('companyApprovals.noneWaiting')}
         </div>
       ) : (
         (() => {

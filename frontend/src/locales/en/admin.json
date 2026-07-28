@@ -79,7 +79,7 @@
     "loading": "Loading pending companies…",
     "noneWaiting": "No companies are waiting for review.",
     "noMatches": "No pending companies match your search.",
-    "searchPlaceholder": "Search by company name, email, or mobile number",
+    "searchPlaceholder": "Search by company name, email, or mobile number (press Enter)",
     "companyMeta": "{{industry}} · {{entityType}} · Submitted {{submitted}}",
     "fields": {
       "entityType": "Entity type",
