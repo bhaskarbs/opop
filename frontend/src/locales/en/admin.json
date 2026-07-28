@@ -175,14 +175,8 @@
     "exportCsv": "Export CSV",
     "candidates": {
       "totalRegistered": "Total registered",
-      "activeJobSeekers": "Active job seekers",
       "resumesUploaded": "Resumes uploaded",
-      "mockInterviewsTaken": "Mock interviews taken",
-      "hiredViaJobListing": "Hired via job listing",
-      "enteredPartnership": "Entered a partnership",
-      "joinedCommunityRole": "Joined a community role",
-      "stillSearching": "Still searching",
-      "byOutcome": "Candidates by outcome"
+      "mockInterviewsTaken": "Mock interviews taken"
     },
     "employers": {
       "registeredCompanies": "Registered companies",

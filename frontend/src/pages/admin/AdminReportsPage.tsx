@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { adminApi, type AdminCandidateReportStats } from '../../lib/adminApi'
 
 type Tab = 'candidates' | 'employers' | 'partnerships' | 'community' | 'financial'
 
@@ -15,32 +16,26 @@ const TABS: Array<{ key: Tab; labelKey: string }> = [
 interface Kpi {
   labelKey: string
   value: string
-  trend: string
+  trend?: string
   trendMuted?: boolean
 }
 
-const CANDIDATE_KPIS: Kpi[] = [
-  { labelKey: 'reports.candidates.totalRegistered', value: '84,210', trend: '+1,204 this period' },
-  { labelKey: 'reports.candidates.activeJobSeekers', value: '52,340', trend: '+890 this period' },
-  {
-    labelKey: 'reports.candidates.resumesUploaded',
-    value: '79,880',
-    trend: '95% of registered',
-    trendMuted: true,
-  },
-  {
-    labelKey: 'reports.candidates.mockInterviewsTaken',
-    value: '18,210',
-    trend: '+2,110 this period',
-  },
-]
-
-const CANDIDATE_OUTCOMES = [
-  { labelKey: 'reports.candidates.hiredViaJobListing', value: '9,880', pct: 100, colorClass: 'bg-primary' },
-  { labelKey: 'reports.candidates.enteredPartnership', value: '4,120', pct: 42, colorClass: 'bg-amber' },
-  { labelKey: 'reports.candidates.joinedCommunityRole', value: '3,340', pct: 34, colorClass: 'bg-teal' },
-  { labelKey: 'reports.candidates.stillSearching', value: '38,900', pct: 74, colorClass: 'bg-fog' },
-]
+function candidateKpis(stats: AdminCandidateReportStats | null): Kpi[] {
+  return [
+    {
+      labelKey: 'reports.candidates.totalRegistered',
+      value: stats ? stats.totalRegistered.toLocaleString() : '…',
+    },
+    {
+      labelKey: 'reports.candidates.resumesUploaded',
+      value: stats ? stats.resumesUploaded.toLocaleString() : '…',
+    },
+    {
+      labelKey: 'reports.candidates.mockInterviewsTaken',
+      value: stats ? stats.mockInterviewsTaken.toLocaleString() : '…',
+    },
+  ]
+}
 
 const EMPLOYER_KPIS: Kpi[] = [
   { labelKey: 'reports.employers.registeredCompanies', value: '2,340', trend: '+38 this period' },
@@ -161,9 +156,11 @@ function KpiRow({ t, kpis }: { t: TFunction<'admin'>; kpis: Kpi[] }) {
         >
           <div className="mb-1.5 text-[13px] text-fog">{t(kpi.labelKey)}</div>
           <div className="text-[22px] font-extrabold text-ink">{kpi.value}</div>
-          <div className={`mt-1 text-[12.5px] ${kpi.trendMuted ? 'text-fog' : 'text-teal'}`}>
-            {kpi.trend}
-          </div>
+          {kpi.trend && (
+            <div className={`mt-1 text-[12.5px] ${kpi.trendMuted ? 'text-fog' : 'text-teal'}`}>
+              {kpi.trend}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -173,6 +170,16 @@ function KpiRow({ t, kpis }: { t: TFunction<'admin'>; kpis: Kpi[] }) {
 export default function AdminReportsPage() {
   const { t } = useTranslation('admin')
   const [tab, setTab] = useState<Tab>('candidates')
+  const [candidateStats, setCandidateStats] = useState<AdminCandidateReportStats | null>(null)
+
+  useEffect(() => {
+    adminApi
+      .getCandidateReportStats()
+      .then(setCandidateStats)
+      .catch(() => {
+        // Best-effort — the KPI cards just stay blank if this fails.
+      })
+  }, [])
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
@@ -222,30 +229,7 @@ export default function AdminReportsPage() {
         ))}
       </div>
 
-      {tab === 'candidates' && (
-        <>
-          <KpiRow t={t} kpis={CANDIDATE_KPIS} />
-          <div className="rounded-card border border-border bg-surface p-[22px]">
-            <h2 className="mb-4 text-[15px] font-bold text-ink">
-              {t('reports.candidates.byOutcome')}
-            </h2>
-            {CANDIDATE_OUTCOMES.map((outcome) => (
-              <div key={outcome.labelKey} className="mb-3.5">
-                <div className="mb-1 flex justify-between text-[13px] text-[#3A414D]">
-                  <span>{t(outcome.labelKey)}</span>
-                  <strong className="text-ink">{outcome.value}</strong>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-neutral-tint">
-                  <div
-                    className={`h-full rounded-full ${outcome.colorClass}`}
-                    style={{ width: `${outcome.pct}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      {tab === 'candidates' && <KpiRow t={t} kpis={candidateKpis(candidateStats)} />}
 
       {tab === 'employers' && (
         <>

@@ -175,14 +175,8 @@
     "exportCsv": "CSV एक्सपोर्ट करें",
     "candidates": {
       "totalRegistered": "कुल पंजीकृत",
-      "activeJobSeekers": "सक्रिय नौकरी खोजने वाले",
       "resumesUploaded": "अपलोड किए गए रिज़्यूमे",
-      "mockInterviewsTaken": "लिए गए मॉक इंटरव्यू",
-      "hiredViaJobListing": "जॉब लिस्टिंग से नियुक्त",
-      "enteredPartnership": "पार्टनरशिप में शामिल हुए",
-      "joinedCommunityRole": "कम्युनिटी भूमिका में शामिल हुए",
-      "stillSearching": "अभी भी खोज रहे हैं",
-      "byOutcome": "परिणाम के अनुसार उम्मीदवार"
+      "mockInterviewsTaken": "लिए गए मॉक इंटरव्यू"
     },
     "employers": {
       "registeredCompanies": "पंजीकृत कंपनियां",
