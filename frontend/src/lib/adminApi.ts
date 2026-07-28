@@ -9,6 +9,14 @@ export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED'
 export type AdminUserRole = 'CANDIDATE' | 'COMPANY'
 
+export interface MonthlyApplicationsByPath {
+  // First day of the month, ISO-formatted (e.g. "2026-07-01") — derive the axis label from it.
+  month: string
+  jobs: number
+  partnerships: number
+  community: number
+}
+
 export interface AdminDashboardStats {
   totalCandidates: number
   registeredCompanies: number
@@ -18,6 +26,8 @@ export interface AdminDashboardStats {
   // Candidate funnel stages — distinct candidates, not raw application/interest counts.
   candidatesAppliedToJob: number
   candidatesAppliedForPartnership: number
+  // Last 6 calendar months, oldest first, current month last.
+  applicationsByPath: MonthlyApplicationsByPath[]
 }
 
 export interface AdminCompanyProfileSummary {

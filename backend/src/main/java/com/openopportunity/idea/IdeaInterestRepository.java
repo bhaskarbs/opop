@@ -1,5 +1,6 @@
 package com.openopportunity.idea;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +23,9 @@ public interface IdeaInterestRepository extends JpaRepository<IdeaInterest, UUID
                     + "join users u on u.id = i.interested_user_id where u.role = 'CANDIDATE'",
             nativeQuery = true)
     long countDistinctCandidateInterestedUsers();
+
+    /** Raw idea_interests rows created in [start, end), any role — for the "Applications by
+     * path" monthly chart (see AdminDashboardService), same broad definition as
+     * partnershipMatches above. */
+    long countByCreatedAtBetween(Instant start, Instant end);
 }

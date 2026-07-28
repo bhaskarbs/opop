@@ -1,5 +1,7 @@
 package com.openopportunity.admin.dto;
 
+import java.util.List;
+
 public record AdminDashboardStats(
         long totalCandidates,
         long registeredCompanies,
@@ -13,4 +15,8 @@ public record AdminDashboardStats(
         // Candidate funnel stages — distinct candidates, not raw application/interest counts,
         // so a candidate with several applications or interests only counts once.
         long candidatesAppliedToJob,
-        long candidatesAppliedForPartnership) {}
+        long candidatesAppliedForPartnership,
+        // Last 6 calendar months (oldest first, current month last) of raw monthly volume per
+        // path — same broad definitions as partnershipMatches/communitySignUps above (all
+        // roles, no distinct-candidate collapsing), just bucketed by month.
+        List<MonthlyApplicationsByPath> applicationsByPath) {}
