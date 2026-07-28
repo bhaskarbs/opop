@@ -59,10 +59,8 @@ public class AdminUserService {
     }
 
     private AdminUserSummary toSummary(User user) {
-        VerificationStatus verificationStatus = user.getRole() == UserRole.COMPANY
-                ? companyProfileRepository.findByUserId(user.getId())
-                        .map(CompanyProfile::getVerificationStatus)
-                        .orElse(null)
+        CompanyProfile companyProfile = user.getRole() == UserRole.COMPANY
+                ? companyProfileRepository.findByUserId(user.getId()).orElse(null)
                 : null;
         return new AdminUserSummary(
                 user.getId(),
@@ -70,7 +68,9 @@ public class AdminUserService {
                 user.getFullName(),
                 user.getRole(),
                 user.getAccountStatus(),
-                verificationStatus,
+                companyProfile == null ? null : companyProfile.getVerificationStatus(),
+                companyProfile == null ? null : companyProfile.getIndustry(),
+                companyProfile == null ? null : companyProfile.getCin(),
                 user.getCreatedAt());
     }
 }

@@ -37,8 +37,10 @@
     },
     "companyStatus": {
       "verified": "सत्यापित",
-      "pendingReview": "समीक्षा लंबित"
-    }
+      "pendingReview": "समीक्षा लंबित",
+      "rejected": "अस्वीकृत"
+    },
+    "noRecentCompanies": "अभी तक किसी कंपनी ने पंजीकरण नहीं किया है।"
   },
   "jobApprovals": {
     "justNow": "अभी अभी",

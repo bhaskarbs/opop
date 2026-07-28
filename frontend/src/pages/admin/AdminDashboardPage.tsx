@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { adminApi, type AdminDashboardStats } from '../../lib/adminApi'
+import { adminApi, type AdminDashboardStats, type AdminUserSummary } from '../../lib/adminApi'
 import { ROUTES } from '../../routes/paths'
+
+const RECENT_COMPANIES_LIMIT = 5
 
 // Month labels ('Feb', 'Mar', ...) are short calendar abbreviations rendered as chart axis
 // ticks — left as-is rather than localized, same as elsewhere digits/dates aren't translated.
@@ -23,59 +25,31 @@ const FUNNEL = [
   { labelKey: 'dashboard.funnel.hiredOrPartnered', value: '9,880', pct: 12 },
 ]
 
-// Mock content, not translated UI copy — same treatment as mock data elsewhere.
-const COMPANIES = [
-  {
-    name: 'Vertex Robotics Pvt. Ltd.',
-    sector: 'Deep Tech',
-    cin: 'U74999KA2021PTC145632',
-    date: 'Jul 6, 2026',
-    status: 'Verified' as const,
-  },
-  {
-    name: 'Lumen Health Solutions',
-    sector: 'Healthtech',
-    cin: 'U85100MH2020PTC338211',
-    date: 'Jul 5, 2026',
-    status: 'Verified' as const,
-  },
-  {
-    name: 'Sahaay Finance Ltd.',
-    sector: 'Fintech',
-    cin: 'U65999DL2022PTC401987',
-    date: 'Jul 4, 2026',
-    status: 'Pending review' as const,
-  },
-  {
-    name: 'Greenline Logistics',
-    sector: 'Climate Tech',
-    cin: 'U60232KA2019PTC121044',
-    date: 'Jul 3, 2026',
-    status: 'Verified' as const,
-  },
-  {
-    name: 'Northstar EdTech',
-    sector: 'Education',
-    cin: 'U80903TN2023PTC167754',
-    date: 'Jul 2, 2026',
-    status: 'Pending review' as const,
-  },
-]
-
-const STATUS_CLASS = {
-  Verified: 'bg-teal-tint text-teal',
-  'Pending review': 'bg-amber-tint text-amber',
+const STATUS_CLASS: Record<'VERIFIED' | 'PENDING' | 'REJECTED', string> = {
+  VERIFIED: 'bg-teal-tint text-teal',
+  PENDING: 'bg-amber-tint text-amber',
+  REJECTED: 'bg-danger/10 text-danger',
 }
 
-const STATUS_LABEL_KEYS: Record<keyof typeof STATUS_CLASS, string> = {
-  Verified: 'dashboard.companyStatus.verified',
-  'Pending review': 'dashboard.companyStatus.pendingReview',
+const STATUS_LABEL_KEYS: Record<'VERIFIED' | 'PENDING' | 'REJECTED', string> = {
+  VERIFIED: 'dashboard.companyStatus.verified',
+  PENDING: 'dashboard.companyStatus.pendingReview',
+  REJECTED: 'dashboard.companyStatus.rejected',
+}
+
+function formatRegisteredLabel(locale: string, createdAt: string): string {
+  return new Date(createdAt).toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 export default function AdminDashboardPage() {
-  const { t } = useTranslation('admin')
+  const { t, i18n } = useTranslation('admin')
   const localize = useLocalizedPath()
   const [stats, setStats] = useState<AdminDashboardStats | null>(null)
+  const [recentCompanies, setRecentCompanies] = useState<AdminUserSummary[]>([])
 
   useEffect(() => {
     adminApi
@@ -83,6 +57,20 @@ export default function AdminDashboardPage() {
       .then(setStats)
       .catch(() => {
         // Best-effort — the KPI cards just stay blank if this fails.
+      })
+  }, [])
+
+  useEffect(() => {
+    adminApi
+      .users({ role: 'COMPANY' })
+      .then((companies) => {
+        const sorted = [...companies].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+        setRecentCompanies(sorted.slice(0, RECENT_COMPANIES_LIMIT))
+      })
+      .catch(() => {
+        // Best-effort — the table just stays empty if this fails.
       })
   }, [])
 
@@ -176,7 +164,7 @@ export default function AdminDashboardPage() {
             {t('dashboard.recentCompanyRegistrations')}
           </h2>
           <Link
-            to={localize(ROUTES.adminCompanyApprovals)}
+            to={`${localize(ROUTES.adminUsers)}?tab=companies`}
             className="text-[13px] font-bold text-primary no-underline"
           >
             {t('dashboard.manageAll')}
@@ -194,21 +182,32 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {COMPANIES.map((company) => (
-                <tr key={company.name} className="border-t border-[#F0F1F3]">
-                  <td className="py-3 pr-3 font-bold text-ink">{company.name}</td>
-                  <td className="p-3 text-[#3A414D]">{company.sector}</td>
-                  <td className="p-3 font-mono text-[12.5px] text-fog">{company.cin}</td>
-                  <td className="p-3 text-fog">{company.date}</td>
+              {recentCompanies.map((company) => (
+                <tr key={company.id} className="border-t border-[#F0F1F3]">
+                  <td className="py-3 pr-3 font-bold text-ink">{company.fullName}</td>
+                  <td className="p-3 text-[#3A414D]">{company.industry ?? '—'}</td>
+                  <td className="p-3 font-mono text-[12.5px] text-fog">{company.cin ?? '—'}</td>
+                  <td className="p-3 text-fog">
+                    {formatRegisteredLabel(i18n.language, company.createdAt)}
+                  </td>
                   <td className="py-3">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_CLASS[company.status]}`}
-                    >
-                      {t(STATUS_LABEL_KEYS[company.status])}
-                    </span>
+                    {company.verificationStatus && (
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_CLASS[company.verificationStatus]}`}
+                      >
+                        {t(STATUS_LABEL_KEYS[company.verificationStatus])}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
+              {recentCompanies.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-slate">
+                    {t('dashboard.noRecentCompanies')}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
