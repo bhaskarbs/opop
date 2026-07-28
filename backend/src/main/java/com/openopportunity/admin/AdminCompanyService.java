@@ -36,16 +36,30 @@ public class AdminCompanyService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminCompanyProfileSummary> getPending() {
+    public List<AdminCompanyProfileSummary> getPending(String query) {
         // A Google-signup company (see AuthService.loginWithGoogleAsCompany) starts PENDING
         // with every one of these fields blank — there's nothing for an admin to review until
         // the company fills them in via PUT /api/company/profile, so it's excluded from the
         // queue until then rather than showing up as a row of blanks.
+        String normalizedQuery = query == null ? null : query.trim().toLowerCase();
         return companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING)
                 .stream()
                 .filter(CompanyProfile::isProfileComplete)
                 .map(this::toSummary)
+                .filter(summary -> matchesQuery(summary, normalizedQuery))
                 .toList();
+    }
+
+    /** Search by company name, email, or contact number/mobile — small local dataset, so this
+     * filters in memory the same way AdminUserService.list does. */
+    private boolean matchesQuery(AdminCompanyProfileSummary summary, String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) {
+            return true;
+        }
+        return summary.companyName().toLowerCase().contains(normalizedQuery)
+                || summary.email().toLowerCase().contains(normalizedQuery)
+                || (summary.contactNumber() != null
+                        && summary.contactNumber().toLowerCase().contains(normalizedQuery));
     }
 
     @Transactional

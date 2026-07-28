@@ -161,10 +161,11 @@ export const adminApi = {
   rejectIdea: (id: string) =>
     request<IdeaSummary>(`/api/ideas/${id}/reject`, { method: 'POST', headers: authHeaders() }),
 
-  pendingCompanies: () =>
-    request<AdminCompanyProfileSummary[]>('/api/admin/companies/pending', {
-      headers: authHeaders(),
-    }),
+  pendingCompanies: (q?: string) =>
+    request<AdminCompanyProfileSummary[]>(
+      `/api/admin/companies/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`,
+      { headers: authHeaders() },
+    ),
   verifyCompany: (userId: string) =>
     request<AdminCompanyProfileSummary>(`/api/admin/companies/${userId}/verify`, {
       method: 'POST',

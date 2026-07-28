@@ -62,7 +62,7 @@ class AdminCompanyServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(companyCertificateService.list(user.getId())).thenReturn(List.of());
 
-        List<AdminCompanyProfileSummary> pending = adminCompanyService.getPending();
+        List<AdminCompanyProfileSummary> pending = adminCompanyService.getPending(null);
 
         assertThat(pending).hasSize(1);
         assertThat(pending.get(0).companyName()).isEqualTo("Vertex Robotics");
@@ -114,7 +114,7 @@ class AdminCompanyServiceTest {
         when(companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING))
                 .thenReturn(List.of(blank));
 
-        List<AdminCompanyProfileSummary> pending = adminCompanyService.getPending();
+        List<AdminCompanyProfileSummary> pending = adminCompanyService.getPending(null);
 
         assertThat(pending).isEmpty();
     }
@@ -127,5 +127,32 @@ class AdminCompanyServiceTest {
 
         assertThatThrownBy(() -> adminCompanyService.verify(user.getId()))
                 .isInstanceOf(CompanyProfileIncompleteException.class);
+    }
+
+    @Test
+    void getPendingFiltersByCompanyNameEmailOrContactNumber() {
+        User vertex = companyUser();
+        User orbit = new User("hello@orbitlabs.com", "hash", "Orbit Labs", UserRole.COMPANY);
+        CompanyProfile vertexProfile = new CompanyProfile(
+                vertex.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address",
+                "Signatory", "9876543210", null);
+        CompanyProfile orbitProfile = new CompanyProfile(
+                orbit.getId(), "Private Limited", "CIN456", "GSTIN456", "PAN456", "Tech", "Address",
+                "Signatory", "9123456780", null);
+        when(companyProfileRepository.findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus.PENDING))
+                .thenReturn(List.of(vertexProfile, orbitProfile));
+        when(userRepository.findById(vertex.getId())).thenReturn(Optional.of(vertex));
+        when(userRepository.findById(orbit.getId())).thenReturn(Optional.of(orbit));
+        when(companyCertificateService.list(any())).thenReturn(List.of());
+
+        assertThat(adminCompanyService.getPending("orbit")).extracting(AdminCompanyProfileSummary::companyName)
+                .containsExactly("Orbit Labs");
+        assertThat(adminCompanyService.getPending("founder@vertex.com"))
+                .extracting(AdminCompanyProfileSummary::companyName)
+                .containsExactly("Vertex Robotics");
+        assertThat(adminCompanyService.getPending("9123456780"))
+                .extracting(AdminCompanyProfileSummary::companyName)
+                .containsExactly("Orbit Labs");
+        assertThat(adminCompanyService.getPending("no-match")).isEmpty();
     }
 }
