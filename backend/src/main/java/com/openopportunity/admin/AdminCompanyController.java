@@ -1,7 +1,9 @@
 package com.openopportunity.admin;
 
 import com.openopportunity.admin.dto.AdminCompanyProfileSummary;
+import com.openopportunity.admin.dto.RejectCompanyRequest;
 import com.openopportunity.auth.CompanyCertificateService;
+import jakarta.validation.Valid;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,8 +44,9 @@ public class AdminCompanyController {
     }
 
     @PostMapping("/{userId}/reject")
-    public AdminCompanyProfileSummary reject(@PathVariable UUID userId) {
-        return adminCompanyService.reject(userId);
+    public AdminCompanyProfileSummary reject(
+            @PathVariable UUID userId, @Valid @RequestBody RejectCompanyRequest request) {
+        return adminCompanyService.reject(userId, request.reason());
     }
 
     /** Lets an admin download a document a company uploaded for verification (see

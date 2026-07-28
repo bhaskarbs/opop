@@ -148,14 +148,14 @@ public class IdeaService {
     }
 
     @Transactional
-    public IdeaDetail reject(UUID id) {
+    public IdeaDetail reject(UUID id, String reason) {
         Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
         idea.reject();
         ideaRepository.save(idea);
         notificationService.notify(
                 idea.getSubmitterId(),
                 NotificationType.IDEA_REJECTED,
-                "Your idea \"" + idea.getTitle() + "\" was not approved.",
+                "Your idea \"" + idea.getTitle() + "\" was not approved. Reason: " + reason,
                 "/partnerships/ideas/" + idea.getId());
         return toDetail(idea);
     }

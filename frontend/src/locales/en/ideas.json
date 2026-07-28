@@ -137,6 +137,15 @@
     "loadError": "Could not load pending ideas.",
     "noneWaiting": "No ideas are waiting for review.",
     "noMatches": "No pending ideas match your search.",
+    "rejectModal": {
+      "title": "Reject and notify",
+      "reasonLabel": "Reason for rejection",
+      "reasonPlaceholder": "Explain what needs to change before this can be approved…",
+      "reasonRequired": "Enter a reason before rejecting.",
+      "cancel": "Cancel",
+      "confirm": "Reject and send email",
+      "submitting": "Rejecting…"
+    },
     "searchPlaceholder": "Search by idea title, submitter, or category (press Enter)"
   }
 }

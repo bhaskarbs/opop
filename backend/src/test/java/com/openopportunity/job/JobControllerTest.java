@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import com.openopportunity.job.dto.JobRequest;
+import com.openopportunity.job.dto.RejectJobRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -333,7 +334,10 @@ class JobControllerTest {
                 "Rejected Candidate Role", ExperienceLevel.MID_LEVEL, WorkMode.REMOTE, "Remote",
                 null, null, List.of(), JobStatus.PENDING_APPROVAL)));
 
-        mockMvc.perform(post("/api/jobs/" + jobId + "/reject").header("Authorization", "Bearer " + adminToken()))
+        mockMvc.perform(post("/api/jobs/" + jobId + "/reject")
+                        .header("Authorization", "Bearer " + adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RejectJobRequest("Salary range too low for the role"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
 

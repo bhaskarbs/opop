@@ -218,7 +218,7 @@ class IdeaServiceTest {
         Idea idea = sampleIdea(ownerId);
         when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
 
-        IdeaDetail rejected = ideaService.reject(idea.getId());
+        IdeaDetail rejected = ideaService.reject(idea.getId(), "Not enough detail on the go-to-market plan");
 
         assertThat(rejected.status()).isEqualTo(IdeaStatus.REJECTED);
     }

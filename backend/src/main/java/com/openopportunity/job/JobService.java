@@ -175,14 +175,14 @@ public class JobService {
     }
 
     @Transactional
-    public JobDetail reject(UUID id) {
+    public JobDetail reject(UUID id, String reason) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.reject();
         jobRepository.save(job);
         notificationService.notify(
                 job.getCompanyId(),
                 NotificationType.JOB_REJECTED,
-                "Your job posting \"" + job.getTitle() + "\" was not approved.",
+                "Your job posting \"" + job.getTitle() + "\" was not approved. Reason: " + reason,
                 "/company/dashboard");
         return toDetail(job, companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null));
     }

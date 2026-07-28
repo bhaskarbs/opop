@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openopportunity.admin.dto.RejectCompanyRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
 import java.util.List;
@@ -120,7 +121,9 @@ class AdminControllerTest {
         String admin = adminToken();
 
         mockMvc.perform(post("/api/admin/companies/" + companyUserId + "/reject")
-                        .header("Authorization", "Bearer " + admin))
+                        .header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RejectCompanyRequest("Incomplete verification documents"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verificationStatus").value("REJECTED"));
     }

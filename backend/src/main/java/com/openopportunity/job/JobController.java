@@ -3,6 +3,7 @@ package com.openopportunity.job;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSummary;
+import com.openopportunity.job.dto.RejectJobRequest;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
@@ -58,8 +59,8 @@ public class JobController {
     }
 
     @PostMapping("/{id}/reject")
-    public JobDetail reject(@PathVariable UUID id) {
-        return jobService.reject(id);
+    public JobDetail reject(@PathVariable UUID id, @Valid @RequestBody RejectJobRequest request) {
+        return jobService.reject(id, request.reason());
     }
 
     @GetMapping("/{id}")
