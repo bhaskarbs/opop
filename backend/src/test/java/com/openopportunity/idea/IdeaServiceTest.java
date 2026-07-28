@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class IdeaServiceTest {
@@ -150,6 +152,20 @@ class IdeaServiceTest {
         IdeaDetail detail = ideaService.get(idea.getId(), null);
 
         assertThat(detail.status()).isEqualTo(IdeaStatus.APPROVED);
+    }
+
+    @Test
+    void getPendingReturnsFullDetailNotJustTheBrowseSummary() {
+        Idea idea = sampleIdea(UUID.randomUUID());
+        when(ideaRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(java.util.List.of(idea));
+
+        java.util.List<IdeaDetail> pending = ideaService.getPending(null);
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.get(0).solution()).isEqualTo("Solution");
+        assertThat(pending.get(0).targetMarket()).isEqualTo("Target market");
+        assertThat(pending.get(0).contactEmail()).isEqualTo("founder@vertex.com");
     }
 
     @Test

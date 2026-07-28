@@ -29,4 +29,16 @@ final class IdeaSpecifications {
         if (stage == null) return null;
         return (root, query, cb) -> cb.equal(root.get("stage"), stage);
     }
+
+    /** Admin pending-review search (see IdeaService.getPending) — unlike matchesKeyword (title
+     * or problem, for the public browse search box), this also matches submitterName since
+     * that's the other identifying field visible on the one-at-a-time review card. */
+    static Specification<Idea> matchesAdminReviewQuery(String keyword) {
+        if (keyword == null || keyword.isBlank()) return null;
+        String pattern = "%" + keyword.trim().toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("title")), pattern),
+                cb.like(cb.lower(root.get("submitterName")), pattern),
+                cb.like(cb.lower(root.get("category")), pattern));
+    }
 }

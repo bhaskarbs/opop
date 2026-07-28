@@ -123,13 +123,20 @@
     "pendingCount": "{{count}} समीक्षा लंबित",
     "submittedMeta": "{{submitter}} ({{type}}) द्वारा सबमिट · {{date}}",
     "stage": "चरण",
+    "solution": "समाधान",
+    "targetMarket": "लक्षित बाज़ार",
     "fundingSought": "मांगी गई फंडिंग",
+    "equity": "इक्विटी / रेवेन्यू-शेयर",
     "teamNeeded": "आवश्यक टीम",
     "timeline": "समयसीमा",
+    "videoLink": "वीडियो पिच लिंक",
+    "contactEmail": "संपर्क ईमेल",
     "approveAndPublish": "मंज़ूर करें और पब्लिश करें",
     "reject": "अस्वीकार करें",
     "loading": "लंबित आइडियाज़ लोड हो रहे हैं…",
     "loadError": "लंबित आइडियाज़ लोड नहीं हो सके।",
-    "noneWaiting": "समीक्षा के लिए कोई आइडिया लंबित नहीं है।"
+    "noneWaiting": "समीक्षा के लिए कोई आइडिया लंबित नहीं है।",
+    "noMatches": "आपकी खोज से कोई लंबित आइडिया मेल नहीं खाता।",
+    "searchPlaceholder": "आइडिया शीर्षक, सबमिटर, या श्रेणी से खोजें (Enter दबाएं)"
   }
 }

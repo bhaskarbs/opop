@@ -110,10 +110,14 @@ public class IdeaService {
         return toDetail(idea);
     }
 
+    /** Full detail (not the summary browse() returns) — the admin review card shows every
+     * field, same as an admin reviewing a company profile sees every field. */
     @Transactional(readOnly = true)
-    public List<IdeaSummary> getPending() {
-        return ideaRepository.findByStatusOrderByCreatedAtDesc(IdeaStatus.PENDING).stream()
-                .map(this::toSummary)
+    public List<IdeaDetail> getPending(String q) {
+        Specification<Idea> spec = Specification.allOf(
+                IdeaSpecifications.hasStatus(IdeaStatus.PENDING), IdeaSpecifications.matchesAdminReviewQuery(q));
+        return ideaRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                .map(this::toDetail)
                 .toList();
     }
 

@@ -7,8 +7,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface IdeaRepository extends JpaRepository<Idea, UUID>, JpaSpecificationExecutor<Idea> {
 
-    List<Idea> findByStatusOrderByCreatedAtDesc(IdeaStatus status);
-
     List<Idea> findBySubmitterIdOrderByCreatedAtDesc(UUID submitterId);
 
     long countBySubmitterId(UUID submitterId);

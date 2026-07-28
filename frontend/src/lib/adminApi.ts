@@ -2,7 +2,7 @@ import { useAuthStore } from '../stores/authStore'
 import { blobRequest, request } from './apiClient'
 import type { BackendSubscriptionPlan } from './billingApi'
 import type { CompanyCertificateSummary } from './companyApi'
-import type { IdeaSummary } from './ideasApi'
+import type { IdeaDetail } from './ideasApi'
 import type { BackendExperienceLevel, JobSummary } from './jobsApi'
 
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
@@ -155,11 +155,14 @@ export const adminApi = {
   rejectJob: (id: string) =>
     request<JobSummary>(`/api/jobs/${id}/reject`, { method: 'POST', headers: authHeaders() }),
 
-  pendingIdeas: () => request<IdeaSummary[]>('/api/ideas/pending', { headers: authHeaders() }),
+  pendingIdeas: (q?: string) =>
+    request<IdeaDetail[]>(`/api/ideas/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`, {
+      headers: authHeaders(),
+    }),
   approveIdea: (id: string) =>
-    request<IdeaSummary>(`/api/ideas/${id}/approve`, { method: 'POST', headers: authHeaders() }),
+    request<IdeaDetail>(`/api/ideas/${id}/approve`, { method: 'POST', headers: authHeaders() }),
   rejectIdea: (id: string) =>
-    request<IdeaSummary>(`/api/ideas/${id}/reject`, { method: 'POST', headers: authHeaders() }),
+    request<IdeaDetail>(`/api/ideas/${id}/reject`, { method: 'POST', headers: authHeaders() }),
 
   pendingCompanies: (q?: string) =>
     request<AdminCompanyProfileSummary[]>(
