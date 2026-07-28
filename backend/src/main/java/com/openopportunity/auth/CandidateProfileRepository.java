@@ -11,4 +11,6 @@ public interface CandidateProfileRepository extends JpaRepository<CandidateProfi
     Optional<CandidateProfile> findByUserId(UUID userId);
 
     List<CandidateProfile> findByUserIdIn(Collection<UUID> userIds);
+
+    long countByResumeStorageKeyIsNotNull();
 }

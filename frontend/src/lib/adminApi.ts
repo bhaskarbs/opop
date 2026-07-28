@@ -30,6 +30,12 @@ export interface AdminDashboardStats {
   applicationsByPath: MonthlyApplicationsByPath[]
 }
 
+export interface AdminCandidateReportStats {
+  totalRegistered: number
+  resumesUploaded: number
+  mockInterviewsTaken: number
+}
+
 export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
@@ -141,6 +147,8 @@ export interface PlatformSettings {
 export const adminApi = {
   getDashboardStats: () =>
     request<AdminDashboardStats>('/api/admin/dashboard/stats', { headers: authHeaders() }),
+  getCandidateReportStats: () =>
+    request<AdminCandidateReportStats>('/api/admin/reports/candidates', { headers: authHeaders() }),
   getSettings: () => request<PlatformSettings>('/api/admin/settings', { headers: authHeaders() }),
   setEmailVerificationEnabled: (enabled: boolean) =>
     request<PlatformSettings>('/api/admin/settings/email-verification', {
