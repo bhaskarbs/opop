@@ -150,11 +150,15 @@ public class JobService {
         jobRepository.delete(job);
     }
 
+    /** Full detail (not the summary search()/mine() return) — the admin review card shows
+     * every field, same as an admin reviewing a company profile or idea sees every field. */
     @Transactional(readOnly = true)
-    public List<JobSummary> getPending() {
-        List<Job> jobs = jobRepository.findByStatusOrderByCreatedAtDesc(JobStatus.PENDING_APPROVAL);
+    public List<JobDetail> getPending(String q) {
+        Specification<Job> spec = Specification.allOf(
+                JobSpecifications.hasStatus(JobStatus.PENDING_APPROVAL), JobSpecifications.matchesAdminReviewQuery(q));
+        List<Job> jobs = jobRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
         Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
-        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
+        return jobs.stream().map(job -> toDetail(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
     }
 
     @Transactional

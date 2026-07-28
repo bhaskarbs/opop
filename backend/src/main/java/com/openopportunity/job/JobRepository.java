@@ -9,8 +9,6 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
 
     List<Job> findByCompanyIdOrderByCreatedAtDesc(UUID companyId);
 
-    List<Job> findByStatusOrderByCreatedAtDesc(JobStatus status);
-
     long countByCompanyId(UUID companyId);
 
     long countByStatus(JobStatus status);
