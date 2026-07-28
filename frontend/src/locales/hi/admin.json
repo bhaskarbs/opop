@@ -23,8 +23,7 @@
     "funnel": {
       "registered": "पंजीकृत",
       "appliedToJob": "नौकरी के लिए आवेदन किया",
-      "appliedForPartnership": "पार्टनरशिप के लिए आवेदन किया",
-      "hiredOrPartnered": "नियुक्त या पार्टनर बने"
+      "appliedForPartnership": "पार्टनरशिप के लिए आवेदन किया"
     },
     "recentCompanyRegistrations": "हाल की कंपनी पंजीकरण",
     "manageAll": "सभी प्रबंधित करें →",

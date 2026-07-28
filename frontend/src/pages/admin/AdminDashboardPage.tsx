@@ -18,13 +18,6 @@ const MONTHS = [
   { label: 'Jul', job: 48, partnership: 30, community: 28 },
 ]
 
-const FUNNEL = [
-  { labelKey: 'dashboard.funnel.registered', value: '84,210', pct: 100 },
-  { labelKey: 'dashboard.funnel.appliedToJob', value: '61,340', pct: 73 },
-  { labelKey: 'dashboard.funnel.appliedForPartnership', value: '18,420', pct: 22 },
-  { labelKey: 'dashboard.funnel.hiredOrPartnered', value: '9,880', pct: 12 },
-]
-
 const STATUS_CLASS: Record<'VERIFIED' | 'PENDING' | 'REJECTED', string> = {
   VERIFIED: 'bg-teal-tint text-teal',
   PENDING: 'bg-amber-tint text-amber',
@@ -81,6 +74,32 @@ export default function AdminDashboardPage() {
     { labelKey: 'dashboard.kpis.partnershipMatches', value: stats?.partnershipMatches ?? null },
     { labelKey: 'dashboard.kpis.communitySignUps', value: stats?.communitySignUps ?? null },
   ]
+
+  // pct is always relative to totalCandidates ("Registered", stage 1 = 100%) — each later
+  // stage is a subset of registered candidates, not of the previous stage.
+  const registeredCount = stats?.totalCandidates ?? 0
+  function pctOfRegistered(count: number): number {
+    return registeredCount === 0 ? 0 : Math.round((count / registeredCount) * 100)
+  }
+  const funnel = stats
+    ? [
+        {
+          labelKey: 'dashboard.funnel.registered',
+          value: stats.totalCandidates,
+          pct: 100,
+        },
+        {
+          labelKey: 'dashboard.funnel.appliedToJob',
+          value: stats.candidatesAppliedToJob,
+          pct: pctOfRegistered(stats.candidatesAppliedToJob),
+        },
+        {
+          labelKey: 'dashboard.funnel.appliedForPartnership',
+          value: stats.candidatesAppliedForPartnership,
+          pct: pctOfRegistered(stats.candidatesAppliedForPartnership),
+        },
+      ]
+    : []
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
@@ -141,11 +160,11 @@ export default function AdminDashboardPage() {
 
         <div className="rounded-card border border-border bg-surface p-[22px]">
           <h2 className="mb-4 text-[15px] font-bold text-ink">{t('dashboard.candidateFunnel')}</h2>
-          {FUNNEL.map((stage) => (
+          {funnel.map((stage) => (
             <div key={stage.labelKey} className="mb-3.5">
               <div className="mb-1 flex justify-between text-[13px] text-[#3A414D]">
                 <span>{t(stage.labelKey)}</span>
-                <strong className="text-ink">{stage.value}</strong>
+                <strong className="text-ink">{stage.value.toLocaleString()}</strong>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-neutral-tint">
                 <div
