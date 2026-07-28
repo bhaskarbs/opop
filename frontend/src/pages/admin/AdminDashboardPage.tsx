@@ -2,21 +2,42 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { adminApi, type AdminDashboardStats, type AdminUserSummary } from '../../lib/adminApi'
+import {
+  adminApi,
+  type AdminDashboardStats,
+  type AdminUserSummary,
+  type MonthlyApplicationsByPath,
+} from '../../lib/adminApi'
 import { ROUTES } from '../../routes/paths'
 
 const RECENT_COMPANIES_LIMIT = 5
 
 // Month labels ('Feb', 'Mar', ...) are short calendar abbreviations rendered as chart axis
 // ticks — left as-is rather than localized, same as elsewhere digits/dates aren't translated.
-const MONTHS = [
-  { label: 'Feb', job: 60, partnership: 22, community: 18 },
-  { label: 'Mar', job: 55, partnership: 25, community: 20 },
-  { label: 'Apr', job: 58, partnership: 24, community: 22 },
-  { label: 'May', job: 52, partnership: 28, community: 24 },
-  { label: 'Jun', job: 50, partnership: 30, community: 26 },
-  { label: 'Jul', job: 48, partnership: 30, community: 28 },
-]
+function formatMonthLabel(month: string): string {
+  return new Date(`${month}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}
+
+// Each month's three segments are scaled to sum to 100 — a proportion-of-that-month's-activity
+// stacked bar, not raw counts (a busy month and a quiet month both fill the same chart height).
+function pathPct(count: number, total: number): number {
+  return total === 0 ? 0 : (count / total) * 100
+}
+
+function buildChartMonths(applicationsByPath: MonthlyApplicationsByPath[]) {
+  return applicationsByPath.map((month) => {
+    const total = month.jobs + month.partnerships + month.community
+    return {
+      label: formatMonthLabel(month.month),
+      job: pathPct(month.jobs, total),
+      partnership: pathPct(month.partnerships, total),
+      community: pathPct(month.community, total),
+    }
+  })
+}
 
 const STATUS_CLASS: Record<'VERIFIED' | 'PENDING' | 'REJECTED', string> = {
   VERIFIED: 'bg-teal-tint text-teal',
@@ -101,6 +122,8 @@ export default function AdminDashboardPage() {
       ]
     : []
 
+  const chartMonths = stats ? buildChartMonths(stats.applicationsByPath) : []
+
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
       <h1 className="mb-5 text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
@@ -125,7 +148,7 @@ export default function AdminDashboardPage() {
             {t('dashboard.applicationsByPath')}
           </h2>
           <div className="flex h-40 items-end gap-3.5">
-            {MONTHS.map((month) => (
+            {chartMonths.map((month) => (
               <div
                 key={month.label}
                 className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"

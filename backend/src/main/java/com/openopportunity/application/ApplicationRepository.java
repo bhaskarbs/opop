@@ -1,5 +1,6 @@
 package com.openopportunity.application;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,4 +21,9 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
      * still only counts once (see AdminDashboardService). */
     @Query("select count(distinct a.candidateId) from Application a")
     long countDistinctCandidates();
+
+    /** Raw applications submitted in [start, end) — for the "Applications by path" monthly
+     * chart (see AdminDashboardService), unlike countDistinctCandidates this does not collapse
+     * repeat applicants. */
+    long countByAppliedAtBetween(Instant start, Instant end);
 }
