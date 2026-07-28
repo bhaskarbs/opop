@@ -55,8 +55,18 @@
     "loading": "Loading pending jobs…",
     "noneWaiting": "No jobs are waiting for review.",
     "jobMeta": "{{company}} · {{location}} · {{mode}} · Submitted {{submitted}}",
+    "employmentType": "Employment type",
+    "experienceLevel": "Experience level",
+    "salary": "Salary",
+    "salaryNotDisclosed": "Not disclosed",
+    "applicationDeadline": "Application deadline",
+    "aboutRole": "About the role",
+    "responsibilities": "Responsibilities",
+    "requirements": "Requirements",
     "approve": "Approve",
-    "reject": "Reject"
+    "reject": "Reject",
+    "noMatches": "No pending jobs match your search.",
+    "searchPlaceholder": "Search by job title, company, or skill (press Enter)"
   },
   "companyApprovals": {
     "today": "today",

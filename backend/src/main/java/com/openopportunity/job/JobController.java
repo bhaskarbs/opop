@@ -48,8 +48,8 @@ public class JobController {
     }
 
     @GetMapping("/pending")
-    public List<JobSummary> pending() {
-        return jobService.getPending();
+    public List<JobDetail> pending(@RequestParam(required = false) String q) {
+        return jobService.getPending(q);
     }
 
     @PostMapping("/{id}/approve")

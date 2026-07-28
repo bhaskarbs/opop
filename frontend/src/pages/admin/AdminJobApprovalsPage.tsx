@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
-import type { JobSummary } from '../../lib/jobsApi'
-import { workModeFromBackend } from '../../lib/jobEnums'
+import type { JobDetail } from '../../lib/jobsApi'
+import { employmentTypeFromBackend, experienceLevelFromBackend, workModeFromBackend } from '../../lib/jobEnums'
 
 function formatSubmittedLabel(t: TFunction<'admin'>, createdAt: string): string {
   const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000)
@@ -15,32 +15,56 @@ function formatSubmittedLabel(t: TFunction<'admin'>, createdAt: string): string 
   return days === 1 ? t('jobApprovals.oneDayAgo') : t('jobApprovals.daysAgo', { days })
 }
 
+function formatSalary(t: TFunction<'admin'>, minLakhs: number | null, maxLakhs: number | null): string {
+  if (minLakhs == null && maxLakhs == null) return t('jobApprovals.salaryNotDisclosed')
+  if (minLakhs != null && maxLakhs != null) return `₹${minLakhs}L–${maxLakhs}L`
+  return `₹${minLakhs ?? maxLakhs}L`
+}
+
 export default function AdminJobApprovalsPage() {
   const { t } = useTranslation('admin')
-  const [jobs, setJobs] = useState<JobSummary[]>([])
+  // queryInput tracks every keystroke (controlled input value); submittedQuery only updates on
+  // Enter and is what actually drives the search request — typing alone doesn't trigger it.
+  const [queryInput, setQueryInput] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
+  const [jobs, setJobs] = useState<JobDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    adminApi
-      .pendingJobs()
-      .then((result) => {
-        if (!cancelled) setJobs(result)
-      })
-      .catch((caught) => {
-        if (!cancelled) {
-          setError(caught instanceof ApiError ? caught.message : t('jobApprovals.loadError'))
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    // submittedQuery only changes on Enter (see handleSearchKeyDown), so this isn't debouncing
+    // keystrokes — the setTimeout wrapper just keeps the setState calls out of the effect body
+    // proper, same as the other admin list pages.
+    const timeoutId = setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      adminApi
+        .pendingJobs(submittedQuery.trim() || undefined)
+        .then((result) => {
+          if (!cancelled) setJobs(result)
+        })
+        .catch((caught) => {
+          if (!cancelled) {
+            setError(caught instanceof ApiError ? caught.message : t('jobApprovals.loadError'))
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 0)
     return () => {
       cancelled = true
+      clearTimeout(timeoutId)
     }
-  }, [t])
+  }, [submittedQuery, t])
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      setSubmittedQuery(queryInput)
+    }
+  }
 
   async function handleApprove(jobId: string) {
     setActioningId(jobId)
@@ -78,6 +102,30 @@ export default function AdminJobApprovalsPage() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
+        <div className="flex min-w-[220px] flex-[2] items-center gap-2.5 rounded-lg border border-border px-3 py-2.5">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="shrink-0 text-fog"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            value={queryInput}
+            onChange={(event) => setQueryInput(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder={t('jobApprovals.searchPlaceholder')}
+            className="w-full text-[13.5px] text-ink outline-none"
+          />
+        </div>
+      </div>
+
       {error && (
         <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
           {error}
@@ -90,11 +138,12 @@ export default function AdminJobApprovalsPage() {
         </div>
       ) : jobs.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('jobApprovals.noneWaiting')}
+          {submittedQuery.trim() ? t('jobApprovals.noMatches') : t('jobApprovals.noneWaiting')}
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          {jobs.map((job) => (
+        (() => {
+          const job = jobs[0]
+          return (
             <div key={job.id} className="rounded-card border border-border bg-surface p-[22px]">
               <div className="mb-3.5 flex flex-wrap justify-between gap-4">
                 <div className="flex gap-3.5">
@@ -128,6 +177,75 @@ export default function AdminJobApprovalsPage() {
                   {t('dashboard.companyStatus.pendingReview')}
                 </span>
               </div>
+
+              <p className="mb-3.5 text-[13.5px] leading-[1.6] text-[#3A414D]">{job.aboutRole}</p>
+
+              <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 rounded-[10px] bg-page p-3.5">
+                <div>
+                  <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('jobApprovals.employmentType')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">
+                    {employmentTypeFromBackend(job.employmentType)}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('jobApprovals.experienceLevel')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">
+                    {experienceLevelFromBackend(job.experienceLevel)}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('jobApprovals.salary')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">
+                    {formatSalary(t, job.salaryMinLakhs, job.salaryMaxLakhs)}
+                  </div>
+                </div>
+                {job.applicationDeadline && (
+                  <div>
+                    <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                      {t('jobApprovals.applicationDeadline')}
+                    </div>
+                    <div className="text-[13px] font-semibold text-ink">
+                      {new Date(job.applicationDeadline).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {job.responsibilities.length > 0 && (
+                <div className="mb-3.5">
+                  <div className="mb-1 text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('jobApprovals.responsibilities')}
+                  </div>
+                  <ul className="list-disc space-y-0.5 pl-4 text-[13.5px] leading-[1.6] text-[#3A414D]">
+                    {job.responsibilities.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {job.requirements.length > 0 && (
+                <div className="mb-3.5">
+                  <div className="mb-1 text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('jobApprovals.requirements')}
+                  </div>
+                  <ul className="list-disc space-y-0.5 pl-4 text-[13.5px] leading-[1.6] text-[#3A414D]">
+                    {job.requirements.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {job.skills.length > 0 && (
                 <div className="mb-4 flex flex-wrap gap-2">
@@ -171,8 +289,8 @@ export default function AdminJobApprovalsPage() {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          )
+        })()
       )}
     </main>
   )

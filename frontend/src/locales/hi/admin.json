@@ -55,8 +55,18 @@
     "loading": "लंबित नौकरियां लोड हो रही हैं…",
     "noneWaiting": "समीक्षा के लिए कोई नौकरी प्रतीक्षा में नहीं है।",
     "jobMeta": "{{company}} · {{location}} · {{mode}} · {{submitted}} सबमिट किया गया",
+    "employmentType": "रोज़गार प्रकार",
+    "experienceLevel": "अनुभव स्तर",
+    "salary": "वेतन",
+    "salaryNotDisclosed": "प्रकट नहीं किया गया",
+    "applicationDeadline": "आवेदन की अंतिम तिथि",
+    "aboutRole": "भूमिका के बारे में",
+    "responsibilities": "जिम्मेदारियां",
+    "requirements": "आवश्यकताएं",
     "approve": "स्वीकृत करें",
-    "reject": "अस्वीकार करें"
+    "reject": "अस्वीकार करें",
+    "noMatches": "आपकी खोज से कोई लंबित नौकरी मेल नहीं खाती।",
+    "searchPlaceholder": "नौकरी शीर्षक, कंपनी, या कौशल से खोजें (Enter दबाएं)"
   },
   "companyApprovals": {
     "today": "आज",

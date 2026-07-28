@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class JobServiceTest {
@@ -239,5 +241,34 @@ class JobServiceTest {
 
         assertThatThrownBy(() -> jobService.get(UUID.randomUUID(), null))
                 .isInstanceOf(JobNotFoundException.class);
+    }
+
+    @Test
+    void getPendingReturnsFullDetailNotJustTheSearchSummary() {
+        Job job = new Job(
+                UUID.randomUUID(),
+                "Vertex Robotics",
+                "Senior Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "Lead the dashboard rebuild.",
+                List.of("Own delivery"),
+                List.of("5+ years React"),
+                List.of("React"),
+                JobStatus.PENDING_APPROVAL);
+        when(jobRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(job));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+
+        List<JobDetail> pending = jobService.getPending(null);
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.get(0).aboutRole()).isEqualTo("Lead the dashboard rebuild.");
+        assertThat(pending.get(0).responsibilities()).containsExactly("Own delivery");
+        assertThat(pending.get(0).requirements()).containsExactly("5+ years React");
     }
 }

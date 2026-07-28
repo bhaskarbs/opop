@@ -3,7 +3,7 @@ import { blobRequest, request } from './apiClient'
 import type { BackendSubscriptionPlan } from './billingApi'
 import type { CompanyCertificateSummary } from './companyApi'
 import type { IdeaDetail } from './ideasApi'
-import type { BackendExperienceLevel, JobSummary } from './jobsApi'
+import type { BackendExperienceLevel, JobDetail } from './jobsApi'
 
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED'
@@ -149,11 +149,14 @@ export const adminApi = {
       headers: authHeaders(),
     }),
 
-  pendingJobs: () => request<JobSummary[]>('/api/jobs/pending', { headers: authHeaders() }),
+  pendingJobs: (q?: string) =>
+    request<JobDetail[]>(`/api/jobs/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`, {
+      headers: authHeaders(),
+    }),
   approveJob: (id: string) =>
-    request<JobSummary>(`/api/jobs/${id}/approve`, { method: 'POST', headers: authHeaders() }),
+    request<JobDetail>(`/api/jobs/${id}/approve`, { method: 'POST', headers: authHeaders() }),
   rejectJob: (id: string) =>
-    request<JobSummary>(`/api/jobs/${id}/reject`, { method: 'POST', headers: authHeaders() }),
+    request<JobDetail>(`/api/jobs/${id}/reject`, { method: 'POST', headers: authHeaders() }),
 
   pendingIdeas: (q?: string) =>
     request<IdeaDetail[]>(`/api/ideas/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`, {

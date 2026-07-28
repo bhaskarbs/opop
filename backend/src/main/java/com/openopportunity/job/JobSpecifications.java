@@ -71,4 +71,12 @@ final class JobSpecifications {
         if (minSalaryLakhs == null) return null;
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("salaryMaxLakhs"), minSalaryLakhs);
     }
+
+    /** Admin pending-review search (see JobService.getPending) — same title/companyName/skills
+     * match as the public search bar's matchesKeyword, just a single free-text term rather than
+     * the multi-tag search box. */
+    static Specification<Job> matchesAdminReviewQuery(String keyword) {
+        if (keyword == null || keyword.isBlank()) return null;
+        return matchesKeyword(keyword.trim());
+    }
 }
