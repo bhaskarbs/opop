@@ -37,8 +37,10 @@
     },
     "companyStatus": {
       "verified": "Verified",
-      "pendingReview": "Pending review"
-    }
+      "pendingReview": "Pending review",
+      "rejected": "Rejected"
+    },
+    "noRecentCompanies": "No companies have registered yet."
   },
   "jobApprovals": {
     "justNow": "just now",

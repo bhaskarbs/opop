@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminUserRole, type AdminUserSummary } from '../../lib/adminApi'
 
 type Tab = 'candidates' | 'companies'
+
+function isTab(value: string | null): value is Tab {
+  return value === 'candidates' || value === 'companies'
+}
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
 
@@ -48,7 +53,11 @@ function statusClass(status: string): string {
 
 export default function AdminUsersPage() {
   const { t, i18n } = useTranslation('admin')
-  const [tab, setTab] = useState<Tab>('candidates')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [tab, setTab] = useState<Tab>(() => {
+    const fromUrl = searchParams.get('tab')
+    return isTab(fromUrl) ? fromUrl : 'candidates'
+  })
   const [query, setQuery] = useState('')
   const [users, setUsers] = useState<AdminUserSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,6 +112,7 @@ export default function AdminUsersPage() {
   function switchTab(next: Tab) {
     setTab(next)
     setQuery('')
+    setSearchParams(next === 'candidates' ? {} : { tab: next })
   }
 
   return (

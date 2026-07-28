@@ -44,7 +44,11 @@ export interface AdminUserSummary {
   fullName: string
   role: AdminUserRole
   accountStatus: AccountStatus
+  // verificationStatus/industry/cin are only meaningful for role === 'COMPANY' — null for
+  // candidates.
   verificationStatus: VerificationStatus | null
+  industry: string | null
+  cin: string | null
   createdAt: string
 }
 
