@@ -19,6 +19,7 @@ function formatFileSize(bytes: number): string {
 
 export default function AdminCompanyApprovalsPage() {
   const { t } = useTranslation('admin')
+  const [query, setQuery] = useState('')
   const [companies, setCompanies] = useState<AdminCompanyProfileSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,23 +29,28 @@ export default function AdminCompanyApprovalsPage() {
 
   useEffect(() => {
     let cancelled = false
-    adminApi
-      .pendingCompanies()
-      .then((result) => {
-        if (!cancelled) setCompanies(result)
-      })
-      .catch((caught) => {
-        if (!cancelled) {
-          setError(caught instanceof ApiError ? caught.message : t('companyApprovals.loadError'))
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    const timeoutId = setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      adminApi
+        .pendingCompanies(query.trim() || undefined)
+        .then((result) => {
+          if (!cancelled) setCompanies(result)
+        })
+        .catch((caught) => {
+          if (!cancelled) {
+            setError(caught instanceof ApiError ? caught.message : t('companyApprovals.loadError'))
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 250)
     return () => {
       cancelled = true
+      clearTimeout(timeoutId)
     }
-  }, [t])
+  }, [query, t])
 
   async function handleVerify(userId: string) {
     setActioningId(userId)
@@ -108,6 +114,29 @@ export default function AdminCompanyApprovalsPage() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
+        <div className="flex min-w-[220px] flex-[2] items-center gap-2.5 rounded-lg border border-border px-3 py-2.5">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="shrink-0 text-fog"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t('companyApprovals.searchPlaceholder')}
+            className="w-full text-[13.5px] text-ink outline-none"
+          />
+        </div>
+      </div>
+
       {error && (
         <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
           {error}
@@ -125,11 +154,12 @@ export default function AdminCompanyApprovalsPage() {
         </div>
       ) : companies.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('companyApprovals.noneWaiting')}
+          {query.trim() ? t('companyApprovals.noMatches') : t('companyApprovals.noneWaiting')}
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          {companies.map((company) => (
+        (() => {
+          const company = companies[0]
+          return (
             <div
               key={company.userId}
               className="rounded-card border border-border bg-surface p-[22px]"
@@ -293,8 +323,8 @@ export default function AdminCompanyApprovalsPage() {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          )
+        })()
       )}
     </main>
   )
