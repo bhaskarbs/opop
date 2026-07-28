@@ -123,13 +123,20 @@
     "pendingCount": "{{count}} pending review",
     "submittedMeta": "Submitted by {{submitter}} ({{type}}) · {{date}}",
     "stage": "Stage",
+    "solution": "Solution",
+    "targetMarket": "Target market",
     "fundingSought": "Funding sought",
+    "equity": "Equity / revenue-share",
     "teamNeeded": "Team needed",
     "timeline": "Timeline",
+    "videoLink": "Video pitch link",
+    "contactEmail": "Contact email",
     "approveAndPublish": "Approve & publish",
     "reject": "Reject",
     "loading": "Loading pending ideas…",
     "loadError": "Could not load pending ideas.",
-    "noneWaiting": "No ideas are waiting for review."
+    "noneWaiting": "No ideas are waiting for review.",
+    "noMatches": "No pending ideas match your search.",
+    "searchPlaceholder": "Search by idea title, submitter, or category (press Enter)"
   }
 }

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
-import type { BackendIdeaStage, IdeaSummary } from '../../lib/ideasApi'
+import type { BackendIdeaStage, IdeaDetail } from '../../lib/ideasApi'
 
 const STAGE_KEYS: Record<BackendIdeaStage, string> = {
   CONCEPT: 'browse.stages.concept',
@@ -12,30 +12,48 @@ const STAGE_KEYS: Record<BackendIdeaStage, string> = {
 
 export default function AdminIdeaApprovalsPage() {
   const { t } = useTranslation('ideas')
-  const [ideas, setIdeas] = useState<IdeaSummary[]>([])
+  // queryInput tracks every keystroke (controlled input value); submittedQuery only updates on
+  // Enter and is what actually drives the search request — typing alone doesn't trigger it.
+  const [queryInput, setQueryInput] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
+  const [ideas, setIdeas] = useState<IdeaDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    adminApi
-      .pendingIdeas()
-      .then((result) => {
-        if (!cancelled) setIdeas(result)
-      })
-      .catch((caught) => {
-        if (!cancelled) {
-          setError(caught instanceof ApiError ? caught.message : t('adminApprovals.loadError'))
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    // submittedQuery only changes on Enter (see handleSearchKeyDown), so this isn't debouncing
+    // keystrokes — the setTimeout wrapper just keeps the setState calls out of the effect body
+    // proper, same as the other admin list pages.
+    const timeoutId = setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      adminApi
+        .pendingIdeas(submittedQuery.trim() || undefined)
+        .then((result) => {
+          if (!cancelled) setIdeas(result)
+        })
+        .catch((caught) => {
+          if (!cancelled) {
+            setError(caught instanceof ApiError ? caught.message : t('adminApprovals.loadError'))
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 0)
     return () => {
       cancelled = true
+      clearTimeout(timeoutId)
     }
-  }, [t])
+  }, [submittedQuery, t])
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      setSubmittedQuery(queryInput)
+    }
+  }
 
   async function handleApprove(ideaId: string) {
     setActioningId(ideaId)
@@ -73,6 +91,30 @@ export default function AdminIdeaApprovalsPage() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
+        <div className="flex min-w-[220px] flex-[2] items-center gap-2.5 rounded-lg border border-border px-3 py-2.5">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="shrink-0 text-fog"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            value={queryInput}
+            onChange={(event) => setQueryInput(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder={t('adminApprovals.searchPlaceholder')}
+            className="w-full text-[13.5px] text-ink outline-none"
+          />
+        </div>
+      </div>
+
       {error && (
         <div className="mb-4 rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
           {error}
@@ -85,11 +127,12 @@ export default function AdminIdeaApprovalsPage() {
         </div>
       ) : ideas.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('adminApprovals.noneWaiting')}
+          {submittedQuery.trim() ? t('adminApprovals.noMatches') : t('adminApprovals.noneWaiting')}
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          {ideas.map((idea) => (
+        (() => {
+          const idea = ideas[0]
+          return (
             <div key={idea.id} className="rounded-card border border-border bg-surface p-[22px]">
               <div className="mb-3 flex flex-wrap justify-between gap-4">
                 <div>
@@ -118,7 +161,8 @@ export default function AdminIdeaApprovalsPage() {
                 </span>
               </div>
 
-              <p className="mb-3.5 text-[13.5px] leading-[1.6] text-[#3A414D]">{idea.problem}</p>
+              <p className="mb-1.5 text-[13.5px] leading-[1.6] text-[#3A414D]">{idea.problem}</p>
+              <p className="mb-3.5 text-[13.5px] leading-[1.6] text-[#3A414D]">{idea.solution}</p>
 
               <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 rounded-[10px] bg-page p-3.5">
                 <div>
@@ -131,9 +175,21 @@ export default function AdminIdeaApprovalsPage() {
                 </div>
                 <div>
                   <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('adminApprovals.targetMarket')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">{idea.targetMarket}</div>
+                </div>
+                <div>
+                  <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
                     {t('adminApprovals.fundingSought')}
                   </div>
                   <div className="text-[13px] font-semibold text-ink">{idea.funding ?? '—'}</div>
+                </div>
+                <div>
+                  <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('adminApprovals.equity')}
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">{idea.equity ?? '—'}</div>
                 </div>
                 <div>
                   <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
@@ -147,6 +203,32 @@ export default function AdminIdeaApprovalsPage() {
                   </div>
                   <div className="text-[13px] font-semibold text-ink">{idea.timeline ?? '—'}</div>
                 </div>
+                <div>
+                  <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                    {t('adminApprovals.contactEmail')}
+                  </div>
+                  <a
+                    href={`mailto:${idea.contactEmail}`}
+                    className="text-[13px] font-semibold text-primary"
+                  >
+                    {idea.contactEmail}
+                  </a>
+                </div>
+                {idea.videoLink && (
+                  <div>
+                    <div className="mb-[3px] text-[11px] tracking-[0.03em] text-fog uppercase">
+                      {t('adminApprovals.videoLink')}
+                    </div>
+                    <a
+                      href={idea.videoLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate text-[13px] font-semibold text-primary"
+                    >
+                      {idea.videoLink}
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2.5">
@@ -168,8 +250,8 @@ export default function AdminIdeaApprovalsPage() {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          )
+        })()
       )}
     </main>
   )

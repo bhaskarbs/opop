@@ -42,8 +42,8 @@ public class IdeaController {
     }
 
     @GetMapping("/pending")
-    public List<IdeaSummary> pending() {
-        return ideaService.getPending();
+    public List<IdeaDetail> pending(@RequestParam(required = false) String q) {
+        return ideaService.getPending(q);
     }
 
     @GetMapping("/mine")
