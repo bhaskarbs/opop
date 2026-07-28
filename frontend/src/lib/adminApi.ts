@@ -155,8 +155,12 @@ export const adminApi = {
     }),
   approveJob: (id: string) =>
     request<JobDetail>(`/api/jobs/${id}/approve`, { method: 'POST', headers: authHeaders() }),
-  rejectJob: (id: string) =>
-    request<JobDetail>(`/api/jobs/${id}/reject`, { method: 'POST', headers: authHeaders() }),
+  rejectJob: (id: string, reason: string) =>
+    request<JobDetail>(`/api/jobs/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+      headers: authHeaders(),
+    }),
 
   pendingIdeas: (q?: string) =>
     request<IdeaDetail[]>(`/api/ideas/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`, {
@@ -164,8 +168,12 @@ export const adminApi = {
     }),
   approveIdea: (id: string) =>
     request<IdeaDetail>(`/api/ideas/${id}/approve`, { method: 'POST', headers: authHeaders() }),
-  rejectIdea: (id: string) =>
-    request<IdeaDetail>(`/api/ideas/${id}/reject`, { method: 'POST', headers: authHeaders() }),
+  rejectIdea: (id: string, reason: string) =>
+    request<IdeaDetail>(`/api/ideas/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+      headers: authHeaders(),
+    }),
 
   pendingCompanies: (q?: string) =>
     request<AdminCompanyProfileSummary[]>(
@@ -177,9 +185,10 @@ export const adminApi = {
       method: 'POST',
       headers: authHeaders(),
     }),
-  rejectCompany: (userId: string) =>
+  rejectCompany: (userId: string, reason: string) =>
     request<AdminCompanyProfileSummary>(`/api/admin/companies/${userId}/reject`, {
       method: 'POST',
+      body: JSON.stringify({ reason }),
       headers: authHeaders(),
     }),
   downloadCompanyCertificate: (userId: string, certificateId: string) =>

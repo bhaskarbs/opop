@@ -6,6 +6,7 @@ import com.openopportunity.idea.dto.IdeaInterestSummary;
 import com.openopportunity.idea.dto.IdeaRequest;
 import com.openopportunity.idea.dto.IdeaSummary;
 import com.openopportunity.idea.dto.MyIdeaInterestSummary;
+import com.openopportunity.idea.dto.RejectIdeaRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -57,8 +58,8 @@ public class IdeaController {
     }
 
     @PostMapping("/{id}/reject")
-    public IdeaDetail reject(@PathVariable UUID id) {
-        return ideaService.reject(id);
+    public IdeaDetail reject(@PathVariable UUID id, @Valid @RequestBody RejectIdeaRequest request) {
+        return ideaService.reject(id, request.reason());
     }
 
     @GetMapping("/{id}")

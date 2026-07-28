@@ -92,7 +92,7 @@ class AdminCompanyServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(companyCertificateService.list(user.getId())).thenReturn(List.of());
 
-        AdminCompanyProfileSummary summary = adminCompanyService.reject(user.getId());
+        AdminCompanyProfileSummary summary = adminCompanyService.reject(user.getId(), "Missing GSTIN documentation");
 
         assertThat(summary.verificationStatus()).isEqualTo(VerificationStatus.REJECTED);
     }

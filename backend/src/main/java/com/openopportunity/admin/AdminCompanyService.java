@@ -80,7 +80,7 @@ public class AdminCompanyService {
     }
 
     @Transactional
-    public AdminCompanyProfileSummary reject(UUID userId) {
+    public AdminCompanyProfileSummary reject(UUID userId, String reason) {
         CompanyProfile profile = companyProfileRepository.findByUserId(userId).orElseThrow(
                 () -> new CompanyProfileNotFoundException(userId));
         profile.reject();
@@ -88,7 +88,7 @@ public class AdminCompanyService {
         notificationService.notify(
                 userId,
                 NotificationType.COMPANY_REJECTED,
-                "Your company profile verification was rejected. Please review and update your details.",
+                "Your company profile verification was rejected. Reason: " + reason,
                 "/company/profile");
         return toSummary(profile);
     }

@@ -31,6 +31,9 @@ export default function AdminJobApprovalsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<JobDetail | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [rejectSubmitting, setRejectSubmitting] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -78,15 +81,22 @@ export default function AdminJobApprovalsPage() {
     }
   }
 
-  async function handleReject(jobId: string) {
-    setActioningId(jobId)
+  function closeRejectModal() {
+    setRejectTarget(null)
+    setRejectReason('')
+  }
+
+  async function handleConfirmReject() {
+    if (!rejectTarget || !rejectReason.trim()) return
+    setRejectSubmitting(true)
     try {
-      await adminApi.rejectJob(jobId)
-      setJobs((prev) => prev.filter((job) => job.id !== jobId))
+      await adminApi.rejectJob(rejectTarget.id, rejectReason.trim())
+      setJobs((prev) => prev.filter((job) => job.id !== rejectTarget.id))
+      closeRejectModal()
     } catch {
       // Best-effort — the job simply stays in the pending list if the call fails.
     } finally {
-      setActioningId(null)
+      setRejectSubmitting(false)
     }
   }
 
@@ -282,7 +292,7 @@ export default function AdminJobApprovalsPage() {
                 <button
                   type="button"
                   disabled={actioningId === job.id}
-                  onClick={() => handleReject(job.id)}
+                  onClick={() => setRejectTarget(job)}
                   className="rounded-lg border border-[#FCA5A5] bg-surface px-5 py-2.5 text-[13.5px] font-bold text-danger disabled:opacity-60"
                 >
                   {t('jobApprovals.reject')}
@@ -291,6 +301,53 @@ export default function AdminJobApprovalsPage() {
             </div>
           )
         })()
+      )}
+
+      {rejectTarget && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-[#14181F]/75 p-5">
+          <div className="relative w-full max-w-[440px] rounded-2xl bg-surface p-7">
+            <button
+              type="button"
+              onClick={closeRejectModal}
+              aria-label={t('rejectModal.cancel')}
+              className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-tint text-[15px]"
+            >
+              ×
+            </button>
+            <h3 className="mb-1 text-[17px] font-bold text-ink">{t('rejectModal.title')}</h3>
+            <p className="mb-4 text-[13.5px] text-slate">{rejectTarget.title}</p>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink">
+              {t('rejectModal.reasonLabel')}
+            </label>
+            <textarea
+              value={rejectReason}
+              onChange={(event) => setRejectReason(event.target.value)}
+              placeholder={t('rejectModal.reasonPlaceholder')}
+              rows={4}
+              className="mb-1.5 w-full rounded-lg border border-border p-3 text-[13.5px] text-ink outline-none"
+            />
+            {!rejectReason.trim() && (
+              <p className="mb-1.5 text-[12px] text-fog">{t('rejectModal.reasonRequired')}</p>
+            )}
+            <div className="mt-4 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={closeRejectModal}
+                className="rounded-lg border border-border bg-surface px-4 py-2 text-[13px] font-bold text-ink"
+              >
+                {t('rejectModal.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={!rejectReason.trim() || rejectSubmitting}
+                onClick={handleConfirmReject}
+                className="rounded-lg bg-danger px-4 py-2 text-[13px] font-bold text-white disabled:opacity-60"
+              >
+                {rejectSubmitting ? t('rejectModal.submitting') : t('rejectModal.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   )

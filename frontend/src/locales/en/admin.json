@@ -4,6 +4,15 @@
     "jobsTab": "Job approvals",
     "ideasTab": "Idea approvals"
   },
+  "rejectModal": {
+    "title": "Reject and notify",
+    "reasonLabel": "Reason for rejection",
+    "reasonPlaceholder": "Explain what needs to change before this can be approved…",
+    "reasonRequired": "Enter a reason before rejecting.",
+    "cancel": "Cancel",
+    "confirm": "Reject and send email",
+    "submitting": "Rejecting…"
+  },
   "dashboard": {
     "title": "Platform overview",
     "kpis": {
