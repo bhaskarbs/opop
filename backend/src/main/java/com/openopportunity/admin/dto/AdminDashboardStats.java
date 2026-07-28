@@ -9,4 +9,8 @@ public record AdminDashboardStats(
         long partnershipMatches,
         // Total community_interest_submissions rows — every "know more about community income"
         // form submission, anonymous visitors included (see CommunityInterestService).
-        long communitySignUps) {}
+        long communitySignUps,
+        // Candidate funnel stages — distinct candidates, not raw application/interest counts,
+        // so a candidate with several applications or interests only counts once.
+        long candidatesAppliedToJob,
+        long candidatesAppliedForPartnership) {}

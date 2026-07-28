@@ -23,8 +23,7 @@
     "funnel": {
       "registered": "Registered",
       "appliedToJob": "Applied to a job",
-      "appliedForPartnership": "Applied for partnership",
-      "hiredOrPartnered": "Hired or partnered"
+      "appliedForPartnership": "Applied for partnership"
     },
     "recentCompanyRegistrations": "Recent company registrations",
     "manageAll": "Manage all →",

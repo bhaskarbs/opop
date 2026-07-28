@@ -15,6 +15,9 @@ export interface AdminDashboardStats {
   liveJobPostings: number
   partnershipMatches: number
   communitySignUps: number
+  // Candidate funnel stages — distinct candidates, not raw application/interest counts.
+  candidatesAppliedToJob: number
+  candidatesAppliedForPartnership: number
 }
 
 export interface AdminCompanyProfileSummary {
