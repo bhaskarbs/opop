@@ -55,6 +55,8 @@ export const ROUTES = {
   adminJobApprovals: '/admin/approvals/jobs',
   adminIdeaApprovals: '/admin/approvals/ideas',
   adminUsers: '/admin/users',
+  adminCandidateDetail: (id: string) => `/admin/users/candidates/${id}`,
+  adminCompanyDetail: (id: string) => `/admin/users/companies/${id}`,
   adminMockInterviewQuestions: '/admin/mock-interview-questions',
   adminReports: '/admin/reports',
   adminBilling: '/admin/billing',

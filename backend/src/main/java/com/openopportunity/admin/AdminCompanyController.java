@@ -38,6 +38,11 @@ public class AdminCompanyController {
         return adminCompanyService.getPending(q);
     }
 
+    @GetMapping("/{userId}")
+    public AdminCompanyProfileSummary get(@PathVariable UUID userId) {
+        return adminCompanyService.getByUserId(userId);
+    }
+
     @PostMapping("/{userId}/verify")
     public AdminCompanyProfileSummary verify(@PathVariable UUID userId) {
         return adminCompanyService.verify(userId);

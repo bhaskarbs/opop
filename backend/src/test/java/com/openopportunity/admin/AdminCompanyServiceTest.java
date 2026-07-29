@@ -98,6 +98,30 @@ class AdminCompanyServiceTest {
     }
 
     @Test
+    void getByUserIdReturnsProfileRegardlessOfStatus() {
+        User user = companyUser();
+        CompanyProfile profile = new CompanyProfile(
+                user.getId(), "Private Limited", "CIN123", "GSTIN123", "PAN123", "Tech", "Address", "Signatory", "9876543210", null);
+        profile.verify();
+        when(companyProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(profile));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(companyCertificateService.list(user.getId())).thenReturn(List.of());
+
+        AdminCompanyProfileSummary summary = adminCompanyService.getByUserId(user.getId());
+
+        assertThat(summary.companyName()).isEqualTo("Vertex Robotics");
+        assertThat(summary.verificationStatus()).isEqualTo(VerificationStatus.VERIFIED);
+    }
+
+    @Test
+    void getByUserIdRejectsMissingProfile() {
+        when(companyProfileRepository.findByUserId(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminCompanyService.getByUserId(UUID.randomUUID()))
+                .isInstanceOf(CompanyProfileNotFoundException.class);
+    }
+
+    @Test
     void verifyRejectsMissingProfile() {
         when(companyProfileRepository.findByUserId(any())).thenReturn(Optional.empty());
 
