@@ -5,10 +5,14 @@ import static org.mockito.Mockito.when;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
 import com.openopportunity.admin.dto.AdminCommunityInterestSummary;
+import com.openopportunity.admin.dto.AdminFinancialReportStats;
 import com.openopportunity.admin.dto.AdminPartnershipReportStats;
 import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.billing.BillingTransactionRepository;
+import com.openopportunity.billing.CompanyBillingTransactionRepository;
+import com.openopportunity.billing.TransactionStatus;
 import com.openopportunity.community.CommunityInterestSubmission;
 import com.openopportunity.community.CommunityInterestSubmissionRepository;
 import com.openopportunity.idea.IdeaInterestRepository;
@@ -43,6 +47,12 @@ class AdminReportsServiceTest {
     @Mock
     private CommunityInterestSubmissionRepository communityInterestSubmissionRepository;
 
+    @Mock
+    private BillingTransactionRepository billingTransactionRepository;
+
+    @Mock
+    private CompanyBillingTransactionRepository companyBillingTransactionRepository;
+
     private AdminReportsService adminReportsService;
 
     @BeforeEach
@@ -53,7 +63,9 @@ class AdminReportsServiceTest {
                 mockInterviewSessionRepository,
                 ideaRepository,
                 ideaInterestRepository,
-                communityInterestSubmissionRepository);
+                communityInterestSubmissionRepository,
+                billingTransactionRepository,
+                companyBillingTransactionRepository);
     }
 
     @Test
@@ -99,5 +111,18 @@ class AdminReportsServiceTest {
                 "asha@example.com",
                 "9876543210",
                 submission.getCreatedAt()));
+    }
+
+    @Test
+    void getFinancialStatsSumsPaidCandidateAndCompanyRevenue() {
+        when(billingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID)).thenReturn(23_400L);
+        when(companyBillingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID))
+                .thenReturn(48_600L);
+
+        AdminFinancialReportStats stats = adminReportsService.getFinancialStats();
+
+        assertThat(stats.totalRevenueRupees()).isEqualTo(72_000L);
+        assertThat(stats.candidateSubscriptionRevenueRupees()).isEqualTo(23_400L);
+        assertThat(stats.companySubscriptionRevenueRupees()).isEqualTo(48_600L);
     }
 }

@@ -2,6 +2,7 @@ package com.openopportunity.admin;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
 import com.openopportunity.admin.dto.AdminCommunityInterestSummary;
+import com.openopportunity.admin.dto.AdminFinancialReportStats;
 import com.openopportunity.admin.dto.AdminPartnershipReportStats;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,5 +32,10 @@ public class AdminReportsController {
     @GetMapping("/community")
     public List<AdminCommunityInterestSummary> community() {
         return adminReportsService.getCommunityInterestSubmissions();
+    }
+
+    @GetMapping("/financial")
+    public AdminFinancialReportStats financial() {
+        return adminReportsService.getFinancialStats();
     }
 }

@@ -2,10 +2,14 @@ package com.openopportunity.admin;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
 import com.openopportunity.admin.dto.AdminCommunityInterestSummary;
+import com.openopportunity.admin.dto.AdminFinancialReportStats;
 import com.openopportunity.admin.dto.AdminPartnershipReportStats;
 import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.billing.BillingTransactionRepository;
+import com.openopportunity.billing.CompanyBillingTransactionRepository;
+import com.openopportunity.billing.TransactionStatus;
 import com.openopportunity.community.CommunityInterestSubmissionRepository;
 import com.openopportunity.idea.IdeaInterestRepository;
 import com.openopportunity.idea.IdeaRepository;
@@ -24,6 +28,8 @@ public class AdminReportsService {
     private final IdeaRepository ideaRepository;
     private final IdeaInterestRepository ideaInterestRepository;
     private final CommunityInterestSubmissionRepository communityInterestSubmissionRepository;
+    private final BillingTransactionRepository billingTransactionRepository;
+    private final CompanyBillingTransactionRepository companyBillingTransactionRepository;
 
     public AdminReportsService(
             UserRepository userRepository,
@@ -31,13 +37,17 @@ public class AdminReportsService {
             MockInterviewSessionRepository mockInterviewSessionRepository,
             IdeaRepository ideaRepository,
             IdeaInterestRepository ideaInterestRepository,
-            CommunityInterestSubmissionRepository communityInterestSubmissionRepository) {
+            CommunityInterestSubmissionRepository communityInterestSubmissionRepository,
+            BillingTransactionRepository billingTransactionRepository,
+            CompanyBillingTransactionRepository companyBillingTransactionRepository) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.mockInterviewSessionRepository = mockInterviewSessionRepository;
         this.ideaRepository = ideaRepository;
         this.ideaInterestRepository = ideaInterestRepository;
         this.communityInterestSubmissionRepository = communityInterestSubmissionRepository;
+        this.billingTransactionRepository = billingTransactionRepository;
+        this.companyBillingTransactionRepository = companyBillingTransactionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -73,5 +83,17 @@ public class AdminReportsService {
                         submission.getPhone(),
                         submission.getCreatedAt()))
                 .toList();
+    }
+
+    /** "Job posting fees" and "Featured listings" are deliberately not here — there's no
+     * payment gate on job postings or featured listings anywhere in the schema, so those
+     * aren't real revenue sources. */
+    @Transactional(readOnly = true)
+    public AdminFinancialReportStats getFinancialStats() {
+        long candidateRevenue = billingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID);
+        long companyRevenue =
+                companyBillingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID);
+        return new AdminFinancialReportStats(
+                candidateRevenue + companyRevenue, candidateRevenue, companyRevenue);
     }
 }

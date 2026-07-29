@@ -5,6 +5,7 @@ import {
   adminApi,
   type AdminCandidateReportStats,
   type AdminCommunityInterestSummary,
+  type AdminFinancialReportStats,
   type AdminPartnershipReportStats,
 } from '../../lib/adminApi'
 
@@ -107,33 +108,39 @@ function formatSubmittedDate(locale: string, submittedAt: string): string {
   })
 }
 
-const FINANCIAL_KPIS: Kpi[] = [
-  { labelKey: 'reports.financial.totalRevenue', value: '₹1.82 Cr', trend: '+12% vs last period' },
-  {
-    labelKey: 'reports.financial.jobPostingFees',
-    value: '₹1.10 Cr',
-    trend: '60% of revenue',
-    trendMuted: true,
-  },
-  {
-    labelKey: 'reports.financial.featuredListings',
-    value: '₹48.6 L',
-    trend: '27% of revenue',
-    trendMuted: true,
-  },
-  {
-    labelKey: 'reports.financial.candidateSearchSubscriptions',
-    value: '₹23.4 L',
-    trend: '13% of revenue',
-    trendMuted: true,
-  },
-]
+function financialKpis(stats: AdminFinancialReportStats | null): Kpi[] {
+  return [
+    {
+      labelKey: 'reports.financial.totalRevenue',
+      value: stats ? `₹${stats.totalRevenueRupees.toLocaleString()}` : '…',
+    },
+    {
+      labelKey: 'reports.financial.candidateSubscriptions',
+      value: stats ? `₹${stats.candidateSubscriptionRevenueRupees.toLocaleString()}` : '…',
+    },
+    {
+      labelKey: 'reports.financial.companySubscriptions',
+      value: stats ? `₹${stats.companySubscriptionRevenueRupees.toLocaleString()}` : '…',
+    },
+  ]
+}
 
-const REVENUE = [
-  { source: 'Job posting fees', amount: '₹1.10 Cr', share: '60%' },
-  { source: 'Featured / premium listings', amount: '₹48.6 L', share: '27%' },
-  { source: 'Candidate search subscriptions', amount: '₹23.4 L', share: '13%' },
-]
+function financialRevenueRows(stats: AdminFinancialReportStats) {
+  const share = (amountRupees: number) =>
+    stats.totalRevenueRupees === 0 ? 0 : Math.round((amountRupees / stats.totalRevenueRupees) * 100)
+  return [
+    {
+      labelKey: 'reports.financial.candidateSubscriptions',
+      amount: stats.candidateSubscriptionRevenueRupees,
+      share: share(stats.candidateSubscriptionRevenueRupees),
+    },
+    {
+      labelKey: 'reports.financial.companySubscriptions',
+      amount: stats.companySubscriptionRevenueRupees,
+      share: share(stats.companySubscriptionRevenueRupees),
+    },
+  ]
+}
 
 function KpiRow({ t, kpis }: { t: TFunction<'admin'>; kpis: Kpi[] }) {
   return (
@@ -166,6 +173,7 @@ export default function AdminReportsPage() {
   const [communitySubmissions, setCommunitySubmissions] = useState<
     AdminCommunityInterestSummary[] | null
   >(null)
+  const [financialStats, setFinancialStats] = useState<AdminFinancialReportStats | null>(null)
 
   useEffect(() => {
     adminApi
@@ -191,6 +199,15 @@ export default function AdminReportsPage() {
       .then(setCommunitySubmissions)
       .catch(() => {
         // Best-effort — the list just stays blank if this fails.
+      })
+  }, [])
+
+  useEffect(() => {
+    adminApi
+      .getFinancialReportStats()
+      .then(setFinancialStats)
+      .catch(() => {
+        // Best-effort — the KPI cards/revenue table just stay blank if this fails.
       })
   }, [])
 
@@ -370,35 +387,37 @@ export default function AdminReportsPage() {
 
       {tab === 'financial' && (
         <>
-          <KpiRow t={t} kpis={FINANCIAL_KPIS} />
+          <KpiRow t={t} kpis={financialKpis(financialStats)} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
             <h2 className="mb-4 text-[15px] font-bold text-ink">
               {t('reports.financial.byRevenue')}
             </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[420px] border-collapse text-[13.5px]">
-                <thead>
-                  <tr className="text-left text-xs text-fog uppercase">
-                    <th className="py-0 pr-3 pb-2.5 font-semibold">
-                      {t('reports.financial.table.source')}
-                    </th>
-                    <th className="px-3 pb-2.5 font-semibold">
-                      {t('reports.financial.table.thisMonth')}
-                    </th>
-                    <th className="pb-2.5 font-semibold">{t('reports.financial.table.share')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {REVENUE.map((row) => (
-                    <tr key={row.source} className="border-t border-[#F0F1F3]">
-                      <td className="py-3 pr-3 font-bold text-ink">{row.source}</td>
-                      <td className="p-3 text-[#3A414D]">{row.amount}</td>
-                      <td className="py-3 text-[#3A414D]">{row.share}</td>
+            {financialStats && (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[420px] border-collapse text-[13.5px]">
+                  <thead>
+                    <tr className="text-left text-xs text-fog uppercase">
+                      <th className="py-0 pr-3 pb-2.5 font-semibold">
+                        {t('reports.financial.table.source')}
+                      </th>
+                      <th className="px-3 pb-2.5 font-semibold">
+                        {t('reports.financial.table.amount')}
+                      </th>
+                      <th className="pb-2.5 font-semibold">{t('reports.financial.table.share')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {financialRevenueRows(financialStats).map((row) => (
+                      <tr key={row.labelKey} className="border-t border-[#F0F1F3]">
+                        <td className="py-3 pr-3 font-bold text-ink">{t(row.labelKey)}</td>
+                        <td className="p-3 text-[#3A414D]">₹{row.amount.toLocaleString()}</td>
+                        <td className="py-3 text-[#3A414D]">{row.share}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </>
       )}
