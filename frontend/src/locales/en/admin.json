@@ -129,7 +129,10 @@
     "suspend": "Suspend",
     "reactivate": "Reactivate",
     "noneCandidates": "No candidates match your search.",
-    "noneCompanies": "No companies match your search."
+    "noneCompanies": "No companies match your search.",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
   },
   "mockInterviewQuestions": {
     "title": "Mock interview questions",

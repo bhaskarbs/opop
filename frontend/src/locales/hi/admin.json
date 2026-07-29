@@ -129,7 +129,10 @@
     "suspend": "निलंबित करें",
     "reactivate": "पुनः सक्रिय करें",
     "noneCandidates": "आपकी खोज से कोई उम्मीदवार मेल नहीं खाता।",
-    "noneCompanies": "आपकी खोज से कोई कंपनी मेल नहीं खाती।"
+    "noneCompanies": "आपकी खोज से कोई कंपनी मेल नहीं खाती।",
+    "previousPage": "← पिछला",
+    "nextPage": "अगला →",
+    "pageLabel": "पृष्ठ {{page}} / {{total}}"
   },
   "mockInterviewQuestions": {
     "title": "मॉक इंटरव्यू प्रश्न",
