@@ -173,9 +173,9 @@
     "addQuestion": "Add question",
     "saving": "Saving…",
     "saveError": "Couldn't save this question. Try again.",
-    "filterSkillPlaceholder": "Filter by skill",
-    "filterIndustryPlaceholder": "Filter by industry",
-    "searchPlaceholder": "Search question text",
+    "filterSkillPlaceholder": "Filter by skill (press Enter)",
+    "filterIndustryPlaceholder": "Filter by industry (press Enter)",
+    "searchPlaceholder": "Search question text (press Enter)",
     "loadError": "Could not load questions.",
     "loading": "Loading questions…",
     "none": "No questions match these filters.",
@@ -184,7 +184,10 @@
     "delete": "Delete",
     "deleteConfirm": "Delete this question? This can't be undone.",
     "sourceAi": "AI-generated",
-    "sourceAdmin": "Added by admin"
+    "sourceAdmin": "Added by admin",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
   },
   "reports": {
     "tabs": {
