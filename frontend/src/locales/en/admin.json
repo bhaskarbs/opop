@@ -194,11 +194,10 @@
     "partnerships": {
       "totalPartnershipMatches": "Total partnership matches",
       "startupsOffering": "Startups offering partnerships",
-      "seminarsHeld": "Seminars held",
-      "avgDuration": "Avg. partnership duration",
       "funded": "Funded",
       "withoutFunding": "Without funding",
-      "byTrack": "Partnerships by track"
+      "byTrack": "Partnerships by track",
+      "noListings": "No approved partnership listings yet."
     },
     "community": {
       "signUps": "Community sign-ups",

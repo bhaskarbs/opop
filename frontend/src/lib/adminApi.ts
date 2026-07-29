@@ -36,6 +36,13 @@ export interface AdminCandidateReportStats {
   mockInterviewsTaken: number
 }
 
+export interface AdminPartnershipReportStats {
+  totalPartnershipMatches: number
+  startupsOffering: number
+  fundedListings: number
+  listingsWithoutFunding: number
+}
+
 export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
@@ -149,6 +156,10 @@ export const adminApi = {
     request<AdminDashboardStats>('/api/admin/dashboard/stats', { headers: authHeaders() }),
   getCandidateReportStats: () =>
     request<AdminCandidateReportStats>('/api/admin/reports/candidates', { headers: authHeaders() }),
+  getPartnershipReportStats: () =>
+    request<AdminPartnershipReportStats>('/api/admin/reports/partnerships', {
+      headers: authHeaders(),
+    }),
   getSettings: () => request<PlatformSettings>('/api/admin/settings', { headers: authHeaders() }),
   setEmailVerificationEnabled: (enabled: boolean) =>
     request<PlatformSettings>('/api/admin/settings/email-verification', {

@@ -10,4 +10,11 @@ public interface IdeaRepository extends JpaRepository<Idea, UUID>, JpaSpecificat
     List<Idea> findBySubmitterIdOrderByCreatedAtDesc(UUID submitterId);
 
     long countBySubmitterId(UUID submitterId);
+
+    /** "Funding" is null whenever the submitter left it blank (see IdeaSubmitPage's
+     * blankToNull) — an idea offering pure experience rather than seeking a specific
+     * amount (see AdminReportsService.getPartnershipStats). */
+    long countByStatusAndFundingIsNotNull(IdeaStatus status);
+
+    long countByStatusAndFundingIsNull(IdeaStatus status);
 }

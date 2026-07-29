@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { adminApi, type AdminCandidateReportStats } from '../../lib/adminApi'
+import {
+  adminApi,
+  type AdminCandidateReportStats,
+  type AdminPartnershipReportStats,
+} from '../../lib/adminApi'
 
 type Tab = 'candidates' | 'employers' | 'partnerships' | 'community' | 'financial'
 
@@ -59,42 +63,40 @@ const SECTORS = [
   { sector: 'Education', openJobs: 640, applications: '25,900', fillRate: '52%' },
 ]
 
-const PARTNERSHIP_KPIS: Kpi[] = [
-  {
-    labelKey: 'reports.partnerships.totalPartnershipMatches',
-    value: '3,880',
-    trend: '+94 this period',
-  },
-  {
-    labelKey: 'reports.partnerships.startupsOffering',
-    value: '860',
-    trend: '+22 this period',
-  },
-  { labelKey: 'reports.partnerships.seminarsHeld', value: '146', trend: '+18 this period' },
-  {
-    labelKey: 'reports.partnerships.avgDuration',
-    value: '4.2 months',
-    trend: 'Stable',
-    trendMuted: true,
-  },
-]
+function partnershipKpis(stats: AdminPartnershipReportStats | null): Kpi[] {
+  return [
+    {
+      labelKey: 'reports.partnerships.totalPartnershipMatches',
+      value: stats ? stats.totalPartnershipMatches.toLocaleString() : '…',
+    },
+    {
+      labelKey: 'reports.partnerships.startupsOffering',
+      value: stats ? stats.startupsOffering.toLocaleString() : '…',
+    },
+  ]
+}
 
-const PARTNERSHIP_TRACKS = [
-  {
-    labelKey: 'reports.partnerships.funded',
-    value: '2,140 (55%)',
-    pct: 55,
-    colorClass: 'bg-primary',
-    textColorClass: 'text-primary',
-  },
-  {
-    labelKey: 'reports.partnerships.withoutFunding',
-    value: '1,740 (45%)',
-    pct: 45,
-    colorClass: 'bg-teal',
-    textColorClass: 'text-teal',
-  },
-]
+function partnershipTracks(stats: AdminPartnershipReportStats) {
+  const total = stats.fundedListings + stats.listingsWithoutFunding
+  const fundedPct = total === 0 ? 0 : Math.round((stats.fundedListings / total) * 100)
+  const withoutFundingPct = total === 0 ? 0 : 100 - fundedPct
+  return [
+    {
+      labelKey: 'reports.partnerships.funded',
+      value: `${stats.fundedListings.toLocaleString()} (${fundedPct}%)`,
+      pct: fundedPct,
+      colorClass: 'bg-primary',
+      textColorClass: 'text-primary',
+    },
+    {
+      labelKey: 'reports.partnerships.withoutFunding',
+      value: `${stats.listingsWithoutFunding.toLocaleString()} (${withoutFundingPct}%)`,
+      pct: withoutFundingPct,
+      colorClass: 'bg-teal',
+      textColorClass: 'text-teal',
+    },
+  ]
+}
 
 const COMMUNITY_KPIS: Kpi[] = [
   { labelKey: 'reports.community.signUps', value: '9,120', trend: '+210 this period' },
@@ -171,6 +173,9 @@ export default function AdminReportsPage() {
   const { t } = useTranslation('admin')
   const [tab, setTab] = useState<Tab>('candidates')
   const [candidateStats, setCandidateStats] = useState<AdminCandidateReportStats | null>(null)
+  const [partnershipStats, setPartnershipStats] = useState<AdminPartnershipReportStats | null>(
+    null,
+  )
 
   useEffect(() => {
     adminApi
@@ -178,6 +183,15 @@ export default function AdminReportsPage() {
       .then(setCandidateStats)
       .catch(() => {
         // Best-effort — the KPI cards just stay blank if this fails.
+      })
+  }, [])
+
+  useEffect(() => {
+    adminApi
+      .getPartnershipReportStats()
+      .then(setPartnershipStats)
+      .catch(() => {
+        // Best-effort — the KPI cards/track breakdown just stay blank if this fails.
       })
   }, [])
 
@@ -272,29 +286,34 @@ export default function AdminReportsPage() {
 
       {tab === 'partnerships' && (
         <>
-          <KpiRow t={t} kpis={PARTNERSHIP_KPIS} />
+          <KpiRow t={t} kpis={partnershipKpis(partnershipStats)} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
             <h2 className="mb-4 text-[15px] font-bold text-ink">
               {t('reports.partnerships.byTrack')}
             </h2>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-5">
-              {PARTNERSHIP_TRACKS.map((track) => (
-                <div key={track.labelKey}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className={`text-[13.5px] font-bold ${track.textColorClass}`}>
-                      {t(track.labelKey)}
-                    </span>
-                    <span className="text-[13px] text-fog">{track.value}</span>
+            {partnershipStats && partnershipStats.startupsOffering === 0 && (
+              <p className="text-sm text-slate">{t('reports.partnerships.noListings')}</p>
+            )}
+            {partnershipStats && partnershipStats.startupsOffering > 0 && (
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-5">
+                {partnershipTracks(partnershipStats).map((track) => (
+                  <div key={track.labelKey}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className={`text-[13.5px] font-bold ${track.textColorClass}`}>
+                        {t(track.labelKey)}
+                      </span>
+                      <span className="text-[13px] text-fog">{track.value}</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-neutral-tint">
+                      <div
+                        className={`h-full rounded-full ${track.colorClass}`}
+                        style={{ width: `${track.pct}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-neutral-tint">
-                    <div
-                      className={`h-full rounded-full ${track.colorClass}`}
-                      style={{ width: `${track.pct}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
