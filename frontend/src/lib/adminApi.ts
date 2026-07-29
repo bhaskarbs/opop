@@ -43,6 +43,15 @@ export interface AdminPartnershipReportStats {
   listingsWithoutFunding: number
 }
 
+export interface AdminCommunityInterestSummary {
+  id: string
+  name: string
+  companyName: string | null
+  email: string
+  phone: string | null
+  submittedAt: string
+}
+
 export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
@@ -158,6 +167,10 @@ export const adminApi = {
     request<AdminCandidateReportStats>('/api/admin/reports/candidates', { headers: authHeaders() }),
   getPartnershipReportStats: () =>
     request<AdminPartnershipReportStats>('/api/admin/reports/partnerships', {
+      headers: authHeaders(),
+    }),
+  getCommunityInterestSubmissions: () =>
+    request<AdminCommunityInterestSummary[]>('/api/admin/reports/community', {
       headers: authHeaders(),
     }),
   getSettings: () => request<PlatformSettings>('/api/admin/settings', { headers: authHeaders() }),

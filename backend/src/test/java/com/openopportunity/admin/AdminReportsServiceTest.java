@@ -4,14 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
+import com.openopportunity.admin.dto.AdminCommunityInterestSummary;
 import com.openopportunity.admin.dto.AdminPartnershipReportStats;
 import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.community.CommunityInterestSubmission;
+import com.openopportunity.community.CommunityInterestSubmissionRepository;
 import com.openopportunity.idea.IdeaInterestRepository;
 import com.openopportunity.idea.IdeaRepository;
 import com.openopportunity.idea.IdeaStatus;
 import com.openopportunity.mockinterview.MockInterviewSessionRepository;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +40,9 @@ class AdminReportsServiceTest {
     @Mock
     private IdeaInterestRepository ideaInterestRepository;
 
+    @Mock
+    private CommunityInterestSubmissionRepository communityInterestSubmissionRepository;
+
     private AdminReportsService adminReportsService;
 
     @BeforeEach
@@ -45,7 +52,8 @@ class AdminReportsServiceTest {
                 candidateProfileRepository,
                 mockInterviewSessionRepository,
                 ideaRepository,
-                ideaInterestRepository);
+                ideaInterestRepository,
+                communityInterestSubmissionRepository);
     }
 
     @Test
@@ -73,5 +81,23 @@ class AdminReportsServiceTest {
         assertThat(stats.startupsOffering()).isEqualTo(860L);
         assertThat(stats.fundedListings()).isEqualTo(520L);
         assertThat(stats.listingsWithoutFunding()).isEqualTo(340L);
+    }
+
+    @Test
+    void getCommunityInterestSubmissionsMapsEachSubmissionToItsContactDetails() {
+        CommunityInterestSubmission submission =
+                new CommunityInterestSubmission("Asha Rao", "Acme Co", "asha@example.com", "9876543210");
+        when(communityInterestSubmissionRepository.findAllByOrderByCreatedAtDesc())
+                .thenReturn(List.of(submission));
+
+        List<AdminCommunityInterestSummary> summaries = adminReportsService.getCommunityInterestSubmissions();
+
+        assertThat(summaries).containsExactly(new AdminCommunityInterestSummary(
+                submission.getId(),
+                "Asha Rao",
+                "Acme Co",
+                "asha@example.com",
+                "9876543210",
+                submission.getCreatedAt()));
     }
 }

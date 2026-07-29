@@ -200,16 +200,16 @@
       "noListings": "अभी कोई स्वीकृत पार्टनरशिप लिस्टिंग नहीं है।"
     },
     "community": {
-      "signUps": "कम्युनिटी साइन-अप",
-      "sessionsRun": "आयोजित सेशन",
-      "avgAttendanceRate": "औसत उपस्थिति दर",
-      "incomeTypeGuidesRead": "पढ़ी गई इनकम-टाइप गाइड",
-      "topSessions": "सबसे ज़्यादा उपस्थिति वाले कम्युनिटी सेशन",
+      "heading": "कम्युनिटी साइन-अप",
       "table": {
-        "session": "सेशन",
-        "attendees": "उपस्थित",
-        "avgRating": "औसत रेटिंग"
-      }
+        "name": "नाम",
+        "company": "कंपनी",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "submitted": "सबमिट किया गया"
+      },
+      "notProvided": "उपलब्ध नहीं कराया गया",
+      "none": "अभी तक किसी ने कम्युनिटी इनकम के बारे में नहीं पूछा है।"
     },
     "financial": {
       "totalRevenue": "कुल राजस्व (अवधि)",

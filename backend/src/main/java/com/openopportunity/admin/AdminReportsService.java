@@ -1,14 +1,17 @@
 package com.openopportunity.admin;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
+import com.openopportunity.admin.dto.AdminCommunityInterestSummary;
 import com.openopportunity.admin.dto.AdminPartnershipReportStats;
 import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.community.CommunityInterestSubmissionRepository;
 import com.openopportunity.idea.IdeaInterestRepository;
 import com.openopportunity.idea.IdeaRepository;
 import com.openopportunity.idea.IdeaStatus;
 import com.openopportunity.mockinterview.MockInterviewSessionRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,18 +23,21 @@ public class AdminReportsService {
     private final MockInterviewSessionRepository mockInterviewSessionRepository;
     private final IdeaRepository ideaRepository;
     private final IdeaInterestRepository ideaInterestRepository;
+    private final CommunityInterestSubmissionRepository communityInterestSubmissionRepository;
 
     public AdminReportsService(
             UserRepository userRepository,
             CandidateProfileRepository candidateProfileRepository,
             MockInterviewSessionRepository mockInterviewSessionRepository,
             IdeaRepository ideaRepository,
-            IdeaInterestRepository ideaInterestRepository) {
+            IdeaInterestRepository ideaInterestRepository,
+            CommunityInterestSubmissionRepository communityInterestSubmissionRepository) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.mockInterviewSessionRepository = mockInterviewSessionRepository;
         this.ideaRepository = ideaRepository;
         this.ideaInterestRepository = ideaInterestRepository;
+        this.communityInterestSubmissionRepository = communityInterestSubmissionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -54,5 +60,18 @@ public class AdminReportsService {
                 fundedListings + listingsWithoutFunding,
                 fundedListings,
                 listingsWithoutFunding);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminCommunityInterestSummary> getCommunityInterestSubmissions() {
+        return communityInterestSubmissionRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(submission -> new AdminCommunityInterestSummary(
+                        submission.getId(),
+                        submission.getName(),
+                        submission.getCompanyName(),
+                        submission.getEmail(),
+                        submission.getPhone(),
+                        submission.getCreatedAt()))
+                .toList();
     }
 }
