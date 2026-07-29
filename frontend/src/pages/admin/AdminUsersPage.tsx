@@ -51,6 +51,8 @@ function statusClass(status: string): string {
   return 'bg-amber-tint text-amber'
 }
 
+const PAGE_SIZE = 10
+
 export default function AdminUsersPage() {
   const { t, i18n } = useTranslation('admin')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -63,6 +65,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
 
   const role: AdminUserRole = tab === 'candidates' ? 'CANDIDATE' : 'COMPANY'
 
@@ -71,6 +74,7 @@ export default function AdminUsersPage() {
     const timeoutId = setTimeout(() => {
       setLoading(true)
       setError(null)
+      setPage(1)
       adminApi
         .users({ role, q: query.trim() || undefined })
         .then((result) => {
@@ -114,6 +118,10 @@ export default function AdminUsersPage() {
     setQuery('')
     setSearchParams(next === 'candidates' ? {} : { tab: next })
   }
+
+  const pageCount = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const visibleUsers = users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
@@ -182,7 +190,7 @@ export default function AdminUsersPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {users.map((user) => {
+          {visibleUsers.map((user) => {
             const status = displayStatus(user)
             return (
               <div
@@ -226,6 +234,29 @@ export default function AdminUsersPage() {
           {users.length === 0 && (
             <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
               {tab === 'candidates' ? t('users.noneCandidates') : t('users.noneCompanies')}
+            </div>
+          )}
+          {pageCount > 1 && (
+            <div className="mt-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('users.previousPage')}
+              </button>
+              <span className="text-[13px] text-slate">
+                {t('users.pageLabel', { page: currentPage, total: pageCount })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))}
+                disabled={currentPage === pageCount}
+                className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('users.nextPage')}
+              </button>
             </div>
           )}
         </div>
