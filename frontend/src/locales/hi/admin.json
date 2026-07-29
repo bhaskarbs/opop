@@ -132,7 +132,34 @@
     "noneCompanies": "आपकी खोज से कोई कंपनी मेल नहीं खाती।",
     "previousPage": "← पिछला",
     "nextPage": "अगला →",
-    "pageLabel": "पृष्ठ {{page}} / {{total}}"
+    "pageLabel": "पृष्ठ {{page}} / {{total}}",
+    "moreDetails": "अधिक विवरण"
+  },
+  "candidateDetail": {
+    "backToUsers": "← उपयोगकर्ताओं पर वापस जाएं",
+    "loading": "उम्मीदवार लोड हो रहा है…",
+    "loadError": "इस उम्मीदवार को लोड नहीं किया जा सका।",
+    "memberSince": "{{date}} से सदस्य",
+    "mobile": "मोबाइल",
+    "mobileVerified": "(सत्यापित)",
+    "mobileNotVerified": "(असत्यापित)",
+    "notProvided": "उपलब्ध नहीं कराया गया",
+    "industry": "उद्योग",
+    "preferences": "प्राथमिकताएं",
+    "skills": "कौशल",
+    "lifeGoals": "जीवन लक्ष्य",
+    "workCulture": "कार्य संस्कृति",
+    "resume": "रिज्यूमे",
+    "noResume": "इस उम्मीदवार ने अभी तक रिज्यूमे अपलोड नहीं किया है।",
+    "resumeMeta": "{{date}} को अपलोड किया गया · {{size}}",
+    "downloadResume": "रिज्यूमे डाउनलोड करें",
+    "resumeLoading": "डाउनलोड हो रहा है…",
+    "resumeError": "यह रिज्यूमे डाउनलोड नहीं किया जा सका। कृपया पुनः प्रयास करें।"
+  },
+  "companyDetail": {
+    "backToUsers": "← उपयोगकर्ताओं पर वापस जाएं",
+    "loading": "कंपनी लोड हो रही है…",
+    "loadError": "इस कंपनी को लोड नहीं किया जा सका।"
   },
   "mockInterviewQuestions": {
     "title": "मॉक इंटरव्यू प्रश्न",

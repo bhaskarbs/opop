@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminUserRole, type AdminUserSummary } from '../../lib/adminApi'
+import { ROUTES } from '../../routes/paths'
 
 type Tab = 'candidates' | 'companies'
 
@@ -55,6 +57,7 @@ const PAGE_SIZE = 10
 
 export default function AdminUsersPage() {
   const { t, i18n } = useTranslation('admin')
+  const localize = useLocalizedPath()
   const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTab] = useState<Tab>(() => {
     const fromUrl = searchParams.get('tab')
@@ -219,6 +222,16 @@ export default function AdminUsersPage() {
                   >
                     {t(USER_STATUS_LABEL_KEYS[status])}
                   </span>
+                  <Link
+                    to={localize(
+                      tab === 'candidates'
+                        ? ROUTES.adminCandidateDetail(user.id)
+                        : ROUTES.adminCompanyDetail(user.id),
+                    )}
+                    className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink no-underline"
+                  >
+                    {t('users.moreDetails')}
+                  </Link>
                   <button
                     type="button"
                     disabled={actioningId === user.id}

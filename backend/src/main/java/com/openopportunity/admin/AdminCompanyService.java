@@ -62,6 +62,15 @@ public class AdminCompanyService {
                         && summary.contactNumber().toLowerCase().contains(normalizedQuery));
     }
 
+    /** Unlike getPending, this isn't filtered to PENDING/profile-complete — it's the admin
+     * Users page's "More details" link, which needs to work for a company in any state. */
+    @Transactional(readOnly = true)
+    public AdminCompanyProfileSummary getByUserId(UUID userId) {
+        CompanyProfile profile = companyProfileRepository.findByUserId(userId).orElseThrow(
+                () -> new CompanyProfileNotFoundException(userId));
+        return toSummary(profile);
+    }
+
     @Transactional
     public AdminCompanyProfileSummary verify(UUID userId) {
         CompanyProfile profile = companyProfileRepository.findByUserId(userId).orElseThrow(

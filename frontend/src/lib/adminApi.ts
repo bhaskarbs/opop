@@ -75,17 +75,20 @@ export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
   email: string
-  entityType: string
-  cin: string
-  gstin: string
+  // All of these are null until the company fills in its profile (e.g. right after a Google
+  // signup) — the admin approvals list filters such incomplete profiles out, but the admin
+  // Users page's "More details" link has no such filter, so a blank one is reachable there.
+  entityType: string | null
+  cin: string | null
+  gstin: string | null
   // Only meaningful when entityType is "Company Not Yet Registered" — substitutes for
   // cin/gstin as the identity check on a company that isn't formally registered yet.
   aadhaarNumber: string | null
-  pan: string
-  industry: string
-  address: string
-  signatoryName: string
-  contactNumber: string
+  pan: string | null
+  industry: string | null
+  address: string | null
+  signatoryName: string | null
+  contactNumber: string | null
   verificationStatus: VerificationStatus
   submittedAt: string
   // Verification documents on file — download via adminApi.downloadCompanyCertificate.
@@ -103,6 +106,29 @@ export interface AdminUserSummary {
   verificationStatus: VerificationStatus | null
   industry: string | null
   cin: string | null
+  createdAt: string
+}
+
+export interface AdminCandidateProfileSummary {
+  userId: string
+  fullName: string
+  email: string
+  accountStatus: AccountStatus
+  mobile: string | null
+  mobileVerified: boolean
+  location: string | null
+  title: string | null
+  experienceLevel: BackendExperienceLevel | null
+  industry: string | null
+  skills: string[]
+  resumeFileName: string | null
+  resumeUploadedAt: string | null
+  resumeSizeBytes: number | null
+  photoUrl: string | null
+  lifeGoals: string | null
+  workCulture: string | null
+  workModePreference: string | null
+  openToPreference: string | null
   createdAt: string
 }
 
@@ -237,6 +263,10 @@ export const adminApi = {
       `/api/admin/companies/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`,
       { headers: authHeaders() },
     ),
+  getCompanyDetail: (userId: string) =>
+    request<AdminCompanyProfileSummary>(`/api/admin/companies/${userId}`, {
+      headers: authHeaders(),
+    }),
   verifyCompany: (userId: string) =>
     request<AdminCompanyProfileSummary>(`/api/admin/companies/${userId}/verify`, {
       method: 'POST',
@@ -255,6 +285,12 @@ export const adminApi = {
     request<AdminUserSummary[]>(`/api/admin/users${buildUserListQuery(params)}`, {
       headers: authHeaders(),
     }),
+  getCandidateDetail: (id: string) =>
+    request<AdminCandidateProfileSummary>(`/api/admin/users/candidates/${id}`, {
+      headers: authHeaders(),
+    }),
+  getCandidateResume: (id: string) =>
+    blobRequest(`/api/admin/users/candidates/${id}/resume`, authHeaders()),
   suspendUser: (id: string) =>
     request<AdminUserSummary>(`/api/admin/users/${id}/suspend`, {
       method: 'POST',

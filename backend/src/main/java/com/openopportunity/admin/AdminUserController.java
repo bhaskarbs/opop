@@ -1,10 +1,17 @@
 package com.openopportunity.admin;
 
+import com.openopportunity.admin.dto.AdminCandidateProfileSummary;
 import com.openopportunity.admin.dto.AdminUserSummary;
 import com.openopportunity.auth.AccountStatus;
 import com.openopportunity.auth.UserRole;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +35,22 @@ public class AdminUserController {
             @RequestParam(required = false) AccountStatus status,
             @RequestParam(required = false) String q) {
         return adminUserService.list(role, status, q);
+    }
+
+    @GetMapping("/candidates/{id}")
+    public AdminCandidateProfileSummary candidateDetail(@PathVariable UUID id) {
+        return adminUserService.getCandidateDetail(id);
+    }
+
+    @GetMapping("/candidates/{id}/resume")
+    public ResponseEntity<Resource> candidateResume(@PathVariable UUID id) {
+        AdminUserService.LoadedResume resume = adminUserService.getCandidateResume(id);
+        String encodedFileName =
+                URLEncoder.encode(resume.fileName(), StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(resume.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName)
+                .body(resume.resource());
     }
 
     @PostMapping("/{id}/suspend")

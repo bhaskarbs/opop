@@ -132,7 +132,34 @@
     "noneCompanies": "No companies match your search.",
     "previousPage": "← Previous",
     "nextPage": "Next →",
-    "pageLabel": "Page {{page}} of {{total}}"
+    "pageLabel": "Page {{page}} of {{total}}",
+    "moreDetails": "More details"
+  },
+  "candidateDetail": {
+    "backToUsers": "← Back to users",
+    "loading": "Loading candidate…",
+    "loadError": "Could not load this candidate.",
+    "memberSince": "Member since {{date}}",
+    "mobile": "Mobile",
+    "mobileVerified": "(verified)",
+    "mobileNotVerified": "(not verified)",
+    "notProvided": "Not provided",
+    "industry": "Industry",
+    "preferences": "Preferences",
+    "skills": "Skills",
+    "lifeGoals": "Life goals",
+    "workCulture": "Work culture",
+    "resume": "Resume",
+    "noResume": "This candidate hasn't uploaded a resume yet.",
+    "resumeMeta": "Uploaded {{date}} · {{size}}",
+    "downloadResume": "Download resume",
+    "resumeLoading": "Downloading…",
+    "resumeError": "Could not download this resume. Please try again."
+  },
+  "companyDetail": {
+    "backToUsers": "← Back to users",
+    "loading": "Loading company…",
+    "loadError": "Could not load this company."
   },
   "mockInterviewQuestions": {
     "title": "Mock interview questions",
