@@ -36,6 +36,19 @@ export interface AdminCandidateReportStats {
   mockInterviewsTaken: number
 }
 
+export interface SectorHiringStats {
+  sector: string
+  openJobs: number
+  applications: number
+}
+
+export interface AdminEmployerReportStats {
+  registeredCompanies: number
+  verifiedCompanies: number
+  liveJobPostings: number
+  topHiringSectors: SectorHiringStats[]
+}
+
 export interface AdminPartnershipReportStats {
   totalPartnershipMatches: number
   startupsOffering: number
@@ -171,6 +184,8 @@ export const adminApi = {
     request<AdminDashboardStats>('/api/admin/dashboard/stats', { headers: authHeaders() }),
   getCandidateReportStats: () =>
     request<AdminCandidateReportStats>('/api/admin/reports/candidates', { headers: authHeaders() }),
+  getEmployerReportStats: () =>
+    request<AdminEmployerReportStats>('/api/admin/reports/employers', { headers: authHeaders() }),
   getPartnershipReportStats: () =>
     request<AdminPartnershipReportStats>('/api/admin/reports/partnerships', {
       headers: authHeaders(),

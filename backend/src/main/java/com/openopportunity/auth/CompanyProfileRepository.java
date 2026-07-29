@@ -13,4 +13,6 @@ public interface CompanyProfileRepository extends JpaRepository<CompanyProfile, 
     List<CompanyProfile> findByVerificationStatusOrderByCreatedAtDesc(VerificationStatus status);
 
     List<CompanyProfile> findByUserIdIn(Collection<UUID> userIds);
+
+    long countByVerificationStatus(VerificationStatus status);
 }

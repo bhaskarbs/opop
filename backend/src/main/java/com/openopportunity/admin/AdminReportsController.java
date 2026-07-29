@@ -2,6 +2,7 @@ package com.openopportunity.admin;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
 import com.openopportunity.admin.dto.AdminCommunityInterestSummary;
+import com.openopportunity.admin.dto.AdminEmployerReportStats;
 import com.openopportunity.admin.dto.AdminFinancialReportStats;
 import com.openopportunity.admin.dto.AdminPartnershipReportStats;
 import java.util.List;
@@ -22,6 +23,11 @@ public class AdminReportsController {
     @GetMapping("/candidates")
     public AdminCandidateReportStats candidates() {
         return adminReportsService.getCandidateStats();
+    }
+
+    @GetMapping("/employers")
+    public AdminEmployerReportStats employers() {
+        return adminReportsService.getEmployerStats();
     }
 
     @GetMapping("/partnerships")

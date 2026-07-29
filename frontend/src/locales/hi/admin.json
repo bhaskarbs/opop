@@ -182,13 +182,12 @@
       "registeredCompanies": "पंजीकृत कंपनियां",
       "verifiedCompanies": "सत्यापित कंपनियां",
       "liveJobPostings": "लाइव नौकरी पोस्टिंग",
-      "avgTimeToFill": "औसत भरने का समय",
       "topHiringSectors": "शीर्ष भर्ती सेक्टर",
+      "noSectors": "अभी किसी भी सेक्टर में कोई लाइव नौकरी पोस्टिंग नहीं है।",
       "table": {
         "sector": "सेक्टर",
         "openJobs": "खुली नौकरियां",
-        "applications": "आवेदन",
-        "fillRate": "भरने की दर"
+        "applications": "आवेदन"
       }
     },
     "partnerships": {

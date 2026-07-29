@@ -182,13 +182,12 @@
       "registeredCompanies": "Registered companies",
       "verifiedCompanies": "Verified companies",
       "liveJobPostings": "Live job postings",
-      "avgTimeToFill": "Avg. time to fill",
       "topHiringSectors": "Top hiring sectors",
+      "noSectors": "No sectors have any live job postings yet.",
       "table": {
         "sector": "Sector",
         "openJobs": "Open jobs",
-        "applications": "Applications",
-        "fillRate": "Fill rate"
+        "applications": "Applications"
       }
     },
     "partnerships": {

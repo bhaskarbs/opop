@@ -5,6 +5,7 @@ import {
   adminApi,
   type AdminCandidateReportStats,
   type AdminCommunityInterestSummary,
+  type AdminEmployerReportStats,
   type AdminFinancialReportStats,
   type AdminPartnershipReportStats,
 } from '../../lib/adminApi'
@@ -43,27 +44,22 @@ function candidateKpis(stats: AdminCandidateReportStats | null): Kpi[] {
   ]
 }
 
-const EMPLOYER_KPIS: Kpi[] = [
-  { labelKey: 'reports.employers.registeredCompanies', value: '2,340', trend: '+38 this period' },
-  {
-    labelKey: 'reports.employers.verifiedCompanies',
-    value: '2,110',
-    trend: '90% verified',
-    trendMuted: true,
-  },
-  { labelKey: 'reports.employers.liveJobPostings', value: '12,406', trend: '+312 this period' },
-  { labelKey: 'reports.employers.avgTimeToFill', value: '18 days', trend: '-2 days vs last period' },
-]
-
-// Sector/session/revenue-source names are treated like categorical report data, not translated
-// UI copy — same treatment as mock content elsewhere.
-const SECTORS = [
-  { sector: 'Technology', openJobs: 4820, applications: '210,400', fillRate: '68%' },
-  { sector: 'Healthtech', openJobs: 1240, applications: '58,200', fillRate: '61%' },
-  { sector: 'Fintech', openJobs: 980, applications: '44,100', fillRate: '57%' },
-  { sector: 'Retail & E-commerce', openJobs: 1560, applications: '72,300', fillRate: '64%' },
-  { sector: 'Education', openJobs: 640, applications: '25,900', fillRate: '52%' },
-]
+function employerKpis(stats: AdminEmployerReportStats | null): Kpi[] {
+  return [
+    {
+      labelKey: 'reports.employers.registeredCompanies',
+      value: stats ? stats.registeredCompanies.toLocaleString() : '…',
+    },
+    {
+      labelKey: 'reports.employers.verifiedCompanies',
+      value: stats ? stats.verifiedCompanies.toLocaleString() : '…',
+    },
+    {
+      labelKey: 'reports.employers.liveJobPostings',
+      value: stats ? stats.liveJobPostings.toLocaleString() : '…',
+    },
+  ]
+}
 
 function partnershipKpis(stats: AdminPartnershipReportStats | null): Kpi[] {
   return [
@@ -167,6 +163,7 @@ export default function AdminReportsPage() {
   const { t, i18n } = useTranslation('admin')
   const [tab, setTab] = useState<Tab>('candidates')
   const [candidateStats, setCandidateStats] = useState<AdminCandidateReportStats | null>(null)
+  const [employerStats, setEmployerStats] = useState<AdminEmployerReportStats | null>(null)
   const [partnershipStats, setPartnershipStats] = useState<AdminPartnershipReportStats | null>(
     null,
   )
@@ -181,6 +178,15 @@ export default function AdminReportsPage() {
       .then(setCandidateStats)
       .catch(() => {
         // Best-effort — the KPI cards just stay blank if this fails.
+      })
+  }, [])
+
+  useEffect(() => {
+    adminApi
+      .getEmployerReportStats()
+      .then(setEmployerStats)
+      .catch(() => {
+        // Best-effort — the KPI cards/table just stay blank if this fails.
       })
   }, [])
 
@@ -263,13 +269,13 @@ export default function AdminReportsPage() {
 
       {tab === 'employers' && (
         <>
-          <KpiRow t={t} kpis={EMPLOYER_KPIS} />
+          <KpiRow t={t} kpis={employerKpis(employerStats)} />
           <div className="rounded-card border border-border bg-surface p-[22px]">
             <h2 className="mb-4 text-[15px] font-bold text-ink">
               {t('reports.employers.topHiringSectors')}
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[520px] border-collapse text-[13.5px]">
+              <table className="w-full min-w-[420px] border-collapse text-[13.5px]">
                 <thead>
                   <tr className="text-left text-xs text-fog uppercase">
                     <th className="py-0 pr-3 pb-2.5 font-semibold">
@@ -278,21 +284,26 @@ export default function AdminReportsPage() {
                     <th className="px-3 pb-2.5 font-semibold">
                       {t('reports.employers.table.openJobs')}
                     </th>
-                    <th className="px-3 pb-2.5 font-semibold">
+                    <th className="pb-2.5 font-semibold">
                       {t('reports.employers.table.applications')}
                     </th>
-                    <th className="pb-2.5 font-semibold">{t('reports.employers.table.fillRate')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {SECTORS.map((sector) => (
+                  {(employerStats?.topHiringSectors ?? []).map((sector) => (
                     <tr key={sector.sector} className="border-t border-[#F0F1F3]">
                       <td className="py-3 pr-3 font-bold text-ink">{sector.sector}</td>
-                      <td className="p-3 text-[#3A414D]">{sector.openJobs}</td>
-                      <td className="p-3 text-[#3A414D]">{sector.applications}</td>
-                      <td className="py-3 font-bold text-teal">{sector.fillRate}</td>
+                      <td className="p-3 text-[#3A414D]">{sector.openJobs.toLocaleString()}</td>
+                      <td className="py-3 text-[#3A414D]">{sector.applications.toLocaleString()}</td>
                     </tr>
                   ))}
+                  {employerStats && employerStats.topHiringSectors.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="py-6 text-center text-slate">
+                        {t('reports.employers.noSectors')}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
