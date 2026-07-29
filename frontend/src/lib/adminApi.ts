@@ -52,6 +52,12 @@ export interface AdminCommunityInterestSummary {
   submittedAt: string
 }
 
+export interface AdminFinancialReportStats {
+  totalRevenueRupees: number
+  candidateSubscriptionRevenueRupees: number
+  companySubscriptionRevenueRupees: number
+}
+
 export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
@@ -171,6 +177,10 @@ export const adminApi = {
     }),
   getCommunityInterestSubmissions: () =>
     request<AdminCommunityInterestSummary[]>('/api/admin/reports/community', {
+      headers: authHeaders(),
+    }),
+  getFinancialReportStats: () =>
+    request<AdminFinancialReportStats>('/api/admin/reports/financial', {
       headers: authHeaders(),
     }),
   getSettings: () => request<PlatformSettings>('/api/admin/settings', { headers: authHeaders() }),

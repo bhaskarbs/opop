@@ -212,14 +212,13 @@
       "none": "अभी तक किसी ने कम्युनिटी इनकम के बारे में नहीं पूछा है।"
     },
     "financial": {
-      "totalRevenue": "कुल राजस्व (अवधि)",
-      "jobPostingFees": "नौकरी पोस्टिंग शुल्क",
-      "featuredListings": "फ़ीचर्ड लिस्टिंग",
-      "candidateSearchSubscriptions": "उम्मीदवार खोज सब्सक्रिप्शन",
+      "totalRevenue": "कुल राजस्व",
+      "candidateSubscriptions": "उम्मीदवार सब्सक्रिप्शन",
+      "companySubscriptions": "कंपनी सब्सक्रिप्शन",
       "byRevenue": "स्रोत के अनुसार राजस्व",
       "table": {
         "source": "स्रोत",
-        "thisMonth": "इस महीने",
+        "amount": "राशि",
         "share": "हिस्सा"
       }
     }

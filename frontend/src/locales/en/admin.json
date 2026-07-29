@@ -212,14 +212,13 @@
       "none": "No one has asked about community income yet."
     },
     "financial": {
-      "totalRevenue": "Total revenue (period)",
-      "jobPostingFees": "Job posting fees",
-      "featuredListings": "Featured listings",
-      "candidateSearchSubscriptions": "Candidate search subscriptions",
+      "totalRevenue": "Total revenue",
+      "candidateSubscriptions": "Candidate subscriptions",
+      "companySubscriptions": "Company subscriptions",
       "byRevenue": "Revenue by source",
       "table": {
         "source": "Source",
-        "thisMonth": "This month",
+        "amount": "Amount",
         "share": "Share"
       }
     }
