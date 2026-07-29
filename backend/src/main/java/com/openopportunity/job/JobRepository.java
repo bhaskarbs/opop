@@ -12,4 +12,6 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
     long countByCompanyId(UUID companyId);
 
     long countByStatus(JobStatus status);
+
+    List<Job> findByStatus(JobStatus status);
 }

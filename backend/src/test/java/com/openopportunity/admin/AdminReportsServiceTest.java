@@ -1,15 +1,21 @@
 package com.openopportunity.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
 import com.openopportunity.admin.dto.AdminCommunityInterestSummary;
+import com.openopportunity.admin.dto.AdminEmployerReportStats;
 import com.openopportunity.admin.dto.AdminFinancialReportStats;
 import com.openopportunity.admin.dto.AdminPartnershipReportStats;
+import com.openopportunity.admin.dto.SectorHiringStats;
 import com.openopportunity.auth.CandidateProfileRepository;
+import com.openopportunity.auth.CompanyProfile;
+import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.auth.VerificationStatus;
 import com.openopportunity.billing.BillingTransactionRepository;
 import com.openopportunity.billing.CompanyBillingTransactionRepository;
 import com.openopportunity.billing.TransactionStatus;
@@ -18,8 +24,15 @@ import com.openopportunity.community.CommunityInterestSubmissionRepository;
 import com.openopportunity.idea.IdeaInterestRepository;
 import com.openopportunity.idea.IdeaRepository;
 import com.openopportunity.idea.IdeaStatus;
+import com.openopportunity.job.EmploymentType;
+import com.openopportunity.job.ExperienceLevel;
+import com.openopportunity.job.Job;
+import com.openopportunity.job.JobRepository;
+import com.openopportunity.job.JobStatus;
+import com.openopportunity.job.WorkMode;
 import com.openopportunity.mockinterview.MockInterviewSessionRepository;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +66,12 @@ class AdminReportsServiceTest {
     @Mock
     private CompanyBillingTransactionRepository companyBillingTransactionRepository;
 
+    @Mock
+    private CompanyProfileRepository companyProfileRepository;
+
+    @Mock
+    private JobRepository jobRepository;
+
     private AdminReportsService adminReportsService;
 
     @BeforeEach
@@ -65,7 +84,9 @@ class AdminReportsServiceTest {
                 ideaInterestRepository,
                 communityInterestSubmissionRepository,
                 billingTransactionRepository,
-                companyBillingTransactionRepository);
+                companyBillingTransactionRepository,
+                companyProfileRepository,
+                jobRepository);
     }
 
     @Test
@@ -124,5 +145,78 @@ class AdminReportsServiceTest {
         assertThat(stats.totalRevenueRupees()).isEqualTo(72_000L);
         assertThat(stats.candidateSubscriptionRevenueRupees()).isEqualTo(23_400L);
         assertThat(stats.companySubscriptionRevenueRupees()).isEqualTo(48_600L);
+    }
+
+    private Job activeJob(UUID companyId, int applicants) {
+        Job job = new Job(
+                companyId,
+                "Some Co",
+                "Some Role",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "desc",
+                List.of(),
+                List.of(),
+                List.of(),
+                JobStatus.ACTIVE);
+        for (int i = 0; i < applicants; i++) {
+            job.incrementApplicantCount();
+        }
+        return job;
+    }
+
+    @Test
+    void getEmployerStatsGroupsOpenJobsAndApplicationsBySector() {
+        UUID techCompanyId = UUID.randomUUID();
+        UUID fintechCompanyId = UUID.randomUUID();
+        CompanyProfile techProfile = new CompanyProfile(
+                techCompanyId, "Private Limited", "CIN1", "GSTIN1", "PAN1", "Tech", "Address", "Signatory",
+                "9876543210", null);
+        CompanyProfile fintechProfile = new CompanyProfile(
+                fintechCompanyId, "Private Limited", "CIN2", "GSTIN2", "PAN2", "Fintech", "Address", "Signatory",
+                "9876543211", null);
+
+        Job techJob1 = activeJob(techCompanyId, 3);
+        Job techJob2 = activeJob(techCompanyId, 1);
+        Job fintechJob = activeJob(fintechCompanyId, 5);
+
+        when(userRepository.countByRole(UserRole.COMPANY)).thenReturn(2L);
+        when(companyProfileRepository.countByVerificationStatus(VerificationStatus.VERIFIED)).thenReturn(2L);
+        when(jobRepository.countByStatus(JobStatus.ACTIVE)).thenReturn(3L);
+        when(jobRepository.findByStatus(JobStatus.ACTIVE)).thenReturn(List.of(techJob1, techJob2, fintechJob));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of(techProfile, fintechProfile));
+
+        AdminEmployerReportStats stats = adminReportsService.getEmployerStats();
+
+        assertThat(stats.registeredCompanies()).isEqualTo(2L);
+        assertThat(stats.verifiedCompanies()).isEqualTo(2L);
+        assertThat(stats.liveJobPostings()).isEqualTo(3L);
+        assertThat(stats.topHiringSectors()).containsExactly(
+                new SectorHiringStats("Tech", 2, 4), new SectorHiringStats("Fintech", 1, 5));
+    }
+
+    @Test
+    void getEmployerStatsGroupsBlankOrMissingIndustryAsUnspecifiedInsteadOfThrowing() {
+        UUID orphanedCompanyId = UUID.randomUUID();
+        // Mirrors a real profile that was wiped after being orphaned and re-provisioned blank
+        // (see AuthService.loginWithGoogleAsCompany) — industry is null, not just missing.
+        CompanyProfile blankProfile = new CompanyProfile(
+                orphanedCompanyId, null, null, null, null, null, null, null, null, null);
+        Job orphanedJob = activeJob(orphanedCompanyId, 2);
+
+        when(userRepository.countByRole(UserRole.COMPANY)).thenReturn(1L);
+        when(companyProfileRepository.countByVerificationStatus(VerificationStatus.VERIFIED)).thenReturn(0L);
+        when(jobRepository.countByStatus(JobStatus.ACTIVE)).thenReturn(1L);
+        when(jobRepository.findByStatus(JobStatus.ACTIVE)).thenReturn(List.of(orphanedJob));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of(blankProfile));
+
+        AdminEmployerReportStats stats = adminReportsService.getEmployerStats();
+
+        assertThat(stats.topHiringSectors()).containsExactly(new SectorHiringStats("Unspecified", 1, 2));
     }
 }
