@@ -194,11 +194,10 @@
     "partnerships": {
       "totalPartnershipMatches": "कुल पार्टनरशिप मैच",
       "startupsOffering": "पार्टनरशिप देने वाले स्टार्टअप्स",
-      "seminarsHeld": "आयोजित सेमिनार",
-      "avgDuration": "औसत पार्टनरशिप अवधि",
       "funded": "फंडेड",
       "withoutFunding": "बिना फंडिंग",
-      "byTrack": "ट्रैक के अनुसार पार्टनरशिप"
+      "byTrack": "ट्रैक के अनुसार पार्टनरशिप",
+      "noListings": "अभी कोई स्वीकृत पार्टनरशिप लिस्टिंग नहीं है।"
     },
     "community": {
       "signUps": "कम्युनिटी साइन-अप",
