@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next'
 import {
   adminApi,
   type AdminCandidateReportStats,
+  type AdminCommunityInterestSummary,
   type AdminPartnershipReportStats,
 } from '../../lib/adminApi'
 
@@ -98,27 +99,13 @@ function partnershipTracks(stats: AdminPartnershipReportStats) {
   ]
 }
 
-const COMMUNITY_KPIS: Kpi[] = [
-  { labelKey: 'reports.community.signUps', value: '9,120', trend: '+210 this period' },
-  { labelKey: 'reports.community.sessionsRun', value: '340', trend: '+28 this period' },
-  {
-    labelKey: 'reports.community.avgAttendanceRate',
-    value: '78%',
-    trend: '+4pts vs last period',
-  },
-  {
-    labelKey: 'reports.community.incomeTypeGuidesRead',
-    value: '21,400',
-    trend: '+1,890 this period',
-  },
-]
-
-const SESSIONS = [
-  { name: 'Peer Mentor Circle — Tech Careers', attendees: 640, rating: '4.8' },
-  { name: 'Local Skill Exchange Meetup — Pune', attendees: 480, rating: '4.6' },
-  { name: 'Volunteer Coordination Orientation', attendees: 310, rating: '4.7' },
-  { name: 'Community Income Explainer Session', attendees: 890, rating: '4.9' },
-]
+function formatSubmittedDate(locale: string, submittedAt: string): string {
+  return new Date(submittedAt).toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
 
 const FINANCIAL_KPIS: Kpi[] = [
   { labelKey: 'reports.financial.totalRevenue', value: '₹1.82 Cr', trend: '+12% vs last period' },
@@ -170,12 +157,15 @@ function KpiRow({ t, kpis }: { t: TFunction<'admin'>; kpis: Kpi[] }) {
 }
 
 export default function AdminReportsPage() {
-  const { t } = useTranslation('admin')
+  const { t, i18n } = useTranslation('admin')
   const [tab, setTab] = useState<Tab>('candidates')
   const [candidateStats, setCandidateStats] = useState<AdminCandidateReportStats | null>(null)
   const [partnershipStats, setPartnershipStats] = useState<AdminPartnershipReportStats | null>(
     null,
   )
+  const [communitySubmissions, setCommunitySubmissions] = useState<
+    AdminCommunityInterestSummary[] | null
+  >(null)
 
   useEffect(() => {
     adminApi
@@ -192,6 +182,15 @@ export default function AdminReportsPage() {
       .then(setPartnershipStats)
       .catch(() => {
         // Best-effort — the KPI cards/track breakdown just stay blank if this fails.
+      })
+  }, [])
+
+  useEffect(() => {
+    adminApi
+      .getCommunityInterestSubmissions()
+      .then(setCommunitySubmissions)
+      .catch(() => {
+        // Best-effort — the list just stays blank if this fails.
       })
   }, [])
 
@@ -319,38 +318,54 @@ export default function AdminReportsPage() {
       )}
 
       {tab === 'community' && (
-        <>
-          <KpiRow t={t} kpis={COMMUNITY_KPIS} />
-          <div className="rounded-card border border-border bg-surface p-[22px]">
-            <h2 className="mb-4 text-[15px] font-bold text-ink">
-              {t('reports.community.topSessions')}
-            </h2>
+        <div className="rounded-card border border-border bg-surface p-[22px]">
+          <h2 className="mb-4 text-[15px] font-bold text-ink">{t('reports.community.heading')}</h2>
+          {communitySubmissions && communitySubmissions.length === 0 && (
+            <p className="text-sm text-slate">{t('reports.community.none')}</p>
+          )}
+          {communitySubmissions && communitySubmissions.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[420px] border-collapse text-[13.5px]">
+              <table className="w-full min-w-[620px] border-collapse text-[13.5px]">
                 <thead>
                   <tr className="text-left text-xs text-fog uppercase">
                     <th className="py-0 pr-3 pb-2.5 font-semibold">
-                      {t('reports.community.table.session')}
+                      {t('reports.community.table.name')}
                     </th>
                     <th className="px-3 pb-2.5 font-semibold">
-                      {t('reports.community.table.attendees')}
+                      {t('reports.community.table.company')}
                     </th>
-                    <th className="pb-2.5 font-semibold">{t('reports.community.table.avgRating')}</th>
+                    <th className="px-3 pb-2.5 font-semibold">
+                      {t('reports.community.table.email')}
+                    </th>
+                    <th className="px-3 pb-2.5 font-semibold">
+                      {t('reports.community.table.phone')}
+                    </th>
+                    <th className="pb-2.5 font-semibold">
+                      {t('reports.community.table.submitted')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {SESSIONS.map((session) => (
-                    <tr key={session.name} className="border-t border-[#F0F1F3]">
-                      <td className="py-3 pr-3 font-bold text-ink">{session.name}</td>
-                      <td className="p-3 text-[#3A414D]">{session.attendees}</td>
-                      <td className="py-3 font-bold text-teal">{session.rating} ★</td>
+                  {communitySubmissions.map((submission) => (
+                    <tr key={submission.id} className="border-t border-[#F0F1F3]">
+                      <td className="py-3 pr-3 font-bold text-ink">{submission.name}</td>
+                      <td className="p-3 text-[#3A414D]">
+                        {submission.companyName ?? t('reports.community.notProvided')}
+                      </td>
+                      <td className="p-3 text-[#3A414D]">{submission.email}</td>
+                      <td className="p-3 text-[#3A414D]">
+                        {submission.phone ?? t('reports.community.notProvided')}
+                      </td>
+                      <td className="py-3 text-[#3A414D]">
+                        {formatSubmittedDate(i18n.language, submission.submittedAt)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
-        </>
+          )}
+        </div>
       )}
 
       {tab === 'financial' && (

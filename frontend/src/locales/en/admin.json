@@ -200,16 +200,16 @@
       "noListings": "No approved partnership listings yet."
     },
     "community": {
-      "signUps": "Community sign-ups",
-      "sessionsRun": "Sessions run",
-      "avgAttendanceRate": "Avg. attendance rate",
-      "incomeTypeGuidesRead": "Income-type guides read",
-      "topSessions": "Top community sessions attended",
+      "heading": "Community sign-ups",
       "table": {
-        "session": "Session",
-        "attendees": "Attendees",
-        "avgRating": "Avg. rating"
-      }
+        "name": "Name",
+        "company": "Company",
+        "email": "Email",
+        "phone": "Phone",
+        "submitted": "Submitted"
+      },
+      "notProvided": "Not provided",
+      "none": "No one has asked about community income yet."
     },
     "financial": {
       "totalRevenue": "Total revenue (period)",
