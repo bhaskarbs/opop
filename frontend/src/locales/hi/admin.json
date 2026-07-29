@@ -173,9 +173,9 @@
     "addQuestion": "प्रश्न जोड़ें",
     "saving": "सेव हो रहा है…",
     "saveError": "यह प्रश्न सेव नहीं हो सका। फिर से कोशिश करें।",
-    "filterSkillPlaceholder": "हुनर से फ़िल्टर करें",
-    "filterIndustryPlaceholder": "इंडस्ट्री से फ़िल्टर करें",
-    "searchPlaceholder": "प्रश्न टेक्स्ट खोजें",
+    "filterSkillPlaceholder": "हुनर से फ़िल्टर करें (एंटर दबाएं)",
+    "filterIndustryPlaceholder": "इंडस्ट्री से फ़िल्टर करें (एंटर दबाएं)",
+    "searchPlaceholder": "प्रश्न टेक्स्ट खोजें (एंटर दबाएं)",
     "loadError": "प्रश्न लोड नहीं हो सके।",
     "loading": "प्रश्न लोड हो रहे हैं…",
     "none": "इन फ़िल्टर से कोई प्रश्न मेल नहीं खाता।",
@@ -184,7 +184,10 @@
     "delete": "हटाएं",
     "deleteConfirm": "यह प्रश्न हटाएं? इसे वापस नहीं लाया जा सकता।",
     "sourceAi": "AI-जनित",
-    "sourceAdmin": "एडमिन द्वारा जोड़ा गया"
+    "sourceAdmin": "एडमिन द्वारा जोड़ा गया",
+    "previousPage": "← पिछला",
+    "nextPage": "अगला →",
+    "pageLabel": "पृष्ठ {{page}} / {{total}}"
   },
   "reports": {
     "tabs": {

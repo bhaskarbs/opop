@@ -18,18 +18,27 @@ const SOURCE_LABEL_KEYS: Record<MockInterviewQuestionSource, string> = {
   ADMIN: 'mockInterviewQuestions.sourceAdmin',
 }
 
+const PAGE_SIZE = 10
+
 export default function AdminMockInterviewQuestionsPage() {
   const { t } = useTranslation('admin')
 
-  const [filterSkill, setFilterSkill] = useState('')
-  const [filterIndustry, setFilterIndustry] = useState('')
+  // *Input tracks every keystroke (controlled input value); the submitted* counterparts only
+  // update on Enter and are what actually drive the search request — typing alone doesn't
+  // trigger it (same pattern as AdminCompanyApprovalsPage).
+  const [skillInput, setSkillInput] = useState('')
+  const [industryInput, setIndustryInput] = useState('')
+  const [queryInput, setQueryInput] = useState('')
+  const [submittedSkill, setSubmittedSkill] = useState('')
+  const [submittedIndustry, setSubmittedIndustry] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
   const [filterExperienceLevel, setFilterExperienceLevel] = useState('')
-  const [filterQuery, setFilterQuery] = useState('')
 
   const [questions, setQuestions] = useState<AdminMockInterviewQuestionSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
 
   const [formText, setFormText] = useState('')
   const [formSkills, setFormSkills] = useState<string[]>([])
@@ -41,16 +50,21 @@ export default function AdminMockInterviewQuestionsPage() {
 
   useEffect(() => {
     let cancelled = false
+    // submittedSkill/submittedIndustry/submittedQuery only change on Enter (see
+    // handleFilterKeyDown), so this isn't debouncing keystrokes — the setTimeout wrapper just
+    // keeps the setState calls out of the effect body proper, same as the other admin list
+    // pages.
     const timeoutId = setTimeout(() => {
       setLoading(true)
       setLoadError(null)
+      setPage(1)
       adminApi
         .mockInterviewQuestions({
-          skill: filterSkill.trim() || undefined,
-          industry: filterIndustry.trim() || undefined,
+          skill: submittedSkill.trim() || undefined,
+          industry: submittedIndustry.trim() || undefined,
           experienceLevel: (filterExperienceLevel || undefined) as
             BackendExperienceLevel | undefined,
-          q: filterQuery.trim() || undefined,
+          q: submittedQuery.trim() || undefined,
         })
         .then((result) => {
           if (!cancelled) setQuestions(result)
@@ -65,12 +79,19 @@ export default function AdminMockInterviewQuestionsPage() {
         .finally(() => {
           if (!cancelled) setLoading(false)
         })
-    }, 250)
+    }, 0)
     return () => {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [filterSkill, filterIndustry, filterExperienceLevel, filterQuery, t])
+  }, [submittedSkill, submittedIndustry, filterExperienceLevel, submittedQuery, t])
+
+  function handleFilterKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') return
+    setSubmittedSkill(skillInput)
+    setSubmittedIndustry(industryInput)
+    setSubmittedQuery(queryInput)
+  }
 
   function addFormSkill(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter') return
@@ -141,6 +162,10 @@ export default function AdminMockInterviewQuestionsPage() {
       setActioningId(null)
     }
   }
+
+  const pageCount = Math.max(1, Math.ceil(questions.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const visibleQuestions = questions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
@@ -237,20 +262,23 @@ export default function AdminMockInterviewQuestionsPage() {
           ))}
         </select>
         <input
-          value={filterSkill}
-          onChange={(event) => setFilterSkill(event.target.value)}
+          value={skillInput}
+          onChange={(event) => setSkillInput(event.target.value)}
+          onKeyDown={handleFilterKeyDown}
           placeholder={t('mockInterviewQuestions.filterSkillPlaceholder')}
           className="min-w-[160px] flex-1 rounded-control border border-border px-3 py-2 text-[13.5px] text-ink placeholder:text-fog"
         />
         <input
-          value={filterIndustry}
-          onChange={(event) => setFilterIndustry(event.target.value)}
+          value={industryInput}
+          onChange={(event) => setIndustryInput(event.target.value)}
+          onKeyDown={handleFilterKeyDown}
           placeholder={t('mockInterviewQuestions.filterIndustryPlaceholder')}
           className="min-w-[160px] flex-1 rounded-control border border-border px-3 py-2 text-[13.5px] text-ink placeholder:text-fog"
         />
         <input
-          value={filterQuery}
-          onChange={(event) => setFilterQuery(event.target.value)}
+          value={queryInput}
+          onChange={(event) => setQueryInput(event.target.value)}
+          onKeyDown={handleFilterKeyDown}
           placeholder={t('mockInterviewQuestions.searchPlaceholder')}
           className="min-w-[200px] flex-[2] rounded-control border border-border px-3 py-2 text-[13.5px] text-ink placeholder:text-fog"
         />
@@ -272,7 +300,7 @@ export default function AdminMockInterviewQuestionsPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {questions.map((question) => (
+          {visibleQuestions.map((question) => (
             <div
               key={question.id}
               className={`rounded-card border p-4 ${
@@ -337,6 +365,29 @@ export default function AdminMockInterviewQuestionsPage() {
               </div>
             </div>
           ))}
+          {pageCount > 1 && (
+            <div className="mt-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('mockInterviewQuestions.previousPage')}
+              </button>
+              <span className="text-[13px] text-slate">
+                {t('mockInterviewQuestions.pageLabel', { page: currentPage, total: pageCount })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))}
+                disabled={currentPage === pageCount}
+                className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('mockInterviewQuestions.nextPage')}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </main>
