@@ -2,28 +2,25 @@ package com.openopportunity.community;
 
 import com.openopportunity.community.dto.CommunityInterestRequest;
 import com.openopportunity.community.exception.EmailDeliveryException;
+import com.openopportunity.mail.EmailService;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CommunityInterestService {
 
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final CommunityInterestSubmissionRepository submissionRepository;
-    private final String fromAddress;
     private final String contactEmail;
 
     public CommunityInterestService(
-            JavaMailSender mailSender,
+            EmailService emailService,
             CommunityInterestSubmissionRepository submissionRepository,
-            @Value("${app.mail.from}") String fromAddress,
             @Value("${app.community.contact-email}") String contactEmail) {
-        this.mailSender = mailSender;
+        this.emailService = emailService;
         this.submissionRepository = submissionRepository;
-        this.fromAddress = fromAddress;
         this.contactEmail = contactEmail;
     }
 
@@ -37,18 +34,17 @@ public class CommunityInterestService {
         submissionRepository.save(new CommunityInterestSubmission(
                 request.name(), request.companyName(), request.email(), request.phone()));
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(contactEmail);
-        message.setSubject("New \"know more about community income\" request from " + request.name());
-        message.setText(
-                "Someone asked to know more about community & community income.\n\n"
-                        + "Name: " + request.name() + "\n"
-                        + "Company: " + valueOrNotProvided(request.companyName()) + "\n"
-                        + "Email: " + request.email() + "\n"
-                        + "Phone: " + valueOrNotProvided(request.phone()));
         try {
-            mailSender.send(message);
+            emailService.send(
+                    contactEmail,
+                    "New \"know more about community income\" request from " + request.name(),
+                    "New community interest request",
+                    List.of(
+                            "Someone asked to know more about community & community income.",
+                            "Name: " + request.name(),
+                            "Company: " + valueOrNotProvided(request.companyName()),
+                            "Email: " + request.email(),
+                            "Phone: " + valueOrNotProvided(request.phone())));
         } catch (MailException e) {
             throw new EmailDeliveryException(e);
         }

@@ -3,6 +3,8 @@ package com.openopportunity.notification;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.mail.EmailButton;
+import com.openopportunity.mail.EmailService;
 import com.openopportunity.notification.dto.NotificationSummary;
 import com.openopportunity.notification.exception.NotificationNotFoundException;
 import java.util.List;
@@ -11,8 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,20 +23,17 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender;
-    private final String mailFromAddress;
+    private final EmailService emailService;
     private final String frontendBaseUrl;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            JavaMailSender mailSender,
-            @Value("${app.mail.from}") String mailFromAddress,
+            EmailService emailService,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
-        this.mailSender = mailSender;
-        this.mailFromAddress = mailFromAddress;
+        this.emailService = emailService;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -71,13 +68,15 @@ public class NotificationService {
         if (recipient == null) {
             return false;
         }
-        SimpleMailMessage mailMessage = new SimpleMailMessage();
-        mailMessage.setFrom(mailFromAddress);
-        mailMessage.setTo(recipient.getEmail());
-        mailMessage.setSubject("OpenOpportunity notification");
-        mailMessage.setText(link == null ? message : message + "\n\n" + frontendBaseUrl + "/en" + link);
+        EmailButton button =
+                link == null ? null : new EmailButton("View on OpenOpportunity", frontendBaseUrl + "/en" + link);
         try {
-            mailSender.send(mailMessage);
+            emailService.send(
+                    recipient.getEmail(),
+                    "OpenOpportunity notification",
+                    "You have a new notification",
+                    List.of(message),
+                    button);
             return true;
         } catch (MailException ex) {
             log.warn("Could not email notification to {}: {}", recipient.getEmail(), ex.getMessage());

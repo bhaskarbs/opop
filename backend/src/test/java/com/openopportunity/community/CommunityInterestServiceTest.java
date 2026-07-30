@@ -3,11 +3,16 @@ package com.openopportunity.community;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.openopportunity.community.dto.CommunityInterestRequest;
 import com.openopportunity.community.exception.EmailDeliveryException;
+import com.openopportunity.mail.EmailService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,14 +20,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @ExtendWith(MockitoExtension.class)
 class CommunityInterestServiceTest {
 
     @Mock
-    private JavaMailSender mailSender;
+    private EmailService emailService;
 
     @Mock
     private CommunityInterestSubmissionRepository submissionRepository;
@@ -31,28 +34,23 @@ class CommunityInterestServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CommunityInterestService(
-                mailSender,
-                submissionRepository,
-                "no-reply@openopportunity.com",
-                "community@openopportunity.com");
+        service = new CommunityInterestService(emailService, submissionRepository, "community@openopportunity.com");
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void notifyInterestSendsAllTheSubmittedContactDetailsToTheDedicatedInbox() {
         service.notifyInterest(
                 new CommunityInterestRequest("Priya Nair", "Vertex Robotics", "priya@example.com", "9876543210"));
 
-        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
-        SimpleMailMessage sent = captor.getValue();
-        assertThat(sent.getTo()).containsExactly("community@openopportunity.com");
-        assertThat(sent.getFrom()).isEqualTo("no-reply@openopportunity.com");
-        assertThat(sent.getText())
-                .contains("Priya Nair")
-                .contains("Vertex Robotics")
-                .contains("priya@example.com")
-                .contains("9876543210");
+        ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
+        verify(emailService)
+                .send(eq("community@openopportunity.com"), anyString(), anyString(), captor.capture());
+        assertThat(captor.getValue())
+                .anySatisfy(line -> assertThat(line).contains("Priya Nair"))
+                .anySatisfy(line -> assertThat(line).contains("Vertex Robotics"))
+                .anySatisfy(line -> assertThat(line).contains("priya@example.com"))
+                .anySatisfy(line -> assertThat(line).contains("9876543210"));
     }
 
     @Test
@@ -72,7 +70,9 @@ class CommunityInterestServiceTest {
 
     @Test
     void notifyInterestStillSavesTheSubmissionEvenWhenTheEmailFails() {
-        doThrow(new MailSendException("smtp down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException("smtp down"))
+                .when(emailService)
+                .send(anyString(), anyString(), anyString(), anyList());
 
         assertThatThrownBy(() -> service.notifyInterest(
                         new CommunityInterestRequest("Priya Nair", null, "priya@example.com", null)))
@@ -82,17 +82,20 @@ class CommunityInterestServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void notifyInterestFillsInNotProvidedForOptionalFields() {
         service.notifyInterest(new CommunityInterestRequest("Arjun Subramaniam", null, "arjun@example.com", null));
 
-        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
-        assertThat(captor.getValue().getText()).contains("Company: Not provided").contains("Phone: Not provided");
+        ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
+        verify(emailService).send(anyString(), anyString(), anyString(), captor.capture());
+        assertThat(captor.getValue()).contains("Company: Not provided", "Phone: Not provided");
     }
 
     @Test
     void notifyInterestWrapsAMailFailureInEmailDeliveryException() {
-        doThrow(new MailSendException("smtp down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException("smtp down"))
+                .when(emailService)
+                .send(anyString(), anyString(), anyString(), anyList());
 
         assertThatThrownBy(() -> service.notifyInterest(
                         new CommunityInterestRequest("Priya Nair", null, "priya@example.com", null)))
