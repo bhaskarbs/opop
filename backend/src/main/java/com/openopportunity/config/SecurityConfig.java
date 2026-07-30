@@ -1,6 +1,5 @@
 package com.openopportunity.config;
 
-import com.openopportunity.auth.EmailVerificationFilter;
 import com.openopportunity.auth.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -25,10 +24,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(
-            HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter,
-            EmailVerificationFilter emailVerificationFilter)
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
             throws Exception {
         http.cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
@@ -44,7 +40,6 @@ public class SecurityConfig {
                                 "/api/auth/logout",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
-                                "/api/auth/verify-email",
                                 "/api/community/interest",
                                 // Razorpay calls this server-to-server with no JWT — auth is the
                                 // HMAC signature check inside CandidateBillingService, not Spring
@@ -141,8 +136,7 @@ public class SecurityConfig {
                 // "not authenticated" to API clients.
                 .exceptionHandling(eh -> eh.authenticationEntryPoint(
                         (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(emailVerificationFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

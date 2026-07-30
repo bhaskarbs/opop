@@ -18,7 +18,6 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
-import com.openopportunity.settings.PlatformSettingsService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -60,12 +59,6 @@ class AuthServiceTest {
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Mock
-    private EmailVerificationTokenRepository emailVerificationTokenRepository;
-
-    @Mock
-    private PlatformSettingsService platformSettingsService;
-
-    @Mock
     private JavaMailSender mailSender;
 
     @Mock
@@ -81,8 +74,6 @@ class AuthServiceTest {
                 companyProfileRepository,
                 candidateProfileRepository,
                 passwordResetTokenRepository,
-                emailVerificationTokenRepository,
-                platformSettingsService,
                 passwordEncoder,
                 jwtService,
                 googleTokenVerifierService,
@@ -120,14 +111,12 @@ class AuthServiceTest {
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
         when(jwtService.generateAccessToken(any())).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
-        when(platformSettingsService.isEmailVerificationEnabled()).thenReturn(true);
 
         AuthService.Issued issued = authService.register(request);
 
         assertThat(issued.response().accessToken()).isEqualTo("access-token");
         assertThat(issued.response().user().email()).isEqualTo("rohan@example.com");
         assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
-        assertThat(issued.response().user().emailVerified()).isFalse();
         assertThat(issued.rawRefreshToken()).isNotBlank();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -183,26 +172,10 @@ class AuthServiceTest {
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
         when(jwtService.generateAccessToken(any())).thenReturn("access-token");
         when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
-        when(platformSettingsService.isEmailVerificationEnabled()).thenReturn(true);
 
         AuthService.Issued issued = authService.register(request);
 
         assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
-    }
-
-    @Test
-    void registerSkipsVerificationWhenDisabled() {
-        RegisterRequest request = candidateRequest();
-        when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(false);
-        when(passwordEncoder.encode("password123")).thenReturn("hashed");
-        when(jwtService.generateAccessToken(any())).thenReturn("access-token");
-        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
-        when(platformSettingsService.isEmailVerificationEnabled()).thenReturn(false);
-
-        AuthService.Issued issued = authService.register(request);
-
-        assertThat(issued.response().user().emailVerified()).isTrue();
-        verify(mailSender, org.mockito.Mockito.never()).send(any(org.springframework.mail.SimpleMailMessage.class));
     }
 
     @Test

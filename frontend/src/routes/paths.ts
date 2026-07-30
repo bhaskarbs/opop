@@ -17,8 +17,6 @@ export const ROUTES = {
   register: '/register',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
-  verifyEmail: '/verify-email',
-  verifyEmailPending: '/verify-email-pending',
   companyLogin: '/company/login',
   companyRegister: '/company/register',
   companyForgotPassword: '/company/forgot-password',
@@ -60,7 +58,6 @@ export const ROUTES = {
   adminMockInterviewQuestions: '/admin/mock-interview-questions',
   adminReports: '/admin/reports',
   adminBilling: '/admin/billing',
-  adminSettings: '/admin/settings',
 } as const
 
 /** MyIdeasPage/IdeaSubmitPage are mounted twice — once under /candidate, once under /company
