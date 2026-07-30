@@ -257,23 +257,26 @@
   },
   "billing": {
     "title": "Billing overview",
-    "subtitle": "Monitor subscriptions, review upgrade requests, and track revenue.",
+    "subtitle": "Monitor subscriptions and track revenue.",
     "stats": {
       "mrr": "Monthly recurring revenue",
       "activeSubscriptions": "Active subscriptions",
-      "pendingUpgrades": "Pending upgrade requests",
       "churned": "Churned this month"
     },
-    "pendingUpgradeRequests": "Pending upgrade requests",
-    "requestMeta": "Requesting {{from}} → {{to}} · Requested {{date}}",
-    "approve": "Approve",
-    "reject": "Reject",
-    "approved": "Approved",
-    "rejected": "Rejected",
+    "tabs": {
+      "candidateInvoices": "Candidate invoices",
+      "companyInvoices": "Company invoices"
+    },
+    "unknownUser": "Unknown user",
     "statusPaid": "Paid",
     "statusFailed": "Failed",
-    "invoiceHistory": "Invoice history",
+    "statusPending": "Pending",
+    "noInvoices": "No invoices yet.",
     "since": "Since {{date}}",
+    "searchPlaceholder": "Search by name or email (press Enter)",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}",
     "candidatePlans": {
       "loading": "Loading candidate subscriptions…",
       "loadError": "Couldn't load candidate subscriptions.",
@@ -281,6 +284,14 @@
       "downgradeToFree": "Downgrade to Free",
       "upgradeToPlus": "Upgrade to Plus",
       "confirmDowngrade": "Downgrade this candidate to the Free plan?"
+    },
+    "companyPlans": {
+      "loading": "Loading company subscriptions…",
+      "loadError": "Couldn't load company subscriptions.",
+      "none": "No company subscriptions yet.",
+      "downgradeToFree": "Downgrade to Free",
+      "upgradeToGrowth": "Upgrade to Growth",
+      "confirmDowngrade": "Downgrade this company to the Free plan?"
     }
   },
   "settings": {
