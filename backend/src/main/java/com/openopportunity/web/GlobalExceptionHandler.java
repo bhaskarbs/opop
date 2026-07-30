@@ -48,6 +48,8 @@ import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.job.exception.JobPostingLimitReachedException;
+import com.openopportunity.jobalert.exception.JobAlertLimitReachedException;
+import com.openopportunity.jobalert.exception.JobAlertNotFoundException;
 import com.openopportunity.mockinterview.exception.DuplicateMockInterviewQuestionException;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFoundException;
@@ -200,6 +202,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(JobPostingLimitReachedException.class)
     public ResponseEntity<ApiError> handleJobPostingLimitReached(JobPostingLimitReachedException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(JobAlertLimitReachedException.class)
+    public ResponseEntity<ApiError> handleJobAlertLimitReached(JobAlertLimitReachedException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(JobAlertNotFoundException.class)
+    public ResponseEntity<ApiError> handleJobAlertNotFound(JobAlertNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(CompanyNotEligibleToContactCandidatesException.class)

@@ -105,7 +105,9 @@
   "resultCard": {
     "applyNow": "अभी आवेदन करें",
     "applied": "आवेदन किया",
-    "viewDetails": "विवरण देखें"
+    "viewDetails": "विवरण देखें",
+    "save": "नौकरी सहेजें",
+    "unsave": "सहेजी गई नौकरियों से हटाएं"
   },
   "jobDetail": {
     "notFound": {
@@ -123,6 +125,8 @@
     "applying": "आवेदन किया जा रहा है…",
     "applyNow": "अभी आवेदन करें",
     "applied": "आवेदन किया",
+    "save": "सहेजें",
+    "saved": "सहेजा गया",
     "applyError": "कुछ गड़बड़ हो गई। फिर से कोशिश करें।",
     "postedPrefix": "पोस्ट किया गया: {{label}}",
     "applicantsCount": "{{count}} आवेदक",

@@ -20,6 +20,8 @@
   "userMenu": {
     "myProfile": "My Profile",
     "myApplications": "My Applications",
+    "savedJobs": "Saved Jobs",
+    "jobAlerts": "Job Alerts",
     "mockInterviews": "Mock Interviews",
     "myIdeas": "My Ideas",
     "companyProfile": "Company Profile",

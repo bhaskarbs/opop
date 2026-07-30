@@ -51,6 +51,8 @@ export const USER_MENU_BY_VARIANT: Partial<Record<HeaderVariant, NavItem[]>> = {
   candidate: [
     { label: 'userMenu.myProfile', to: ROUTES.candidateProfile },
     { label: 'userMenu.myApplications', to: ROUTES.candidateApplications },
+    { label: 'userMenu.savedJobs', to: ROUTES.candidateSavedJobs },
+    { label: 'userMenu.jobAlerts', to: ROUTES.candidateJobAlerts },
     { label: 'userMenu.mockInterviews', to: ROUTES.candidateMockInterview },
     { label: 'userMenu.myIdeas', to: ROUTES.candidateIdeas },
     { label: 'userMenu.billing', to: ROUTES.candidateBilling },

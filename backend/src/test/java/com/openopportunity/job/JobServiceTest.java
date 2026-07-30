@@ -15,6 +15,7 @@ import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
+import com.openopportunity.job.dto.JobSummary;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
@@ -343,5 +344,42 @@ class JobServiceTest {
         assertThat(pending.get(0).aboutRole()).isEqualTo("Lead the dashboard rebuild.");
         assertThat(pending.get(0).responsibilities()).containsExactly("Own delivery");
         assertThat(pending.get(0).requirements()).containsExactly("5+ years React");
+    }
+
+    @Test
+    void getByIdsReturnsEmptyListWithoutQueryingForEmptyInput() {
+        List<JobSummary> result = jobService.getByIds(List.of());
+
+        assertThat(result).isEmpty();
+        verify(jobRepository, never()).findAllById(any());
+    }
+
+    @Test
+    void getByIdsSilentlyDropsIdsForJobsThatNoLongerExist() {
+        UUID existingId = UUID.randomUUID();
+        UUID deletedId = UUID.randomUUID();
+        Job job = new Job(
+                UUID.randomUUID(),
+                "Vertex Robotics",
+                "Senior Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "Lead the dashboard rebuild.",
+                List.of("Own delivery"),
+                List.of("5+ years React"),
+                List.of("React"),
+                JobStatus.ACTIVE);
+        when(jobRepository.findAllById(List.of(existingId, deletedId))).thenReturn(List.of(job));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+
+        List<JobSummary> result = jobService.getByIds(List.of(existingId, deletedId));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).title()).isEqualTo("Senior Frontend Developer");
     }
 }

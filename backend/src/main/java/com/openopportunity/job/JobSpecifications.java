@@ -2,6 +2,7 @@ package com.openopportunity.job;
 
 import jakarta.persistence.criteria.Expression;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -70,6 +71,13 @@ final class JobSpecifications {
     static Specification<Job> hasMinSalaryAtLeast(BigDecimal minSalaryLakhs) {
         if (minSalaryLakhs == null) return null;
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("salaryMaxLakhs"), minSalaryLakhs);
+    }
+
+    /** Used by JobService.searchPostedAfter (the job-alert digest sweep) so it only re-surfaces
+     * jobs posted since an alert last ran. */
+    static Specification<Job> createdAfter(Instant after) {
+        if (after == null) return null;
+        return (root, query, cb) -> cb.greaterThan(root.get("createdAt"), after);
     }
 
     /** Admin pending-review search (see JobService.getPending) — same title/companyName/skills

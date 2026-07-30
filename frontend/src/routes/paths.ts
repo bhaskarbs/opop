@@ -25,6 +25,8 @@ export const ROUTES = {
   candidateProfile: '/candidate/profile',
   candidateAddDetails: '/candidate/profile/add-details',
   candidateApplications: '/candidate/applications',
+  candidateSavedJobs: '/candidate/saved-jobs',
+  candidateJobAlerts: '/candidate/job-alerts',
   candidateMockInterview: '/candidate/mock-interview',
   candidateIdeas: '/candidate/ideas',
   candidateIdeaSubmit: '/candidate/ideas/submit',
