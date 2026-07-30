@@ -81,6 +81,7 @@ public class IdeaService {
         // passed in, so @PrePersist-populated fields (createdAt/updatedAt) only show up on
         // that returned instance, not on `idea` itself.
         idea = ideaRepository.save(idea);
+        notifyAdminsIdeaPending(idea);
         return toDetail(idea);
     }
 
@@ -177,6 +178,7 @@ public class IdeaService {
                 request.videoLink(),
                 request.contactEmail());
         ideaRepository.save(idea);
+        notifyAdminsIdeaPending(idea);
         return toDetail(idea);
     }
 
@@ -260,6 +262,13 @@ public class IdeaService {
                 interest.getMessage(),
                 contactNumber,
                 interest.getCreatedAt());
+    }
+
+    private void notifyAdminsIdeaPending(Idea idea) {
+        notificationService.notifyAdmins(
+                NotificationType.IDEA_PENDING_APPROVAL,
+                "New idea \"" + idea.getTitle() + "\" from " + idea.getSubmitterName() + " is awaiting approval.",
+                "/admin/approvals/ideas");
     }
 
     private Idea findOwned(UUID id, UUID submitterId) {

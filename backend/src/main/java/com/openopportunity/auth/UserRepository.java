@@ -1,5 +1,6 @@
 package com.openopportunity.auth;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmailAndRole(String email, UserRole role);
 
     long countByRole(UserRole role);
+
+    /** Exactly one admin exists in practice (see AdminSeeder — no self-registration flow), but
+     * NotificationService.notifyAdmins fans out to every match rather than assuming that. */
+    List<User> findByRole(UserRole role);
 }
