@@ -3,6 +3,9 @@ package com.openopportunity.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.auth.CompanyProfile;
@@ -17,6 +20,7 @@ import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -90,6 +94,31 @@ class JobServiceTest {
     }
 
     @Test
+    void createNotifiesAdminsWhenSubmittedForApproval() {
+        UUID companyId = UUID.randomUUID();
+        User company = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(companyId)).thenReturn(Optional.of(company));
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(eligibleProfile(companyId)));
+
+        jobService.create(companyId, sampleRequest(JobStatus.PENDING_APPROVAL));
+
+        verify(notificationService)
+                .notifyAdmins(eq(NotificationType.JOB_PENDING_APPROVAL), any(), any());
+    }
+
+    @Test
+    void createDoesNotNotifyAdminsForADraft() {
+        UUID companyId = UUID.randomUUID();
+        User company = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(companyId)).thenReturn(Optional.of(company));
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(eligibleProfile(companyId)));
+
+        jobService.create(companyId, sampleRequest(JobStatus.DRAFT));
+
+        verify(notificationService, never()).notifyAdmins(any(), any(), any());
+    }
+
+    @Test
     void createRejectsClientSuppliedActiveOrRejectedStatus() {
         UUID companyId = UUID.randomUUID();
 
@@ -155,6 +184,50 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.update(
                         UUID.randomUUID(), UUID.randomUUID(), sampleRequest(JobStatus.PENDING_APPROVAL)))
                 .isInstanceOf(JobNotFoundException.class);
+    }
+
+    private Job jobWithStatus(UUID companyId, JobStatus status) {
+        return new Job(
+                companyId,
+                "Vertex Robotics",
+                "Senior Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "desc",
+                List.of(),
+                List.of(),
+                List.of(),
+                status);
+    }
+
+    @Test
+    void updateNotifiesAdminsWhenSubmittingADraftForApproval() {
+        UUID companyId = UUID.randomUUID();
+        Job job = jobWithStatus(companyId, JobStatus.DRAFT);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+        when(userRepository.findById(companyId))
+                .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
+
+        jobService.update(job.getId(), companyId, sampleRequest(JobStatus.PENDING_APPROVAL));
+
+        verify(notificationService)
+                .notifyAdmins(eq(NotificationType.JOB_PENDING_APPROVAL), any(), any());
+    }
+
+    @Test
+    void updateDoesNotReNotifyAdminsWhenAlreadyPendingApproval() {
+        UUID companyId = UUID.randomUUID();
+        Job job = jobWithStatus(companyId, JobStatus.PENDING_APPROVAL);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        jobService.update(job.getId(), companyId, sampleRequest(JobStatus.PENDING_APPROVAL));
+
+        verify(notificationService, never()).notifyAdmins(any(), any(), any());
     }
 
     @Test

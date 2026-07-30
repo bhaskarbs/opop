@@ -117,6 +117,9 @@ public class JobService {
                 nonNull(request.skills()),
                 request.status());
         jobRepository.save(job);
+        if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
+            notifyAdminsJobPending(job, company.getFullName());
+        }
         return toDetail(job, companyProfileRepository.findByUserId(companyId).orElse(null));
     }
 
@@ -125,6 +128,7 @@ public class JobService {
         requireClientSettableStatus(request.status());
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         requireOwner(job, companyId);
+        JobStatus previousStatus = job.getStatus();
         job.update(
                 request.title(),
                 request.employmentType(),
@@ -140,6 +144,10 @@ public class JobService {
                 nonNull(request.skills()),
                 request.status());
         jobRepository.save(job);
+        if (previousStatus != JobStatus.PENDING_APPROVAL && job.getStatus() == JobStatus.PENDING_APPROVAL) {
+            User company = userRepository.findById(companyId).orElseThrow();
+            notifyAdminsJobPending(job, company.getFullName());
+        }
         return toDetail(job, companyProfileRepository.findByUserId(companyId).orElse(null));
     }
 
@@ -207,6 +215,13 @@ public class JobService {
         if (status == JobStatus.ACTIVE || status == JobStatus.REJECTED) {
             throw new InvalidJobStatusTransitionException();
         }
+    }
+
+    private void notifyAdminsJobPending(Job job, String companyName) {
+        notificationService.notifyAdmins(
+                NotificationType.JOB_PENDING_APPROVAL,
+                "New job posting \"" + job.getTitle() + "\" from " + companyName + " is awaiting approval.",
+                "/admin/approvals/jobs");
     }
 
     private void requireOwner(Job job, UUID companyId) {

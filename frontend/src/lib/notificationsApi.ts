@@ -11,6 +11,10 @@ export type NotificationType =
   | 'COMPANY_REJECTED'
   | 'APPLICATION_STATUS_CHANGED'
   | 'NEW_JOB_APPLICATION'
+  // Admin-facing — see NotificationService.notifyAdmins.
+  | 'JOB_PENDING_APPROVAL'
+  | 'IDEA_PENDING_APPROVAL'
+  | 'COMPANY_PENDING_VERIFICATION'
 
 export interface NotificationSummary {
   id: string

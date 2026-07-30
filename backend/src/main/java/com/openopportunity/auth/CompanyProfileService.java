@@ -7,6 +7,8 @@ import com.openopportunity.auth.dto.UpdateCompanyProfileRequest;
 import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCompanyLogoException;
+import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,14 +35,17 @@ public class CompanyProfileService {
     private final UserRepository userRepository;
     private final CompanyProfileRepository companyProfileRepository;
     private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
 
     public CompanyProfileService(
             UserRepository userRepository,
             CompanyProfileRepository companyProfileRepository,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            NotificationService notificationService) {
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
         this.fileStorageService = fileStorageService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +72,12 @@ public class CompanyProfileService {
                 request.contactNumber(),
                 request.aadhaarNumber());
         companyProfileRepository.save(profile);
+        if (profile.isProfileComplete()) {
+            notificationService.notifyAdmins(
+                    NotificationType.COMPANY_PENDING_VERIFICATION,
+                    "New company \"" + user.getFullName() + "\" is awaiting verification.",
+                    "/admin/approvals/companies");
+        }
         return toResponse(user, profile);
     }
 

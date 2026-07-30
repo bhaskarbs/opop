@@ -3,6 +3,7 @@ package com.openopportunity.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +16,8 @@ import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import com.openopportunity.settings.PlatformSettingsService;
 import java.time.Instant;
 import java.util.List;
@@ -65,6 +68,9 @@ class AuthServiceTest {
     @Mock
     private JavaMailSender mailSender;
 
+    @Mock
+    private NotificationService notificationService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -81,6 +87,7 @@ class AuthServiceTest {
                 jwtService,
                 googleTokenVerifierService,
                 mailSender,
+                notificationService,
                 30,
                 "no-reply@test.com",
                 "http://localhost:5173");
@@ -127,6 +134,36 @@ class AuthServiceTest {
         verify(userRepository).save(userCaptor.capture());
         assertThat(userCaptor.getValue().getPasswordHash()).isEqualTo("hashed");
         verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    private static RegisterRequest companyRequest() {
+        return new RegisterRequest(
+                "founder@vertex.com",
+                "password123",
+                "Vertex Robotics",
+                "company",
+                "Private Limited",
+                "CIN123",
+                "GSTIN123",
+                "PAN123",
+                "Tech",
+                "Address",
+                "Signatory",
+                "9876543210");
+    }
+
+    @Test
+    void registerNotifiesAdminsWhenACompanyProfileIsComplete() {
+        RegisterRequest request = companyRequest();
+        when(userRepository.existsByEmailAndRole("founder@vertex.com", UserRole.COMPANY)).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("hashed");
+        when(jwtService.generateAccessToken(any())).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+
+        authService.register(request);
+
+        verify(notificationService)
+                .notifyAdmins(eq(NotificationType.COMPANY_PENDING_VERIFICATION), any(), any());
     }
 
     @Test

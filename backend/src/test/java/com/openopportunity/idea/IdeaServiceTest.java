@@ -3,6 +3,8 @@ package com.openopportunity.idea;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.auth.CandidateProfile;
@@ -20,6 +22,7 @@ import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,6 +94,18 @@ class IdeaServiceTest {
 
         assertThat(detail.submitterName()).isEqualTo("Vertex Robotics");
         assertThat(detail.status()).isEqualTo(IdeaStatus.PENDING);
+    }
+
+    @Test
+    void createNotifiesAdminsThatTheIdeaIsAwaitingApproval() {
+        UUID submitterId = UUID.randomUUID();
+        User submitter = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(submitterId)).thenReturn(Optional.of(submitter));
+        when(ideaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ideaService.create(submitterId, sampleRequest());
+
+        verify(notificationService).notifyAdmins(eq(NotificationType.IDEA_PENDING_APPROVAL), any(), any());
     }
 
     private Idea sampleIdea(UUID submitterId) {
@@ -190,6 +205,18 @@ class IdeaServiceTest {
 
         assertThat(detail.status()).isEqualTo(IdeaStatus.PENDING);
         assertThat(detail.title()).isEqualTo(sampleRequest().title());
+    }
+
+    @Test
+    void updateNotifiesAdminsThatTheIdeaIsPendingReview() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        idea.approve();
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        ideaService.update(idea.getId(), ownerId, sampleRequest());
+
+        verify(notificationService).notifyAdmins(eq(NotificationType.IDEA_PENDING_APPROVAL), any(), any());
     }
 
     @Test

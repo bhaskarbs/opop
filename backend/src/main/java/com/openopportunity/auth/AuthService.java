@@ -20,6 +20,8 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.PasswordResetEmailException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.notification.NotificationService;
+import com.openopportunity.notification.NotificationType;
 import com.openopportunity.settings.PlatformSettingsService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -60,6 +62,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final JavaMailSender mailSender;
+    private final NotificationService notificationService;
     private final long refreshTokenExpiryDays;
     private final String mailFromAddress;
     private final String frontendBaseUrl;
@@ -77,6 +80,7 @@ public class AuthService {
             JwtService jwtService,
             GoogleTokenVerifierService googleTokenVerifierService,
             JavaMailSender mailSender,
+            NotificationService notificationService,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays,
             @Value("${app.mail.from}") String mailFromAddress,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
@@ -91,6 +95,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.mailSender = mailSender;
+        this.notificationService = notificationService;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
         this.mailFromAddress = mailFromAddress;
         this.frontendBaseUrl = frontendBaseUrl;
@@ -136,6 +141,9 @@ public class AuthService {
                     request.contactNumber(),
                     request.aadhaarNumber());
             companyProfileRepository.save(profile);
+            if (profile.isProfileComplete()) {
+                notifyAdminsCompanyPending(user.getFullName());
+            }
         }
 
         if (role == UserRole.CANDIDATE) {
@@ -437,6 +445,13 @@ public class AuthService {
             throw new IncompleteCompanyProfileException(
                     "Enter your Aadhaar number since your company isn't registered yet");
         }
+    }
+
+    private void notifyAdminsCompanyPending(String companyName) {
+        notificationService.notifyAdmins(
+                NotificationType.COMPANY_PENDING_VERIFICATION,
+                "New company \"" + companyName + "\" is awaiting verification.",
+                "/admin/approvals/companies");
     }
 
     private void requireCandidateProfileFields(RegisterRequest request, List<String> cleanedSkills) {

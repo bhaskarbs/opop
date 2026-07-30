@@ -2,6 +2,7 @@ package com.openopportunity.notification;
 
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
 import com.openopportunity.notification.dto.NotificationSummary;
 import com.openopportunity.notification.exception.NotificationNotFoundException;
 import java.util.List;
@@ -55,6 +56,14 @@ public class NotificationService {
             notification.markEmailSent();
         }
         notificationRepository.save(notification);
+    }
+
+    /** Fans notify() out to every ADMIN user — for events that need platform-staff attention
+     * (a new job/idea entering the review queue, a company profile becoming ready for
+     * verification) rather than any specific candidate/company recipient. */
+    @Transactional
+    public void notifyAdmins(NotificationType type, String message, String link) {
+        userRepository.findByRole(UserRole.ADMIN).forEach(admin -> notify(admin.getId(), type, message, link));
     }
 
     private boolean sendEmail(UUID recipientUserId, String message, String link) {
