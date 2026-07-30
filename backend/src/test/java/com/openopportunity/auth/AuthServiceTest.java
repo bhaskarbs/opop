@@ -16,6 +16,7 @@ import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.mail.EmailService;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.time.Instant;
@@ -28,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,7 +59,7 @@ class AuthServiceTest {
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Mock
-    private JavaMailSender mailSender;
+    private EmailService emailService;
 
     @Mock
     private NotificationService notificationService;
@@ -77,10 +77,9 @@ class AuthServiceTest {
                 passwordEncoder,
                 jwtService,
                 googleTokenVerifierService,
-                mailSender,
+                emailService,
                 notificationService,
                 30,
-                "no-reply@test.com",
                 "http://localhost:5173");
     }
 

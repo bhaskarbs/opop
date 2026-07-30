@@ -17,6 +17,8 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.PasswordResetEmailException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.mail.EmailButton;
+import com.openopportunity.mail.EmailService;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.nio.charset.StandardCharsets;
@@ -30,8 +32,6 @@ import java.util.HexFormat;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,10 +51,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleTokenVerifierService googleTokenVerifierService;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final NotificationService notificationService;
     private final long refreshTokenExpiryDays;
-    private final String mailFromAddress;
     private final String frontendBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -67,10 +66,9 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             GoogleTokenVerifierService googleTokenVerifierService,
-            JavaMailSender mailSender,
+            EmailService emailService,
             NotificationService notificationService,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays,
-            @Value("${app.mail.from}") String mailFromAddress,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -80,10 +78,9 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.googleTokenVerifierService = googleTokenVerifierService;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
         this.notificationService = notificationService;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
-        this.mailFromAddress = mailFromAddress;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -264,16 +261,16 @@ public class AuthService {
         // "request a new link" fallbacks at the right login flow (candidate vs. company).
         String resetLink = frontendBaseUrl + "/en/reset-password?token=" + rawToken + "&role="
                 + role.name().toLowerCase();
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFromAddress);
-        message.setTo(user.getEmail());
-        message.setSubject("Reset your OpenOpportunity password");
-        message.setText(
-                "We received a request to reset your OpenOpportunity password.\n\n"
-                        + "Reset it here (link expires in 1 hour): " + resetLink + "\n\n"
-                        + "If you didn't request this, you can safely ignore this email.");
         try {
-            mailSender.send(message);
+            emailService.send(
+                    user.getEmail(),
+                    "Reset your OpenOpportunity password",
+                    "Reset your password",
+                    List.of(
+                            "We received a request to reset your OpenOpportunity password.",
+                            "This link expires in 1 hour. If you didn't request this, you can safely ignore"
+                                    + " this email."),
+                    new EmailButton("Reset password", resetLink));
         } catch (MailException e) {
             throw new PasswordResetEmailException(e);
         }

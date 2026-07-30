@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.mail.EmailService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
@@ -29,14 +29,14 @@ class NotificationServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private JavaMailSender mailSender;
+    private EmailService emailService;
 
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(
-                notificationRepository, userRepository, mailSender, "no-reply@test.com", "http://localhost:5173");
+        notificationService =
+                new NotificationService(notificationRepository, userRepository, emailService, "http://localhost:5173");
     }
 
     @Test

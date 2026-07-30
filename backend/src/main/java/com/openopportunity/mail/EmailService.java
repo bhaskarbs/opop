@@ -1,0 +1,48 @@
+package com.openopportunity.mail;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailPreparationException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+/** The one place in the app that talks to JavaMailSender directly — every outgoing email
+ * (password reset, notification digests, community interest requests, ...) goes through here so
+ * they all share the same branded HTML layout (see EmailTemplate) instead of each call site
+ * hand-rolling its own plain-text SimpleMailMessage. */
+@Service
+public class EmailService {
+
+    private final JavaMailSender mailSender;
+    private final String fromAddress;
+
+    public EmailService(JavaMailSender mailSender, @Value("${app.mail.from}") String fromAddress) {
+        this.mailSender = mailSender;
+        this.fromAddress = fromAddress;
+    }
+
+    public void send(String to, String subject, String heading, List<String> paragraphs) {
+        send(to, subject, heading, paragraphs, null);
+    }
+
+    /** Throws MailException on any failure — a template build failure is wrapped as
+     * MailPreparationException, an actual send failure surfaces as whatever JavaMailSender
+     * throws (typically MailSendException). Both are MailException, so existing
+     * catch (MailException e) call sites don't need to change. */
+    public void send(String to, String subject, String heading, List<String> paragraphs, EmailButton button) {
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(EmailTemplate.render(heading, paragraphs, button), true);
+        } catch (MessagingException e) {
+            throw new MailPreparationException(e);
+        }
+        mailSender.send(mimeMessage);
+    }
+}
