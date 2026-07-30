@@ -152,6 +152,37 @@
     "nextPage": "Next →",
     "pageLabel": "Page {{page}} of {{total}}"
   },
+  "savedJobs": {
+    "title": "Saved jobs",
+    "subtitle": "Jobs you've bookmarked to come back to later.",
+    "loading": "Loading your saved jobs…",
+    "loadError": "Could not load your saved jobs.",
+    "empty": "No saved jobs yet — tap the bookmark icon on any job to save it here.",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
+  },
+  "jobAlerts": {
+    "title": "Job alerts",
+    "subtitle": "Get an email digest whenever a new job matches your saved search.",
+    "loading": "Loading your job alerts…",
+    "loadError": "Could not load your job alerts.",
+    "empty": "No job alerts yet — create one below to get notified about new matching jobs.",
+    "createTitle": "Create a new alert",
+    "keywordsPlaceholder": "Role or skill, e.g. React",
+    "removeKeyword": "Remove {{value}}",
+    "locationsPlaceholder": "Location, e.g. Bengaluru",
+    "removeLocation": "Remove {{value}}",
+    "anyLevel": "Any experience level",
+    "anyMode": "Any work mode",
+    "create": "Create alert",
+    "creating": "Creating…",
+    "createError": "Something went wrong. Try again.",
+    "delete": "Delete",
+    "deleteError": "Could not delete this alert. Try again.",
+    "anyJob": "Any new job",
+    "createdPrefix": "Created {{date}}"
+  },
   "billing": {
     "title": "Billing & plans",
     "loading": "Loading your billing details…",

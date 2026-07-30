@@ -36,6 +36,8 @@ import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage'
 import CandidateProfilePage from './pages/candidate/CandidateProfilePage'
 import AddMissingDetailsPage from './pages/candidate/AddMissingDetailsPage'
 import ApplicationsPage from './pages/candidate/ApplicationsPage'
+import SavedJobsPage from './pages/candidate/SavedJobsPage'
+import JobAlertsPage from './pages/candidate/JobAlertsPage'
 import MockInterviewPage from './pages/candidate/MockInterviewPage'
 import MyIdeasPage from './pages/candidate/MyIdeasPage'
 import IdeaSubmitPage from './pages/candidate/IdeaSubmitPage'
@@ -154,6 +156,8 @@ function App() {
                 <Route path="candidate/profile" element={<CandidateProfilePage />} />
                 <Route path="candidate/profile/add-details" element={<AddMissingDetailsPage />} />
                 <Route path="candidate/applications" element={<ApplicationsPage />} />
+                <Route path="candidate/saved-jobs" element={<SavedJobsPage />} />
+                <Route path="candidate/job-alerts" element={<JobAlertsPage />} />
                 <Route path="candidate/mock-interview" element={<MockInterviewPage />} />
                 <Route path="candidate/ideas" element={<MyIdeasPage />} />
                 <Route path="candidate/ideas/submit" element={<IdeaSubmitPage />} />

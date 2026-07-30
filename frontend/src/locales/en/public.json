@@ -105,7 +105,9 @@
   "resultCard": {
     "applyNow": "Apply now",
     "applied": "Applied",
-    "viewDetails": "View details"
+    "viewDetails": "View details",
+    "save": "Save job",
+    "unsave": "Remove from saved jobs"
   },
   "jobDetail": {
     "notFound": {
@@ -123,6 +125,8 @@
     "applying": "Applying…",
     "applyNow": "Apply now",
     "applied": "Applied",
+    "save": "Save",
+    "saved": "Saved",
     "applyError": "Something went wrong. Try again.",
     "postedPrefix": "Posted {{label}}",
     "applicantsCount": "{{count}} applicants",

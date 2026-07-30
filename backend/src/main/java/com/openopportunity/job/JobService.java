@@ -15,6 +15,7 @@ import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -90,6 +91,42 @@ public class JobService {
         return jobRepository.findByCompanyIdOrderByCreatedAtDesc(companyId).stream()
                 .map(job -> toSummary(job, companyProfile))
                 .toList();
+    }
+
+    /** Used by SavedJobService — batch lookup so a candidate's saved-jobs list doesn't do one
+     * query per bookmark. Silently drops ids for jobs that no longer exist (deleted since being
+     * saved) rather than erroring; the caller (SavedJobService.getMine) filters its own bookmark
+     * list down to whatever this returns. */
+    @Transactional(readOnly = true)
+    public List<JobSummary> getByIds(List<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        List<Job> jobs = jobRepository.findAllById(ids);
+        Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
+        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
+    }
+
+    /** Used by JobAlertDigestService's nightly sweep — same ACTIVE-only + keyword/location/
+     * level/mode matching as search(), plus a createdAfter cutoff so an alert only re-surfaces
+     * jobs posted since it last ran. */
+    @Transactional(readOnly = true)
+    public List<JobSummary> searchPostedAfter(
+            List<String> keywords,
+            List<String> locations,
+            List<ExperienceLevel> levels,
+            List<WorkMode> modes,
+            Instant after) {
+        Specification<Job> spec = Specification.allOf(
+                JobSpecifications.hasStatus(JobStatus.ACTIVE),
+                JobSpecifications.matchesAnyKeyword(keywords),
+                JobSpecifications.matchesAnyLocation(locations),
+                JobSpecifications.hasLevelIn(levels),
+                JobSpecifications.hasModeIn(modes),
+                JobSpecifications.createdAfter(after));
+        List<Job> jobs = jobRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
+        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
     }
 
     @Transactional

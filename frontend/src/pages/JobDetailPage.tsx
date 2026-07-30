@@ -7,6 +7,7 @@ import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
 import { jobsApi, type JobDetail, type JobSummary } from '../lib/jobsApi'
 import { workModeFromBackend } from '../lib/jobEnums'
+import { savedJobsApi } from '../lib/savedJobsApi'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 import type { TFunction } from 'i18next'
@@ -73,6 +74,31 @@ function ApplyButton({
   )
 }
 
+function SaveButton({
+  saved,
+  onToggle,
+  t,
+}: {
+  saved: boolean
+  onToggle: () => void
+  t: TFunction<'public'>
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={saved}
+      className={
+        saved
+          ? 'rounded-control border border-primary bg-primary-tint px-6 py-2.5 text-sm font-bold text-primary'
+          : 'rounded-control border border-border bg-surface px-6 py-2.5 text-sm font-bold text-ink'
+      }
+    >
+      {saved ? t('jobDetail.saved') : t('jobDetail.save')}
+    </button>
+  )
+}
+
 function NotFound() {
   const { t } = useTranslation('public')
   const localize = useLocalizedPath()
@@ -104,6 +130,8 @@ export default function JobDetailPage() {
   const [applying, setApplying] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
 
+  const [saved, setSaved] = useState(false)
+
   useEffect(() => {
     if (!jobId) return
     let cancelled = false
@@ -121,12 +149,13 @@ export default function JobDetailPage() {
         setSimilarJobs(findSimilarJobs(detail, allJobs))
 
         if (authStatus === 'authenticated' && user?.role === 'CANDIDATE') {
-          const mine = await applicationsApi.mine()
+          const [mine, savedJobs] = await Promise.all([applicationsApi.mine(), savedJobsApi.mine()])
           if (cancelled) return
           const existing = mine.find(
             (application) => application.jobId === jobId && application.status !== 'WITHDRAWN',
           )
           setApplicationId(existing?.id ?? null)
+          setSaved(savedJobs.some((savedJob) => savedJob.id === jobId))
         }
       } catch {
         if (!cancelled) setNotFound(true)
@@ -140,6 +169,18 @@ export default function JobDetailPage() {
       cancelled = true
     }
   }, [jobId, authStatus, user?.role])
+
+  function handleToggleSave() {
+    if (!job) return
+    if (authStatus !== 'authenticated') {
+      navigate(localize(ROUTES.login))
+      return
+    }
+    const wasSaved = saved
+    setSaved(!wasSaved)
+    const request = wasSaved ? savedJobsApi.unsave(job.id) : savedJobsApi.save(job.id)
+    request.catch(() => setSaved(wasSaved))
+  }
 
   // Withdrawing lives on the Applications page only (see ApplicationsPage) — once applied, this
   // page just shows a static "Applied" label rather than offering a withdraw action here too.
@@ -218,6 +259,7 @@ export default function JobDetailPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-start gap-2.5">
+                <SaveButton saved={saved} onToggle={handleToggleSave} t={t} />
                 <ApplyButton
                   applied={applicationId != null}
                   applying={applying}

@@ -8,6 +8,7 @@ import { ApiError } from '../../lib/apiClient'
 import { applicationsApi } from '../../lib/applicationsApi'
 import { jobsApi } from '../../lib/jobsApi'
 import { experienceLevelToBackend, workModeToBackend } from '../../lib/jobEnums'
+import { savedJobsApi } from '../../lib/savedJobsApi'
 import { useAuthStore } from '../../stores/authStore'
 import { FilterSidebar } from './FilterSidebar'
 import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './filterState'
@@ -52,6 +53,7 @@ export default function JobSearchPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
+  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set())
 
   // Independent of the search effect below — which jobs the candidate has applied to doesn't
   // change with query/filters/sort, so this only needs to re-run when auth state changes (e.g.
@@ -82,6 +84,46 @@ export default function JobSearchPage() {
       cancelled = true
     }
   }, [authStatus, user?.role])
+
+  // Same independence-from-search reasoning as the applied-jobs effect above.
+  useEffect(() => {
+    let cancelled = false
+    const saved =
+      authStatus === 'authenticated' && user?.role === 'CANDIDATE'
+        ? savedJobsApi.mine()
+        : Promise.resolve([])
+    saved
+      .then((savedJobs) => {
+        if (cancelled) return
+        setSavedJobIds(new Set(savedJobs.map((job) => job.id)))
+      })
+      .catch(() => {
+        // Best-effort — the bookmark toggle just won't show as filled if this fails.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [authStatus, user?.role])
+
+  function toggleSaved(jobId: string) {
+    const isSaved = savedJobIds.has(jobId)
+    setSavedJobIds((prev) => {
+      const next = new Set(prev)
+      if (isSaved) next.delete(jobId)
+      else next.add(jobId)
+      return next
+    })
+    const request = isSaved ? savedJobsApi.unsave(jobId) : savedJobsApi.save(jobId)
+    request.catch(() => {
+      // Revert on failure — the toggle above was optimistic.
+      setSavedJobIds((prev) => {
+        const next = new Set(prev)
+        if (isSaved) next.add(jobId)
+        else next.delete(jobId)
+        return next
+      })
+    })
+  }
 
   useEffect(() => {
     if (!hasSearched) return
@@ -272,7 +314,17 @@ export default function JobSearchPage() {
             ) : (
               <div className="flex flex-col gap-3.5">
                 {visibleJobs.map((job) => (
-                  <ResultCard key={job.id} job={job} applied={appliedJobIds.has(job.id)} />
+                  <ResultCard
+                    key={job.id}
+                    job={job}
+                    applied={appliedJobIds.has(job.id)}
+                    saved={savedJobIds.has(job.id)}
+                    onToggleSave={
+                      authStatus === 'authenticated' && user?.role === 'CANDIDATE'
+                        ? () => toggleSaved(job.id)
+                        : undefined
+                    }
+                  />
                 ))}
               </div>
             )}
