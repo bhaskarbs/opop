@@ -55,6 +55,15 @@ public class CompanyBillingTransaction {
         this.status = TransactionStatus.PAID;
     }
 
+    /** Admin comp grant — no money changes hands, so it's recorded as a settled ₹0 transaction
+     * (rather than the plan's real price) purely for the audit trail / billing history. */
+    public static CompanyBillingTransaction adminGrant(UUID companyId, CompanySubscriptionPlan plan) {
+        CompanyBillingTransaction transaction = new CompanyBillingTransaction(companyId, plan, null);
+        transaction.amountRupees = 0;
+        transaction.status = TransactionStatus.PAID;
+        return transaction;
+    }
+
     /** Paid-plan checkout — starts PENDING against a just-created Razorpay Order. */
     public CompanyBillingTransaction(UUID companyId, CompanySubscriptionPlan plan, String razorpayOrderId) {
         this.id = UUID.randomUUID();

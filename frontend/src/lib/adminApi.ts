@@ -1,7 +1,8 @@
 import { useAuthStore } from '../stores/authStore'
 import { blobRequest, request } from './apiClient'
-import type { BackendSubscriptionPlan } from './billingApi'
+import type { BackendSubscriptionPlan, BillingTransactionStatus } from './billingApi'
 import type { CompanyCertificateSummary } from './companyApi'
+import type { BackendCompanySubscriptionPlan } from './companyBillingApi'
 import type { IdeaDetail } from './ideasApi'
 import type { BackendExperienceLevel, JobDetail } from './jobsApi'
 
@@ -177,6 +178,35 @@ export interface AdminCandidateSubscriptionSummary {
 // PlanNotAdminAssignableException) — Pro always has to go through a real Razorpay checkout.
 export type AdminAssignableSubscriptionPlan = 'FREE' | 'PLUS'
 
+export interface AdminCompanySubscriptionSummary {
+  companyId: string
+  companyName: string
+  email: string
+  plan: BackendCompanySubscriptionPlan
+  validUntil: string | null
+}
+
+// The backend only lets an admin comp Free or Growth directly (see
+// CompanyPlanNotAdminAssignableException) — Enterprise always has to go through a real
+// Razorpay checkout.
+export type AdminAssignableCompanySubscriptionPlan = 'FREE' | 'GROWTH'
+
+export interface AdminBillingStats {
+  monthlyRecurringRevenueRupees: number
+  activeSubscriptions: number
+  churnedThisMonth: number
+}
+
+export interface AdminInvoiceSummary {
+  id: string
+  name: string | null
+  userType: AdminUserRole
+  plan: string
+  amountRupees: number
+  status: BillingTransactionStatus
+  createdAt: string
+}
+
 function authHeaders(): Record<string, string> {
   const token = useAuthStore.getState().accessToken
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -345,4 +375,20 @@ export const adminApi = {
       body: JSON.stringify({ plan }),
       headers: authHeaders(),
     }),
+
+  companySubscriptions: () =>
+    request<AdminCompanySubscriptionSummary[]>('/api/admin/company-billing', {
+      headers: authHeaders(),
+    }),
+  setCompanyPlan: (companyId: string, plan: AdminAssignableCompanySubscriptionPlan) =>
+    request<AdminCompanySubscriptionSummary>(`/api/admin/company-billing/${companyId}/plan`, {
+      method: 'POST',
+      body: JSON.stringify({ plan }),
+      headers: authHeaders(),
+    }),
+
+  billingStats: () =>
+    request<AdminBillingStats>('/api/admin/billing/stats', { headers: authHeaders() }),
+  invoiceHistory: () =>
+    request<AdminInvoiceSummary[]>('/api/admin/billing/invoices', { headers: authHeaders() }),
 }

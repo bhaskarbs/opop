@@ -32,7 +32,9 @@ import com.openopportunity.auth.exception.ResumeRenderingFailedException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
 import com.openopportunity.billing.exception.CandidateNotFoundException;
+import com.openopportunity.billing.exception.CompanyNotFoundException;
 import com.openopportunity.billing.exception.CompanyPaidPlanRequiresCheckoutException;
+import com.openopportunity.billing.exception.CompanyPlanNotAdminAssignableException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
@@ -342,6 +344,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PlanNotAdminAssignableException.class)
     public ResponseEntity<ApiError> handlePlanNotAdminAssignable(PlanNotAdminAssignableException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyNotFoundException.class)
+    public ResponseEntity<ApiError> handleCompanyNotFound(CompanyNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CompanyPlanNotAdminAssignableException.class)
+    public ResponseEntity<ApiError> handleCompanyPlanNotAdminAssignable(CompanyPlanNotAdminAssignableException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 

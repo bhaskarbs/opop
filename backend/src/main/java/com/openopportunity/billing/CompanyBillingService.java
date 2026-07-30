@@ -2,11 +2,15 @@ package com.openopportunity.billing;
 
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
+import com.openopportunity.billing.dto.AdminCompanySubscriptionSummary;
 import com.openopportunity.billing.dto.CompanyBillingSummary;
 import com.openopportunity.billing.dto.CompanyBillingTransactionSummary;
 import com.openopportunity.billing.dto.CompanyCheckoutSummary;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
+import com.openopportunity.billing.exception.CompanyNotFoundException;
 import com.openopportunity.billing.exception.CompanyPaidPlanRequiresCheckoutException;
+import com.openopportunity.billing.exception.CompanyPlanNotAdminAssignableException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
 import com.openopportunity.billing.exception.SamePlanException;
@@ -27,8 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Company counterpart to CandidateBillingService — mirrors its logic exactly (free downgrades
  * are instant, upgrading to a paid plan requires a real Razorpay payment), kept as a fully
  * separate service/table pair rather than a shared one, same "duplicate per role" precedent as
- * CompanyProfile vs CandidateProfile. No admin-assignable-plan path exists yet for companies
- * (see AdminCandidateBillingController for the candidate equivalent, not yet mirrored here). */
+ * CompanyProfile vs CandidateProfile. */
 @Service
 public class CompanyBillingService {
 
@@ -73,6 +76,52 @@ public class CompanyBillingService {
     @Transactional(readOnly = true)
     public CompanyBillingSummary getBilling(UUID companyId) {
         return summaryFor(companyId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminCompanySubscriptionSummary> adminListCompanySubscriptions() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRole() == UserRole.COMPANY)
+                .map(user -> {
+                    CompanySubscription subscription =
+                            subscriptionRepository.findByCompanyId(user.getId()).orElse(null);
+                    CompanySubscriptionPlan plan =
+                            subscription == null ? CompanySubscriptionPlan.FREE : subscription.getPlan();
+                    Instant validUntil = subscription == null ? null : subscription.getCurrentPeriodEnd();
+                    return new AdminCompanySubscriptionSummary(
+                            user.getId(), user.getFullName(), user.getEmail(), plan, validUntil);
+                })
+                .toList();
+    }
+
+    /** Admin-only direct plan change (comps / support fixes) — deliberately bypasses the paid
+     * Razorpay checkout the public path requires. Free and Growth only (mirrors
+     * CandidateBillingService.adminSetPlan's Free/Plus-only policy — Enterprise stays
+     * checkout-only); granting Growth gets a fresh PAID_PLAN_PERIOD so the daily expiry sweep
+     * treats it exactly like a purchased period, and a ₹0 comp transaction is recorded for the
+     * audit trail. */
+    @Transactional
+    public AdminCompanySubscriptionSummary adminSetPlan(UUID companyId, CompanySubscriptionPlan plan) {
+        if (plan != CompanySubscriptionPlan.FREE && plan != CompanySubscriptionPlan.GROWTH) {
+            throw new CompanyPlanNotAdminAssignableException(plan);
+        }
+        User company = userRepository
+                .findById(companyId)
+                .filter(user -> user.getRole() == UserRole.COMPANY)
+                .orElseThrow(() -> new CompanyNotFoundException(companyId));
+
+        Instant now = Instant.now();
+        Instant currentPeriodEnd = plan == CompanySubscriptionPlan.FREE ? null : now.plus(PAID_PLAN_PERIOD);
+        Instant currentPeriodStart = plan == CompanySubscriptionPlan.FREE ? null : now;
+        CompanySubscription subscription = subscriptionRepository
+                .findByCompanyId(companyId)
+                .orElseGet(() -> new CompanySubscription(companyId, plan));
+        subscription.changePlan(plan, currentPeriodStart, currentPeriodEnd);
+        subscriptionRepository.save(subscription);
+        transactionRepository.save(CompanyBillingTransaction.adminGrant(companyId, plan));
+
+        return new AdminCompanySubscriptionSummary(
+                company.getId(), company.getFullName(), company.getEmail(), plan, currentPeriodEnd);
     }
 
     /** For CandidateSearchService's contact-reveal quota gate — cheaper than getBilling() when
