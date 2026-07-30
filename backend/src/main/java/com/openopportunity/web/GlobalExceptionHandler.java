@@ -13,13 +13,11 @@ import com.openopportunity.auth.exception.CompanyCertificateNotFoundException;
 import com.openopportunity.auth.exception.CompanyLogoNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
 import com.openopportunity.auth.exception.EmailAlreadyRegisteredException;
-import com.openopportunity.auth.exception.EmailVerificationEmailException;
 import com.openopportunity.auth.exception.IncompleteCandidateProfileException;
 import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidOrExpiredResetTokenException;
-import com.openopportunity.auth.exception.InvalidOrExpiredVerificationTokenException;
 import com.openopportunity.auth.exception.InvalidCompanyCertificateException;
 import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
@@ -96,17 +94,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PasswordResetEmailException.class)
     public ResponseEntity<ApiError> handlePasswordResetEmail(PasswordResetEmailException ex) {
-        return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
-    }
-
-    @ExceptionHandler(InvalidOrExpiredVerificationTokenException.class)
-    public ResponseEntity<ApiError> handleInvalidOrExpiredVerificationToken(
-            InvalidOrExpiredVerificationTokenException ex) {
-        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
-    }
-
-    @ExceptionHandler(EmailVerificationEmailException.class)
-    public ResponseEntity<ApiError> handleEmailVerificationEmail(EmailVerificationEmailException ex) {
         return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
     }
 

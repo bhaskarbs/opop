@@ -231,10 +231,6 @@ function buildMockInterviewQuestionQuery(params: MockInterviewQuestionListParams
   return query ? `?${query}` : ''
 }
 
-export interface PlatformSettings {
-  emailVerificationEnabled: boolean
-}
-
 export const adminApi = {
   getDashboardStats: () =>
     request<AdminDashboardStats>('/api/admin/dashboard/stats', { headers: authHeaders() }),
@@ -254,14 +250,6 @@ export const adminApi = {
     request<AdminFinancialReportStats>('/api/admin/reports/financial', {
       headers: authHeaders(),
     }),
-  getSettings: () => request<PlatformSettings>('/api/admin/settings', { headers: authHeaders() }),
-  setEmailVerificationEnabled: (enabled: boolean) =>
-    request<PlatformSettings>('/api/admin/settings/email-verification', {
-      method: 'PUT',
-      body: JSON.stringify({ emailVerificationEnabled: enabled }),
-      headers: authHeaders(),
-    }),
-
   pendingJobs: (q?: string) =>
     request<JobDetail[]>(`/api/jobs/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`, {
       headers: authHeaders(),

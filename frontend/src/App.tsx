@@ -29,8 +29,6 @@ import RegisterPage from './pages/auth/RegisterPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import CompanyForgotPasswordPage from './pages/auth/CompanyForgotPasswordPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
-import VerifyEmailPage from './pages/auth/VerifyEmailPage'
-import VerifyEmailPendingPage from './pages/auth/VerifyEmailPendingPage'
 import CompanyLoginPage from './pages/auth/CompanyLoginPage'
 import CompanyRegisterPage from './pages/auth/CompanyRegisterPage'
 import AdminLoginPage from './pages/auth/AdminLoginPage'
@@ -63,7 +61,6 @@ import AdminCompanyDetailPage from './pages/admin/AdminCompanyDetailPage'
 import AdminMockInterviewQuestionsPage from './pages/admin/AdminMockInterviewQuestionsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import AdminBillingPage from './pages/admin/AdminBillingPage'
-import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
@@ -145,8 +142,6 @@ function App() {
               <Route path="register" element={<RegisterPage />} />
               <Route path="forgot-password" element={<ForgotPasswordPage />} />
               <Route path="reset-password" element={<ResetPasswordPage />} />
-              <Route path="verify-email" element={<VerifyEmailPage />} />
-              <Route path="verify-email-pending" element={<VerifyEmailPendingPage />} />
               <Route path="company/login" element={<CompanyLoginPage />} />
               <Route path="company/register" element={<CompanyRegisterPage />} />
               <Route path="company/forgot-password" element={<CompanyForgotPasswordPage />} />
@@ -199,10 +194,7 @@ function App() {
                   <Route path="ideas" element={<AdminIdeaApprovalsPage />} />
                 </Route>
                 <Route path="admin/users" element={<AdminUsersPage />} />
-                <Route
-                  path="admin/users/candidates/:id"
-                  element={<AdminCandidateDetailPage />}
-                />
+                <Route path="admin/users/candidates/:id" element={<AdminCandidateDetailPage />} />
                 <Route path="admin/users/companies/:id" element={<AdminCompanyDetailPage />} />
                 <Route
                   path="admin/mock-interview-questions"
@@ -210,7 +202,6 @@ function App() {
                 />
                 <Route path="admin/reports" element={<AdminReportsPage />} />
                 <Route path="admin/billing" element={<AdminBillingPage />} />
-                <Route path="admin/settings" element={<AdminSettingsPage />} />
               </Route>
             </Route>
 
