@@ -21,6 +21,7 @@
     "viewIdea": "View idea →",
     "applied": "Applied",
     "noResults": "No ideas match your filters.",
+    "loading": "Loading ideas…",
     "errorLoading": "Couldn't load ideas. Please try again.",
     "showMore": "Show more ideas"
   },

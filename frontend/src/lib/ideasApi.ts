@@ -75,11 +75,12 @@ export interface IdeaInterestSummary {
   ticketSize: string | null
   message: string | null
   // contactNumber and candidateUserId are only ever populated for the idea owner's own view, and
-  // only when they're entitled to see them — a candidate on the Plus (or higher) plan, or a
-  // company on the Growth (or higher) plan (see billingApi / companyBillingApi). Both stay null
-  // when not entitled; contactNumber is also null when the interested user has no mobile on
-  // file, and candidateUserId is null when the interested user isn't a candidate (e.g. an
-  // investor company has no viewable profile page).
+  // only when they're entitled to see them — a candidate on the Plus (or higher) plan, or an
+  // admin-verified company on the Growth (or higher) plan (see billingApi / companyBillingApi).
+  // Both stay null when not entitled (including an unverified company on a paid plan);
+  // contactNumber is also null when the interested user has no mobile on file, and
+  // candidateUserId is null when the interested user isn't a candidate (e.g. an investor company
+  // has no viewable profile page).
   contactNumber: string | null
   candidateUserId: string | null
   createdAt: string

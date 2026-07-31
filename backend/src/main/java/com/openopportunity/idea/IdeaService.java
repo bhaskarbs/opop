@@ -2,6 +2,8 @@ package com.openopportunity.idea;
 
 import com.openopportunity.auth.CandidateProfile;
 import com.openopportunity.auth.CandidateProfileRepository;
+import com.openopportunity.auth.CompanyProfile;
+import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
@@ -42,6 +44,7 @@ public class IdeaService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final CandidateBillingService candidateBillingService;
     private final CompanyBillingService companyBillingService;
+    private final CompanyProfileRepository companyProfileRepository;
 
     public IdeaService(
             IdeaRepository ideaRepository,
@@ -50,7 +53,8 @@ public class IdeaService {
             NotificationService notificationService,
             CandidateProfileRepository candidateProfileRepository,
             CandidateBillingService candidateBillingService,
-            CompanyBillingService companyBillingService) {
+            CompanyBillingService companyBillingService,
+            CompanyProfileRepository companyProfileRepository) {
         this.ideaRepository = ideaRepository;
         this.userRepository = userRepository;
         this.ideaInterestRepository = ideaInterestRepository;
@@ -58,6 +62,7 @@ public class IdeaService {
         this.candidateProfileRepository = candidateProfileRepository;
         this.candidateBillingService = candidateBillingService;
         this.companyBillingService = companyBillingService;
+        this.companyProfileRepository = companyProfileRepository;
     }
 
     @Transactional
@@ -223,8 +228,10 @@ public class IdeaService {
     /** Only the idea's own submitter can see who has expressed interest in it. Contact details
      * (phone number, and a link to the full candidate profile) are an extra gate on top of that:
      * only included when the caller is on a paid plan — a candidate on the Plus (or higher) plan
-     * (see CandidateBillingService), or a company on the Growth (or higher) plan (see
-     * CompanyBillingService), matching each side's own billing plans. */
+     * (see CandidateBillingService), or a company on the Growth (or higher) plan AND admin-verified
+     * (see CompanyBillingService / CompanyProfile.isVerified) — an unverified company never sees
+     * contact details regardless of plan, same guard as CandidateSearchService's
+     * requireEligibleToContactCandidates. */
     @Transactional(readOnly = true)
     public List<IdeaInterestSummary> getInterests(UUID ideaId, UUID callerId) {
         Idea idea = ideaRepository.findById(ideaId).orElseThrow(() -> new IdeaNotFoundException(ideaId));
@@ -240,6 +247,13 @@ public class IdeaService {
     private boolean canSeeInterestContactDetails(UUID callerId) {
         User caller = userRepository.findById(callerId).orElseThrow();
         if (caller.getRole() == UserRole.COMPANY) {
+            boolean verified = companyProfileRepository
+                    .findByUserId(callerId)
+                    .map(CompanyProfile::isVerified)
+                    .orElse(false);
+            if (!verified) {
+                return false;
+            }
             return companyBillingService.getPlanPeriod(callerId).plan() != CompanySubscriptionPlan.FREE;
         }
         return candidateBillingService.getCurrentPlan(callerId) != SubscriptionPlan.FREE;
