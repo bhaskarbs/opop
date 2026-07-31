@@ -12,6 +12,7 @@ import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
 import { useApplicationsStore } from './stores/applicationsStore'
 import { useCandidateProfileStore } from './stores/candidateProfileStore'
+import { useCompanyProfileStore } from './stores/companyProfileStore'
 import { useSavedJobsStore } from './stores/savedJobsStore'
 import { RequireAuth } from './routes/RequireAuth'
 import { ScrollToTop } from './routes/ScrollToTop'
@@ -130,6 +131,7 @@ function App() {
         if (useAuthStore.getState().status === 'checking') {
           clearSession()
           useCandidateProfileStore.getState().clear()
+          useCompanyProfileStore.getState().clear()
           useApplicationsStore.getState().clear()
           useSavedJobsStore.getState().clear()
         }

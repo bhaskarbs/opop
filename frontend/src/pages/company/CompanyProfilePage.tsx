@@ -13,6 +13,7 @@ import {
 } from '../../lib/companyApi'
 import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
 import { useAuthStore } from '../../stores/authStore'
+import { useCompanyProfileStore } from '../../stores/companyProfileStore'
 import { PhoneInput } from '../auth/shared/PhoneInput'
 
 const ENTITY_TYPES = [
@@ -143,8 +144,9 @@ export default function CompanyProfilePage() {
 
   useEffect(() => {
     let cancelled = false
-    companyApi
-      .getProfile()
+    useCompanyProfileStore
+      .getState()
+      .fetchProfile()
       .then((data) => {
         if (cancelled) return
         setProfile(data)
@@ -193,6 +195,10 @@ export default function CompanyProfilePage() {
     try {
       const uploaded = await companyApi.uploadLogo(file)
       setCompanyLogo(uploaded.logoUrl)
+      const cached = useCompanyProfileStore.getState().profile
+      if (cached) {
+        useCompanyProfileStore.getState().setProfile({ ...cached, logoUrl: uploaded.logoUrl })
+      }
     } catch (error) {
       setLogoError(error instanceof ApiError ? error.message : t('profile.logoError'))
     } finally {
@@ -211,6 +217,10 @@ export default function CompanyProfilePage() {
       const uploaded = await companyApi.uploadCertificate(file)
       setCertificates((prev) => [uploaded, ...prev])
       setProfile((prev) => (prev ? { ...prev, verificationStatus: 'PENDING' } : prev))
+      const cached = useCompanyProfileStore.getState().profile
+      if (cached) {
+        useCompanyProfileStore.getState().setProfile({ ...cached, verificationStatus: 'PENDING' })
+      }
     } catch (error) {
       setCertificateError(error instanceof ApiError ? error.message : t('profile.certificateError'))
     } finally {
@@ -247,6 +257,10 @@ export default function CompanyProfilePage() {
       await companyApi.deleteCertificate(certificate.id)
       setCertificates((prev) => prev.filter((existing) => existing.id !== certificate.id))
       setProfile((prev) => (prev ? { ...prev, verificationStatus: 'PENDING' } : prev))
+      const cached = useCompanyProfileStore.getState().profile
+      if (cached) {
+        useCompanyProfileStore.getState().setProfile({ ...cached, verificationStatus: 'PENDING' })
+      }
     } catch (error) {
       setCertificateError(
         error instanceof ApiError ? error.message : t('profile.certificateDeleteError'),
@@ -263,6 +277,7 @@ export default function CompanyProfilePage() {
     try {
       const updated = await companyApi.updateProfile(values)
       setProfile(updated)
+      useCompanyProfileStore.getState().setProfile(updated)
       setSaveSuccess(true)
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('profile.saveError'))

@@ -8,6 +8,7 @@ import { companyApi, type CompanyProfileResponse, type ContactQuota } from '../.
 import { jobsApi, type JobSummary } from '../../lib/jobsApi'
 import { notificationsApi } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
+import { useCompanyProfileStore } from '../../stores/companyProfileStore'
 
 const VERIFICATION_LABEL_KEYS: Record<CompanyProfileResponse['verificationStatus'], string> = {
   PENDING: 'dashboard.verification.pending',
@@ -73,7 +74,7 @@ export default function CompanyDashboardPage() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([companyApi.getProfile(), jobsApi.mine()])
+    Promise.all([useCompanyProfileStore.getState().fetchProfile(), jobsApi.mine()])
       .then(([profileData, postingsData]) => {
         if (cancelled) return
         setProfile(profileData)

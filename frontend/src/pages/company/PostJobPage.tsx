@@ -21,9 +21,9 @@ import {
   type WorkModeLabel,
 } from '../../lib/jobEnums'
 import { ApiError } from '../../lib/apiClient'
-import { companyApi } from '../../lib/companyApi'
 import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
+import { useCompanyProfileStore } from '../../stores/companyProfileStore'
 
 // Rendered text only — the underlying enum values stay as-is (see lib/jobEnums.ts). Experience
 // level and work mode reuse the `public` namespace's filter labels rather than duplicating them.
@@ -111,8 +111,9 @@ export default function PostJobPage() {
 
   useEffect(() => {
     let cancelled = false
-    companyApi
-      .getProfile()
+    useCompanyProfileStore
+      .getState()
+      .fetchProfile()
       .then((profile) => {
         if (!cancelled)
           setEligible(profile.profileComplete && profile.verificationStatus === 'VERIFIED')
