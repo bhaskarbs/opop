@@ -5,12 +5,10 @@ import { Link } from 'react-router-dom'
 import { LoadingState } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
-import {
-  applicationsApi,
-  type ApplicationStatus as BackendApplicationStatus,
-} from '../../lib/applicationsApi'
+import type { ApplicationStatus as BackendApplicationStatus } from '../../lib/applicationsApi'
 import { ideasApi, type BackendIdeaInterestRole } from '../../lib/ideasApi'
 import { ROUTES } from '../../routes/paths'
+import { useApplicationsStore } from '../../stores/applicationsStore'
 
 const PAGE_SIZE = 10
 
@@ -139,7 +137,7 @@ export default function ApplicationsPage() {
       setLoading(true)
       setError(null)
       const [jobsResult, partnershipsResult] = await Promise.allSettled([
-        applicationsApi.mine(),
+        useApplicationsStore.getState().fetchApplications(),
         ideasApi.myInterests(),
       ])
       if (cancelled) return

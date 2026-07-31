@@ -10,7 +10,9 @@ import {
 } from 'react-router-dom'
 import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
+import { useApplicationsStore } from './stores/applicationsStore'
 import { useCandidateProfileStore } from './stores/candidateProfileStore'
+import { useSavedJobsStore } from './stores/savedJobsStore'
 import { RequireAuth } from './routes/RequireAuth'
 import { ScrollToTop } from './routes/ScrollToTop'
 import i18n, { DEFAULT_LANGUAGE, isSupportedLanguage } from './i18n'
@@ -128,6 +130,8 @@ function App() {
         if (useAuthStore.getState().status === 'checking') {
           clearSession()
           useCandidateProfileStore.getState().clear()
+          useApplicationsStore.getState().clear()
+          useSavedJobsStore.getState().clear()
         }
       })
   }, [setSession, clearSession])

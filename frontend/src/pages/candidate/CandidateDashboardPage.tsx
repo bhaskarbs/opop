@@ -4,11 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Card, LoadingState } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import {
-  applicationsApi,
-  type ApplicationStatus,
-  type ApplicationSummary,
-} from '../../lib/applicationsApi'
+import type { ApplicationStatus, ApplicationSummary } from '../../lib/applicationsApi'
 import type { CandidateProfileResponse } from '../../lib/candidateApi'
 import {
   deriveCompletedSections,
@@ -19,6 +15,7 @@ import { jobsApi } from '../../lib/jobsApi'
 import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
 import { toDisplayJob, type DisplayJob } from '../job-search/jobDisplay'
 import { ROUTES } from '../../routes/paths'
+import { useApplicationsStore } from '../../stores/applicationsStore'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 const NUDGE_MIN_DAYS = 30
@@ -88,7 +85,7 @@ export default function CandidateDashboardPage() {
     Promise.all([
       useCandidateProfileStore.getState().fetchProfile(),
       jobsApi.search({}),
-      applicationsApi.mine(),
+      useApplicationsStore.getState().fetchApplications(),
       ideasApi.browse(),
       ideasApi.myInterests(),
       mockInterviewApi.mine(),

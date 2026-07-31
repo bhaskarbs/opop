@@ -7,11 +7,12 @@ import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ApiError } from '../../lib/apiClient'
-import { applicationsApi } from '../../lib/applicationsApi'
 import { jobsApi, jobQueryKeys, type JobSearchParams } from '../../lib/jobsApi'
 import { experienceLevelToBackend, workModeToBackend } from '../../lib/jobEnums'
 import { savedJobsApi } from '../../lib/savedJobsApi'
 import { useAuthStore } from '../../stores/authStore'
+import { useApplicationsStore } from '../../stores/applicationsStore'
+import { useSavedJobsStore } from '../../stores/savedJobsStore'
 import { FilterSidebar } from './FilterSidebar'
 import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './filterState'
 import { ResultCard } from './ResultCard'
@@ -56,14 +57,17 @@ export default function JobSearchPage() {
 
   // Independent of the search effect below — which jobs the candidate has applied to doesn't
   // change with query/filters/sort, so this only needs to re-run when auth state changes (e.g.
-  // logging in mid-session). Always resolves through a promise chain — even the "not a
-  // candidate" case — so setAppliedJobIds is only ever called from a .then(), not synchronously
-  // in the effect body (react-hooks/set-state-in-effect).
+  // logging in mid-session). Goes through applicationsStore's cache-first fetch rather than
+  // calling applicationsApi.mine() directly, so this doesn't trigger a network request if
+  // another candidate page already loaded the list this session (see applicationsStore.ts).
+  // Always resolves through a promise chain — even the "not a candidate" case — so
+  // setAppliedJobIds is only ever called from a .then(), not synchronously in the effect body
+  // (react-hooks/set-state-in-effect).
   useEffect(() => {
     let cancelled = false
     const applied =
       authStatus === 'authenticated' && user?.role === 'CANDIDATE'
-        ? applicationsApi.mine()
+        ? useApplicationsStore.getState().fetchApplications()
         : Promise.resolve([])
     applied
       .then((applications) => {
@@ -84,12 +88,13 @@ export default function JobSearchPage() {
     }
   }, [authStatus, user?.role])
 
-  // Same independence-from-search reasoning as the applied-jobs effect above.
+  // Same independence-from-search reasoning as the applied-jobs effect above, and same
+  // cache-first store (see savedJobsStore.ts) in place of a direct savedJobsApi.mine() call.
   useEffect(() => {
     let cancelled = false
     const saved =
       authStatus === 'authenticated' && user?.role === 'CANDIDATE'
-        ? savedJobsApi.mine()
+        ? useSavedJobsStore.getState().fetchSavedJobs()
         : Promise.resolve([])
     saved
       .then((savedJobs) => {
@@ -113,15 +118,22 @@ export default function JobSearchPage() {
       return next
     })
     const request = isSaved ? savedJobsApi.unsave(jobId) : savedJobsApi.save(jobId)
-    request.catch(() => {
-      // Revert on failure — the toggle above was optimistic.
-      setSavedJobIds((prev) => {
-        const next = new Set(prev)
-        if (isSaved) next.add(jobId)
-        else next.delete(jobId)
-        return next
+    request
+      .then(() => {
+        // Refreshes the shared cache in the background so SavedJobsPage (or coming back to
+        // this page later) sees the change without needing its own extra round trip — see
+        // savedJobsStore's comment on why this force-refetches rather than patching in place.
+        useSavedJobsStore.getState().fetchSavedJobs(true)
       })
-    })
+      .catch(() => {
+        // Revert on failure — the toggle above was optimistic.
+        setSavedJobIds((prev) => {
+          const next = new Set(prev)
+          if (isSaved) next.add(jobId)
+          else next.delete(jobId)
+          return next
+        })
+      })
   }
 
   // Debounced separately from the query itself — the query key only changes once every 300ms
