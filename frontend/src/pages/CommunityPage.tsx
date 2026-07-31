@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Spinner } from '../components/ui'
-import { ApiError } from '../lib/apiClient'
-import { communityApi } from '../lib/communityApi'
+import { ApiError, type UserSummary } from '../lib/apiClient'
+import { communityApi, type CommunityInterestPayload } from '../lib/communityApi'
+import { useAuthStore } from '../stores/authStore'
+import { useCandidateProfileStore } from '../stores/candidateProfileStore'
+import { useCompanyProfileStore } from '../stores/companyProfileStore'
 
 const INCOME_TYPES = [
   {
@@ -27,8 +30,31 @@ const INCOME_TYPES = [
   },
 ]
 
+/** Fills in the interest form from the signed-in user's own profile rather than asking them to
+ * retype it — mobile/company name live on the role-specific profile (not on the auth session
+ * itself), fetched cache-first so this doesn't cost an extra network round trip if the profile
+ * was already loaded elsewhere this session. */
+async function loggedInInterestPayload(user: UserSummary): Promise<CommunityInterestPayload> {
+  if (user.role === 'COMPANY') {
+    const profile = await useCompanyProfileStore.getState().fetchProfile()
+    return {
+      name: user.fullName,
+      companyName: profile.companyName,
+      email: user.email,
+      phone: profile.contactNumber,
+    }
+  }
+  if (user.role === 'CANDIDATE') {
+    const profile = await useCandidateProfileStore.getState().fetchProfile()
+    return { name: user.fullName, companyName: null, email: user.email, phone: profile.mobile }
+  }
+  return { name: user.fullName, companyName: null, email: user.email, phone: null }
+}
+
 export default function CommunityPage() {
   const { t } = useTranslation('public')
+  const authStatus = useAuthStore((state) => state.status)
+  const user = useAuthStore((state) => state.user)
   const [videoOpen, setVideoOpen] = useState(false)
   const [interestModalOpen, setInterestModalOpen] = useState(false)
   const [name, setName] = useState('')
@@ -52,16 +78,25 @@ export default function CommunityPage() {
     setInterestError(null)
   }
 
-  async function handleSubmitInterest() {
+  // Signed-in users skip the form entirely — their own profile already has everything the form
+  // would ask for, so prompting them to retype it is just friction (and the guest-only modal is
+  // the thing that would otherwise pop up here). Guests still go through handleSubmitInterest via
+  // the modal below.
+  function handleKnowMoreClick() {
+    if (authStatus === 'authenticated' && user) {
+      void submitInterestFor(loggedInInterestPayload(user))
+    } else {
+      setInterestModalOpen(true)
+    }
+  }
+
+  async function submitInterestFor(
+    payload: CommunityInterestPayload | Promise<CommunityInterestPayload>,
+  ) {
     setInterestSending(true)
     setInterestError(null)
     try {
-      await communityApi.notifyInterest({
-        name,
-        companyName: companyName || null,
-        email,
-        phone: phone || null,
-      })
+      await communityApi.notifyInterest(await payload)
       setInterestSent(true)
       setInterestModalOpen(false)
     } catch (caught) {
@@ -73,21 +108,36 @@ export default function CommunityPage() {
     }
   }
 
+  function handleSubmitInterest() {
+    return submitInterestFor({
+      name,
+      companyName: companyName || null,
+      email,
+      phone: phone || null,
+    })
+  }
+
   function closeGuideModal() {
     setGuideModalOpen(false)
     setGuideError(null)
   }
 
-  async function handleSubmitGuideRequest() {
+  // Same signed-in shortcut as handleKnowMoreClick above.
+  function handleReadGuideClick() {
+    if (authStatus === 'authenticated' && user) {
+      void submitGuideRequestFor(loggedInInterestPayload(user))
+    } else {
+      setGuideModalOpen(true)
+    }
+  }
+
+  async function submitGuideRequestFor(
+    payload: CommunityInterestPayload | Promise<CommunityInterestPayload>,
+  ) {
     setGuideSending(true)
     setGuideError(null)
     try {
-      await communityApi.notifyInterest({
-        name: guideName,
-        companyName: null,
-        email: guideEmail,
-        phone: guidePhone || null,
-      })
+      await communityApi.notifyInterest(await payload)
       setGuideSent(true)
       setGuideModalOpen(false)
     } catch (caught) {
@@ -97,6 +147,15 @@ export default function CommunityPage() {
     } finally {
       setGuideSending(false)
     }
+  }
+
+  function handleSubmitGuideRequest() {
+    return submitGuideRequestFor({
+      name: guideName,
+      companyName: null,
+      email: guideEmail,
+      phone: guidePhone || null,
+    })
   }
 
   return (
@@ -118,13 +177,20 @@ export default function CommunityPage() {
                 {t('community.hero.knowMoreSent')}
               </p>
             ) : (
-              <button
-                type="button"
-                onClick={() => setInterestModalOpen(true)}
-                className="rounded-[9px] bg-teal px-[22px] py-3 text-sm font-bold text-white"
-              >
-                {t('community.hero.knowMore')}
-              </button>
+              <>
+                <button
+                  type="button"
+                  disabled={interestSending}
+                  onClick={handleKnowMoreClick}
+                  className="flex items-center gap-2 rounded-[9px] bg-teal px-[22px] py-3 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {interestSending && <Spinner className="h-4 w-4" />}
+                  {t('community.hero.knowMore')}
+                </button>
+                {interestError && !interestModalOpen && (
+                  <p className="mt-2.5 text-[12.5px] font-semibold text-danger">{interestError}</p>
+                )}
+              </>
             )}
           </div>
           <button
@@ -332,19 +398,26 @@ export default function CommunityPage() {
             </div>
           ))}
         </div>
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center">
           {guideSent ? (
             <p className="text-sm font-semibold text-teal">
               {t('community.incomeTypes.guideSent')}
             </p>
           ) : (
-            <button
-              type="button"
-              onClick={() => setGuideModalOpen(true)}
-              className="rounded-[9px] border border-teal px-[22px] py-3 text-sm font-bold text-teal"
-            >
-              {t('community.incomeTypes.readGuide')}
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={guideSending}
+                onClick={handleReadGuideClick}
+                className="flex items-center gap-2 rounded-[9px] border border-teal px-[22px] py-3 text-sm font-bold text-teal disabled:opacity-60"
+              >
+                {guideSending && <Spinner className="h-4 w-4" />}
+                {t('community.incomeTypes.readGuide')}
+              </button>
+              {guideError && !guideModalOpen && (
+                <p className="mt-2.5 text-[12.5px] font-semibold text-danger">{guideError}</p>
+              )}
+            </>
           )}
         </div>
       </div>
