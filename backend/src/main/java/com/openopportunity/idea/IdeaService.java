@@ -4,7 +4,10 @@ import com.openopportunity.auth.CandidateProfile;
 import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
 import com.openopportunity.billing.CandidateBillingService;
+import com.openopportunity.billing.CompanyBillingService;
+import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.idea.dto.IdeaDetail;
 import com.openopportunity.idea.dto.IdeaInterestRequest;
@@ -19,6 +22,7 @@ import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -37,6 +41,7 @@ public class IdeaService {
     private final NotificationService notificationService;
     private final CandidateProfileRepository candidateProfileRepository;
     private final CandidateBillingService candidateBillingService;
+    private final CompanyBillingService companyBillingService;
 
     public IdeaService(
             IdeaRepository ideaRepository,
@@ -44,13 +49,15 @@ public class IdeaService {
             IdeaInterestRepository ideaInterestRepository,
             NotificationService notificationService,
             CandidateProfileRepository candidateProfileRepository,
-            CandidateBillingService candidateBillingService) {
+            CandidateBillingService candidateBillingService,
+            CompanyBillingService companyBillingService) {
         this.ideaRepository = ideaRepository;
         this.userRepository = userRepository;
         this.ideaInterestRepository = ideaInterestRepository;
         this.notificationService = notificationService;
         this.candidateProfileRepository = candidateProfileRepository;
         this.candidateBillingService = candidateBillingService;
+        this.companyBillingService = companyBillingService;
     }
 
     @Transactional
@@ -213,20 +220,29 @@ public class IdeaService {
         return toInterestSummary(interest, false);
     }
 
-    /** Only the idea's own submitter can see who has expressed interest in it. Contact numbers
-     * are an extra gate on top of that: only included when the caller is a candidate on the
-     * Plus (or higher) plan — see CandidateBillingService. A company owner (no subscription
-     * concept exists for companies yet) simply resolves to FREE and never sees them. */
+    /** Only the idea's own submitter can see who has expressed interest in it. Contact details
+     * (phone number, and a link to the full candidate profile) are an extra gate on top of that:
+     * only included when the caller is on a paid plan — a candidate on the Plus (or higher) plan
+     * (see CandidateBillingService), or a company on the Growth (or higher) plan (see
+     * CompanyBillingService), matching each side's own billing plans. */
     @Transactional(readOnly = true)
     public List<IdeaInterestSummary> getInterests(UUID ideaId, UUID callerId) {
         Idea idea = ideaRepository.findById(ideaId).orElseThrow(() -> new IdeaNotFoundException(ideaId));
         if (!idea.getSubmitterId().equals(callerId)) {
             throw new IdeaAccessDeniedException();
         }
-        boolean canSeeContactNumbers = candidateBillingService.getCurrentPlan(callerId) != SubscriptionPlan.FREE;
+        boolean canSeeContactDetails = canSeeInterestContactDetails(callerId);
         return ideaInterestRepository.findByIdeaIdOrderByCreatedAtDesc(ideaId).stream()
-                .map(interest -> toInterestSummary(interest, canSeeContactNumbers))
+                .map(interest -> toInterestSummary(interest, canSeeContactDetails))
                 .toList();
+    }
+
+    private boolean canSeeInterestContactDetails(UUID callerId) {
+        User caller = userRepository.findById(callerId).orElseThrow();
+        if (caller.getRole() == UserRole.COMPANY) {
+            return companyBillingService.getPlanPeriod(callerId).plan() != CompanySubscriptionPlan.FREE;
+        }
+        return candidateBillingService.getCurrentPlan(callerId) != SubscriptionPlan.FREE;
     }
 
     /** The ideas a user has themselves expressed interest in (as investor/participant) — backs
@@ -247,20 +263,21 @@ public class IdeaService {
                 .toList();
     }
 
-    private IdeaInterestSummary toInterestSummary(IdeaInterest interest, boolean includeContactNumber) {
-        String contactNumber = includeContactNumber
-                ? candidateProfileRepository
-                        .findByUserId(interest.getInterestedUserId())
-                        .map(CandidateProfile::getMobile)
-                        .orElse(null)
-                : null;
+    private IdeaInterestSummary toInterestSummary(IdeaInterest interest, boolean includeContactDetails) {
+        // Only a candidate has a profile a company can view (see CandidateProfileForCompany /
+        // CandidateSearchController) — an interested company (e.g. an investor) has no such page,
+        // so candidateUserId stays null for them even when includeContactDetails is true.
+        Optional<CandidateProfile> candidateProfile = includeContactDetails
+                ? candidateProfileRepository.findByUserId(interest.getInterestedUserId())
+                : Optional.empty();
         return new IdeaInterestSummary(
                 interest.getId(),
                 interest.getInterestedUserName(),
                 interest.getRole(),
                 interest.getTicketSize(),
                 interest.getMessage(),
-                contactNumber,
+                candidateProfile.map(CandidateProfile::getMobile).orElse(null),
+                candidateProfile.map(CandidateProfile::getUserId).orElse(null),
                 interest.getCreatedAt());
     }
 

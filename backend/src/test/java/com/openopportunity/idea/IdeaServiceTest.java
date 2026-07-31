@@ -13,6 +13,8 @@ import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
 import com.openopportunity.billing.CandidateBillingService;
+import com.openopportunity.billing.CompanyBillingService;
+import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.idea.dto.IdeaDetail;
 import com.openopportunity.idea.dto.IdeaInterestRequest;
@@ -54,6 +56,9 @@ class IdeaServiceTest {
     @Mock
     private CandidateBillingService candidateBillingService;
 
+    @Mock
+    private CompanyBillingService companyBillingService;
+
     private IdeaService ideaService;
 
     @BeforeEach
@@ -64,7 +69,8 @@ class IdeaServiceTest {
                 ideaInterestRepository,
                 notificationService,
                 candidateProfileRepository,
-                candidateBillingService);
+                candidateBillingService,
+                companyBillingService);
     }
 
     private IdeaRequest sampleRequest() {
@@ -342,13 +348,54 @@ class IdeaServiceTest {
         CandidateProfile interestedProfile =
                 new CandidateProfile(interestedUserId, "9876543210", java.util.List.of(), null);
         when(candidateProfileRepository.findByUserId(interestedUserId)).thenReturn(Optional.of(interestedProfile));
+        User owner = new User("owner@example.com", "hash", "Idea Owner", UserRole.CANDIDATE);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
 
         when(candidateBillingService.getCurrentPlan(ownerId)).thenReturn(SubscriptionPlan.FREE);
-        assertThat(ideaService.getInterests(idea.getId(), ownerId).get(0).contactNumber()).isNull();
+        IdeaInterestSummary onFreePlan = ideaService.getInterests(idea.getId(), ownerId).get(0);
+        assertThat(onFreePlan.contactNumber()).isNull();
+        assertThat(onFreePlan.candidateUserId()).isNull();
 
         when(candidateBillingService.getCurrentPlan(ownerId)).thenReturn(SubscriptionPlan.PLUS);
-        assertThat(ideaService.getInterests(idea.getId(), ownerId).get(0).contactNumber())
-                .isEqualTo("9876543210");
+        IdeaInterestSummary onPaidPlan = ideaService.getInterests(idea.getId(), ownerId).get(0);
+        assertThat(onPaidPlan.contactNumber()).isEqualTo("9876543210");
+        assertThat(onPaidPlan.candidateUserId()).isEqualTo(interestedUserId);
+    }
+
+    @Test
+    void getInterestsIncludesContactNumberWhenCallerIsACompanyOnAPaidPlan() {
+        UUID ownerId = UUID.randomUUID();
+        UUID interestedUserId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        IdeaInterest interest = new IdeaInterest(
+                idea.getId(),
+                idea.getTitle(),
+                idea.getSubmitterName(),
+                interestedUserId,
+                "Fatima Sheikh",
+                IdeaInterestRole.PARTICIPANT,
+                null,
+                "Interested.");
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+        when(ideaInterestRepository.findByIdeaIdOrderByCreatedAtDesc(idea.getId()))
+                .thenReturn(java.util.List.of(interest));
+        CandidateProfile interestedProfile =
+                new CandidateProfile(interestedUserId, "9876543210", java.util.List.of(), null);
+        when(candidateProfileRepository.findByUserId(interestedUserId)).thenReturn(Optional.of(interestedProfile));
+        User owner = new User("owner@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+
+        when(companyBillingService.getPlanPeriod(ownerId))
+                .thenReturn(new CompanyBillingService.PlanPeriod(CompanySubscriptionPlan.FREE, null, null));
+        IdeaInterestSummary onFreePlan = ideaService.getInterests(idea.getId(), ownerId).get(0);
+        assertThat(onFreePlan.contactNumber()).isNull();
+        assertThat(onFreePlan.candidateUserId()).isNull();
+
+        when(companyBillingService.getPlanPeriod(ownerId))
+                .thenReturn(new CompanyBillingService.PlanPeriod(CompanySubscriptionPlan.GROWTH, null, null));
+        IdeaInterestSummary onPaidPlan = ideaService.getInterests(idea.getId(), ownerId).get(0);
+        assertThat(onPaidPlan.contactNumber()).isEqualTo("9876543210");
+        assertThat(onPaidPlan.candidateUserId()).isEqualTo(interestedUserId);
     }
 
     @Test
