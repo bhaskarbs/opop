@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Card, LoadingState } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
-import { jobsApi, type JobDetail, type JobSummary } from '../lib/jobsApi'
+import { jobsApi, jobQueryKeys, type JobDetail, type JobSummary } from '../lib/jobsApi'
 import { workModeFromBackend } from '../lib/jobEnums'
 import { savedJobsApi } from '../lib/savedJobsApi'
 import { ROUTES } from '../routes/paths'
@@ -120,11 +121,26 @@ export default function JobDetailPage() {
   const navigate = useNavigate()
   const authStatus = useAuthStore((state) => state.status)
   const user = useAuthStore((state) => state.user)
+  const queryClient = useQueryClient()
 
-  const [job, setJob] = useState<JobDetail | null>(null)
-  const [similarJobs, setSimilarJobs] = useState<JobSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  // Cached via TanStack Query (see lib/queryClient.ts + jobsApi.jobQueryKeys) — the same
+  // sort:"newest" search this page uses for "similar jobs" is also what JobSearchPage's default
+  // view uses, so arriving here right after browsing search results often serves instantly from
+  // cache instead of re-hitting the backend.
+  const detailQuery = useQuery({
+    queryKey: jobQueryKeys.detail(jobId ?? ''),
+    queryFn: () => jobsApi.detail(jobId as string),
+    enabled: !!jobId,
+  })
+  const similarQuery = useQuery({
+    queryKey: jobQueryKeys.search({ sort: 'newest' }),
+    queryFn: () => jobsApi.search({ sort: 'newest' }),
+  })
+
+  const job = detailQuery.data ?? null
+  const loading = detailQuery.isLoading
+  const notFound = detailQuery.isError
+  const similarJobs = job ? findSimilarJobs(job, similarQuery.data ?? []) : []
 
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
@@ -132,39 +148,34 @@ export default function JobDetailPage() {
 
   const [saved, setSaved] = useState(false)
 
+  // Candidate-specific "have I applied/saved this" state — deliberately not part of the cached
+  // job queries above, since it's per-viewer and this page's own apply/save actions already
+  // update it locally the moment they succeed.
   useEffect(() => {
     if (!jobId) return
     let cancelled = false
-
-    async function load() {
-      setLoading(true)
-      setNotFound(false)
-      try {
-        const [detail, allJobs] = await Promise.all([
-          jobsApi.detail(jobId as string),
-          jobsApi.search({ sort: 'newest' }),
-        ])
+    const eligible = authStatus === 'authenticated' && user?.role === 'CANDIDATE'
+    const fetchTask = eligible
+      ? Promise.all([applicationsApi.mine(), savedJobsApi.mine()])
+      : Promise.resolve(null)
+    fetchTask
+      .then((result) => {
         if (cancelled) return
-        setJob(detail)
-        setSimilarJobs(findSimilarJobs(detail, allJobs))
-
-        if (authStatus === 'authenticated' && user?.role === 'CANDIDATE') {
-          const [mine, savedJobs] = await Promise.all([applicationsApi.mine(), savedJobsApi.mine()])
-          if (cancelled) return
-          const existing = mine.find(
-            (application) => application.jobId === jobId && application.status !== 'WITHDRAWN',
-          )
-          setApplicationId(existing?.id ?? null)
-          setSaved(savedJobs.some((savedJob) => savedJob.id === jobId))
+        if (!result) {
+          setApplicationId(null)
+          setSaved(false)
+          return
         }
-      } catch {
-        if (!cancelled) setNotFound(true)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    load()
+        const [mine, savedJobs] = result
+        const existing = mine.find(
+          (application) => application.jobId === jobId && application.status !== 'WITHDRAWN',
+        )
+        setApplicationId(existing?.id ?? null)
+        setSaved(savedJobs.some((savedJob) => savedJob.id === jobId))
+      })
+      .catch(() => {
+        // Best-effort — apply/save just won't show as already-done if this fails.
+      })
     return () => {
       cancelled = true
     }
@@ -195,7 +206,9 @@ export default function JobDetailPage() {
     try {
       const created = await applicationsApi.apply(job.id)
       setApplicationId(created.id)
-      setJob((prev) => (prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev))
+      queryClient.setQueryData(jobQueryKeys.detail(job.id), (prev: JobDetail | undefined) =>
+        prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev,
+      )
     } catch (error) {
       setApplyError(error instanceof ApiError ? error.message : t('jobDetail.applyError'))
     } finally {

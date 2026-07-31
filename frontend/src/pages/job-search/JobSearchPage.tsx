@@ -1,13 +1,14 @@
 import { type SubmitEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Spinner } from '../../components/ui'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ApiError } from '../../lib/apiClient'
 import { applicationsApi } from '../../lib/applicationsApi'
-import { jobsApi } from '../../lib/jobsApi'
+import { jobsApi, jobQueryKeys, type JobSearchParams } from '../../lib/jobsApi'
 import { experienceLevelToBackend, workModeToBackend } from '../../lib/jobEnums'
 import { savedJobsApi } from '../../lib/savedJobsApi'
 import { useAuthStore } from '../../stores/authStore'
@@ -15,7 +16,7 @@ import { FilterSidebar } from './FilterSidebar'
 import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './filterState'
 import { ResultCard } from './ResultCard'
 import { SearchTagAutocompleteField } from './SearchTagAutocompleteField'
-import { toDisplayJob, type DisplayJob } from './jobDisplay'
+import { toDisplayJob } from './jobDisplay'
 
 const PAGE_SIZE = 10
 
@@ -50,9 +51,6 @@ export default function JobSearchPage() {
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
   const [jobsShown, setJobsShown] = useState(PAGE_SIZE)
 
-  const [jobs, setJobs] = useState<DisplayJob[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set())
 
@@ -126,32 +124,50 @@ export default function JobSearchPage() {
     })
   }
 
+  // Debounced separately from the query itself — the query key only changes once every 300ms
+  // of typing settles, so TanStack Query never even considers firing a request per keystroke.
+  const [searchQueryParams, setSearchQueryParams] = useState<JobSearchParams | null>(null)
+
   useEffect(() => {
     if (!hasSearched) return
     const timeoutId = setTimeout(() => {
-      setLoading(true)
-      setError(null)
-      jobsApi
-        .search({
-          q: skills.length > 0 ? skills : undefined,
-          location: locations.length > 0 ? locations : undefined,
-          level: [...filters.levels].map(experienceLevelToBackend),
-          mode: [...filters.modes].map(workModeToBackend),
-          minSalaryLakhs:
-            filters.minSalaryLakhs > MIN_SALARY_LAKHS ? filters.minSalaryLakhs : undefined,
-          sort: sortBy,
-        })
-        .then((results) => {
-          setJobs(results.map(toDisplayJob))
-          setJobsShown(PAGE_SIZE)
-        })
-        .catch((caught) => {
-          setError(caught instanceof ApiError ? caught.message : t('jobSearch.errorLoading'))
-        })
-        .finally(() => setLoading(false))
+      setSearchQueryParams({
+        q: skills.length > 0 ? skills : undefined,
+        location: locations.length > 0 ? locations : undefined,
+        level: [...filters.levels].map(experienceLevelToBackend),
+        mode: [...filters.modes].map(workModeToBackend),
+        minSalaryLakhs:
+          filters.minSalaryLakhs > MIN_SALARY_LAKHS ? filters.minSalaryLakhs : undefined,
+        sort: sortBy,
+      })
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [hasSearched, skills, locations, filters, sortBy, t])
+  }, [hasSearched, skills, locations, filters, sortBy])
+
+  // Resets the "show more" pagination whenever a new search actually runs — including when it's
+  // served instantly from the query cache (see lib/queryClient.ts), so re-running a search you
+  // already made still lands back on page 1 of its (cached) results. Adjusted during render
+  // (React's documented pattern for "reset state when a value changes") rather than in an
+  // effect, since setting state synchronously inside an effect body causes an extra render.
+  const [prevSearchQueryParams, setPrevSearchQueryParams] = useState(searchQueryParams)
+  if (searchQueryParams !== prevSearchQueryParams) {
+    setPrevSearchQueryParams(searchQueryParams)
+    setJobsShown(PAGE_SIZE)
+  }
+
+  const searchQuery = useQuery({
+    queryKey: jobQueryKeys.search(searchQueryParams ?? {}),
+    queryFn: () => jobsApi.search(searchQueryParams ?? {}),
+    enabled: searchQueryParams !== null,
+  })
+
+  const jobs = (searchQuery.data ?? []).map(toDisplayJob)
+  const loading = searchQuery.isFetching
+  const error = searchQuery.isError
+    ? searchQuery.error instanceof ApiError
+      ? searchQuery.error.message
+      : t('jobSearch.errorLoading')
+    : null
 
   const visibleJobs = jobs.slice(0, jobsShown)
 

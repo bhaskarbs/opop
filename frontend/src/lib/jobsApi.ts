@@ -99,3 +99,12 @@ export const jobsApi = {
   remove: (id: string) =>
     request<void>(`/api/jobs/${id}`, { method: 'DELETE', headers: authHeaders() }),
 }
+
+/** TanStack Query cache keys for the two read paths worth caching client-side (see
+ * lib/queryClient.ts) — shared between JobSearchPage and JobDetailPage so an identical search
+ * (e.g. JobDetailPage's "similar jobs" sort:"newest" fetch) reuses a cache entry either page
+ * already populated instead of re-hitting the backend. */
+export const jobQueryKeys = {
+  search: (params: JobSearchParams) => ['jobs', 'search', params] as const,
+  detail: (id: string) => ['jobs', 'detail', id] as const,
+}
