@@ -30,6 +30,23 @@ interface AuthState {
   clearSession: () => void
 }
 
+// Registered by main.tsx for each per-domain cache store (candidateProfileStore,
+// companyProfileStore, applicationsStore, savedJobsStore) — see onSessionCleared below. Kept as
+// a plain listener list rather than this store importing those directly: they (via their
+// *Api.ts modules) import back into apiClient.ts, and apiClient.ts needs to call clearSession()
+// itself on a failed background token refresh — a direct import here would be circular.
+const sessionClearedListeners: Array<() => void> = []
+
+/** Called once at startup (see main.tsx) for every per-domain cache store, so clearSession()
+ * below — triggered by an explicit logout (Header.tsx), a failed silent-refresh on app load
+ * (App.tsx), or a failed background token refresh (apiClient.ts, when the refresh cookie has
+ * also expired) — always wipes every cache together. Without this, a next login in the same tab
+ * (possibly as a different account) could see a previous session's cached profile/applications/
+ * saved jobs. */
+export function onSessionCleared(listener: () => void) {
+  sessionClearedListeners.push(listener)
+}
+
 // Deliberately not persisted (no zustand `persist` middleware, no localStorage/sessionStorage) —
 // the access token lives in memory only, per the architecture doc (Section 4.1), to limit
 // exposure to XSS. A page reload loses it; the httpOnly refreshToken cookie re-establishes
@@ -46,7 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setCandidatePhoto: (photoUrl) =>
     set({ candidatePhotoUrl: photoUrl, candidatePhotoVersion: Date.now() }),
   setCompanyLogo: (logoUrl) => set({ companyLogoUrl: logoUrl, companyLogoVersion: Date.now() }),
-  clearSession: () =>
+  clearSession: () => {
     set({
       accessToken: null,
       user: null,
@@ -55,5 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       candidatePhotoVersion: 0,
       companyLogoUrl: null,
       companyLogoVersion: 0,
-    }),
+    })
+    sessionClearedListeners.forEach((listener) => listener())
+  },
 }))

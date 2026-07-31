@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/authStore'
+
 export type UserRole = 'CANDIDATE' | 'COMPANY' | 'ADMIN'
 
 export interface UserSummary {
@@ -50,6 +52,56 @@ function apiDelay(): Promise<void> {
     : Promise.resolve()
 }
 
+let refreshPromise: Promise<string | null> | null = null
+
+/** Dedupes concurrent refresh attempts — if several requests hit a 401 around the same moment
+ * (e.g. a page firing several requests in parallel right as the access token expires), they all
+ * await this same promise instead of each independently hitting /api/auth/refresh. Returns the
+ * new access token on success, or null if the refresh itself failed — the httpOnly refresh
+ * cookie is expired/invalid too, so the session is genuinely over, not just the access token. */
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(async (response) => {
+        if (!response.ok) return null
+        const data = (await response.json()) as AuthResponse
+        useAuthStore.getState().setSession(data.accessToken, data.user)
+        return data.accessToken
+      })
+      .catch(() => null)
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+  return refreshPromise
+}
+
+/** The in-memory access token (see authStore) only lives 15 minutes
+ * (app.jwt.access-token-expiry-minutes) — every request below routes through here so a tab left
+ * open longer than that transparently refreshes via the httpOnly refresh cookie and retries
+ * once, instead of surfacing a stale-token 401 to whichever page happened to be open. Never
+ * retries more than once, and never intercepts /api/auth/refresh's own call (which would
+ * otherwise recurse forever). If the refresh itself fails — the refresh cookie has also expired,
+ * or the session was ended elsewhere — the session is cleared so route guards redirect to login
+ * instead of the app quietly re-failing every request from then on. */
+async function fetchWithAuth(path: string, init: RequestInit): Promise<Response> {
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, credentials: 'include' })
+  if (response.status !== 401 || path === '/api/auth/refresh') {
+    return response
+  }
+  const newToken = await refreshAccessToken()
+  if (!newToken) {
+    useAuthStore.getState().clearSession()
+    return response
+  }
+  const headers = new Headers(init.headers)
+  headers.set('Authorization', `Bearer ${newToken}`)
+  return fetch(`${API_BASE_URL}${path}`, { ...init, headers, credentials: 'include' })
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`
@@ -74,11 +126,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
  * stay consistent in one place. */
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   await apiDelay()
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  // fetchWithAuth sends/receives the httpOnly refreshToken cookie itself (required for
+  // /refresh and /logout, since neither reads the token from anywhere JS can access), and
+  // transparently refreshes+retries once on a 401 from an expired access token.
+  const response = await fetchWithAuth(path, {
     ...options,
-    // Sends and receives the httpOnly refreshToken cookie — required for /refresh and
-    // /logout to work, since neither reads the token from anywhere JS can access.
-    credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...options.headers },
   })
   return handleResponse<T>(response)
@@ -92,9 +144,8 @@ export async function uploadRequest<T>(
   headers: Record<string, string> = {},
 ): Promise<T> {
   await apiDelay()
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithAuth(path, {
     method: 'POST',
-    credentials: 'include',
     headers,
     body: formData,
   })
@@ -109,10 +160,7 @@ export async function blobRequest(
   headers: Record<string, string> = {},
 ): Promise<Blob> {
   await apiDelay()
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: 'include',
-    headers,
-  })
+  const response = await fetchWithAuth(path, { headers })
   if (!response.ok) {
     throw new ApiError(response.status, `Request failed with status ${response.status}`)
   }

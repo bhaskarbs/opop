@@ -9,10 +9,6 @@ import { cn } from '../../lib/cn'
 import { notificationsApi, type NotificationSummary } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
-import { useApplicationsStore } from '../../stores/applicationsStore'
-import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
-import { useCompanyProfileStore } from '../../stores/companyProfileStore'
-import { useSavedJobsStore } from '../../stores/savedJobsStore'
 import {
   AVATAR_BG_CLASS,
   DEFAULT_USER_NAME,
@@ -98,13 +94,10 @@ export function Header({
       // Best-effort — the local session clears regardless, so the UI never gets stuck
       // "logged in" just because the network call failed.
     } finally {
+      // clearSession() cascades to every per-domain cache store via authStore's
+      // onSessionCleared listeners (registered in main.tsx) — a future login this session
+      // (possibly as a different candidate) must never see a previous session's cached data.
       clearSession()
-      // A future login this session (possibly as a different candidate) must never see a
-      // previous session's cached data — see candidateProfileStore.clear.
-      useCandidateProfileStore.getState().clear()
-      useCompanyProfileStore.getState().clear()
-      useApplicationsStore.getState().clear()
-      useSavedJobsStore.getState().clear()
       navigate(localize(ROUTES.home))
     }
   }
