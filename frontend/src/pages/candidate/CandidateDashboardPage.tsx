@@ -9,7 +9,7 @@ import {
   type ApplicationStatus,
   type ApplicationSummary,
 } from '../../lib/applicationsApi'
-import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
+import type { CandidateProfileResponse } from '../../lib/candidateApi'
 import {
   deriveCompletedSections,
   profileCompletionPercent,
@@ -19,6 +19,7 @@ import { jobsApi } from '../../lib/jobsApi'
 import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
 import { toDisplayJob, type DisplayJob } from '../job-search/jobDisplay'
 import { ROUTES } from '../../routes/paths'
+import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 const NUDGE_MIN_DAYS = 30
 const MS_PER_DAY = 86_400_000
@@ -85,7 +86,7 @@ export default function CandidateDashboardPage() {
   useEffect(() => {
     let cancelled = false
     Promise.all([
-      candidateApi.getProfile(),
+      useCandidateProfileStore.getState().fetchProfile(),
       jobsApi.search({}),
       applicationsApi.mine(),
       ideasApi.browse(),

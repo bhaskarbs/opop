@@ -9,6 +9,7 @@ import { cn } from '../../lib/cn'
 import { notificationsApi, type NotificationSummary } from '../../lib/notificationsApi'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
+import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 import {
   AVATAR_BG_CLASS,
   DEFAULT_USER_NAME,
@@ -95,6 +96,9 @@ export function Header({
       // "logged in" just because the network call failed.
     } finally {
       clearSession()
+      // A future login this session (possibly as a different candidate) must never see a
+      // previous session's cached profile — see candidateProfileStore.clear.
+      useCandidateProfileStore.getState().clear()
       navigate(localize(ROUTES.home))
     }
   }

@@ -15,6 +15,7 @@ import {
 } from '../../lib/jobEnums'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { useAuthStore } from '../../stores/authStore'
+import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 const NAV_SECTIONS = [
   { labelKey: 'profile.nav.personalDetails', href: '#personal' },
@@ -81,8 +82,9 @@ export default function CandidateProfilePage() {
 
   useEffect(() => {
     let cancelled = false
-    candidateApi
-      .getProfile()
+    useCandidateProfileStore
+      .getState()
+      .fetchProfile()
       .then((data) => {
         if (cancelled) return
         setProfile(data)
@@ -130,6 +132,7 @@ export default function CandidateProfilePage() {
         industry,
       })
       setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
       setSavedPersonal(true)
       setTimeout(() => setSavedPersonal(false), 2000)
     } catch (error) {
@@ -149,6 +152,15 @@ export default function CandidateProfilePage() {
       setResumeFileName(uploaded.resumeFileName)
       setResumeUploadedAt(uploaded.resumeUploadedAt)
       setResumeSizeBytes(uploaded.resumeSizeBytes)
+      const cached = useCandidateProfileStore.getState().profile
+      if (cached) {
+        useCandidateProfileStore.getState().setProfile({
+          ...cached,
+          resumeFileName: uploaded.resumeFileName,
+          resumeUploadedAt: uploaded.resumeUploadedAt,
+          resumeSizeBytes: uploaded.resumeSizeBytes,
+        })
+      }
     } catch (error) {
       setResumeError(error instanceof ApiError ? error.message : t('profile.saveError'))
     }
@@ -163,6 +175,10 @@ export default function CandidateProfilePage() {
     try {
       const uploaded = await candidateApi.uploadPhoto(file)
       setCandidatePhoto(uploaded.photoUrl)
+      const cached = useCandidateProfileStore.getState().profile
+      if (cached) {
+        useCandidateProfileStore.getState().setProfile({ ...cached, photoUrl: uploaded.photoUrl })
+      }
     } catch (error) {
       setPhotoError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {
@@ -177,6 +193,7 @@ export default function CandidateProfilePage() {
     try {
       const updated = await candidateApi.updateSkills(nextSkills)
       setSkills(updated.skills)
+      useCandidateProfileStore.getState().setProfile(updated)
     } catch (error) {
       setSkills(previous)
       setSkillsError(error instanceof ApiError ? error.message : t('profile.saveError'))
@@ -189,6 +206,7 @@ export default function CandidateProfilePage() {
     try {
       const updated = await candidateApi.updateGoals({ lifeGoals, workCulture })
       setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
       setSavedGoals(true)
       setTimeout(() => setSavedGoals(false), 2000)
     } catch (error) {
@@ -204,6 +222,7 @@ export default function CandidateProfilePage() {
     try {
       const updated = await candidateApi.updatePreferences({ workMode, openTo })
       setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
       setSavedPrefs(true)
       setTimeout(() => setSavedPrefs(false), 2000)
     } catch (error) {
