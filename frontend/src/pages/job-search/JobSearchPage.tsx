@@ -1,6 +1,7 @@
 import { type SubmitEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
+import { Spinner } from '../../components/ui'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
@@ -282,10 +283,15 @@ export default function JobSearchPage() {
 
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
-              <div className="text-[15px] text-slate">
-                {loading
-                  ? t('jobSearch.searching')
-                  : t('jobSearch.showingCount', { count: jobs.length })}
+              <div className="flex items-center justify-center gap-2 text-[15px] text-slate">
+                {loading ? (
+                  <>
+                    <Spinner className="h-5 w-5 text-primary" />
+                    <span className="text-lg font-medium">{t('jobSearch.searching')}</span>
+                  </>
+                ) : (
+                  t('jobSearch.showingCount', { count: jobs.length })
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[13.5px] text-fog">{t('jobSearch.sortBy')}</span>

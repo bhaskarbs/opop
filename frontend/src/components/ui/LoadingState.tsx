@@ -12,9 +12,14 @@ export interface LoadingStateProps {
  * existing wrapper's spacing/max-width is left alone, only the plain-text child changes. */
 export function LoadingState({ message, className }: LoadingStateProps) {
   return (
-    <div className={cn('flex flex-col items-center gap-3 py-2', className)}>
-      <Spinner className="h-7 w-7 text-primary" />
-      {message && <p className="text-sm text-slate">{message}</p>}
+    <div
+      className={cn(
+        'flex min-h-[320px] flex-col items-center justify-center gap-4 py-8 text-center',
+        className,
+      )}
+    >
+      <Spinner className="h-12 w-12 text-primary" />
+      {message && <p className="text-lg font-medium text-slate">{message}</p>}
     </div>
   )
 }
