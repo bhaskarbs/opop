@@ -358,6 +358,18 @@ export default function CandidateProfilePage() {
                 />
               </div>
               <div className="flex flex-col">
+                <label htmlFor="title" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.title')}
+                </label>
+                <input
+                  id="title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder={t('profile.fields.titlePlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
                 <label htmlFor="email" className="mb-1.5 text-[13px] font-bold text-ink">
                   {t('profile.fields.email')}
                 </label>

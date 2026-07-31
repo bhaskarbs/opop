@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Button, LoadingState } from '../../components/ui'
+import { Button, LoadingState, SkillsTagInput } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
@@ -10,6 +10,7 @@ import {
   profileCompletionPercent,
 } from '../../lib/candidateProfileCompletion'
 import { PROFILE_CHECKLIST, type ChecklistKey } from '../../mocks/candidateProfile'
+import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ROUTES } from '../../routes/paths'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
@@ -73,6 +74,14 @@ export default function AddMissingDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
+  const [location, setLocation] = useState('')
+  const [title, setTitle] = useState('')
+  const [savingPersonal, setSavingPersonal] = useState(false)
+  const [personalError, setPersonalError] = useState<string | null>(null)
+
+  const [skills, setSkills] = useState<string[]>([])
+  const [skillsError, setSkillsError] = useState<string | null>(null)
+
   const [lifeGoals, setLifeGoals] = useState('')
   const [workCulture, setWorkCulture] = useState('')
   const [savingGoals, setSavingGoals] = useState(false)
@@ -95,6 +104,9 @@ export default function AddMissingDetailsPage() {
       .then((data) => {
         if (cancelled) return
         setProfile(data)
+        setLocation(data.location ?? '')
+        setTitle(data.title ?? '')
+        setSkills(data.skills)
         setLifeGoals(data.lifeGoals ?? '')
         setWorkCulture(data.workCulture ?? '')
         setMobile(data.mobile)
@@ -113,6 +125,43 @@ export default function AddMissingDetailsPage() {
       cancelled = true
     }
   }, [t])
+
+  async function savePersonal() {
+    if (!profile) return
+    setPersonalError(null)
+    setSavingPersonal(true)
+    try {
+      const updated = await candidateApi.updatePersonalDetails({
+        fullName: profile.fullName,
+        location,
+        title,
+        mobile: profile.mobile,
+        experienceLevel: profile.experienceLevel,
+        industry: profile.industry ?? '',
+      })
+      setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
+    } catch (error) {
+      setPersonalError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    } finally {
+      setSavingPersonal(false)
+    }
+  }
+
+  async function persistSkills(nextSkills: string[]) {
+    const previous = skills
+    setSkills(nextSkills)
+    setSkillsError(null)
+    try {
+      const updated = await candidateApi.updateSkills(nextSkills)
+      setSkills(updated.skills)
+      setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
+    } catch (error) {
+      setSkills(previous)
+      setSkillsError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    }
+  }
 
   async function saveGoals() {
     setGoalsError(null)
@@ -219,6 +268,48 @@ export default function AddMissingDetailsPage() {
           <p className="mb-6 text-sm text-slate">{t('addDetails.subtitle')}</p>
 
           <SectionCard
+            title={t('addDetails.checklist.personal')}
+            description={t('addDetails.personalDescription')}
+            done={completed.personal}
+          >
+            <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-location"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.location')}
+                </label>
+                <input
+                  id="add-details-location"
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-title"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.title')}
+                </label>
+                <input
+                  id="add-details-title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder={t('profile.fields.titlePlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+            </div>
+            {personalError && <p className="mb-3.5 text-[13px] text-danger">{personalError}</p>}
+            <Button type="button" onClick={savePersonal} loading={savingPersonal}>
+              {t('addDetails.save')}
+            </Button>
+          </SectionCard>
+
+          <SectionCard
             title={t('addDetails.checklist.goals')}
             description={t('addDetails.goalsDescription')}
             done={completed.goals}
@@ -311,21 +402,20 @@ export default function AddMissingDetailsPage() {
             </Button>
           </SectionCard>
 
-          <div className="rounded-card border border-border bg-surface p-[26px] opacity-60">
-            <div className="mb-1.5 flex items-center justify-between">
-              <h2 className="text-base font-bold text-ink">{t('profile.nav.skills')}</h2>
-              <span
-                className={`rounded-full px-2.5 py-[3px] text-[11.5px] font-bold ${
-                  completed.skills ? 'bg-teal-tint text-teal' : 'bg-amber-tint text-amber'
-                }`}
-              >
-                {completed.skills ? t('addDetails.complete') : t('addDetails.missing')}
-              </span>
-            </div>
-            <p className="text-[13px] text-fog">
-              {t('addDetails.skillsAdded', { count: profile.skills.length })}
-            </p>
-          </div>
+          <SectionCard
+            title={t('addDetails.checklist.skills')}
+            description={t('profile.skillsBody')}
+            done={completed.skills}
+          >
+            <SkillsTagInput
+              value={skills}
+              onChange={persistSkills}
+              suggestions={SKILL_SUGGESTIONS}
+              placeholder={t('profile.addSkillPlaceholder')}
+              error={skillsError ?? undefined}
+              removeSkillLabel={(skill) => t('profile.removeSkill', { skill })}
+            />
+          </SectionCard>
 
           {completionPercent === 100 && (
             <p className="mt-5 text-sm font-semibold text-teal">
