@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import {
@@ -214,8 +215,9 @@ export default function MyIdeasPage() {
                       type="button"
                       disabled={deletingId === idea.id}
                       onClick={() => handleDelete(idea.id)}
-                      className="rounded-[7px] border border-[#FCA5A5] bg-surface px-3.5 py-[7px] text-[12.5px] font-bold text-danger disabled:opacity-60"
+                      className="flex items-center gap-1.5 rounded-[7px] border border-[#FCA5A5] bg-surface px-3.5 py-[7px] text-[12.5px] font-bold text-danger disabled:opacity-60"
                     >
+                      {deletingId === idea.id && <Spinner className="h-3.5 w-3.5" />}
                       {t('myIdeas.delete')}
                     </button>
                   </div>

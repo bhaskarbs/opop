@@ -102,7 +102,7 @@ export default function CompanyLoginPage() {
 
         {formError && <p className="mb-[18px] text-[13px] text-danger">{formError}</p>}
 
-        <Button type="submit" disabled={isSubmitting} className="mb-[18px] w-full">
+        <Button type="submit" loading={isSubmitting} className="mb-[18px] w-full">
           {t('login.submit')}
         </Button>
       </form>

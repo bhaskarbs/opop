@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
+import { Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { jobAlertsApi, type JobAlertSummary } from '../../lib/jobAlertsApi'
 import {
@@ -198,8 +199,9 @@ export default function JobAlertsPage() {
             <button
               type="submit"
               disabled={creating}
-              className="rounded-lg bg-primary px-5 py-2.5 text-[13.5px] font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50"
+              className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-[13.5px] font-bold text-white disabled:cursor-not-allowed disabled:bg-primary/50"
             >
+              {creating && <Spinner className="h-4 w-4" />}
               {creating ? t('jobAlerts.creating') : t('jobAlerts.create')}
             </button>
           </div>

@@ -1,21 +1,32 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
 import type { JobDetail } from '../../lib/jobsApi'
-import { employmentTypeFromBackend, experienceLevelFromBackend, workModeFromBackend } from '../../lib/jobEnums'
+import {
+  employmentTypeFromBackend,
+  experienceLevelFromBackend,
+  workModeFromBackend,
+} from '../../lib/jobEnums'
 
 function formatSubmittedLabel(t: TFunction<'admin'>, createdAt: string): string {
   const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000)
-  if (minutes < 60) return minutes <= 1 ? t('jobApprovals.justNow') : t('jobApprovals.minutesAgo', { minutes })
+  if (minutes < 60)
+    return minutes <= 1 ? t('jobApprovals.justNow') : t('jobApprovals.minutesAgo', { minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return hours === 1 ? t('jobApprovals.oneHourAgo') : t('jobApprovals.hoursAgo', { hours })
+  if (hours < 24)
+    return hours === 1 ? t('jobApprovals.oneHourAgo') : t('jobApprovals.hoursAgo', { hours })
   const days = Math.floor(hours / 24)
   return days === 1 ? t('jobApprovals.oneDayAgo') : t('jobApprovals.daysAgo', { days })
 }
 
-function formatSalary(t: TFunction<'admin'>, minLakhs: number | null, maxLakhs: number | null): string {
+function formatSalary(
+  t: TFunction<'admin'>,
+  minLakhs: number | null,
+  maxLakhs: number | null,
+): string {
   if (minLakhs == null && maxLakhs == null) return t('jobApprovals.salaryNotDisclosed')
   if (minLakhs != null && maxLakhs != null) return `₹${minLakhs}L–${maxLakhs}L`
   return `₹${minLakhs ?? maxLakhs}L`
@@ -277,16 +288,20 @@ export default function AdminJobApprovalsPage() {
                   onClick={() => handleApprove(job.id)}
                   className="flex items-center gap-1.5 rounded-lg bg-teal px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#FFFFFF"
-                    strokeWidth={3}
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
+                  {actioningId === job.id ? (
+                    <Spinner className="h-3.5 w-3.5" />
+                  ) : (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth={3}
+                    >
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  )}
                   {t('jobApprovals.approve')}
                 </button>
                 <button
@@ -341,8 +356,9 @@ export default function AdminJobApprovalsPage() {
                 type="button"
                 disabled={!rejectReason.trim() || rejectSubmitting}
                 onClick={handleConfirmReject}
-                className="rounded-lg bg-danger px-4 py-2 text-[13px] font-bold text-white disabled:opacity-60"
+                className="flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-[13px] font-bold text-white disabled:opacity-60"
               >
+                {rejectSubmitting && <Spinner className="h-3.5 w-3.5" />}
                 {rejectSubmitting ? t('rejectModal.submitting') : t('rejectModal.confirm')}
               </button>
             </div>

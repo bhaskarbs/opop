@@ -230,7 +230,7 @@ export default function AddMissingDetailsPage() {
               className="w-full resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
             />
             {goalsError && <p className="mt-3.5 text-[13px] text-danger">{goalsError}</p>}
-            <Button type="button" onClick={saveGoals} disabled={savingGoals} className="mt-4">
+            <Button type="button" onClick={saveGoals} loading={savingGoals} className="mt-4">
               {t('addDetails.save')}
             </Button>
           </SectionCard>
@@ -251,7 +251,7 @@ export default function AddMissingDetailsPage() {
               />
             </div>
             {mobileError && <p className="mb-3 text-[13px] text-danger">{mobileError}</p>}
-            <Button type="button" onClick={saveMobile} disabled={savingMobile}>
+            <Button type="button" onClick={saveMobile} loading={savingMobile}>
               {t('addDetails.save')}
             </Button>
           </SectionCard>
@@ -298,7 +298,7 @@ export default function AddMissingDetailsPage() {
               </div>
             </div>
             {prefsError && <p className="mt-3.5 text-[13px] text-danger">{prefsError}</p>}
-            <Button type="button" onClick={savePrefs} disabled={savingPrefs} className="mt-4">
+            <Button type="button" onClick={savePrefs} loading={savingPrefs} className="mt-4">
               {t('addDetails.save')}
             </Button>
           </SectionCard>

@@ -3,7 +3,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { AutocompleteInput, Button, Input } from '../../components/ui'
+import { AutocompleteInput, Button, Input, Spinner } from '../../components/ui'
 import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import {
   CERTIFICATE_LIMIT,
@@ -314,17 +314,21 @@ export default function CompanyProfilePage() {
             aria-label={t('profile.changeLogo')}
             className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-ink text-white disabled:opacity-60"
           >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
+            {uploadingLogo ? (
+              <Spinner className="h-3 w-3" />
+            ) : (
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            )}
           </button>
           <input
             ref={logoInputRef}
@@ -455,7 +459,7 @@ export default function CompanyProfilePage() {
           {formError && <p className="mb-4 text-[13px] text-danger">{formError}</p>}
           {saveSuccess && <p className="mb-4 text-[13px] text-teal">{t('profile.saveSuccess')}</p>}
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
+          <Button type="submit" loading={isSubmitting} className="w-full">
             {t('profile.submit')}
           </Button>
         </form>
@@ -468,8 +472,9 @@ export default function CompanyProfilePage() {
             type="button"
             onClick={() => certificateInputRef.current?.click()}
             disabled={uploadingCertificate || certificates.length >= CERTIFICATE_LIMIT}
-            className="rounded-lg border border-border px-3.5 py-2 text-[13px] font-bold text-ink disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-[13px] font-bold text-ink disabled:opacity-60"
           >
+            {uploadingCertificate && <Spinner className="h-3.5 w-3.5" />}
             {uploadingCertificate
               ? t('profile.certificate.uploading')
               : t('profile.certificate.upload')}
@@ -526,8 +531,11 @@ export default function CompanyProfilePage() {
                   type="button"
                   onClick={() => handleDownloadCertificate(certificate)}
                   disabled={downloadingCertificateId === certificate.id}
-                  className="rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:opacity-60"
                 >
+                  {downloadingCertificateId === certificate.id && (
+                    <Spinner className="h-3.5 w-3.5" />
+                  )}
                   {downloadingCertificateId === certificate.id
                     ? t('profile.certificate.downloading')
                     : t('profile.certificate.download')}
@@ -536,8 +544,9 @@ export default function CompanyProfilePage() {
                   type="button"
                   onClick={() => handleDeleteCertificate(certificate)}
                   disabled={deletingCertificateId === certificate.id}
-                  className="rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-danger disabled:opacity-60"
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-[12.5px] font-bold text-danger disabled:opacity-60"
                 >
+                  {deletingCertificateId === certificate.id && <Spinner className="h-3.5 w-3.5" />}
                   {deletingCertificateId === certificate.id
                     ? t('profile.certificate.deleting')
                     : t('profile.certificate.delete')}

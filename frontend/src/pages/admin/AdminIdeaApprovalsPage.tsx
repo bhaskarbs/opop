@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
 import type { BackendIdeaStage, IdeaDetail } from '../../lib/ideasApi'
@@ -246,8 +247,9 @@ export default function AdminIdeaApprovalsPage() {
                   type="button"
                   disabled={actioningId === idea.id}
                   onClick={() => handleApprove(idea.id)}
-                  className="rounded-lg bg-teal px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
+                  className="flex items-center gap-2 rounded-lg bg-teal px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
                 >
+                  {actioningId === idea.id && <Spinner className="h-4 w-4" />}
                   {t('adminApprovals.approveAndPublish')}
                 </button>
                 <button
@@ -306,8 +308,9 @@ export default function AdminIdeaApprovalsPage() {
                 type="button"
                 disabled={!rejectReason.trim() || rejectSubmitting}
                 onClick={handleConfirmReject}
-                className="rounded-lg bg-danger px-4 py-2 text-[13px] font-bold text-white disabled:opacity-60"
+                className="flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-[13px] font-bold text-white disabled:opacity-60"
               >
+                {rejectSubmitting && <Spinner className="h-3.5 w-3.5" />}
                 {rejectSubmitting
                   ? t('adminApprovals.rejectModal.submitting')
                   : t('adminApprovals.rejectModal.confirm')}

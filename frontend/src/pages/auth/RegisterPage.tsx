@@ -194,7 +194,7 @@ export default function RegisterPage() {
 
             {formError && <p className="mb-4 text-[13px] text-danger">{formError}</p>}
 
-            <Button type="submit" disabled={isSubmitting} className="mb-4 w-full">
+            <Button type="submit" loading={isSubmitting} className="mb-4 w-full">
               {t('register.submit')}
             </Button>
             <p className="text-center text-[13.5px] text-slate">

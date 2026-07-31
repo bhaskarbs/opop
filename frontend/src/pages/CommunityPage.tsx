@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Spinner } from '../components/ui'
 import { ApiError } from '../lib/apiClient'
 import { communityApi } from '../lib/communityApi'
 
@@ -229,8 +230,9 @@ export default function CommunityPage() {
               type="button"
               disabled={interestSending || !name || !email}
               onClick={handleSubmitInterest}
-              className="w-full rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
             >
+              {interestSending && <Spinner className="h-4 w-4" />}
               {t('community.hero.knowMoreModal.submit')}
             </button>
           </div>
@@ -292,8 +294,9 @@ export default function CommunityPage() {
               type="button"
               disabled={guideSending || !guideName || !guideEmail}
               onClick={handleSubmitGuideRequest}
-              className="w-full rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
             >
+              {guideSending && <Spinner className="h-4 w-4" />}
               {t('community.incomeTypes.guideModal.submit')}
             </button>
           </div>

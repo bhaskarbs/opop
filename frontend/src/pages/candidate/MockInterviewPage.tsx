@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi } from '../../lib/candidateApi'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
@@ -692,8 +693,9 @@ export default function MockInterviewPage() {
             type="button"
             onClick={() => (recording ? handleStop() : void handleStart())}
             disabled={uploading || preparingQuestions || (!recording && atSessionLimit)}
-            className="w-full rounded-[9px] bg-ink py-[11px] text-sm font-bold text-white disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-ink py-[11px] text-sm font-bold text-white disabled:opacity-60"
           >
+            {(uploading || preparingQuestions) && <Spinner className="h-4 w-4" />}
             {uploading
               ? t('mockInterview.uploading')
               : preparingQuestions
@@ -777,8 +779,9 @@ export default function MockInterviewPage() {
                   onClick={() => handleDelete(session.id)}
                   disabled={deletingId === session.id}
                   aria-label={t('mockInterview.delete')}
-                  className="shrink-0 rounded-lg border border-[#FCA5A5] px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[#FCA5A5] px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
                 >
+                  {deletingId === session.id && <Spinner className="h-3 w-3" />}
                   {t('mockInterview.delete')}
                 </button>
               </div>

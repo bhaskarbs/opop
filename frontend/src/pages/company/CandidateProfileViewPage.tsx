@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
+import { Spinner } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
@@ -272,8 +273,9 @@ export default function CandidateProfileViewPage() {
                   disabled={!canContact || resumeHtmlLoading}
                   onClick={handleTogglePreview}
                   title={canContact ? undefined : (contactHint ?? undefined)}
-                  className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
                 >
+                  {resumeHtmlLoading && <Spinner className="h-3.5 w-3.5" />}
                   {resumeHtmlLoading
                     ? t('candidateProfile.resumeLoading')
                     : previewOpen
@@ -285,8 +287,9 @@ export default function CandidateProfileViewPage() {
                   disabled={!canContact || resumeLoading}
                   onClick={handleDownload}
                   title={canContact ? undefined : (contactHint ?? undefined)}
-                  className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
+                  {resumeLoading && <Spinner className="h-3.5 w-3.5" />}
                   {resumeLoading
                     ? t('candidateProfile.resumeLoading')
                     : t('candidateProfile.downloadResume')}

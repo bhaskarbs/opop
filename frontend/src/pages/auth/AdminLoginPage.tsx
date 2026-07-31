@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
 
         {formError && <p className="mb-[18px] text-[13px] text-danger">{formError}</p>}
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        <Button type="submit" loading={isSubmitting} className="w-full">
           {t('adminLogin.submit')}
         </Button>
       </form>
