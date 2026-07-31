@@ -147,7 +147,7 @@ export default function PostJobPage() {
       aboutRole: '',
       responsibilities: '',
       requirements: '',
-      skills: ['React', 'TypeScript', 'UI Systems'],
+      skills: [],
     },
   })
 
