@@ -9,6 +9,7 @@ import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
+import com.openopportunity.storage.AvatarImageResizer;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -109,7 +110,8 @@ public class CompanyProfileService {
 
         String storageKey;
         try {
-            storageKey = fileStorageService.store(file, "logos/" + userId);
+            byte[] resized = AvatarImageResizer.resize(file.getBytes());
+            storageKey = fileStorageService.store(resized, file.getOriginalFilename(), "logos/" + userId);
         } catch (IOException ex) {
             throw new UncheckedIOException("Failed to store company logo", ex);
         }

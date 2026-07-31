@@ -11,6 +11,7 @@ import com.openopportunity.auth.dto.UpdateSkillsRequest;
 import com.openopportunity.auth.exception.InvalidProfilePhotoException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.ProfilePhotoNotFoundException;
+import com.openopportunity.storage.AvatarImageResizer;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -120,7 +121,8 @@ public class CandidateProfileService {
 
         String storageKey;
         try {
-            storageKey = fileStorageService.store(file, "photos/" + userId);
+            byte[] resized = AvatarImageResizer.resize(file.getBytes());
+            storageKey = fileStorageService.store(resized, file.getOriginalFilename(), "photos/" + userId);
         } catch (IOException ex) {
             throw new UncheckedIOException("Failed to store profile photo", ex);
         }

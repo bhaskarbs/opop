@@ -13,6 +13,11 @@ public interface FileStorageService {
      * identifies where it landed. */
     String store(MultipartFile file, String subdirectory) throws IOException;
 
+    /** Like {@link #store(MultipartFile, String)}, but for content already resolved to bytes in
+     * memory (e.g. an image resized by AvatarImageResizer) rather than a raw upload —
+     * originalFilename is only used to preserve the file extension in the storage key. */
+    String store(byte[] content, String originalFilename, String subdirectory) throws IOException;
+
     /** Loads a previously stored file back by the storage key {@link #store} returned. */
     Resource load(String storageKey) throws IOException;
 
