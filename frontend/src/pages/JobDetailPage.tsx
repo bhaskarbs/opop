@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Card } from '../components/ui'
+import { Card, LoadingState } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
@@ -205,8 +205,8 @@ export default function JobDetailPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[640px] px-6 py-24 text-center text-slate">
-        {t('jobDetail.loading')}
+      <main className="mx-auto max-w-[640px] px-6 py-24">
+        <LoadingState message={t('jobDetail.loading')} />
       </main>
     )
   }

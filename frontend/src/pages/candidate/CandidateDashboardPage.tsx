@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Card } from '../../components/ui'
+import { Card, LoadingState } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
   applicationsApi,
@@ -173,8 +173,8 @@ export default function CandidateDashboardPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {t('dashboard.loading')}
+      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
+        <LoadingState message={t('dashboard.loading')} />
       </main>
     )
   }

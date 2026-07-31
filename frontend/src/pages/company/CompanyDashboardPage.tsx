@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Link } from 'react-router-dom'
+import { LoadingState } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { companyApi, type CompanyProfileResponse, type ContactQuota } from '../../lib/companyApi'
 import { jobsApi, type JobSummary } from '../../lib/jobsApi'
@@ -113,8 +114,8 @@ export default function CompanyDashboardPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {t('dashboard.loading')}
+      <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
+        <LoadingState message={t('dashboard.loading')} />
       </main>
     )
   }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { ContactRevealControl } from '../../components/company/ContactRevealControl'
+import { LoadingState } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
@@ -161,8 +162,8 @@ export default function JobApplicantsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('jobApplicants.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('jobApplicants.loading')} />
         </div>
       ) : applicants.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">

@@ -1,6 +1,6 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Card, SkillsTagInput, Spinner } from '../../components/ui'
+import { Button, Card, LoadingState, SkillsTagInput, Spinner } from '../../components/ui'
 import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
 import {
@@ -215,8 +215,8 @@ export default function CandidateProfilePage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[1000px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {t('profile.loading')}
+      <main className="mx-auto max-w-[1000px] px-6 py-7 pb-16">
+        <LoadingState message={t('profile.loading')} />
       </main>
     )
   }

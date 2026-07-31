@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Link } from 'react-router-dom'
+import { LoadingState } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { jobsApi, type JobSummary } from '../../lib/jobsApi'
@@ -86,8 +87,8 @@ export default function MyJobPostingsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('myJobPostings.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('myJobPostings.loading')} />
         </div>
       ) : postings.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">

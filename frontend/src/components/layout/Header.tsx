@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Spinner } from '../ui'
 import { DEFAULT_LANGUAGE, isSupportedLanguage, type SupportedLanguage } from '../../i18n'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL, authApi } from '../../lib/apiClient'
@@ -269,7 +270,8 @@ export function Header({
                       )}
                     </div>
                     {notifLoading ? (
-                      <div className="px-2 py-4 text-center text-[13px] text-slate">
+                      <div className="flex items-center justify-center gap-2 px-2 py-4 text-[13px] text-slate">
+                        <Spinner className="h-4 w-4" />
                         {t('notifications.loading')}
                       </div>
                     ) : notifications.length === 0 ? (

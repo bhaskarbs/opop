@@ -1,6 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
 import type { BackendIdeaStage, IdeaDetail } from '../../lib/ideasApi'
@@ -133,8 +133,8 @@ export default function AdminIdeaApprovalsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('adminApprovals.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('adminApprovals.loading')} />
         </div>
       ) : ideas.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">

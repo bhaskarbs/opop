@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ContactRevealControl } from '../../components/company/ContactRevealControl'
+import { LoadingState } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
@@ -386,8 +387,8 @@ export default function SearchCandidatesPage() {
             </div>
           )}
           {loading ? (
-            <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-              {t('searchCandidates.loading')}
+            <div className="rounded-card border border-border bg-surface p-10">
+              <LoadingState message={t('searchCandidates.loading')} />
             </div>
           ) : (
             <>

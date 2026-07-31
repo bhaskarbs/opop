@@ -3,7 +3,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { AutocompleteInput, Button, Input, Spinner } from '../../components/ui'
+import { AutocompleteInput, Button, Input, LoadingState, Spinner } from '../../components/ui'
 import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import {
   CERTIFICATE_LIMIT,
@@ -271,8 +271,8 @@ export default function CompanyProfilePage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[760px] px-6 py-10 pb-16 text-center text-sm text-slate">
-        {t('profile.loading')}
+      <main className="mx-auto max-w-[760px] px-6 py-10 pb-16">
+        <LoadingState message={t('profile.loading')} />
       </main>
     )
   }

@@ -1,7 +1,7 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
 import type { JobDetail } from '../../lib/jobsApi'
@@ -154,8 +154,8 @@ export default function AdminJobApprovalsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('jobApprovals.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('jobApprovals.loading')} />
         </div>
       ) : jobs.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">

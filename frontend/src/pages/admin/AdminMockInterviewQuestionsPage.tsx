@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   adminApi,
@@ -293,8 +293,8 @@ export default function AdminMockInterviewQuestionsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('mockInterviewQuestions.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('mockInterviewQuestions.loading')} />
         </div>
       ) : questions.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">

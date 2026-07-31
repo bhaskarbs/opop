@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Button } from '../../components/ui'
+import { Button, LoadingState } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
@@ -150,8 +150,8 @@ export default function AddMissingDetailsPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[1000px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {t('profile.loading')}
+      <main className="mx-auto max-w-[1000px] px-6 py-7 pb-16">
+        <LoadingState message={t('profile.loading')} />
       </main>
     )
   }

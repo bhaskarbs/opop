@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
@@ -143,8 +143,8 @@ export default function CandidateProfileViewPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[760px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {t('candidateProfile.loading')}
+      <main className="mx-auto max-w-[760px] px-6 py-7 pb-16">
+        <LoadingState message={t('candidateProfile.loading')} />
       </main>
     )
   }
