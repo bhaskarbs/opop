@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   adminApi,
@@ -240,8 +241,9 @@ export default function AdminMockInterviewQuestionsPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-[9px] bg-ink px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+          className="flex items-center gap-2 rounded-[9px] bg-ink px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"
         >
+          {submitting && <Spinner className="h-4 w-4" />}
           {submitting
             ? t('mockInterviewQuestions.saving')
             : t('mockInterviewQuestions.addQuestion')}
@@ -322,20 +324,21 @@ export default function AdminMockInterviewQuestionsPage() {
                         ? t('mockInterviewQuestions.unhighlight')
                         : t('mockInterviewQuestions.highlight')
                     }
-                    className={`rounded-md border px-2.5 py-1.5 text-[12px] font-bold disabled:opacity-50 ${
+                    className={`flex items-center justify-center rounded-md border px-2.5 py-1.5 text-[12px] font-bold disabled:opacity-50 ${
                       question.important
                         ? 'border-amber bg-amber text-white'
                         : 'border-border bg-surface text-ink'
                     }`}
                   >
-                    ★
+                    {actioningId === question.id ? <Spinner className="h-3 w-3" /> : '★'}
                   </button>
                   <button
                     type="button"
                     disabled={actioningId === question.id}
                     onClick={() => handleDelete(question.id)}
-                    className="rounded-md border border-[#FCA5A5] px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded-md border border-[#FCA5A5] px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
                   >
+                    {actioningId === question.id && <Spinner className="h-3 w-3" />}
                     {t('mockInterviewQuestions.delete')}
                   </button>
                 </div>

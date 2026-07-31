@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
+import { Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { ideasApi, type BackendIdeaStage, type IdeaRequestPayload } from '../../lib/ideasApi'
@@ -235,7 +236,9 @@ export default function IdeaSubmitPage() {
             className="w-full resize-y rounded-lg border border-border px-3.5 py-2.5 text-sm"
             {...register('problem')}
           />
-          {errors.problem && <p className="mt-1 text-[12.5px] text-danger">{errors.problem.message}</p>}
+          {errors.problem && (
+            <p className="mt-1 text-[12.5px] text-danger">{errors.problem.message}</p>
+          )}
         </div>
 
         <div>
@@ -248,7 +251,9 @@ export default function IdeaSubmitPage() {
             className="w-full resize-y rounded-lg border border-border px-3.5 py-2.5 text-sm"
             {...register('solution')}
           />
-          {errors.solution && <p className="mt-1 text-[12.5px] text-danger">{errors.solution.message}</p>}
+          {errors.solution && (
+            <p className="mt-1 text-[12.5px] text-danger">{errors.solution.message}</p>
+          )}
         </div>
 
         <div>
@@ -356,8 +361,9 @@ export default function IdeaSubmitPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-[9px] bg-primary px-[22px] py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
+            className="flex items-center justify-center gap-2 rounded-[9px] bg-primary px-[22px] py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
           >
+            {isSubmitting && <Spinner className="h-4 w-4" />}
             {editing ? t('submit.saveChanges') : t('submit.submitForReview')}
           </button>
         </div>

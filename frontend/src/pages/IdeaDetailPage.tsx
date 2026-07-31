@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
+import { Spinner } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError } from '../lib/apiClient'
 import { avatarColorClass } from '../lib/ideaAvatar'
@@ -260,8 +261,9 @@ export default function IdeaDetailPage() {
                     type="button"
                     disabled={submitting}
                     onClick={handleSubmitInterest}
-                    className="w-full rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-ink py-3 text-sm font-bold text-white disabled:opacity-60"
                   >
+                    {submitting && <Spinner className="h-4 w-4" />}
                     {t('detail.modal.submitInterest')}
                   </button>
                 </>

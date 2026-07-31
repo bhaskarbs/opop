@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   companyBillingApi,
@@ -250,12 +251,13 @@ export default function CompanyBillingPage() {
                 type="button"
                 disabled={(isCurrent && key === 'free') || changingPlan !== null}
                 onClick={() => (key === 'free' ? handleDowngradeToFree() : handleUpgrade(key))}
-                className={`rounded-[9px] border py-2.5 text-[13.5px] font-bold disabled:cursor-not-allowed ${
+                className={`flex items-center justify-center gap-2 rounded-[9px] border py-2.5 text-[13.5px] font-bold disabled:cursor-not-allowed ${
                   isCurrent && key === 'free'
                     ? 'border-border bg-neutral-tint text-fog'
                     : 'border-ink bg-ink text-white disabled:opacity-60'
                 }`}
               >
+                {isChanging && <Spinner className="h-3.5 w-3.5" />}
                 {isCurrent && key === 'free'
                   ? t('billing.currentPlanBadge')
                   : isChanging
@@ -314,8 +316,9 @@ export default function CompanyBillingPage() {
                     type="button"
                     disabled={downloadingInvoiceId === entry.id}
                     onClick={() => handleDownloadInvoice(entry.id)}
-                    className="justify-self-end text-[12.5px] font-bold text-primary disabled:opacity-60"
+                    className="flex items-center justify-self-end gap-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
                   >
+                    {downloadingInvoiceId === entry.id && <Spinner className="h-3.5 w-3.5" />}
                     {downloadingInvoiceId === entry.id
                       ? t('billing.downloadingInvoice')
                       : t('billing.downloadInvoice')}

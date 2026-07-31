@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminUserRole, type AdminUserSummary } from '../../lib/adminApi'
@@ -236,8 +237,9 @@ export default function AdminUsersPage() {
                     type="button"
                     disabled={actioningId === user.id}
                     onClick={() => handleToggleStatus(user)}
-                    className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
                   >
+                    {actioningId === user.id && <Spinner className="h-3.5 w-3.5" />}
                     {user.accountStatus === 'ACTIVE' ? t('users.suspend') : t('users.reactivate')}
                   </button>
                 </div>

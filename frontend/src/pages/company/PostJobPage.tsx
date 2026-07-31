@@ -490,7 +490,7 @@ export default function PostJobPage() {
           <Button type="button" variant="secondary" onClick={onSaveDraft}>
             {t('postJob.saveDraft')}
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" loading={isSubmitting}>
             {editing ? t('postJob.saveChanges') : t('postJob.publish')}
           </Button>
         </div>

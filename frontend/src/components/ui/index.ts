@@ -11,3 +11,4 @@ export {
 } from './SearchAutocompleteInput'
 export { Badge, type BadgeProps, type BadgeVariant } from './Badge'
 export { Tag, type TagProps, type TagVariant } from './Tag'
+export { Spinner, type SpinnerProps } from './Spinner'

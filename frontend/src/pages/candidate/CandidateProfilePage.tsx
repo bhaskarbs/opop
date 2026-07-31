@@ -1,6 +1,6 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Card, SkillsTagInput } from '../../components/ui'
+import { Button, Card, SkillsTagInput, Spinner } from '../../components/ui'
 import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
 import {
@@ -256,17 +256,21 @@ export default function CandidateProfilePage() {
                 aria-label={t('profile.changePhoto')}
                 className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-ink text-white disabled:opacity-60"
               >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
+                {uploadingPhoto ? (
+                  <Spinner className="h-3 w-3" />
+                ) : (
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                )}
               </button>
               <input
                 ref={photoInputRef}
@@ -393,7 +397,7 @@ export default function CandidateProfilePage() {
             </div>
             {personalError && <p className="mt-3.5 text-[13px] text-danger">{personalError}</p>}
             <div className="mt-[18px] flex items-center gap-3">
-              <Button type="button" onClick={handleSavePersonal} disabled={savingPersonal}>
+              <Button type="button" onClick={handleSavePersonal} loading={savingPersonal}>
                 {t('profile.saveChanges')}
               </Button>
               {savedPersonal && (
@@ -487,7 +491,7 @@ export default function CandidateProfilePage() {
             />
             {goalsError && <p className="mt-3.5 text-[13px] text-danger">{goalsError}</p>}
             <div className="mt-[18px] flex items-center gap-3">
-              <Button type="button" onClick={handleSaveGoals} disabled={savingGoals}>
+              <Button type="button" onClick={handleSaveGoals} loading={savingGoals}>
                 {t('profile.saveChanges')}
               </Button>
               {savedGoals && (
@@ -539,7 +543,7 @@ export default function CandidateProfilePage() {
             </div>
             {prefsError && <p className="mt-3.5 text-[13px] text-danger">{prefsError}</p>}
             <div className="mt-[18px] flex items-center gap-3">
-              <Button type="button" onClick={handleSavePrefs} disabled={savingPrefs}>
+              <Button type="button" onClick={handleSavePrefs} loading={savingPrefs}>
                 {t('profile.saveChanges')}
               </Button>
               {savedPrefs && (

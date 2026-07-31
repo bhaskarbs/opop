@@ -36,6 +36,20 @@ export class ApiError extends Error {
 // backend run on different origins/ports).
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
+// Dev-only network-delay simulator — flip ENABLE_API_DELAY to true and reload to make every
+// request/uploadRequest/blobRequest call below wait API_DELAY_MS before hitting the network, so
+// loading states (spinners, skeletons, disabled buttons) are actually visible to work on
+// instead of resolving instantly on localhost. Toggled by editing this constant, not at
+// runtime — never enable it in a real deployment.
+const ENABLE_API_DELAY = true
+const API_DELAY_MS = 2000
+
+function apiDelay(): Promise<void> {
+  return ENABLE_API_DELAY
+    ? new Promise((resolve) => setTimeout(resolve, API_DELAY_MS))
+    : Promise.resolve()
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`
@@ -59,6 +73,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 /** Shared by every API module (see jobsApi.ts) so base URL, credentials, and error parsing
  * stay consistent in one place. */
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  await apiDelay()
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     // Sends and receives the httpOnly refreshToken cookie — required for /refresh and
@@ -76,6 +91,7 @@ export async function uploadRequest<T>(
   formData: FormData,
   headers: Record<string, string> = {},
 ): Promise<T> {
+  await apiDelay()
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     credentials: 'include',
@@ -92,6 +108,7 @@ export async function blobRequest(
   path: string,
   headers: Record<string, string> = {},
 ): Promise<Blob> {
+  await apiDelay()
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     headers,

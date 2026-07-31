@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
+import { Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminCandidateProfileSummary } from '../../lib/adminApi'
@@ -261,8 +262,9 @@ export default function AdminCandidateDetailPage() {
               type="button"
               disabled={resumeDownloading}
               onClick={handleDownloadResume}
-              className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
+              {resumeDownloading && <Spinner className="h-3.5 w-3.5" />}
               {resumeDownloading
                 ? t('candidateDetail.resumeLoading')
                 : t('candidateDetail.downloadResume')}

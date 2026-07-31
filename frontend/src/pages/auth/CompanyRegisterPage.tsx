@@ -465,7 +465,7 @@ export default function CompanyRegisterPage() {
 
           {formError && <p className="mb-4 text-[13px] text-danger">{formError}</p>}
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
+          <Button type="submit" loading={isSubmitting} className="w-full">
             {t('companyRegister.submit')}
           </Button>
         </form>

@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   adminApi,
@@ -401,8 +402,9 @@ export default function AdminBillingPage() {
                       type="button"
                       disabled={isActioning}
                       onClick={() => handleSetCompanyPlan(company.companyId, 'FREE')}
-                      className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                      className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
                     >
+                      {isActioning && <Spinner className="h-3.5 w-3.5" />}
                       {t('billing.companyPlans.downgradeToFree')}
                     </button>
                   )}
@@ -411,8 +413,9 @@ export default function AdminBillingPage() {
                       type="button"
                       disabled={isActioning}
                       onClick={() => handleSetCompanyPlan(company.companyId, 'GROWTH')}
-                      className="rounded-md border border-border bg-primary-tint px-3.5 py-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
+                      className="flex items-center gap-1.5 rounded-md border border-border bg-primary-tint px-3.5 py-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
                     >
+                      {isActioning && <Spinner className="h-3.5 w-3.5" />}
                       {t('billing.companyPlans.upgradeToGrowth')}
                     </button>
                   )}
@@ -472,8 +475,9 @@ export default function AdminBillingPage() {
                       type="button"
                       disabled={isActioning}
                       onClick={() => handleSetCandidatePlan(candidate.candidateId, 'FREE')}
-                      className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                      className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
                     >
+                      {isActioning && <Spinner className="h-3.5 w-3.5" />}
                       {t('billing.candidatePlans.downgradeToFree')}
                     </button>
                   )}
@@ -482,8 +486,9 @@ export default function AdminBillingPage() {
                       type="button"
                       disabled={isActioning}
                       onClick={() => handleSetCandidatePlan(candidate.candidateId, 'PLUS')}
-                      className="rounded-md border border-border bg-primary-tint px-3.5 py-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
+                      className="flex items-center gap-1.5 rounded-md border border-border bg-primary-tint px-3.5 py-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
                     >
+                      {isActioning && <Spinner className="h-3.5 w-3.5" />}
                       {t('billing.candidatePlans.upgradeToPlus')}
                     </button>
                   )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
+import { Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminCompanyProfileSummary } from '../../lib/adminApi'
@@ -212,22 +213,24 @@ export default function AdminCompanyDetailPage() {
                 <button
                   key={certificate.id}
                   type="button"
-                  onClick={() =>
-                    handleDownloadCertificate(certificate.id, certificate.fileName)
-                  }
+                  onClick={() => handleDownloadCertificate(certificate.id, certificate.fileName)}
                   disabled={downloadingCertificateId === certificate.id}
                   className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                  </svg>
+                  {downloadingCertificateId === certificate.id ? (
+                    <Spinner className="h-3.5 w-3.5" />
+                  ) : (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                    </svg>
+                  )}
                   {downloadingCertificateId === certificate.id
                     ? t('companyApprovals.downloadingCertificate')
                     : `${certificate.fileName} (${formatFileSize(certificate.sizeBytes)})`}
