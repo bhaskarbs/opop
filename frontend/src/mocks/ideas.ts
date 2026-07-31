@@ -9,4 +9,5 @@ export const IDEA_CATEGORIES = [
   'Climate & Sustainability',
   'Agritech',
   'Social Impact & Community',
+  'Others',
 ]

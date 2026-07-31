@@ -74,10 +74,14 @@ export interface IdeaInterestSummary {
   role: BackendIdeaInterestRole
   ticketSize: string | null
   message: string | null
-  // Only ever populated for the idea owner's own view, and only when they're entitled to see
-  // it — a candidate on the Plus (or higher) plan (see billingApi). Null both when not entitled
-  // and when the interested user has no mobile on file.
+  // contactNumber and candidateUserId are only ever populated for the idea owner's own view, and
+  // only when they're entitled to see them — a candidate on the Plus (or higher) plan, or a
+  // company on the Growth (or higher) plan (see billingApi / companyBillingApi). Both stay null
+  // when not entitled; contactNumber is also null when the interested user has no mobile on
+  // file, and candidateUserId is null when the interested user isn't a candidate (e.g. an
+  // investor company has no viewable profile page).
   contactNumber: string | null
+  candidateUserId: string | null
   createdAt: string
 }
 

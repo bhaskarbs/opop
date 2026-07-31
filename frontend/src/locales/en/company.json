@@ -323,7 +323,11 @@
         "name": "Growth",
         "price": "₹399",
         "period": "/month",
-        "features": ["Everything in Free", "Contact 50 candidates directly for 1 month per search"]
+        "features": [
+          "Everything in Free",
+          "Contact 50 candidates directly for 1 month per search",
+          "Access to partnership applicants' contact"
+        ]
       },
       "enterprise": {
         "name": "Enterprise",

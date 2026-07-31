@@ -280,18 +280,36 @@ export default function MyIdeasPage() {
                               {t('myIdeas.appliedMeta', { date: formatDate(applicant.createdAt) })}
                             </div>
                             {applicant.contactNumber ? (
-                              <div className="mt-1 text-[12.5px] font-semibold text-teal">
-                                {t('myIdeas.contactNumber', { number: applicant.contactNumber })}
+                              <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                                <span className="text-[12.5px] font-semibold text-teal">
+                                  {t('myIdeas.contactNumber', { number: applicant.contactNumber })}
+                                </span>
+                                {role === 'COMPANY' && applicant.candidateUserId && (
+                                  <Link
+                                    to={localize(
+                                      ROUTES.companyCandidateProfile(applicant.candidateUserId),
+                                    )}
+                                    className="text-[12.5px] font-bold text-primary no-underline"
+                                  >
+                                    {t('myIdeas.viewProfile')}
+                                  </Link>
+                                )}
                               </div>
                             ) : (
-                              role !== 'COMPANY' && (
-                                <Link
-                                  to={localize(ROUTES.candidateBilling)}
-                                  className="mt-1 block text-[12.5px] font-bold text-primary no-underline"
-                                >
-                                  {t('myIdeas.upgradeForContact')}
-                                </Link>
-                              )
+                              <Link
+                                to={localize(
+                                  role === 'COMPANY'
+                                    ? ROUTES.companyBilling
+                                    : ROUTES.candidateBilling,
+                                )}
+                                className="mt-1 block text-[12.5px] font-bold text-primary no-underline"
+                              >
+                                {t(
+                                  role === 'COMPANY'
+                                    ? 'myIdeas.upgradeForContactCompany'
+                                    : 'myIdeas.upgradeForContact',
+                                )}
+                              </Link>
                             )}
                           </div>
                         </div>
