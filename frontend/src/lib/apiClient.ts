@@ -43,7 +43,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localho
 // loading states (spinners, skeletons, disabled buttons) are actually visible to work on
 // instead of resolving instantly on localhost. Toggled by editing this constant, not at
 // runtime — never enable it in a real deployment.
-const ENABLE_API_DELAY = true
+const ENABLE_API_DELAY = false
 const API_DELAY_MS = 2000
 
 function apiDelay(): Promise<void> {
