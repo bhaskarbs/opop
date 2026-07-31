@@ -25,12 +25,22 @@ public class LocalFileStorageService implements FileStorageService {
 
     @Override
     public String store(MultipartFile file, String subdirectory) throws IOException {
-        Path dir = rootDir.resolve(subdirectory);
-        Files.createDirectories(dir);
-
-        String storageKey = subdirectory + "/" + UUID.randomUUID() + extensionOf(file.getOriginalFilename());
+        String storageKey = newStorageKey(subdirectory, file.getOriginalFilename());
+        Files.createDirectories(rootDir.resolve(subdirectory));
         file.transferTo(rootDir.resolve(storageKey));
         return storageKey;
+    }
+
+    @Override
+    public String store(byte[] content, String originalFilename, String subdirectory) throws IOException {
+        String storageKey = newStorageKey(subdirectory, originalFilename);
+        Files.createDirectories(rootDir.resolve(subdirectory));
+        Files.write(rootDir.resolve(storageKey), content);
+        return storageKey;
+    }
+
+    private String newStorageKey(String subdirectory, String originalFilename) {
+        return subdirectory + "/" + UUID.randomUUID() + extensionOf(originalFilename);
     }
 
     @Override

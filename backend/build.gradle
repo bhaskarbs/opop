@@ -45,6 +45,9 @@ dependencies {
 	// (HWPF) support on top of poi-ooxml's .docx (XWPF) support.
 	implementation 'org.apache.poi:poi-ooxml:5.3.0'
 	implementation 'org.apache.poi:poi-scratchpad:5.3.0'
+	// Downscales candidate photos/company logos on upload before they're stored (see
+	// com.openopportunity.storage.AvatarImageResizer) — both only ever render as small avatars.
+	implementation 'net.coobird:thumbnailator:0.4.20'
 	runtimeOnly 'org.postgresql:postgresql'
 	// Lets the JDBC URL connect through the Unix socket Cloud Run mounts at /cloudsql
 	// (see infra/run.tf) instead of a raw TCP host:port — only exercised in that
