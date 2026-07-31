@@ -65,6 +65,8 @@
     },
     "fields": {
       "fullName": "Full name",
+      "title": "Professional title",
+      "titlePlaceholder": "e.g. Frontend Developer, Data Analyst",
       "location": "Location",
       "email": "Email",
       "mobile": "Mobile",
@@ -101,6 +103,7 @@
     "title": "Add missing details",
     "subtitle": "Finish these to unlock better job, partnership, and community matches.",
     "goalsDescription": "Shared with startups when you apply for a partnership — helps them assess fit beyond your resume.",
+    "personalDescription": "Your location and professional title help employers and startups quickly see who you are.",
     "save": "Save",
     "mobileDescription": "So employers and startups can reach you.",
     "prefsDescription": "Helps us match jobs, partnerships, and community roles to how you want to work.",
@@ -110,7 +113,6 @@
       "jobsAndPartnerships": "Jobs & partnerships",
       "jobsPartnershipsAndCommunity": "Jobs, partnerships & community roles"
     },
-    "skillsAdded": "{{count}} skills added — nice work.",
     "profileComplete": "Your profile is complete!",
     "backToDashboard": "Back to dashboard"
   },
