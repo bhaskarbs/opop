@@ -11,6 +11,7 @@ import {
 } from '../../lib/candidateProfileCompletion'
 import { PROFILE_CHECKLIST, type ChecklistKey } from '../../mocks/candidateProfile'
 import { ROUTES } from '../../routes/paths'
+import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 // Rendered text only — item.label (mocks/candidateProfile.ts) stays as the underlying data field.
 const CHECKLIST_LABEL_KEYS: Record<ChecklistKey, string> = {
@@ -88,8 +89,9 @@ export default function AddMissingDetailsPage() {
 
   useEffect(() => {
     let cancelled = false
-    candidateApi
-      .getProfile()
+    useCandidateProfileStore
+      .getState()
+      .fetchProfile()
       .then((data) => {
         if (cancelled) return
         setProfile(data)
@@ -116,7 +118,9 @@ export default function AddMissingDetailsPage() {
     setGoalsError(null)
     setSavingGoals(true)
     try {
-      setProfile(await candidateApi.updateGoals({ lifeGoals, workCulture }))
+      const updated = await candidateApi.updateGoals({ lifeGoals, workCulture })
+      setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
     } catch (error) {
       setGoalsError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {
@@ -128,7 +132,9 @@ export default function AddMissingDetailsPage() {
     setMobileError(null)
     setSavingMobile(true)
     try {
-      setProfile(await candidateApi.updateMobile(mobile))
+      const updated = await candidateApi.updateMobile(mobile)
+      setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
     } catch (error) {
       setMobileError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {
@@ -140,7 +146,9 @@ export default function AddMissingDetailsPage() {
     setPrefsError(null)
     setSavingPrefs(true)
     try {
-      setProfile(await candidateApi.updatePreferences({ workMode, openTo }))
+      const updated = await candidateApi.updatePreferences({ workMode, openTo })
+      setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
     } catch (error) {
       setPrefsError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {

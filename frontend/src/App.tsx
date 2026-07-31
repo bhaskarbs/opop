@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom'
 import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
+import { useCandidateProfileStore } from './stores/candidateProfileStore'
 import { RequireAuth } from './routes/RequireAuth'
 import { ScrollToTop } from './routes/ScrollToTop'
 import i18n, { DEFAULT_LANGUAGE, isSupportedLanguage } from './i18n'
@@ -118,6 +119,7 @@ function App() {
       .catch(() => {
         if (useAuthStore.getState().status === 'checking') {
           clearSession()
+          useCandidateProfileStore.getState().clear()
         }
       })
   }, [setSession, clearSession])

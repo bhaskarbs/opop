@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
-import { candidateApi } from '../../lib/candidateApi'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
 import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
+import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 // Questions are generated per-session by the backend via the Claude API (see
 // mockInterviewApi.generateQuestions), tailored to the candidate's selected skills, experience
@@ -262,8 +262,9 @@ export default function MockInterviewPage() {
 
   useEffect(() => {
     let cancelled = false
-    candidateApi
-      .getProfile()
+    useCandidateProfileStore
+      .getState()
+      .fetchProfile()
       .then((profile) => {
         if (cancelled) return
         setSkills(profile.skills)
