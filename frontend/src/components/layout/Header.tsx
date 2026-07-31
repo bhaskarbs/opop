@@ -11,6 +11,7 @@ import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
 import { useApplicationsStore } from '../../stores/applicationsStore'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
+import { useCompanyProfileStore } from '../../stores/companyProfileStore'
 import { useSavedJobsStore } from '../../stores/savedJobsStore'
 import {
   AVATAR_BG_CLASS,
@@ -101,6 +102,7 @@ export function Header({
       // A future login this session (possibly as a different candidate) must never see a
       // previous session's cached data — see candidateProfileStore.clear.
       useCandidateProfileStore.getState().clear()
+      useCompanyProfileStore.getState().clear()
       useApplicationsStore.getState().clear()
       useSavedJobsStore.getState().clear()
       navigate(localize(ROUTES.home))

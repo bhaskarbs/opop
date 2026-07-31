@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { companyApi, type ContactQuota } from '../lib/companyApi'
+import { useCompanyProfileStore } from '../stores/companyProfileStore'
 
 export type ContactEligibilityReason = 'incomplete-profile' | 'free-plan' | 'quota-exhausted' | null
 
@@ -19,7 +20,7 @@ export function useContactEligibility() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([companyApi.getProfile(), companyApi.getContactQuota()])
+    Promise.all([useCompanyProfileStore.getState().fetchProfile(), companyApi.getContactQuota()])
       .then(([profile, quotaResult]) => {
         if (cancelled) return
         setQuota(quotaResult)
