@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadingState } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
-import { applicationsApi } from '../../lib/applicationsApi'
 import { savedJobsApi } from '../../lib/savedJobsApi'
+import { useApplicationsStore } from '../../stores/applicationsStore'
+import { useSavedJobsStore } from '../../stores/savedJobsStore'
 import { ResultCard } from '../job-search/ResultCard'
 import { toDisplayJob, type DisplayJob } from '../job-search/jobDisplay'
 
@@ -25,8 +26,8 @@ export default function SavedJobsPage() {
       setError(null)
       try {
         const [saved, applications] = await Promise.all([
-          savedJobsApi.mine(),
-          applicationsApi.mine(),
+          useSavedJobsStore.getState().fetchSavedJobs(),
+          useApplicationsStore.getState().fetchApplications(),
         ])
         if (cancelled) return
         setJobs(saved.map(toDisplayJob))
@@ -56,9 +57,16 @@ export default function SavedJobsPage() {
   // backend never actually removed the bookmark.
   function handleUnsave(jobId: string) {
     setJobs((prev) => prev.filter((job) => job.id !== jobId))
-    savedJobsApi.unsave(jobId).catch(() => {
-      // See comment above.
-    })
+    savedJobsApi
+      .unsave(jobId)
+      .then(() => {
+        // Refreshes the shared cache in the background — see savedJobsStore's comment on why
+        // this force-refetches rather than patching in place.
+        useSavedJobsStore.getState().fetchSavedJobs(true)
+      })
+      .catch(() => {
+        // See comment above.
+      })
   }
 
   const pageCount = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE))

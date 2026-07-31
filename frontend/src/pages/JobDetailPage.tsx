@@ -11,6 +11,8 @@ import { workModeFromBackend } from '../lib/jobEnums'
 import { savedJobsApi } from '../lib/savedJobsApi'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
+import { useApplicationsStore } from '../stores/applicationsStore'
+import { useSavedJobsStore } from '../stores/savedJobsStore'
 import type { TFunction } from 'i18next'
 
 function formatSalary(
@@ -150,13 +152,18 @@ export default function JobDetailPage() {
 
   // Candidate-specific "have I applied/saved this" state — deliberately not part of the cached
   // job queries above, since it's per-viewer and this page's own apply/save actions already
-  // update it locally the moment they succeed.
+  // update it locally the moment they succeed. Goes through applicationsStore/savedJobsStore's
+  // cache-first fetch rather than calling the APIs directly, so this doesn't trigger a network
+  // request if another candidate page already loaded either list this session.
   useEffect(() => {
     if (!jobId) return
     let cancelled = false
     const eligible = authStatus === 'authenticated' && user?.role === 'CANDIDATE'
     const fetchTask = eligible
-      ? Promise.all([applicationsApi.mine(), savedJobsApi.mine()])
+      ? Promise.all([
+          useApplicationsStore.getState().fetchApplications(),
+          useSavedJobsStore.getState().fetchSavedJobs(),
+        ])
       : Promise.resolve(null)
     fetchTask
       .then((result) => {
@@ -190,7 +197,13 @@ export default function JobDetailPage() {
     const wasSaved = saved
     setSaved(!wasSaved)
     const request = wasSaved ? savedJobsApi.unsave(job.id) : savedJobsApi.save(job.id)
-    request.catch(() => setSaved(wasSaved))
+    request
+      .then(() => {
+        // Refreshes the shared cache in the background — see savedJobsStore's comment on why
+        // this force-refetches rather than patching in place.
+        useSavedJobsStore.getState().fetchSavedJobs(true)
+      })
+      .catch(() => setSaved(wasSaved))
   }
 
   // Withdrawing lives on the Applications page only (see ApplicationsPage) — once applied, this
@@ -209,6 +222,9 @@ export default function JobDetailPage() {
       queryClient.setQueryData(jobQueryKeys.detail(job.id), (prev: JobDetail | undefined) =>
         prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev,
       )
+      // Refreshes the shared cache in the background — see applicationsStore's comment on why
+      // this force-refetches rather than patching in place.
+      useApplicationsStore.getState().fetchApplications(true)
     } catch (error) {
       setApplyError(error instanceof ApiError ? error.message : t('jobDetail.applyError'))
     } finally {
