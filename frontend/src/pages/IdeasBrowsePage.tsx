@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { LoadingState } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError } from '../lib/apiClient'
 import { avatarColorClass } from '../lib/ideaAvatar'
@@ -178,75 +179,81 @@ export default function IdeasBrowsePage() {
 
         {error && <p className="mb-4 text-center text-sm text-danger">{error}</p>}
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
-          {ideas.slice(0, ideasShown).map((idea) => {
-            const applied = appliedIdeaIds.has(idea.id)
-            return (
-              <div
-                key={idea.id}
-                className={
-                  applied
-                    ? 'flex flex-col gap-2.5 rounded-card border-2 border-teal bg-teal-tint p-5'
-                    : 'flex flex-col gap-2.5 rounded-card border border-border bg-surface p-5'
-                }
-              >
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-teal-tint px-2.5 py-[3px] text-[11.5px] font-bold text-teal">
-                      {idea.category}
-                    </span>
-                    {applied && (
-                      <span className="rounded-full bg-teal px-2.5 py-[3px] text-[11.5px] font-bold text-white">
-                        {t('browse.applied')}
+        {loading && ideas.length === 0 ? (
+          <div className="rounded-card border border-border bg-surface p-10">
+            <LoadingState message={t('browse.loading')} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+            {ideas.slice(0, ideasShown).map((idea) => {
+              const applied = appliedIdeaIds.has(idea.id)
+              return (
+                <div
+                  key={idea.id}
+                  className={
+                    applied
+                      ? 'flex flex-col gap-2.5 rounded-card border-2 border-teal bg-teal-tint p-5'
+                      : 'flex flex-col gap-2.5 rounded-card border border-border bg-surface p-5'
+                  }
+                >
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-teal-tint px-2.5 py-[3px] text-[11.5px] font-bold text-teal">
+                        {idea.category}
                       </span>
-                    )}
+                      {applied && (
+                        <span className="rounded-full bg-teal px-2.5 py-[3px] text-[11.5px] font-bold text-white">
+                          {t('browse.applied')}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`rounded-full px-2.5 py-[3px] text-[11.5px] font-bold whitespace-nowrap ${STAGE_BADGE_CLASSES[idea.stage]}`}
+                    >
+                      {t(STAGE_KEYS[idea.stage])}
+                    </span>
                   </div>
-                  <span
-                    className={`rounded-full px-2.5 py-[3px] text-[11.5px] font-bold whitespace-nowrap ${STAGE_BADGE_CLASSES[idea.stage]}`}
-                  >
-                    {t(STAGE_KEYS[idea.stage])}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="mb-1.5 text-[16.5px] font-bold text-ink">{idea.title}</h3>
-                  <p className="text-[13.5px] leading-[1.55] text-slate">{idea.problem}</p>
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <span
-                    className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${avatarColorClass(idea.submitterName)}`}
-                  >
-                    {idea.submitterName.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="text-[12.5px] text-slate">
-                    {t('browse.submitterMeta', {
-                      name: idea.submitterName,
-                      type: t(`browse.submitterTypes.${idea.submitterRole.toLowerCase()}`),
-                    })}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center justify-between border-t border-[#F0F1F3] pt-3">
-                  <div className="text-[12.5px] text-fog">
-                    {t('browse.seekingInterested', {
-                      funding: idea.funding ?? '—',
-                      count: idea.interestedCount,
-                    })}
+                  <div>
+                    <h3 className="mb-1.5 text-[16.5px] font-bold text-ink">{idea.title}</h3>
+                    <p className="text-[13.5px] leading-[1.55] text-slate">{idea.problem}</p>
                   </div>
-                  <Link
-                    to={localize(ROUTES.ideaDetail(idea.id))}
-                    className="text-[13px] font-bold no-underline"
-                  >
-                    {t('browse.viewIdea')}
-                  </Link>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span
+                      className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${avatarColorClass(idea.submitterName)}`}
+                    >
+                      {idea.submitterName.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="text-[12.5px] text-slate">
+                      {t('browse.submitterMeta', {
+                        name: idea.submitterName,
+                        type: t(`browse.submitterTypes.${idea.submitterRole.toLowerCase()}`),
+                      })}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 flex items-center justify-between border-t border-[#F0F1F3] pt-3">
+                    <div className="text-[12.5px] text-fog">
+                      {t('browse.seekingInterested', {
+                        funding: idea.funding ?? '—',
+                        count: idea.interestedCount,
+                      })}
+                    </div>
+                    <Link
+                      to={localize(ROUTES.ideaDetail(idea.id))}
+                      className="text-[13px] font-bold no-underline"
+                    >
+                      {t('browse.viewIdea')}
+                    </Link>
+                  </div>
                 </div>
+              )
+            })}
+            {!loading && ideas.length === 0 && !error && (
+              <div className="col-span-full rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
+                {t('browse.noResults')}
               </div>
-            )
-          })}
-          {!loading && ideas.length === 0 && !error && (
-            <div className="col-span-full rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-              {t('browse.noResults')}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {ideasShown < ideas.length && (
           <div className="mt-7 flex justify-center">

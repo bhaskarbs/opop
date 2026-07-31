@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.openopportunity.auth.CandidateProfile;
 import com.openopportunity.auth.CandidateProfileRepository;
+import com.openopportunity.auth.CompanyProfile;
+import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
@@ -59,6 +61,9 @@ class IdeaServiceTest {
     @Mock
     private CompanyBillingService companyBillingService;
 
+    @Mock
+    private CompanyProfileRepository companyProfileRepository;
+
     private IdeaService ideaService;
 
     @BeforeEach
@@ -70,7 +75,8 @@ class IdeaServiceTest {
                 notificationService,
                 candidateProfileRepository,
                 candidateBillingService,
-                companyBillingService);
+                companyBillingService,
+                companyProfileRepository);
     }
 
     private IdeaRequest sampleRequest() {
@@ -384,6 +390,11 @@ class IdeaServiceTest {
         when(candidateProfileRepository.findByUserId(interestedUserId)).thenReturn(Optional.of(interestedProfile));
         User owner = new User("owner@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        CompanyProfile ownerProfile = new CompanyProfile(
+                ownerId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Robotics", "Address", "Signatory",
+                "9998887770", null);
+        ownerProfile.verify();
+        when(companyProfileRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerProfile));
 
         when(companyBillingService.getPlanPeriod(ownerId))
                 .thenReturn(new CompanyBillingService.PlanPeriod(CompanySubscriptionPlan.FREE, null, null));
@@ -396,6 +407,36 @@ class IdeaServiceTest {
         IdeaInterestSummary onPaidPlan = ideaService.getInterests(idea.getId(), ownerId).get(0);
         assertThat(onPaidPlan.contactNumber()).isEqualTo("9876543210");
         assertThat(onPaidPlan.candidateUserId()).isEqualTo(interestedUserId);
+    }
+
+    @Test
+    void getInterestsExcludesContactNumberWhenCallerIsAnUnverifiedCompanyEvenOnAPaidPlan() {
+        UUID ownerId = UUID.randomUUID();
+        UUID interestedUserId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        IdeaInterest interest = new IdeaInterest(
+                idea.getId(),
+                idea.getTitle(),
+                idea.getSubmitterName(),
+                interestedUserId,
+                "Fatima Sheikh",
+                IdeaInterestRole.PARTICIPANT,
+                null,
+                "Interested.");
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+        when(ideaInterestRepository.findByIdeaIdOrderByCreatedAtDesc(idea.getId()))
+                .thenReturn(java.util.List.of(interest));
+        User owner = new User("owner@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        CompanyProfile unverifiedProfile = new CompanyProfile(
+                ownerId, "Private Limited", "CIN123", "GSTIN123", "PAN123", "Robotics", "Address", "Signatory",
+                "9998887770", null);
+        when(companyProfileRepository.findByUserId(ownerId)).thenReturn(Optional.of(unverifiedProfile));
+
+        IdeaInterestSummary summary = ideaService.getInterests(idea.getId(), ownerId).get(0);
+
+        assertThat(summary.contactNumber()).isNull();
+        assertThat(summary.candidateUserId()).isNull();
     }
 
     @Test
