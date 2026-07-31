@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
-import { LoadingState, Spinner } from '../../components/ui'
+import { useParams } from 'react-router-dom'
+import { BackButton, LoadingState, Spinner } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
-import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
 import { companyApi, type CandidateProfileForCompany } from '../../lib/companyApi'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
-import { ROUTES } from '../../routes/paths'
 
 const EXPERIENCE_LEVEL_KEYS: Record<string, string> = {
   'Entry level': 'public:filters.experienceLevel.entry',
@@ -39,7 +37,6 @@ function formatDate(iso: string): string {
 
 export default function CandidateProfileViewPage() {
   const { t } = useTranslation('company')
-  const localize = useLocalizedPath()
   const { userId } = useParams()
 
   const [profile, setProfile] = useState<CandidateProfileForCompany | null>(null)
@@ -161,12 +158,7 @@ export default function CandidateProfileViewPage() {
 
   return (
     <main className="mx-auto max-w-[760px] px-6 py-7 pb-16">
-      <Link
-        to={localize(ROUTES.companySearchCandidates)}
-        className="mb-5 inline-block text-[13px] font-bold text-primary no-underline"
-      >
-        {t('candidateProfile.backToSearch')}
-      </Link>
+      <BackButton className="mb-5 inline-block text-[13px] font-bold text-primary no-underline" />
 
       {!canContact && contactHint && (
         <div className="mb-4 rounded-lg border border-[#FCE3B8] bg-amber-tint px-4 py-3.5 text-[13px] text-[#8A5A0F]">

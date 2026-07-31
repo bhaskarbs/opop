@@ -136,7 +136,6 @@
     "moreDetails": "More details"
   },
   "candidateDetail": {
-    "backToUsers": "← Back to users",
     "loading": "Loading candidate…",
     "loadError": "Could not load this candidate.",
     "memberSince": "Member since {{date}}",
@@ -157,7 +156,6 @@
     "resumeError": "Could not download this resume. Please try again."
   },
   "companyDetail": {
-    "backToUsers": "← Back to users",
     "loading": "Loading company…",
     "loadError": "Could not load this company."
   },

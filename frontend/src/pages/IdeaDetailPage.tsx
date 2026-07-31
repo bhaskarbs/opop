@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { LoadingState, Spinner } from '../components/ui'
+import { BackButton, LoadingState, Spinner } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError } from '../lib/apiClient'
 import { avatarColorClass } from '../lib/ideaAvatar'
@@ -98,9 +98,7 @@ export default function IdeaDetailPage() {
 
   return (
     <main className="mx-auto grid max-w-[960px] grid-cols-1 gap-5 px-6 py-8 pb-16">
-      <Link to={localize(ROUTES.ideasBrowse)} className="text-[13px] font-semibold no-underline">
-        {t('detail.backToAll')}
-      </Link>
+      <BackButton className="text-[13px] font-semibold no-underline" />
 
       <div className="rounded-2xl border border-border bg-surface p-7">
         <div className="mb-3.5 flex flex-wrap gap-2">

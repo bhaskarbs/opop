@@ -2,6 +2,7 @@
   "app": {
     "name": "OpenOpportunity"
   },
+  "back": "← वापस",
   "nav": {
     "jobs": "नौकरियां खोजें",
     "login": "लॉग इन करें"

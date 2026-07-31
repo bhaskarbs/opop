@@ -184,7 +184,6 @@
     "saveChanges": "Save changes"
   },
   "candidateProfile": {
-    "backToSearch": "← Back to search",
     "loading": "Loading profile…",
     "loadError": "Could not load this candidate's profile.",
     "memberSince": "Member since {{date}}",
@@ -201,7 +200,6 @@
     "resumeError": "Could not load this candidate's resume. Please try again."
   },
   "jobApplicants": {
-    "backToJobPostings": "← Back to job postings",
     "title": "Applicants",
     "titleForJob": "Applicants for {{job}}",
     "subtitle": "Everyone who has applied to this job posting.",

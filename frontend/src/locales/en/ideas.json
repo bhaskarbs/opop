@@ -27,7 +27,6 @@
   },
   "detail": {
     "loading": "Loading…",
-    "backToAll": "← Back to all ideas",
     "submittedMeta": "Submitted {{date}} · {{count}} people interested",
     "fundingRequired": "Funding required",
     "equityOffered": "Equity / revenue offered",

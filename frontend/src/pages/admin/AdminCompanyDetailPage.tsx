@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
-import { LoadingState, Spinner } from '../../components/ui'
-import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { useParams } from 'react-router-dom'
+import { BackButton, LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminCompanyProfileSummary } from '../../lib/adminApi'
-import { ROUTES } from '../../routes/paths'
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -27,7 +25,6 @@ const STATUS_LABEL_KEYS: Record<AdminCompanyProfileSummary['verificationStatus']
 
 export default function AdminCompanyDetailPage() {
   const { t } = useTranslation('admin')
-  const localize = useLocalizedPath()
   const { id } = useParams()
 
   const [company, setCompany] = useState<AdminCompanyProfileSummary | null>(null)
@@ -96,12 +93,7 @@ export default function AdminCompanyDetailPage() {
 
   return (
     <main className="mx-auto max-w-[760px] px-6 py-7 pb-16">
-      <Link
-        to={`${localize(ROUTES.adminUsers)}?tab=companies`}
-        className="mb-5 inline-block text-[13px] font-bold text-primary no-underline"
-      >
-        {t('companyDetail.backToUsers')}
-      </Link>
+      <BackButton className="mb-5 inline-block text-[13px] font-bold text-primary no-underline" />
 
       <div className="rounded-card border border-border bg-surface p-[22px]">
         <div className="mb-4 flex flex-wrap justify-between gap-4">

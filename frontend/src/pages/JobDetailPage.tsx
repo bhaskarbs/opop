@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Card, LoadingState } from '../components/ui'
+import { BackButton, Card, LoadingState } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
@@ -249,6 +249,7 @@ export default function JobDetailPage() {
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
+      <BackButton className="mb-5 inline-block text-sm font-bold text-primary no-underline" />
       <div className="search:grid-cols-[minmax(0,1fr)_300px] grid grid-cols-1 gap-6">
         <div>
           <Card className="mb-5 p-7">
