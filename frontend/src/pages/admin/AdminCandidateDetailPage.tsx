@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
-import { LoadingState, Spinner } from '../../components/ui'
-import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { useParams } from 'react-router-dom'
+import { BackButton, LoadingState, Spinner } from '../../components/ui'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminCandidateProfileSummary } from '../../lib/adminApi'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
-import { ROUTES } from '../../routes/paths'
 
 const EXPERIENCE_LEVEL_KEYS: Record<string, string> = {
   'Entry level': 'public:filters.experienceLevel.entry',
@@ -38,7 +36,6 @@ function formatDate(iso: string): string {
 
 export default function AdminCandidateDetailPage() {
   const { t } = useTranslation('admin')
-  const localize = useLocalizedPath()
   const { id } = useParams()
 
   const [candidate, setCandidate] = useState<AdminCandidateProfileSummary | null>(null)
@@ -108,12 +105,7 @@ export default function AdminCandidateDetailPage() {
 
   return (
     <main className="mx-auto max-w-[760px] px-6 py-7 pb-16">
-      <Link
-        to={localize(ROUTES.adminUsers)}
-        className="mb-5 inline-block text-[13px] font-bold text-primary no-underline"
-      >
-        {t('candidateDetail.backToUsers')}
-      </Link>
+      <BackButton className="mb-5 inline-block text-[13px] font-bold text-primary no-underline" />
 
       <div className="rounded-card border border-border bg-surface p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">

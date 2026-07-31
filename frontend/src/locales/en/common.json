@@ -2,6 +2,7 @@
   "app": {
     "name": "OpenOpportunity"
   },
+  "back": "← Back",
   "nav": {
     "jobs": "Find Jobs",
     "login": "Log in"

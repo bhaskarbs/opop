@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { ContactRevealControl } from '../../components/company/ContactRevealControl'
-import { LoadingState } from '../../components/ui'
+import { BackButton, LoadingState } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
@@ -117,12 +117,7 @@ export default function JobApplicantsPage() {
 
   return (
     <main className="mx-auto max-w-[900px] px-6 py-7 pb-16">
-      <Link
-        to={localize(ROUTES.companyJobPostings)}
-        className="mb-5 inline-block text-[13px] font-bold text-primary no-underline"
-      >
-        {t('jobApplicants.backToJobPostings')}
-      </Link>
+      <BackButton className="mb-5 inline-block text-[13px] font-bold text-primary no-underline" />
 
       <h1 className="mb-1 text-xl font-extrabold text-ink">
         {jobTitle ? t('jobApplicants.titleForJob', { job: jobTitle }) : t('jobApplicants.title')}

@@ -1,3 +1,4 @@
+export { BackButton, type BackButtonProps } from './BackButton'
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from './Button'
 export { LinkButton, type LinkButtonProps } from './LinkButton'
 export { Card, CardTitle, CardDescription, type CardProps } from './Card'
