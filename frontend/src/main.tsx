@@ -5,6 +5,19 @@ import './index.css'
 import './i18n'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient.ts'
+import { onSessionCleared } from './stores/authStore.ts'
+import { useApplicationsStore } from './stores/applicationsStore.ts'
+import { useCandidateProfileStore } from './stores/candidateProfileStore.ts'
+import { useCompanyProfileStore } from './stores/companyProfileStore.ts'
+import { useSavedJobsStore } from './stores/savedJobsStore.ts'
+
+// Registered once here (rather than each store registering itself, or authStore importing
+// these directly) so authStore.ts stays free of a circular import back through apiClient.ts —
+// see authStore's onSessionCleared for why.
+onSessionCleared(() => useCandidateProfileStore.getState().clear())
+onSessionCleared(() => useCompanyProfileStore.getState().clear())
+onSessionCleared(() => useApplicationsStore.getState().clear())
+onSessionCleared(() => useSavedJobsStore.getState().clear())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
