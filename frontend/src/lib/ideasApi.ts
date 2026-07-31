@@ -149,3 +149,10 @@ export const ideasApi = {
   myInterests: () =>
     request<MyIdeaInterestSummary[]>('/api/ideas/interests/mine', { headers: authHeaders() }),
 }
+
+/** TanStack Query cache keys for the two read paths worth caching client-side (see
+ * lib/queryClient.ts) — mirrors jobsApi.jobQueryKeys. */
+export const ideaQueryKeys = {
+  browse: (params: IdeaBrowseParams) => ['ideas', 'browse', params] as const,
+  detail: (id: string) => ['ideas', 'detail', id] as const,
+}

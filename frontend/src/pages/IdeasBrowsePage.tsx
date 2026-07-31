@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError } from '../lib/apiClient'
 import { avatarColorClass } from '../lib/ideaAvatar'
-import { ideasApi, type BackendIdeaStage, type IdeaSummary } from '../lib/ideasApi'
+import {
+  ideasApi,
+  ideaQueryKeys,
+  type BackendIdeaStage,
+  type IdeaBrowseParams,
+} from '../lib/ideasApi'
 import { IDEA_CATEGORIES } from '../mocks/ideas'
 import { ideaRoutesFor, ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
@@ -37,33 +43,45 @@ export default function IdeasBrowsePage() {
   const [category, setCategory] = useState('')
   const [stage, setStage] = useState<BackendIdeaStage | ''>('')
 
-  const [ideas, setIdeas] = useState<IdeaSummary[]>([])
   const [ideasShown, setIdeasShown] = useState(IDEAS_PAGE_SIZE)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [appliedIdeaIds, setAppliedIdeaIds] = useState<Set<string>>(new Set())
+
+  // Debounced separately from the query itself — same reasoning as JobSearchPage — so the query
+  // key only changes once every 300ms of typing settles.
+  const [browseParams, setBrowseParams] = useState<IdeaBrowseParams>({})
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setLoading(true)
-      setError(null)
-      ideasApi
-        .browse({
-          q: query.trim() || undefined,
-          category: category || undefined,
-          stage: stage || undefined,
-        })
-        .then((results) => {
-          setIdeas(results)
-          setIdeasShown(IDEAS_PAGE_SIZE)
-        })
-        .catch((caught) => {
-          setError(caught instanceof ApiError ? caught.message : t('browse.errorLoading'))
-        })
-        .finally(() => setLoading(false))
+      setBrowseParams({
+        q: query.trim() || undefined,
+        category: category || undefined,
+        stage: stage || undefined,
+      })
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [query, category, stage, t])
+  }, [query, category, stage])
+
+  // Resets pagination whenever a new search actually runs — including when served instantly
+  // from the query cache. Adjusted during render (see JobSearchPage for the same pattern)
+  // rather than in an effect, to avoid an extra render from a synchronous effect setState.
+  const [prevBrowseParams, setPrevBrowseParams] = useState(browseParams)
+  if (browseParams !== prevBrowseParams) {
+    setPrevBrowseParams(browseParams)
+    setIdeasShown(IDEAS_PAGE_SIZE)
+  }
+
+  const browseQuery = useQuery({
+    queryKey: ideaQueryKeys.browse(browseParams),
+    queryFn: () => ideasApi.browse(browseParams),
+  })
+
+  const ideas = browseQuery.data ?? []
+  const loading = browseQuery.isFetching
+  const error = browseQuery.isError
+    ? browseQuery.error instanceof ApiError
+      ? browseQuery.error.message
+      : t('browse.errorLoading')
+    : null
 
   // Independent of the search filters above — which ideas the caller has already expressed
   // interest in doesn't change with query/category/stage. Always resolves through a promise

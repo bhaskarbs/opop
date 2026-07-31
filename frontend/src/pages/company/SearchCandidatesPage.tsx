@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ContactRevealControl } from '../../components/company/ContactRevealControl'
 import { LoadingState } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
@@ -8,6 +9,8 @@ import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import {
   companyApi,
+  candidateQueryKeys,
+  type CandidateSearchParams,
   type CandidateSearchSummary,
   type CandidateSortOption,
 } from '../../lib/companyApi'
@@ -149,9 +152,7 @@ export default function SearchCandidatesPage() {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
 
-  const [candidates, setCandidates] = useState<CandidateSearchSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
   // Search itself has no eligibility gate — only "View contact"/"View profile" do (complete +
   // verified company profile, paid plan, contact-reveal quota remaining this billing period —
   // see CandidateSearchService.requireEligibleToContactCandidates, which enforces the same
@@ -173,25 +174,42 @@ export default function SearchCandidatesPage() {
     setActiveSuggestionIndex(-1)
   }
 
+  // Debounced separately from the query itself — same reasoning as JobSearchPage — so the query
+  // key only changes once every 300ms of typing/filter changes settle.
+  const [searchQueryParams, setSearchQueryParams] = useState<CandidateSearchParams>({})
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setLoading(true)
-      setError(null)
-      setPage(1)
-      companyApi
-        .searchCandidates({
-          q: submittedQuery.trim() || undefined,
-          location: locations.length > 0 ? locations : undefined,
-          sort: sortBy,
-        })
-        .then(setCandidates)
-        .catch((caught) => {
-          setError(caught instanceof ApiError ? caught.message : t('searchCandidates.loadError'))
-        })
-        .finally(() => setLoading(false))
+      setSearchQueryParams({
+        q: submittedQuery.trim() || undefined,
+        location: locations.length > 0 ? locations : undefined,
+        sort: sortBy,
+      })
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [submittedQuery, locations, sortBy, t])
+  }, [submittedQuery, locations, sortBy])
+
+  // Resets pagination whenever a new search actually runs — including when served instantly
+  // from the query cache. Adjusted during render (see JobSearchPage for the same pattern)
+  // rather than in an effect, to avoid an extra render from a synchronous effect setState.
+  const [prevSearchQueryParams, setPrevSearchQueryParams] = useState(searchQueryParams)
+  if (searchQueryParams !== prevSearchQueryParams) {
+    setPrevSearchQueryParams(searchQueryParams)
+    setPage(1)
+  }
+
+  const searchQuery = useQuery({
+    queryKey: candidateQueryKeys.search(searchQueryParams),
+    queryFn: () => companyApi.searchCandidates(searchQueryParams),
+  })
+
+  const candidates = searchQuery.data ?? []
+  const loading = searchQuery.isFetching
+  const error = searchQuery.isError
+    ? searchQuery.error instanceof ApiError
+      ? searchQuery.error.message
+      : t('searchCandidates.loadError')
+    : null
 
   function handleRevealContact(userId: string) {
     setRevealingIds((prev) => new Set(prev).add(userId))
@@ -203,12 +221,14 @@ export default function SearchCandidatesPage() {
     companyApi
       .revealCandidateContact(userId)
       .then((response) => {
-        setCandidates((prev) =>
-          prev.map((candidate) =>
-            candidate.userId === userId
-              ? { ...candidate, contactNumber: response.contactNumber }
-              : candidate,
-          ),
+        queryClient.setQueryData(
+          candidateQueryKeys.search(searchQueryParams),
+          (prev: CandidateSearchSummary[] | undefined) =>
+            prev?.map((candidate) =>
+              candidate.userId === userId
+                ? { ...candidate, contactNumber: response.contactNumber }
+                : candidate,
+            ),
         )
       })
       .catch((caught) => {

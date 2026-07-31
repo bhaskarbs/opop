@@ -191,3 +191,9 @@ export const companyApi = {
       headers: authHeaders(),
     }),
 }
+
+/** TanStack Query cache key for candidate search (see lib/queryClient.ts) — mirrors
+ * jobsApi.jobQueryKeys/ideasApi.ideaQueryKeys. */
+export const candidateQueryKeys = {
+  search: (params: CandidateSearchParams) => ['candidates', 'search', params] as const,
+}

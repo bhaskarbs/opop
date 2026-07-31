@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { LoadingState, Spinner } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError } from '../lib/apiClient'
 import { avatarColorClass } from '../lib/ideaAvatar'
-import { ideasApi, type BackendIdeaStage, type IdeaDetail as IdeaDetailData } from '../lib/ideasApi'
+import {
+  ideasApi,
+  ideaQueryKeys,
+  type BackendIdeaStage,
+  type IdeaDetail as IdeaDetailData,
+} from '../lib/ideasApi'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 
@@ -22,6 +28,7 @@ export default function IdeaDetailPage() {
   const localize = useLocalizedPath()
   const { ideaId } = useParams()
   const status = useAuthStore((state) => state.status)
+  const queryClient = useQueryClient()
   const [modalRole, setModalRole] = useState<ApplyRole | null>(null)
   const [ticketSize, setTicketSize] = useState('')
   const [message, setMessage] = useState('')
@@ -29,27 +36,13 @@ export default function IdeaDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const [idea, setIdea] = useState<IdeaDetailData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!ideaId) return
-    let cancelled = false
-    ideasApi
-      .get(ideaId)
-      .then((detail) => {
-        if (!cancelled) setIdea(detail)
-      })
-      .catch(() => {
-        if (!cancelled) setIdea(null)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [ideaId])
+  const ideaQuery = useQuery({
+    queryKey: ideaQueryKeys.detail(ideaId ?? ''),
+    queryFn: () => ideasApi.get(ideaId as string),
+    enabled: !!ideaId,
+  })
+  const idea = ideaQuery.data ?? null
+  const loading = ideaQuery.isLoading
 
   if (loading) {
     return (
@@ -85,7 +78,9 @@ export default function IdeaDetailPage() {
         ticketSize: modalRole === 'investor' && ticketSize ? ticketSize : null,
         message: message || null,
       })
-      setIdea((prev) => (prev ? { ...prev, interestedCount: prev.interestedCount + 1 } : prev))
+      queryClient.setQueryData(ideaQueryKeys.detail(idea.id), (prev: IdeaDetailData | undefined) =>
+        prev ? { ...prev, interestedCount: prev.interestedCount + 1 } : prev,
+      )
       setSubmitted(true)
     } catch (caught) {
       setSubmitError(caught instanceof ApiError ? caught.message : t('submit.errorGeneric'))
