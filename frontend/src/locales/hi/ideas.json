@@ -25,6 +25,7 @@
     "showMore": "और आइडियाज़ दिखाएं"
   },
   "detail": {
+    "loading": "लोड हो रहा है…",
     "backToAll": "← सभी आइडियाज़ पर वापस जाएं",
     "submittedMeta": "{{date}} को सबमिट किया गया · {{count}} लोग रुचि रखते हैं",
     "fundingRequired": "आवश्यक फंडिंग",

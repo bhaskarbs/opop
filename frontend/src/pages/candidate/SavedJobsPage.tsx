@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LoadingState } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { applicationsApi } from '../../lib/applicationsApi'
 import { savedJobsApi } from '../../lib/savedJobsApi'
@@ -76,8 +77,8 @@ export default function SavedJobsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('savedJobs.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('savedJobs.loading')} />
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminUserRole, type AdminUserSummary } from '../../lib/adminApi'
@@ -189,8 +189,8 @@ export default function AdminUsersPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-          {t('users.loading')}
+        <div className="rounded-card border border-border bg-surface p-8">
+          <LoadingState message={t('users.loading')} />
         </div>
       ) : (
         <div className="flex flex-col gap-3">

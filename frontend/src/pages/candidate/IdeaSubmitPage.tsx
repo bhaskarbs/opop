@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { ideasApi, type BackendIdeaStage, type IdeaRequestPayload } from '../../lib/ideasApi'
@@ -163,8 +163,8 @@ export default function IdeaSubmitPage() {
 
   if (loadingExisting) {
     return (
-      <main className="mx-auto max-w-[760px] px-6 py-8 pb-16 text-center text-sm text-slate">
-        {t('submit.loadingExisting')}
+      <main className="mx-auto max-w-[760px] px-6 py-8 pb-16">
+        <LoadingState message={t('submit.loadingExisting')} />
       </main>
     )
   }

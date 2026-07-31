@@ -1,6 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   adminApi,
@@ -367,8 +367,8 @@ export default function AdminBillingPage() {
         )}
 
         {tab === 'companies' && companiesLoading && (
-          <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-            {t('billing.companyPlans.loading')}
+          <div className="rounded-card border border-border bg-surface p-8">
+            <LoadingState message={t('billing.companyPlans.loading')} />
           </div>
         )}
 
@@ -440,8 +440,8 @@ export default function AdminBillingPage() {
         )}
 
         {tab === 'candidates' && candidatesLoading && (
-          <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-            {t('billing.candidatePlans.loading')}
+          <div className="rounded-card border border-border bg-surface p-8">
+            <LoadingState message={t('billing.candidatePlans.loading')} />
           </div>
         )}
 

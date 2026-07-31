@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Controller, useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
-import { Button, Input } from '../../components/ui'
+import { Button, Input, LoadingState } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
   employmentTypeToBackend,
@@ -233,8 +233,12 @@ export default function PostJobPage() {
 
   if (eligible === null || loadingExisting) {
     return (
-      <main className="mx-auto max-w-[840px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {loadingExisting ? t('postJob.loadingExisting') : t('postJob.checkingEligibility')}
+      <main className="mx-auto max-w-[840px] px-6 py-7 pb-16">
+        <LoadingState
+          message={
+            loadingExisting ? t('postJob.loadingExisting') : t('postJob.checkingEligibility')
+          }
+        />
       </main>
     )
   }

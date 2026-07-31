@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { jobAlertsApi, type JobAlertSummary } from '../../lib/jobAlertsApi'
 import {
@@ -220,8 +220,8 @@ export default function JobAlertsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('jobAlerts.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('jobAlerts.loading')} />
         </div>
       ) : alerts.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">

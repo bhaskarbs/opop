@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import {
@@ -173,8 +173,8 @@ export default function MyIdeasPage() {
       )}
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('myIdeas.loading')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('myIdeas.loading')} />
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">
@@ -239,7 +239,8 @@ export default function MyIdeasPage() {
                 {expanded && (
                   <div className="mt-3.5 flex flex-col gap-2.5 border-t border-[#F0F1F3] pt-3.5">
                     {interestsLoading && !applicants ? (
-                      <div className="py-2 text-center text-[13px] text-slate">
+                      <div className="flex items-center justify-center gap-2 py-2 text-[13px] text-slate">
+                        <Spinner className="h-4 w-4" />
                         {t('myIdeas.applicantsLoading')}
                       </div>
                     ) : interestsError && !applicants ? (

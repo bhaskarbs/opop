@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   companyBillingApi,
@@ -166,8 +166,8 @@ export default function CompanyBillingPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16 text-center text-sm text-slate">
-        {t('billing.loading')}
+      <main className="mx-auto max-w-[1080px] px-6 py-7 pb-16">
+        <LoadingState message={t('billing.loading')} />
       </main>
     )
   }

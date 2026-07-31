@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Spinner } from '../../components/ui'
+import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { candidateApi } from '../../lib/candidateApi'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
@@ -727,8 +727,8 @@ export default function MockInterviewPage() {
         <p className="mb-3 text-[13px] font-semibold text-danger">{playbackError}</p>
       )}
       {sessionsLoading ? (
-        <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
-          {t('mockInterview.loadingSessions')}
+        <div className="rounded-card border border-border bg-surface p-10">
+          <LoadingState message={t('mockInterview.loadingSessions')} />
         </div>
       ) : sessions.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-10 text-center text-sm text-slate">
