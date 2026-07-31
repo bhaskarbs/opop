@@ -14,59 +14,67 @@ import { useCandidateProfileStore } from './stores/candidateProfileStore'
 import { RequireAuth } from './routes/RequireAuth'
 import { ScrollToTop } from './routes/ScrollToTop'
 import i18n, { DEFAULT_LANGUAGE, isSupportedLanguage } from './i18n'
-import StyleGuidePage from './pages/dev/StyleGuidePage'
-import LandingPage from './pages/LandingPage'
-import JobSearchPage from './pages/job-search/JobSearchPage'
-import JobDetailPage from './pages/JobDetailPage'
-import PartnershipsPage from './pages/PartnershipsPage'
-import CommunityPage from './pages/CommunityPage'
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
-import TermsOfServicePage from './pages/TermsOfServicePage'
-import IdeasBrowsePage from './pages/IdeasBrowsePage'
-import IdeaDetailPage from './pages/IdeaDetailPage'
-import NotFoundPage from './pages/NotFoundPage'
-import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
-import CompanyForgotPasswordPage from './pages/auth/CompanyForgotPasswordPage'
-import ResetPasswordPage from './pages/auth/ResetPasswordPage'
-import CompanyLoginPage from './pages/auth/CompanyLoginPage'
-import CompanyRegisterPage from './pages/auth/CompanyRegisterPage'
-import AdminLoginPage from './pages/auth/AdminLoginPage'
-import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage'
-import CandidateProfilePage from './pages/candidate/CandidateProfilePage'
-import AddMissingDetailsPage from './pages/candidate/AddMissingDetailsPage'
-import ApplicationsPage from './pages/candidate/ApplicationsPage'
-import SavedJobsPage from './pages/candidate/SavedJobsPage'
-import JobAlertsPage from './pages/candidate/JobAlertsPage'
-import MockInterviewPage from './pages/candidate/MockInterviewPage'
-import MyIdeasPage from './pages/candidate/MyIdeasPage'
-import IdeaSubmitPage from './pages/candidate/IdeaSubmitPage'
-import CandidateBillingPage from './pages/candidate/CandidateBillingPage'
-import CompanyDashboardPage from './pages/company/CompanyDashboardPage'
-import CompanyProfilePage from './pages/company/CompanyProfilePage'
-import CompanyPartnershipsPage from './pages/company/CompanyPartnershipsPage'
-import PostJobPage from './pages/company/PostJobPage'
-import MyJobPostingsPage from './pages/company/MyJobPostingsPage'
-import JobApplicantsPage from './pages/company/JobApplicantsPage'
-import SearchCandidatesPage from './pages/company/SearchCandidatesPage'
-import CandidateProfileViewPage from './pages/company/CandidateProfileViewPage'
-import SeminarSchedulerPage from './pages/company/SeminarSchedulerPage'
-import CompanyBillingPage from './pages/company/CompanyBillingPage'
-import AdminDashboardPage from './pages/admin/AdminDashboardPage'
-import AdminApprovalsPage from './pages/admin/AdminApprovalsPage'
-import AdminJobApprovalsPage from './pages/admin/AdminJobApprovalsPage'
-import AdminCompanyApprovalsPage from './pages/admin/AdminCompanyApprovalsPage'
-import AdminIdeaApprovalsPage from './pages/admin/AdminIdeaApprovalsPage'
-import AdminUsersPage from './pages/admin/AdminUsersPage'
-import AdminCandidateDetailPage from './pages/admin/AdminCandidateDetailPage'
-import AdminCompanyDetailPage from './pages/admin/AdminCompanyDetailPage'
-import AdminMockInterviewQuestionsPage from './pages/admin/AdminMockInterviewQuestionsPage'
-import AdminReportsPage from './pages/admin/AdminReportsPage'
-import AdminBillingPage from './pages/admin/AdminBillingPage'
+import { LoadingState } from './components/ui'
 
+// Every page (and the two layouts below) is lazy — each becomes its own chunk, so a candidate
+// never downloads company/admin page code and vice versa. Route changes suspend on the single
+// <Suspense> in App() below, which shows a centered spinner rather than a blank screen while
+// the chunk for the destination route loads.
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
+
+const StyleGuidePage = lazy(() => import('./pages/dev/StyleGuidePage'))
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const JobSearchPage = lazy(() => import('./pages/job-search/JobSearchPage'))
+const JobDetailPage = lazy(() => import('./pages/JobDetailPage'))
+const PartnershipsPage = lazy(() => import('./pages/PartnershipsPage'))
+const CommunityPage = lazy(() => import('./pages/CommunityPage'))
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
+const IdeasBrowsePage = lazy(() => import('./pages/IdeasBrowsePage'))
+const IdeaDetailPage = lazy(() => import('./pages/IdeaDetailPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
+const CompanyForgotPasswordPage = lazy(() => import('./pages/auth/CompanyForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
+const CompanyLoginPage = lazy(() => import('./pages/auth/CompanyLoginPage'))
+const CompanyRegisterPage = lazy(() => import('./pages/auth/CompanyRegisterPage'))
+const AdminLoginPage = lazy(() => import('./pages/auth/AdminLoginPage'))
+const CandidateDashboardPage = lazy(() => import('./pages/candidate/CandidateDashboardPage'))
+const CandidateProfilePage = lazy(() => import('./pages/candidate/CandidateProfilePage'))
+const AddMissingDetailsPage = lazy(() => import('./pages/candidate/AddMissingDetailsPage'))
+const ApplicationsPage = lazy(() => import('./pages/candidate/ApplicationsPage'))
+const SavedJobsPage = lazy(() => import('./pages/candidate/SavedJobsPage'))
+const JobAlertsPage = lazy(() => import('./pages/candidate/JobAlertsPage'))
+const MockInterviewPage = lazy(() => import('./pages/candidate/MockInterviewPage'))
+const MyIdeasPage = lazy(() => import('./pages/candidate/MyIdeasPage'))
+const IdeaSubmitPage = lazy(() => import('./pages/candidate/IdeaSubmitPage'))
+const CandidateBillingPage = lazy(() => import('./pages/candidate/CandidateBillingPage'))
+const CompanyDashboardPage = lazy(() => import('./pages/company/CompanyDashboardPage'))
+const CompanyProfilePage = lazy(() => import('./pages/company/CompanyProfilePage'))
+const CompanyPartnershipsPage = lazy(() => import('./pages/company/CompanyPartnershipsPage'))
+const PostJobPage = lazy(() => import('./pages/company/PostJobPage'))
+const MyJobPostingsPage = lazy(() => import('./pages/company/MyJobPostingsPage'))
+const JobApplicantsPage = lazy(() => import('./pages/company/JobApplicantsPage'))
+const SearchCandidatesPage = lazy(() => import('./pages/company/SearchCandidatesPage'))
+const CandidateProfileViewPage = lazy(() => import('./pages/company/CandidateProfileViewPage'))
+const SeminarSchedulerPage = lazy(() => import('./pages/company/SeminarSchedulerPage'))
+const CompanyBillingPage = lazy(() => import('./pages/company/CompanyBillingPage'))
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'))
+const AdminApprovalsPage = lazy(() => import('./pages/admin/AdminApprovalsPage'))
+const AdminJobApprovalsPage = lazy(() => import('./pages/admin/AdminJobApprovalsPage'))
+const AdminCompanyApprovalsPage = lazy(() => import('./pages/admin/AdminCompanyApprovalsPage'))
+const AdminIdeaApprovalsPage = lazy(() => import('./pages/admin/AdminIdeaApprovalsPage'))
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'))
+const AdminCandidateDetailPage = lazy(() => import('./pages/admin/AdminCandidateDetailPage'))
+const AdminCompanyDetailPage = lazy(() => import('./pages/admin/AdminCompanyDetailPage'))
+const AdminMockInterviewQuestionsPage = lazy(
+  () => import('./pages/admin/AdminMockInterviewQuestionsPage'),
+)
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'))
+const AdminBillingPage = lazy(() => import('./pages/admin/AdminBillingPage'))
 
 /** Every route lives under a `/:lang` prefix (see docs/DEVELOPMENT_ROADMAP.md Step 23). An
  * unrecognized or missing lang segment is treated as a path with no locale at all — e.g.
@@ -127,7 +135,7 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingState />}>
         <Routes>
           <Route path="/" element={<Navigate to={`/${DEFAULT_LANGUAGE}`} replace />} />
 
