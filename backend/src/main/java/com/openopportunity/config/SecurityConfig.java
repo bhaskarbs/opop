@@ -1,5 +1,6 @@
 package com.openopportunity.config;
 
+import com.openopportunity.auth.AuthOriginCheckFilter;
 import com.openopportunity.auth.AuthRateLimitFilter;
 import com.openopportunity.auth.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,7 +29,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            AuthRateLimitFilter authRateLimitFilter)
+            AuthRateLimitFilter authRateLimitFilter,
+            AuthOriginCheckFilter authOriginCheckFilter)
             throws Exception {
         http.cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
@@ -142,7 +144,12 @@ public class SecurityConfig {
                         (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // Runs before JWT parsing so an abusive caller is rejected as cheaply as possible.
-                .addFilterBefore(authRateLimitFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(authRateLimitFilter, JwtAuthenticationFilter.class)
+                // CSRF backstop for /api/auth/refresh and /api/auth/logout (the only two
+                // endpoints authenticated purely via cookie, with no bearer token) — see
+                // AuthOriginCheckFilter. Runs first so a bad-origin request doesn't even count
+                // against the rate limit above.
+                .addFilterBefore(authOriginCheckFilter, AuthRateLimitFilter.class);
         return http.build();
     }
 }

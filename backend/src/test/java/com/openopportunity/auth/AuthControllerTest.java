@@ -40,6 +40,10 @@ import org.springframework.transaction.annotation.Transactional;
 @TestPropertySource(properties = "app.security.rate-limit.enabled=false")
 class AuthControllerTest {
 
+    // Matches app.cors.allowed-origins in application.properties — a real browser sends this on
+    // every request /api/auth/refresh and /api/auth/logout receive (see AuthOriginCheckFilter).
+    private static final String VITE_DEV_SERVER_ORIGIN = "http://localhost:5173";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -151,18 +155,41 @@ class AuthControllerTest {
         Cookie refreshCookie = registerResult.getResponse().getCookie("refreshToken");
         assertThat(refreshCookie).isNotNull();
 
-        mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie))
+        mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie).header("Origin", VITE_DEV_SERVER_ORIGIN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", notNullValue()))
                 .andExpect(cookie().exists("refreshToken"));
 
         // rotation: the original cookie was revoked by the refresh above, so reusing it fails
-        mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie)).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie).header("Origin", VITE_DEV_SERVER_ORIGIN))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void refreshWithoutCookieIsRejected() throws Exception {
-        mockMvc.perform(post("/api/auth/refresh")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/refresh").header("Origin", VITE_DEV_SERVER_ORIGIN))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refreshWithAValidCookieButNoOriginOrRefererIsRejected() throws Exception {
+        RegisterRequest register = new RegisterRequest(
+                "refresh-no-origin@example.com",
+                "password123",
+                "Rohan Mehta",
+                "candidate",
+                "9876543210",
+                List.of("React"));
+        MvcResult registerResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(register)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        Cookie refreshCookie = registerResult.getResponse().getCookie("refreshToken");
+
+        // A valid refresh cookie alone isn't enough — see AuthOriginCheckFilter, the CSRF
+        // backstop for this cookie-only-authenticated endpoint.
+        mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie)).andExpect(status().isForbidden());
     }
 
     @Test
@@ -177,18 +204,20 @@ class AuthControllerTest {
 
         Cookie refreshCookie = registerResult.getResponse().getCookie("refreshToken");
 
-        mockMvc.perform(post("/api/auth/logout").cookie(refreshCookie)).andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/auth/logout").cookie(refreshCookie).header("Origin", VITE_DEV_SERVER_ORIGIN))
+                .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie)).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie).header("Origin", VITE_DEV_SERVER_ORIGIN))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void corsPreflightAllowsViteDevServerOriginOnProtectedRoute() throws Exception {
         mockMvc.perform(options("/api/auth/me")
-                        .header("Origin", "http://localhost:5173")
+                        .header("Origin", VITE_DEV_SERVER_ORIGIN)
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+                .andExpect(header().string("Access-Control-Allow-Origin", VITE_DEV_SERVER_ORIGIN));
     }
 
     @Test
