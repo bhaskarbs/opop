@@ -2,11 +2,17 @@ import { useAuthStore } from '../stores/authStore'
 
 export type UserRole = 'CANDIDATE' | 'COMPANY' | 'ADMIN'
 
+// Only meaningful when role === 'ADMIN' — null for candidates/companies. Reviewer gets
+// approvals + user management only; admin gets everything except managing other admin-tier
+// accounts; super_admin gets everything (see RequireAdminLevel and AdminLevel.java).
+export type AdminLevel = 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN'
+
 export interface UserSummary {
   id: string
   email: string
   fullName: string
   role: UserRole
+  adminLevel: AdminLevel | null
 }
 
 export interface AuthResponse {

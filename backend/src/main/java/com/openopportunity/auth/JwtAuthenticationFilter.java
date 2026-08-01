@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,8 +44,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = jwtService.parseAndValidate(token);
                 UUID userId = jwtService.extractUserId(claims);
                 UserRole role = jwtService.extractRole(claims);
-                List<SimpleGrantedAuthority> authorities =
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+                AdminLevel adminLevel = jwtService.extractAdminLevel(claims);
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
+                // A second, finer-grained authority on top of the coarse ROLE_ADMIN above — lets
+                // SecurityConfig restrict specific /api/admin/** sub-paths (dashboard, reports,
+                // billing, team management) to only some admin tiers, while approvals/users stay
+                // open to any admin-tier account via ROLE_ADMIN alone. Not prefixed "ROLE_" since
+                // it's checked via hasAuthority(...), not hasRole(...).
+                if (adminLevel != null) {
+                    authorities.add(new SimpleGrantedAuthority("LEVEL_" + adminLevel.name()));
+                }
                 Authentication authentication =
                         new UsernamePasswordAuthenticationToken(userId, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);

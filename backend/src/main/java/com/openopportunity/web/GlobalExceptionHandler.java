@@ -1,8 +1,11 @@
 package com.openopportunity.web;
 
 import com.openopportunity.admin.exception.AdminUserNotFoundException;
+import com.openopportunity.admin.exception.CannotDeleteSuperAdminException;
 import com.openopportunity.admin.exception.CompanyProfileIncompleteException;
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
+import com.openopportunity.admin.exception.DuplicateAdminEmailException;
+import com.openopportunity.admin.exception.InvalidAdminLevelException;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
@@ -238,6 +241,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AdminUserNotFoundException.class)
     public ResponseEntity<ApiError> handleAdminUserNotFound(AdminUserNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(DuplicateAdminEmailException.class)
+    public ResponseEntity<ApiError> handleDuplicateAdminEmail(DuplicateAdminEmailException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidAdminLevelException.class)
+    public ResponseEntity<ApiError> handleInvalidAdminLevel(InvalidAdminLevelException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CannotDeleteSuperAdminException.class)
+    public ResponseEntity<ApiError> handleCannotDeleteSuperAdmin(CannotDeleteSuperAdminException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(CompanyProfileNotFoundException.class)

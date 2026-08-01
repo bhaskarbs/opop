@@ -46,6 +46,16 @@ public class SecurityConfig {
                         csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'")))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Spring Boot forwards every response.sendError(...) call to /error
+                        // internally, and the security filter chain runs a second time on that
+                        // forward (JwtAuthenticationFilter opts out via OncePerRequestFilter's
+                        // shouldNotFilterErrorDispatch(), but AuthorizationFilter doesn't). With
+                        // no Authorization header reprocessed on that second pass, an unguarded
+                        // /error would itself be denied by .anyRequest().authenticated() below —
+                        // which silently overwrote the real 403 from accessDeniedHandler with a
+                        // 401 from authenticationEntryPoint on every access-denied response.
+                        .requestMatchers("/error")
+                        .permitAll()
                         .requestMatchers(
                                 "/actuator/health",
                                 "/api/auth/register",
@@ -91,6 +101,29 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/*")
                         .hasRole("COMPANY")
+                        // Every admin tier (reviewer/admin/super_admin, all carry ROLE_ADMIN —
+                        // see JwtAuthenticationFilter) can list team members; only super_admin
+                        // (LEVEL_SUPER_ADMIN) can create or remove one. Declared before the
+                        // narrower-looking but later-matched general /api/admin/** rule below
+                        // for the same declaration-order reason as /api/jobs/pending above.
+                        .requestMatchers(HttpMethod.POST, "/api/admin/team")
+                        .hasAuthority("LEVEL_SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/admin/team/*")
+                        .hasAuthority("LEVEL_SUPER_ADMIN")
+                        // Everything below is admin-tier but NOT reviewer — approvals
+                        // (/api/admin/companies/**, /api/jobs/pending, /api/ideas/pending, ...)
+                        // and user management (/api/admin/users/**) are reviewer's whole scope,
+                        // covered by the general ROLE_ADMIN rule further down; these are
+                        // everything else in the admin console.
+                        .requestMatchers(
+                                "/api/admin/team",
+                                "/api/admin/dashboard/**",
+                                "/api/admin/reports/**",
+                                "/api/admin/billing/**",
+                                "/api/admin/company-billing/**",
+                                "/api/admin/candidate-billing/**",
+                                "/api/admin/mock-interview-questions/**")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
                         // /mine, /pending and /*/approve, /*/reject must be declared before the
@@ -149,9 +182,16 @@ public class SecurityConfig {
                 // Plain 401 for missing/invalid auth on protected routes, matching REST API
                 // convention — Spring Security's unconfigured default is a 403 with no
                 // WWW-Authenticate challenge, which reads as "forbidden" rather than
-                // "not authenticated" to API clients.
+                // "not authenticated" to API clients. Pairing it with an explicit
+                // accessDeniedHandler matters just as much: without one, an *authenticated* but
+                // insufficiently-privileged request (e.g. a reviewer hitting /api/admin/reports)
+                // was also landing on the entry point above and coming back 401 instead of 403 —
+                // only reproducible against a real server, not MockMvc, which is why the existing
+                // test suite never caught it.
                 .exceptionHandling(eh -> eh.authenticationEntryPoint(
-                        (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
+                                (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // Runs before JWT parsing so an abusive caller is rejected as cheaply as possible.
                 .addFilterBefore(authRateLimitFilter, JwtAuthenticationFilter.class)

@@ -1,3 +1,4 @@
+import type { AdminLevel } from '../../lib/apiClient'
 import { ROUTES } from '../../routes/paths'
 import type { HeaderVariant } from './Header'
 
@@ -7,6 +8,10 @@ export interface NavItem {
   label: string
   /** Real route path. Omit for nav items that don't have a page yet — they render inert. */
   to?: string
+  /** Admin nav only — omit for items every admin tier can see (approvals, users). Matches
+   * RequireAdminLevel's gating on the routes themselves, so a reviewer never sees a link to a
+   * page they'd just get redirected away from. */
+  adminLevels?: AdminLevel[]
 }
 
 export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
@@ -30,13 +35,28 @@ export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
     { label: 'nav.dashboard', to: ROUTES.companyDashboard },
   ],
   admin: [
-    { label: 'nav.dashboard', to: ROUTES.adminDashboard },
+    { label: 'nav.dashboard', to: ROUTES.adminDashboard, adminLevels: ['ADMIN', 'SUPER_ADMIN'] },
     { label: 'nav.approvals', to: ROUTES.adminApprovals },
-    { label: 'nav.reports', to: ROUTES.adminReports },
+    { label: 'nav.reports', to: ROUTES.adminReports, adminLevels: ['ADMIN', 'SUPER_ADMIN'] },
     { label: 'nav.users', to: ROUTES.adminUsers },
-    { label: 'nav.mockInterviewQuestions', to: ROUTES.adminMockInterviewQuestions },
-    { label: 'nav.billing', to: ROUTES.adminBilling },
+    {
+      label: 'nav.mockInterviewQuestions',
+      to: ROUTES.adminMockInterviewQuestions,
+      adminLevels: ['ADMIN', 'SUPER_ADMIN'],
+    },
+    { label: 'nav.billing', to: ROUTES.adminBilling, adminLevels: ['ADMIN', 'SUPER_ADMIN'] },
   ],
+}
+
+/** Filters a nav list down to the items a given admin tier can actually reach — a no-op for
+ * every non-admin variant/item (adminLevels is only ever set on admin nav items). */
+export function visibleNavItems(
+  items: NavItem[],
+  adminLevel: AdminLevel | null | undefined,
+): NavItem[] {
+  return items.filter(
+    (item) => !item.adminLevels || (adminLevel && item.adminLevels.includes(adminLevel)),
+  )
 }
 
 /** Looks up which nav item's route matches the current pathname, for active-state highlighting.

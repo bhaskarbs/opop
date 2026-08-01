@@ -38,6 +38,11 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
+    // Only meaningful when role == ADMIN — see AdminLevel.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "admin_level", length = 20)
+    private AdminLevel adminLevel;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "account_status", nullable = false, length = 10)
     private AccountStatus accountStatus;
@@ -53,11 +58,19 @@ public class User {
     }
 
     public User(String email, String passwordHash, String fullName, UserRole role) {
+        this(email, passwordHash, fullName, role, null);
+    }
+
+    /** For creating admin-tier accounts — see AdminTeamService (super-admin-created reviewer/
+     * admin accounts) and AdminSeeder (the one bootstrap super-admin). adminLevel must be null
+     * for any non-ADMIN role. */
+    public User(String email, String passwordHash, String fullName, UserRole role, AdminLevel adminLevel) {
         this.id = UUID.randomUUID();
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
         this.role = role;
+        this.adminLevel = adminLevel;
         this.accountStatus = AccountStatus.ACTIVE;
     }
 
@@ -111,6 +124,10 @@ public class User {
 
     public UserRole getRole() {
         return role;
+    }
+
+    public AdminLevel getAdminLevel() {
+        return adminLevel;
     }
 
     public AccountStatus getAccountStatus() {
