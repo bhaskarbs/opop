@@ -227,4 +227,15 @@ class AuthControllerTest {
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void responsesCarryAStrictContentSecurityPolicy() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("nobody@example.com", "wrong-password", "candidate"))))
+                .andExpect(header().string(
+                        "Content-Security-Policy",
+                        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"));
+    }
 }

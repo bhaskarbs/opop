@@ -34,6 +34,16 @@ public class SecurityConfig {
             throws Exception {
         http.cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
+                // This backend only ever serves JSON and binary files (photos, logos, resumes,
+                // recordings) — the actual frontend HTML is a separate Vite-served origin — so a
+                // maximally strict CSP costs nothing functionally here. It's a defense-in-depth
+                // backstop for the few places this app *could* emit HTML (an error page, a
+                // future endpoint) rather than something the current app actively relies on.
+                // Spring Security's other default security headers (X-Content-Type-Options,
+                // X-Frame-Options, HSTS once served over TLS) are unaffected — .headers(...)
+                // only adds to them, it doesn't replace the defaults.
+                .headers(headers -> headers.contentSecurityPolicy(
+                        csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'")))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
