@@ -11,10 +11,9 @@ import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import com.openopportunity.storage.AvatarImageResizer;
 import com.openopportunity.storage.FileStorageService;
+import com.openopportunity.storage.ImageContentValidator;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -29,8 +28,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class CompanyProfileService {
 
-    private static final List<String> ALLOWED_LOGO_CONTENT_TYPES =
-            List.of("image/jpeg", "image/png", "image/webp");
     private static final long MAX_LOGO_SIZE_BYTES = 5L * 1024 * 1024;
 
     private final UserRepository userRepository;
@@ -105,18 +102,27 @@ public class CompanyProfileService {
 
     @Transactional
     public LogoUploadResponse uploadLogo(UUID userId, MultipartFile file) {
-        validateLogo(file);
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to read logo upload", ex);
+        }
+        String contentType = validateLogo(file, bytes);
         CompanyProfile profile = findProfile(userId);
 
         String storageKey;
         try {
-            byte[] resized = AvatarImageResizer.resize(file.getBytes());
+            byte[] resized = AvatarImageResizer.resize(bytes);
             storageKey = fileStorageService.store(resized, file.getOriginalFilename(), "logos/" + userId);
         } catch (IOException ex) {
             throw new UncheckedIOException("Failed to store company logo", ex);
         }
 
-        profile.updateLogo(storageKey, file.getContentType());
+        // The detected type from the bytes themselves, not file.getContentType() — that header
+        // is client-supplied and this is what gets echoed back verbatim as the response
+        // Content-Type when the logo is served (see CompanyLogoController).
+        profile.updateLogo(storageKey, contentType);
         companyProfileRepository.save(profile);
         return new LogoUploadResponse(logoUrl(userId));
     }
@@ -164,17 +170,17 @@ public class CompanyProfileService {
                 profile.getLogoStorageKey() == null ? null : logoUrl(profile.getUserId()));
     }
 
-    private void validateLogo(MultipartFile file) {
+    /** Returns the detected content type — see ImageContentValidator for why that, not
+     * file.getContentType(), is what the caller should trust and store. */
+    private String validateLogo(MultipartFile file, byte[] bytes) {
         if (file.isEmpty()) {
             throw new InvalidCompanyLogoException("Logo file is empty");
         }
         if (file.getSize() > MAX_LOGO_SIZE_BYTES) {
             throw new InvalidCompanyLogoException("Logo must be 5MB or smaller");
         }
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_LOGO_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
-            throw new InvalidCompanyLogoException("Logo must be a JPEG, PNG, or WEBP image");
-        }
+        return ImageContentValidator.detectContentType(bytes)
+                .orElseThrow(() -> new InvalidCompanyLogoException("Logo must be a JPEG, PNG, or WEBP image"));
     }
 
     private String logoUrl(UUID userId) {

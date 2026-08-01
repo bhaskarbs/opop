@@ -13,11 +13,12 @@ import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.auth.exception.ProfilePhotoNotFoundException;
 import com.openopportunity.storage.AvatarImageResizer;
 import com.openopportunity.storage.FileStorageService;
+import com.openopportunity.storage.ImageContentValidator;
+import com.openopportunity.storage.ResumeContentValidator;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -29,8 +30,6 @@ public class CandidateProfileService {
 
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".pdf", ".doc", ".docx");
     private static final long MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
-    private static final List<String> ALLOWED_PHOTO_CONTENT_TYPES =
-            List.of("image/jpeg", "image/png", "image/webp");
     private static final long MAX_PHOTO_SIZE_BYTES = 5L * 1024 * 1024;
 
     private final UserRepository userRepository;
@@ -116,18 +115,27 @@ public class CandidateProfileService {
 
     @Transactional
     public PhotoUploadResponse uploadPhoto(UUID userId, MultipartFile file) {
-        validatePhoto(file);
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to read photo upload", ex);
+        }
+        String contentType = validatePhoto(file, bytes);
         CandidateProfile profile = findProfile(userId);
 
         String storageKey;
         try {
-            byte[] resized = AvatarImageResizer.resize(file.getBytes());
+            byte[] resized = AvatarImageResizer.resize(bytes);
             storageKey = fileStorageService.store(resized, file.getOriginalFilename(), "photos/" + userId);
         } catch (IOException ex) {
             throw new UncheckedIOException("Failed to store profile photo", ex);
         }
 
-        profile.updatePhoto(storageKey, file.getContentType());
+        // The detected type from the bytes themselves, not file.getContentType() — that header
+        // is client-supplied and this is what gets echoed back verbatim as the response
+        // Content-Type when the photo is served (see CandidatePhotoController).
+        profile.updatePhoto(storageKey, contentType);
         candidateProfileRepository.save(profile);
         return new PhotoUploadResponse(photoUrl(userId));
     }
@@ -194,19 +202,30 @@ public class CandidateProfileService {
         if (!allowedExtension) {
             throw new InvalidResumeFileException("Resume must be a PDF or Word document (.pdf, .doc, .docx)");
         }
+        // The extension alone is trivially spoofable (rename any file to resume.pdf) — also
+        // check the actual bytes look like one of the allowed document formats.
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to read resume upload", ex);
+        }
+        if (!ResumeContentValidator.looksLikeAnAllowedDocument(bytes)) {
+            throw new InvalidResumeFileException("This file doesn't look like a valid PDF or Word document");
+        }
     }
 
-    private void validatePhoto(MultipartFile file) {
+    /** Returns the detected content type — see ImageContentValidator for why that, not
+     * file.getContentType(), is what the caller should trust and store. */
+    private String validatePhoto(MultipartFile file, byte[] bytes) {
         if (file.isEmpty()) {
             throw new InvalidProfilePhotoException("Photo file is empty");
         }
         if (file.getSize() > MAX_PHOTO_SIZE_BYTES) {
             throw new InvalidProfilePhotoException("Photo must be 5MB or smaller");
         }
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_PHOTO_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
-            throw new InvalidProfilePhotoException("Photo must be a JPEG, PNG, or WEBP image");
-        }
+        return ImageContentValidator.detectContentType(bytes)
+                .orElseThrow(() -> new InvalidProfilePhotoException("Photo must be a JPEG, PNG, or WEBP image"));
     }
 
     private String photoUrl(UUID userId) {

@@ -1,6 +1,7 @@
 package com.openopportunity.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.openopportunity.auth.dto.CompanyProfileResponse;
 import com.openopportunity.auth.dto.UpdateCompanyProfileRequest;
+import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import com.openopportunity.storage.FileStorageService;
@@ -113,5 +115,18 @@ class CompanyProfileServiceTest {
         // than the source — this is what actually proves the resize ran, not just that upload
         // still works with the new store(byte[], ...) overload.
         assertThat(storedContent.getValue().length).isLessThan(originalBytes.size());
+    }
+
+    @Test
+    void uploadLogoRejectsAFileWhoseBytesArentActuallyAnImage() {
+        UUID userId = UUID.randomUUID();
+        // Claims to be a JPEG via both filename and Content-Type — only the actual byte
+        // signature (checked by ImageContentValidator) should decide this, not either of those,
+        // since both are trivially spoofable by a non-browser caller.
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "logo.jpg", "image/jpeg", "not actually an image".getBytes());
+
+        assertThatThrownBy(() -> companyProfileService.uploadLogo(userId, file))
+                .isInstanceOf(InvalidCompanyLogoException.class);
     }
 }

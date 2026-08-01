@@ -20,9 +20,11 @@ public final class AvatarImageResizer {
 
     /** Fits the image within MAX_DIMENSION x MAX_DIMENSION (preserving aspect ratio, no
      * cropping) and re-encodes it in its original format. Falls back to returning the original
-     * bytes unchanged if the image can't be decoded — e.g. a content type the JDK's built-in
-     * ImageIO has no reader for (WEBP support isn't bundled by default) or a corrupt file —
-     * rather than failing the whole upload over a resize that isn't essential. */
+     * bytes unchanged if the image can't be decoded — expected for a WEBP upload, since the
+     * JDK's built-in ImageIO has no reader for it (WEBP support isn't bundled by default), even
+     * though it's an explicitly supported format here (see ImageContentValidator, which callers
+     * run before this to confirm the bytes are a real image of an allowed type in the first
+     * place — this fallback is for "real image ImageIO can't decode", not "arbitrary bytes"). */
     public static byte[] resize(byte[] original) {
         try {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
