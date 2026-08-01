@@ -305,7 +305,8 @@ public class AuthService {
         Instant expiresAt = Instant.now().plus(refreshTokenExpiryDays, ChronoUnit.DAYS);
         refreshTokenRepository.save(new RefreshToken(user.getId(), hash(rawRefreshToken), expiresAt));
 
-        UserSummary summary = new UserSummary(user.getId(), user.getEmail(), user.getFullName(), user.getRole());
+        UserSummary summary =
+                new UserSummary(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getAdminLevel());
         AuthResponse response =
                 new AuthResponse(accessToken, "Bearer", jwtService.getAccessTokenExpirySeconds(), summary);
         long refreshTokenExpirySeconds = refreshTokenExpiryDays * 24 * 60 * 60;

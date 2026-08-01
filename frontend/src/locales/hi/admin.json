@@ -121,7 +121,8 @@
     "subtitle": "प्लेटफ़ॉर्म पर उम्मीदवार और कंपनी खातों को प्रबंधित करें।",
     "tabs": {
       "candidates": "उम्मीदवार",
-      "companies": "कंपनियां"
+      "companies": "कंपनियां",
+      "admins": "एडमिन"
     },
     "searchPlaceholder": "नाम या ईमेल से खोजें",
     "loading": "लोड हो रहा है…",
@@ -133,7 +134,24 @@
     "previousPage": "← पिछला",
     "nextPage": "अगला →",
     "pageLabel": "पृष्ठ {{page}} / {{total}}",
-    "moreDetails": "अधिक विवरण"
+    "moreDetails": "अधिक विवरण",
+    "team": {
+      "addTitle": "टीम सदस्य जोड़ें",
+      "emailPlaceholder": "ईमेल",
+      "fullNamePlaceholder": "पूरा नाम",
+      "passwordPlaceholder": "अस्थायी पासवर्ड (न्यूनतम 8 अक्षर)",
+      "create": "खाता बनाएं",
+      "createError": "यह खाता नहीं बनाया जा सका। फिर से कोशिश करें।",
+      "remove": "हटाएं",
+      "deleteError": "यह खाता हटाया नहीं जा सका। फिर से कोशिश करें।",
+      "confirmDelete": "{{name}} का एडमिन खाता हटाएं? इसे वापस नहीं लाया जा सकता।",
+      "none": "अभी तक कोई समीक्षक या एडमिन नहीं है।",
+      "levels": {
+        "REVIEWER": "समीक्षक",
+        "ADMIN": "एडमिन",
+        "SUPER_ADMIN": "सुपर एडमिन"
+      }
+    }
   },
   "candidateDetail": {
     "loading": "उम्मीदवार लोड हो रहा है…",

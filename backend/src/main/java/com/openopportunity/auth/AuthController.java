@@ -102,7 +102,8 @@ public class AuthController {
     public ResponseEntity<UserSummary> me() {
         UUID userId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userRepository.findById(userId).orElseThrow();
-        return ResponseEntity.ok(new UserSummary(user.getId(), user.getEmail(), user.getFullName(), user.getRole()));
+        return ResponseEntity.ok(new UserSummary(
+                user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getAdminLevel()));
     }
 
     private ResponseEntity<AuthResponse> withRefreshCookie(AuthService.Issued issued, HttpStatus status) {

@@ -1,5 +1,6 @@
 package com.openopportunity.admin;
 
+import com.openopportunity.auth.AdminLevel;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
@@ -41,7 +42,8 @@ public class AdminSeeder implements CommandLineRunner {
         if (userRepository.existsByEmailAndRole(seedEmail, UserRole.ADMIN)) {
             return;
         }
-        User admin = new User(seedEmail, passwordEncoder.encode(seedPassword), "Platform Admin", UserRole.ADMIN);
+        User admin = new User(
+                seedEmail, passwordEncoder.encode(seedPassword), "Platform Admin", UserRole.ADMIN, AdminLevel.SUPER_ADMIN);
         userRepository.save(admin);
         log.info("Seeded admin account: {}", seedEmail);
     }

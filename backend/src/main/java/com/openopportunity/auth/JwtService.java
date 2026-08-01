@@ -36,6 +36,8 @@ public class JwtService {
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole().name())
+                // Null (omitted) for candidates/companies — only ADMIN-role users have a level.
+                .claim("adminLevel", user.getAdminLevel() == null ? null : user.getAdminLevel().name())
                 .claim("fullName", user.getFullName())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(accessTokenExpiryMinutes, ChronoUnit.MINUTES)))
@@ -54,5 +56,11 @@ public class JwtService {
 
     public UserRole extractRole(Claims claims) {
         return UserRole.valueOf(claims.get("role", String.class));
+    }
+
+    /** Null for candidates/companies, and for tokens issued before AdminLevel existed. */
+    public AdminLevel extractAdminLevel(Claims claims) {
+        String raw = claims.get("adminLevel", String.class);
+        return raw == null ? null : AdminLevel.valueOf(raw);
     }
 }

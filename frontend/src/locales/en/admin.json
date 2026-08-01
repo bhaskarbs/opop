@@ -121,7 +121,8 @@
     "subtitle": "Manage candidates and company accounts across the platform.",
     "tabs": {
       "candidates": "Candidates",
-      "companies": "Companies"
+      "companies": "Companies",
+      "admins": "Admins"
     },
     "searchPlaceholder": "Search by name or email",
     "loading": "Loading…",
@@ -133,7 +134,24 @@
     "previousPage": "← Previous",
     "nextPage": "Next →",
     "pageLabel": "Page {{page}} of {{total}}",
-    "moreDetails": "More details"
+    "moreDetails": "More details",
+    "team": {
+      "addTitle": "Add a team member",
+      "emailPlaceholder": "Email",
+      "fullNamePlaceholder": "Full name",
+      "passwordPlaceholder": "Temporary password (min. 8 characters)",
+      "create": "Create account",
+      "createError": "Couldn't create this account. Try again.",
+      "remove": "Remove",
+      "deleteError": "Couldn't remove this account. Try again.",
+      "confirmDelete": "Remove {{name}}'s admin account? This can't be undone.",
+      "none": "No reviewers or admins yet.",
+      "levels": {
+        "REVIEWER": "Reviewer",
+        "ADMIN": "Admin",
+        "SUPER_ADMIN": "Super admin"
+      }
+    }
   },
   "candidateDetail": {
     "loading": "Loading candidate…",

@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom'
 import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
+import { RequireAdminLevel } from './routes/RequireAdminLevel'
 import { RequireAuth } from './routes/RequireAuth'
 import { ScrollToTop } from './routes/ScrollToTop'
 import i18n, { DEFAULT_LANGUAGE, isSupportedLanguage } from './i18n'
@@ -200,7 +201,8 @@ function App() {
 
             <Route element={<RequireAuth role="ADMIN" />}>
               <Route element={<AuthenticatedLayout headerVariant="admin" />}>
-                <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+                {/* Every admin tier — reviewer, admin, super_admin — reaches approvals and
+                    user management (see AdminLevel.java and RequireAdminLevel). */}
                 <Route path="admin/approvals" element={<AdminApprovalsPage />}>
                   <Route index element={<Navigate to="companies" replace />} />
                   <Route path="companies" element={<AdminCompanyApprovalsPage />} />
@@ -210,12 +212,18 @@ function App() {
                 <Route path="admin/users" element={<AdminUsersPage />} />
                 <Route path="admin/users/candidates/:id" element={<AdminCandidateDetailPage />} />
                 <Route path="admin/users/companies/:id" element={<AdminCompanyDetailPage />} />
-                <Route
-                  path="admin/mock-interview-questions"
-                  element={<AdminMockInterviewQuestionsPage />}
-                />
-                <Route path="admin/reports" element={<AdminReportsPage />} />
-                <Route path="admin/billing" element={<AdminBillingPage />} />
+
+                {/* Everything else in the admin console is admin/super_admin only — a reviewer
+                    hitting one of these directly bounces to Approvals (see RequireAdminLevel). */}
+                <Route element={<RequireAdminLevel levels={['ADMIN', 'SUPER_ADMIN']} />}>
+                  <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+                  <Route
+                    path="admin/mock-interview-questions"
+                    element={<AdminMockInterviewQuestionsPage />}
+                  />
+                  <Route path="admin/reports" element={<AdminReportsPage />} />
+                  <Route path="admin/billing" element={<AdminBillingPage />} />
+                </Route>
               </Route>
             </Route>
 

@@ -1,6 +1,8 @@
 package com.openopportunity.auth.dto;
 
+import com.openopportunity.auth.AdminLevel;
 import com.openopportunity.auth.UserRole;
 import java.util.UUID;
 
-public record UserSummary(UUID id, String email, String fullName, UserRole role) {}
+// adminLevel is null for candidates/companies — only meaningful when role == ADMIN.
+public record UserSummary(UUID id, String email, String fullName, UserRole role, AdminLevel adminLevel) {}

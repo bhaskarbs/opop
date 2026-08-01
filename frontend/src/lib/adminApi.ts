@@ -1,5 +1,6 @@
 import { useAuthStore } from '../stores/authStore'
 import { blobRequest, request } from './apiClient'
+import type { AdminLevel } from './apiClient'
 import type { BackendSubscriptionPlan, BillingTransactionStatus } from './billingApi'
 import type { CompanyCertificateSummary } from './companyApi'
 import type { BackendCompanySubscriptionPlan } from './companyBillingApi'
@@ -131,6 +132,25 @@ export interface AdminCandidateProfileSummary {
   workModePreference: string | null
   openToPreference: string | null
   createdAt: string
+}
+
+export interface AdminTeamMemberSummary {
+  id: string
+  email: string
+  fullName: string
+  adminLevel: AdminLevel
+  createdAt: string
+}
+
+// SUPER_ADMIN deliberately isn't a valid value here — see AdminTeamService.parseCreatableLevel;
+// provisioning that tier is a manual/seeded operation, not something done through this form.
+export type CreatableAdminLevel = 'REVIEWER' | 'ADMIN'
+
+export interface CreateAdminTeamMemberPayload {
+  email: string
+  password: string
+  fullName: string
+  adminLevel: CreatableAdminLevel
 }
 
 export interface AdminUserListParams {
@@ -319,6 +339,20 @@ export const adminApi = {
       method: 'POST',
       headers: authHeaders(),
     }),
+
+  // Reachable by any admin tier; create/delete 403 server-side unless the caller is
+  // super_admin (see AdminTeamController) — the frontend also hides those actions for anyone
+  // else, but the backend is the real gate.
+  teamMembers: () =>
+    request<AdminTeamMemberSummary[]>('/api/admin/team', { headers: authHeaders() }),
+  createTeamMember: (payload: CreateAdminTeamMemberPayload) =>
+    request<AdminTeamMemberSummary>('/api/admin/team', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  deleteTeamMember: (id: string) =>
+    request<void>(`/api/admin/team/${id}`, { method: 'DELETE', headers: authHeaders() }),
 
   mockInterviewQuestions: (params: MockInterviewQuestionListParams = {}) =>
     request<AdminMockInterviewQuestionSummary[]>(

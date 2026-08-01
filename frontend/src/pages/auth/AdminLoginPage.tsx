@@ -38,7 +38,13 @@ export default function AdminLoginPage() {
     try {
       const response = await authApi.login({ ...values, role: 'admin' })
       setSession(response.accessToken, response.user)
-      navigate(localize(ROUTES.adminDashboard))
+      // Reviewers can't reach the dashboard (see RequireAdminLevel) — send them straight to
+      // their actual home base instead of bouncing through a redirect.
+      navigate(
+        localize(
+          response.user.adminLevel === 'REVIEWER' ? ROUTES.adminApprovals : ROUTES.adminDashboard,
+        ),
+      )
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : t('errors.generic'))
     }

@@ -15,6 +15,7 @@ import {
   HEADER_BG_CLASS,
   NAV_BY_VARIANT,
   USER_MENU_BY_VARIANT,
+  visibleNavItems,
 } from './navData'
 import { Logo } from './Logo'
 import { RouteLink } from './RouteLink'
@@ -67,7 +68,8 @@ export function Header({
   showGuestAuthLinks = true,
 }: HeaderProps) {
   const isGuest = variant === 'guest'
-  const navItems = NAV_BY_VARIANT[variant]
+  const adminLevel = useAuthStore((state) => state.user?.adminLevel)
+  const navItems = visibleNavItems(NAV_BY_VARIANT[variant], adminLevel)
   const userMenuItems = USER_MENU_BY_VARIANT[variant] ?? USER_MENU_BY_VARIANT.candidate!
   const resolvedUserName = userName ?? DEFAULT_USER_NAME[variant] ?? 'Rohan Mehta'
   const userInitial = resolvedUserName.charAt(0).toUpperCase()
