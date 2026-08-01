@@ -1,6 +1,7 @@
 package com.openopportunity.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -8,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.auth.dto.PhotoUploadResponse;
+import com.openopportunity.auth.exception.InvalidProfilePhotoException;
+import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.storage.FileStorageService;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -67,5 +70,28 @@ class CandidateProfileServiceTest {
         // still works with the new store(byte[], ...) overload.
         assertThat(storedContent.getValue().length).isLessThan(originalBytes.size());
         assertThat(response.photoUrl()).isNotNull();
+    }
+
+    @Test
+    void uploadPhotoRejectsAFileWhoseBytesArentActuallyAnImage() {
+        UUID userId = UUID.randomUUID();
+        // Claims to be a JPEG via both filename and Content-Type — only the actual byte
+        // signature (checked by ImageContentValidator) should decide this, not either of those,
+        // since both are trivially spoofable by a non-browser caller.
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "photo.jpg", "image/jpeg", "not actually an image".getBytes());
+
+        assertThatThrownBy(() -> candidateProfileService.uploadPhoto(userId, file))
+                .isInstanceOf(InvalidProfilePhotoException.class);
+    }
+
+    @Test
+    void uploadResumeRejectsAFileRenamedToLookLikeAPdf() {
+        UUID userId = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "resume.pdf", "application/pdf", "not actually a pdf".getBytes());
+
+        assertThatThrownBy(() -> candidateProfileService.uploadResume(userId, file))
+                .isInstanceOf(InvalidResumeFileException.class);
     }
 }
