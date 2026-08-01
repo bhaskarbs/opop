@@ -45,7 +45,11 @@ export function GoogleSignInButton({ onCredential }: { onCredential: (idToken: s
   return (
     <div>
       <div ref={containerRef} className="flex w-full justify-center [&>div]:w-full" />
-      {loadFailed && <p className="mt-1.5 text-center text-[12.5px] text-danger">{t('social.googleSignInFailed')}</p>}
+      {loadFailed && (
+        <p className="mt-1.5 text-center text-[12.5px] text-danger">
+          {t('social.googleSignInFailed')}
+        </p>
+      )}
     </div>
   )
 }
