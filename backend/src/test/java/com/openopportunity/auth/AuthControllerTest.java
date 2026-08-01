@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,10 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+// This class alone registers/logs in many times through real HTTP calls, all from MockMvc's
+// same default remote address — AuthRateLimitFilter is disabled here (see its own javadoc)
+// so that's exercising the auth flow, not tripping an IP-keyed rate limit meant for real abuse.
+@TestPropertySource(properties = "app.security.rate-limit.enabled=false")
 class AuthControllerTest {
 
     @Autowired
