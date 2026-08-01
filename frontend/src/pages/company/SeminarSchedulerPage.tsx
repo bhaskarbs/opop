@@ -38,7 +38,12 @@ const APPLICANTS = ['Rohan Mehta', 'Anita Sharma', 'Karan Patel']
 const LABEL_CLASS = 'mb-1.5 block text-[13px] font-bold text-ink'
 const INPUT_CLASS = 'w-full rounded-[9px] border border-border bg-surface text-ink'
 
-function formatSessionDate(t: TFunction<'company'>, locale: string, date: string, time: string): string {
+function formatSessionDate(
+  t: TFunction<'company'>,
+  locale: string,
+  date: string,
+  time: string,
+): string {
   if (!date) return t('seminars.dateTbd')
   const parsed = new Date(`${date}T${time || '09:00'}`)
   const day = parsed.toLocaleDateString(locale, { month: 'short', day: 'numeric' })

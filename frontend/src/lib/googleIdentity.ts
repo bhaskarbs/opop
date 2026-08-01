@@ -13,7 +13,13 @@ interface GoogleIdentityServices {
       }): void
       renderButton(
         parent: HTMLElement,
-        options: { type: 'standard'; theme: 'outline'; size: 'large'; width: number; text: 'continue_with' },
+        options: {
+          type: 'standard'
+          theme: 'outline'
+          size: 'large'
+          width: number
+          text: 'continue_with'
+        },
       ): void
     }
   }
@@ -35,7 +41,10 @@ export function waitForGoogleIdentity(): Promise<GoogleIdentityServices> {
   }
   const existingScript = document.querySelector(`script[src="${SCRIPT_SRC}"]`)
   return new Promise((resolve, reject) => {
-    const onLoad = () => (window.google ? resolve(window.google) : reject(new Error('Google Identity Services failed to load')))
+    const onLoad = () =>
+      window.google
+        ? resolve(window.google)
+        : reject(new Error('Google Identity Services failed to load'))
     const onError = () => reject(new Error('Google Identity Services failed to load'))
     if (existingScript) {
       existingScript.addEventListener('load', onLoad, { once: true })

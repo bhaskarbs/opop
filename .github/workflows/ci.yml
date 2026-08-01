@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    # Matches the local dev Postgres exactly (see backend/src/main/resources/application.properties)
+    # so the test suite's real-Postgres integration tests (see AuthControllerTest and friends)
+    # run the same way here as on a developer's machine — no separate CI-only config needed.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: openopportunity
+          POSTGRES_PASSWORD: openopportunity
+          POSTGRES_DB: openopportunity
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U openopportunity"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Run backend tests
+        working-directory: backend
+        run: ./gradlew test
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --workspace=frontend
+      - run: npm run format:check --workspace=frontend
+      - run: npm run build --workspace=frontend

@@ -164,9 +164,7 @@ export default function AdminReportsPage() {
   const [tab, setTab] = useState<Tab>('candidates')
   const [candidateStats, setCandidateStats] = useState<AdminCandidateReportStats | null>(null)
   const [employerStats, setEmployerStats] = useState<AdminEmployerReportStats | null>(null)
-  const [partnershipStats, setPartnershipStats] = useState<AdminPartnershipReportStats | null>(
-    null,
-  )
+  const [partnershipStats, setPartnershipStats] = useState<AdminPartnershipReportStats | null>(null)
   const [communitySubmissions, setCommunitySubmissions] = useState<
     AdminCommunityInterestSummary[] | null
   >(null)
@@ -294,7 +292,9 @@ export default function AdminReportsPage() {
                     <tr key={sector.sector} className="border-t border-[#F0F1F3]">
                       <td className="py-3 pr-3 font-bold text-ink">{sector.sector}</td>
                       <td className="p-3 text-[#3A414D]">{sector.openJobs.toLocaleString()}</td>
-                      <td className="py-3 text-[#3A414D]">{sector.applications.toLocaleString()}</td>
+                      <td className="py-3 text-[#3A414D]">
+                        {sector.applications.toLocaleString()}
+                      </td>
                     </tr>
                   ))}
                   {employerStats && employerStats.topHiringSectors.length === 0 && (
