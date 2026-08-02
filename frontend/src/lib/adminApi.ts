@@ -103,11 +103,14 @@ export interface AdminUserSummary {
   fullName: string
   role: AdminUserRole
   accountStatus: AccountStatus
-  // verificationStatus/industry/cin are only meaningful for role === 'COMPANY' — null for
-  // candidates.
+  // verificationStatus/industry/cin are only meaningful for role === 'COMPANY', featuredAt only
+  // for role === 'CANDIDATE' — null otherwise.
   verificationStatus: VerificationStatus | null
   industry: string | null
   cin: string | null
+  // Non-null once an admin has featured this candidate — see adminApi.featureCandidate. Pins
+  // them above the rest of a company's "Search candidates" results.
+  featuredAt: string | null
   createdAt: string
 }
 
@@ -131,6 +134,7 @@ export interface AdminCandidateProfileSummary {
   workCulture: string | null
   workModePreference: string | null
   openToPreference: string | null
+  featuredAt: string | null
   createdAt: string
 }
 
@@ -336,6 +340,16 @@ export const adminApi = {
     }),
   reactivateUser: (id: string) =>
     request<AdminUserSummary>(`/api/admin/users/${id}/reactivate`, {
+      method: 'POST',
+      headers: authHeaders(),
+    }),
+  featureCandidate: (id: string) =>
+    request<AdminUserSummary>(`/api/admin/users/candidates/${id}/feature`, {
+      method: 'POST',
+      headers: authHeaders(),
+    }),
+  unfeatureCandidate: (id: string) =>
+    request<AdminUserSummary>(`/api/admin/users/candidates/${id}/unfeature`, {
       method: 'POST',
       headers: authHeaders(),
     }),

@@ -6,8 +6,8 @@ import com.openopportunity.auth.VerificationStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-/** verificationStatus/industry/cin are only meaningful for role=COMPANY — null for candidates
- * and admins. */
+/** verificationStatus/industry/cin are only meaningful for role=COMPANY, featuredAt only for
+ * role=CANDIDATE — null otherwise. */
 public record AdminUserSummary(
         UUID id,
         String email,
@@ -17,4 +17,5 @@ public record AdminUserSummary(
         VerificationStatus verificationStatus,
         String industry,
         String cin,
+        Instant featuredAt,
         Instant createdAt) {}

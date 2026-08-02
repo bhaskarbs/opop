@@ -8,12 +8,16 @@ import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
 import com.openopportunity.auth.exception.ResumeRenderingFailedException;
+import com.openopportunity.billing.CandidateSubscription;
+import com.openopportunity.billing.CandidateSubscriptionRepository;
 import com.openopportunity.billing.CompanyBillingService;
 import com.openopportunity.billing.CompanySubscriptionPlan;
+import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +40,7 @@ public class CandidateSearchService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final CompanyProfileRepository companyProfileRepository;
     private final CandidateContactRevealRepository candidateContactRevealRepository;
+    private final CandidateSubscriptionRepository candidateSubscriptionRepository;
     private final FileStorageService fileStorageService;
     private final CompanyBillingService companyBillingService;
 
@@ -44,12 +49,14 @@ public class CandidateSearchService {
             CandidateProfileRepository candidateProfileRepository,
             CompanyProfileRepository companyProfileRepository,
             CandidateContactRevealRepository candidateContactRevealRepository,
+            CandidateSubscriptionRepository candidateSubscriptionRepository,
             FileStorageService fileStorageService,
             CompanyBillingService companyBillingService) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.companyProfileRepository = companyProfileRepository;
         this.candidateContactRevealRepository = candidateContactRevealRepository;
+        this.candidateSubscriptionRepository = candidateSubscriptionRepository;
         this.fileStorageService = fileStorageService;
         this.companyBillingService = companyBillingService;
     }
@@ -67,24 +74,43 @@ public class CandidateSearchService {
         Set<UUID> revealedCandidateIds = candidateContactRevealRepository.findByCompanyId(companyId).stream()
                 .map(CandidateContactReveal::getCandidateId)
                 .collect(Collectors.toCollection(HashSet::new));
+        // Only currently-active paid subscriptions count — a lapsed plan the daily
+        // expireOverdueSubscriptions sweep hasn't gotten to yet shouldn't still get boosted.
+        // Candidates only ever hold FREE or PLUS in practice (CandidateBillingService blocks
+        // PRO for candidate self-serve), so "not FREE" is equivalent to "is Plus" here.
+        Set<UUID> plusCandidateIds = candidateSubscriptionRepository
+                .findByPlanNotAndCurrentPeriodEndAfter(SubscriptionPlan.FREE, Instant.now())
+                .stream()
+                .map(CandidateSubscription::getCandidateId)
+                .collect(Collectors.toCollection(HashSet::new));
 
         return profiles.stream()
                 .filter(profile -> usersById.containsKey(profile.getUserId()))
                 .filter(profile -> matchesQuery(profile, usersById.get(profile.getUserId()), normalizedQuery))
                 .filter(profile -> matchesAnyLocation(profile, normalizedLocations))
-                .sorted(resolveSort(sort, usersById, revealedCandidateIds))
+                .sorted(resolveSort(sort, usersById, revealedCandidateIds, plusCandidateIds))
                 .map(profile -> toSummary(
                         profile,
                         usersById.get(profile.getUserId()),
-                        revealedCandidateIds.contains(profile.getUserId())))
+                        revealedCandidateIds.contains(profile.getUserId()),
+                        plusCandidateIds.contains(profile.getUserId())))
                 .toList();
     }
 
-    /** "name" sorts alphabetically; "contacted" puts candidates whose contact this company has
-     * already revealed (see revealContact) first; "newest" and the default ("relevant" — no
-     * ranking model exists yet) both fall back to recency, same reasoning as
-     * JobService.resolveSort. */
+    /** Ranking is layered, highest priority first: an admin-featured candidate (see
+     * AdminUserService#feature) always leads, then a Plus-plan candidate, and only within those
+     * tiers does the company's chosen sort apply — "name" alphabetically; "contacted" puts
+     * candidates whose contact this company has already revealed (see revealContact) first;
+     * "newest" and the default ("relevant" — no ranking model exists yet) both fall back to
+     * recency, same reasoning as JobService.resolveSort. */
     private Comparator<CandidateProfile> resolveSort(
+            String sort, Map<UUID, User> usersById, Set<UUID> revealedCandidateIds, Set<UUID> plusCandidateIds) {
+        return Comparator.comparing((CandidateProfile profile) -> profile.getFeaturedAt() != null ? 0 : 1)
+                .thenComparing(profile -> plusCandidateIds.contains(profile.getUserId()) ? 0 : 1)
+                .thenComparing(baseSort(sort, usersById, revealedCandidateIds));
+    }
+
+    private Comparator<CandidateProfile> baseSort(
             String sort, Map<UUID, User> usersById, Set<UUID> revealedCandidateIds) {
         if ("name".equals(sort)) {
             return Comparator.comparing(
@@ -275,13 +301,16 @@ public class CandidateSearchService {
         return "/api/candidates/" + userId + "/photo";
     }
 
-    private CandidateSearchSummary toSummary(CandidateProfile profile, User user, boolean contactRevealed) {
+    private CandidateSearchSummary toSummary(
+            CandidateProfile profile, User user, boolean contactRevealed, boolean isPlus) {
         return new CandidateSearchSummary(
                 user.getId(),
                 user.getFullName(),
                 profile.getTitle(),
                 profile.getLocation(),
                 profile.getSkills(),
-                contactRevealed ? profile.getMobile() : null);
+                contactRevealed ? profile.getMobile() : null,
+                isPlus,
+                profile.getFeaturedAt() != null);
     }
 }

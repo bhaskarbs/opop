@@ -78,6 +78,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
+  const [featuringId, setFeaturingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
   const currentUser = useAuthStore((state) => state.user)
@@ -170,6 +171,20 @@ export default function AdminUsersPage() {
       // Best-effort — the row simply keeps its current status if the call fails.
     } finally {
       setActioningId(null)
+    }
+  }
+
+  async function handleToggleFeatured(user: AdminUserSummary) {
+    setFeaturingId(user.id)
+    try {
+      const updated = user.featuredAt
+        ? await adminApi.unfeatureCandidate(user.id)
+        : await adminApi.featureCandidate(user.id)
+      setUsers((prev) => prev.map((existing) => (existing.id === user.id ? updated : existing)))
+    } catch {
+      // Best-effort — the row simply keeps its current featured state if the call fails.
+    } finally {
+      setFeaturingId(null)
     }
   }
 
@@ -437,7 +452,14 @@ export default function AdminUsersPage() {
                         {user.fullName.charAt(0).toUpperCase()}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-[14.5px] font-bold text-ink">{user.fullName}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14.5px] font-bold text-ink">{user.fullName}</span>
+                          {tab === 'candidates' && user.featuredAt && (
+                            <span className="rounded-full bg-amber-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-amber">
+                              {t('users.featured')}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[13px] text-slate">
                           {t('users.joinedMeta', {
                             email: user.email,
@@ -452,6 +474,17 @@ export default function AdminUsersPage() {
                       >
                         {t(USER_STATUS_LABEL_KEYS[status])}
                       </span>
+                      {tab === 'candidates' && (
+                        <button
+                          type="button"
+                          disabled={featuringId === user.id}
+                          onClick={() => handleToggleFeatured(user)}
+                          className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                        >
+                          {featuringId === user.id && <Spinner className="h-3.5 w-3.5" />}
+                          {user.featuredAt ? t('users.unfeature') : t('users.feature')}
+                        </button>
+                      )}
                       <Link
                         to={localize(
                           tab === 'candidates'
