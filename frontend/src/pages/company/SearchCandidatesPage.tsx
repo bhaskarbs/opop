@@ -85,7 +85,19 @@ function CandidateCard({
           {candidate.fullName.charAt(0).toUpperCase()}
         </div>
         <div>
-          <div className="text-[15px] font-bold text-ink">{candidate.fullName}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-[15px] font-bold text-ink">{candidate.fullName}</span>
+            {candidate.isFeatured && (
+              <span className="rounded-full bg-primary-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-primary">
+                {t('searchCandidates.featuredBadge')}
+              </span>
+            )}
+            {candidate.isPlus && (
+              <span className="rounded-full bg-amber-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-amber">
+                {t('searchCandidates.plusBadge')}
+              </span>
+            )}
+          </div>
           {meta && <div className="mt-0.5 text-[13px] text-slate">{meta}</div>}
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {candidate.skills.map((skill) => (

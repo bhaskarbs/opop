@@ -62,4 +62,14 @@ public class AdminUserController {
     public AdminUserSummary reactivate(@PathVariable UUID id) {
         return adminUserService.reactivate(id);
     }
+
+    @PostMapping("/candidates/{id}/feature")
+    public AdminUserSummary feature(@PathVariable UUID id) {
+        return adminUserService.feature(id);
+    }
+
+    @PostMapping("/candidates/{id}/unfeature")
+    public AdminUserSummary unfeature(@PathVariable UUID id) {
+        return adminUserService.unfeature(id);
+    }
 }

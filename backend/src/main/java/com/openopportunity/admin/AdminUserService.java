@@ -17,7 +17,9 @@ import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +48,7 @@ public class AdminUserService {
     @Transactional(readOnly = true)
     public List<AdminUserSummary> list(UserRole role, AccountStatus status, String query) {
         String normalizedQuery = query == null ? null : query.trim().toLowerCase();
-        return userRepository.findAll().stream()
+        List<User> users = userRepository.findAll().stream()
                 .filter(user -> user.getRole() != UserRole.ADMIN)
                 .filter(user -> role == null || user.getRole() == role)
                 .filter(user -> status == null || user.getAccountStatus() == status)
@@ -54,8 +56,49 @@ public class AdminUserService {
                         || normalizedQuery.isBlank()
                         || user.getFullName().toLowerCase().contains(normalizedQuery)
                         || user.getEmail().toLowerCase().contains(normalizedQuery))
-                .map(this::toSummary)
                 .toList();
+        Map<UUID, CandidateProfile> candidateProfilesByUserId = candidateProfileRepository
+                .findByUserIdIn(users.stream()
+                        .filter(user -> user.getRole() == UserRole.CANDIDATE)
+                        .map(User::getId)
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(CandidateProfile::getUserId, profile -> profile));
+        return users.stream()
+                .map(user -> toSummary(user, candidateProfilesByUserId.get(user.getId())))
+                .toList();
+    }
+
+    /** Pins this candidate above the rest of a company's search results (see
+     * CandidateSearchService#resolveSort) — an editorial override, so any admin tier can set it,
+     * same as suspend/reactivate. */
+    @Transactional
+    public AdminUserSummary feature(UUID userId) {
+        User user = requireCandidate(userId);
+        CandidateProfile profile = candidateProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new AdminUserNotFoundException(userId));
+        profile.feature();
+        candidateProfileRepository.save(profile);
+        return toSummary(user, profile);
+    }
+
+    @Transactional
+    public AdminUserSummary unfeature(UUID userId) {
+        User user = requireCandidate(userId);
+        CandidateProfile profile = candidateProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new AdminUserNotFoundException(userId));
+        profile.unfeature();
+        candidateProfileRepository.save(profile);
+        return toSummary(user, profile);
+    }
+
+    private User requireCandidate(UUID userId) {
+        return userRepository
+                .findById(userId)
+                .filter(user -> user.getRole() == UserRole.CANDIDATE)
+                .orElseThrow(() -> new AdminUserNotFoundException(userId));
     }
 
     @Transactional
@@ -63,7 +106,7 @@ public class AdminUserService {
         User user = userRepository.findById(userId).orElseThrow(() -> new AdminUserNotFoundException(userId));
         user.suspend();
         userRepository.save(user);
-        return toSummary(user);
+        return toSummary(user, candidateProfileOrNull(user));
     }
 
     @Transactional
@@ -71,7 +114,13 @@ public class AdminUserService {
         User user = userRepository.findById(userId).orElseThrow(() -> new AdminUserNotFoundException(userId));
         user.reactivate();
         userRepository.save(user);
-        return toSummary(user);
+        return toSummary(user, candidateProfileOrNull(user));
+    }
+
+    private CandidateProfile candidateProfileOrNull(User user) {
+        return user.getRole() == UserRole.CANDIDATE
+                ? candidateProfileRepository.findByUserId(user.getId()).orElse(null)
+                : null;
     }
 
     /** Every CandidateProfile field comes back null when the candidate hasn't filled one in
@@ -105,6 +154,7 @@ public class AdminUserService {
                 profile == null ? null : profile.getWorkCulture(),
                 profile == null ? null : profile.getWorkModePreference(),
                 profile == null ? null : profile.getOpenToPreference(),
+                profile == null ? null : profile.getFeaturedAt(),
                 user.getCreatedAt());
     }
 
@@ -144,7 +194,7 @@ public class AdminUserService {
         return "application/octet-stream";
     }
 
-    private AdminUserSummary toSummary(User user) {
+    private AdminUserSummary toSummary(User user, CandidateProfile candidateProfile) {
         CompanyProfile companyProfile = user.getRole() == UserRole.COMPANY
                 ? companyProfileRepository.findByUserId(user.getId()).orElse(null)
                 : null;
@@ -157,6 +207,7 @@ public class AdminUserService {
                 companyProfile == null ? null : companyProfile.getVerificationStatus(),
                 companyProfile == null ? null : companyProfile.getIndustry(),
                 companyProfile == null ? null : companyProfile.getCin(),
+                candidateProfile == null ? null : candidateProfile.getFeaturedAt(),
                 user.getCreatedAt());
     }
 }

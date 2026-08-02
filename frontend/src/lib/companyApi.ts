@@ -69,6 +69,10 @@ export interface CandidateSearchSummary {
   // revealCandidateContact) — once revealed, the backend keeps returning it on every later
   // search too, so it stays visible on a return visit instead of needing another click.
   contactNumber: string | null
+  // Backs the "Plus" / "Featured" badges — also what CandidateSearchService ranks above
+  // everyone else, featured leading plus.
+  isPlus: boolean
+  isFeatured: boolean
 }
 
 export type CandidateSortOption = 'relevant' | 'newest' | 'name' | 'contacted'

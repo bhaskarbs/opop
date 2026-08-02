@@ -228,6 +228,8 @@
       "bucket8plus": "8+ yrs"
     },
     "candidateMeta": "{{title}} · {{location}} · {{years}} yrs experience",
+    "plusBadge": "Plus",
+    "featuredBadge": "Featured",
     "viewContact": "View contact",
     "revealingContact": "Revealing…",
     "openWhatsApp": "Open WhatsApp chat",

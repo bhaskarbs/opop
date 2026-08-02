@@ -15,4 +15,8 @@ public record CandidateSearchSummary(
         String title,
         String location,
         List<String> skills,
-        String contactNumber) {}
+        String contactNumber,
+        // Backs the "Plus" / "Featured" badges on the search results list — see
+        // CandidateSearchService#resolveSort for the ranking these also drive.
+        boolean isPlus,
+        boolean isFeatured) {}

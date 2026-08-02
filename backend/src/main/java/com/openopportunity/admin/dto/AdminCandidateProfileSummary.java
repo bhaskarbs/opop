@@ -30,4 +30,5 @@ public record AdminCandidateProfileSummary(
         String workCulture,
         String workModePreference,
         String openToPreference,
+        Instant featuredAt,
         Instant createdAt) {}

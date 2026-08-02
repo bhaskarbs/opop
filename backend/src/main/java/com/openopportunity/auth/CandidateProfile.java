@@ -91,6 +91,12 @@ public class CandidateProfile {
     @Column(name = "open_to_preference", length = 100)
     private String openToPreference;
 
+    // Set by an admin to pin this candidate above the rest of a company's search results
+    // (see AdminUserService#feature) — null means not featured. Kept as a timestamp rather than
+    // a boolean so un-featuring and re-featuring later doesn't need a separate history table.
+    @Column(name = "featured_at")
+    private Instant featuredAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -160,6 +166,14 @@ public class CandidateProfile {
     public void updatePhoto(String photoStorageKey, String photoContentType) {
         this.photoStorageKey = photoStorageKey;
         this.photoContentType = photoContentType;
+    }
+
+    public void feature() {
+        this.featuredAt = Instant.now();
+    }
+
+    public void unfeature() {
+        this.featuredAt = null;
     }
 
     public UUID getId() {
@@ -236,6 +250,10 @@ public class CandidateProfile {
 
     public String getOpenToPreference() {
         return openToPreference;
+    }
+
+    public Instant getFeaturedAt() {
+        return featuredAt;
     }
 
     public Instant getCreatedAt() {
