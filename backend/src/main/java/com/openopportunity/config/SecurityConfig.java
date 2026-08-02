@@ -93,6 +93,11 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/jobs/*/approve", "/api/jobs/*/reject")
                         .hasRole("ADMIN")
+                        // Job-featuring lives on the new admin Jobs page (ADMIN/SUPER_ADMIN
+                        // only, not reviewer) — same tier split as /api/admin/team's create/
+                        // delete vs. list.
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/*/feature", "/api/jobs/*/unfeature")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/*")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/jobs")

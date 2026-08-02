@@ -13,6 +13,9 @@ import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.billing.CompanySubscription;
+import com.openopportunity.billing.CompanySubscriptionPlan;
+import com.openopportunity.billing.CompanySubscriptionRepository;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSummary;
@@ -23,6 +26,8 @@ import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,13 +52,21 @@ class JobServiceTest {
     private CompanyProfileRepository companyProfileRepository;
 
     @Mock
+    private CompanySubscriptionRepository companySubscriptionRepository;
+
+    @Mock
     private NotificationService notificationService;
 
     private JobService jobService;
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, userRepository, companyProfileRepository, notificationService);
+        jobService = new JobService(
+                jobRepository,
+                userRepository,
+                companyProfileRepository,
+                companySubscriptionRepository,
+                notificationService);
     }
 
     private CompanyProfile eligibleProfile(UUID companyId) {
@@ -344,6 +357,48 @@ class JobServiceTest {
         assertThat(pending.get(0).aboutRole()).isEqualTo("Lead the dashboard rebuild.");
         assertThat(pending.get(0).responsibilities()).containsExactly("Own delivery");
         assertThat(pending.get(0).requirements()).containsExactly("5+ years React");
+    }
+
+    @Test
+    void featuredPostingsOutrankPromotedCompanyPostingsWhichOutrankEveryoneElse() {
+        UUID plainCompanyId = UUID.randomUUID();
+        UUID promotedCompanyId = UUID.randomUUID();
+        UUID featuredCompanyId = UUID.randomUUID();
+
+        Job plainJob = new Job(
+                plainCompanyId, "Plain Co", "Plain Role", EmploymentType.FULL_TIME, ExperienceLevel.SENIOR,
+                WorkMode.HYBRID, "Bengaluru", null, null, null, "About", List.of(), List.of(), List.of(),
+                JobStatus.ACTIVE);
+        Job promotedJob = new Job(
+                promotedCompanyId, "Promoted Co", "Promoted Role", EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "About", List.of(),
+                List.of(), List.of(), JobStatus.ACTIVE);
+        Job featuredJob = new Job(
+                featuredCompanyId, "Featured Co", "Featured Role", EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "About", List.of(),
+                List.of(), List.of(), JobStatus.ACTIVE);
+        featuredJob.feature();
+
+        when(jobRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(List.of(plainJob, promotedJob, featuredJob));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+        CompanySubscription promotedSubscription =
+                new CompanySubscription(promotedCompanyId, CompanySubscriptionPlan.GROWTH);
+        promotedSubscription.changePlan(
+                CompanySubscriptionPlan.GROWTH, Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS));
+        when(companySubscriptionRepository.findByPlanNotAndCurrentPeriodEndAfter(
+                        eq(CompanySubscriptionPlan.FREE), any()))
+                .thenReturn(List.of(promotedSubscription));
+
+        List<JobSummary> results = jobService.search(null, null, null, null, null, "relevant");
+
+        assertThat(results)
+                .extracting(JobSummary::id)
+                .containsExactly(featuredJob.getId(), promotedJob.getId(), plainJob.getId());
+        assertThat(results.get(0).isFeatured()).isTrue();
+        assertThat(results.get(1).isPromoted()).isTrue();
+        assertThat(results.get(2).isFeatured()).isFalse();
+        assertThat(results.get(2).isPromoted()).isFalse();
     }
 
     @Test

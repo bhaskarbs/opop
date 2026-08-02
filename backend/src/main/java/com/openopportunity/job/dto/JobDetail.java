@@ -29,4 +29,6 @@ public record JobDetail(
         int applicantCount,
         Instant createdAt,
         // Same "derived, not denormalized" reasoning as JobSummary.companyLogoUrl.
-        String companyLogoUrl) {}
+        String companyLogoUrl,
+        boolean isPromoted,
+        boolean isFeatured) {}

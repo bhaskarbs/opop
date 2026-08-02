@@ -25,6 +25,11 @@ export interface JobSummary {
   // Null unless the posting company has uploaded a logo (see companyApi.uploadLogo) — used by
   // job search results and the job detail page to show it instead of the initial-letter badge.
   companyLogoUrl: string | null
+  // Backs the "Promoted" / "Featured" badges — also what JobService ranks above everyone else
+  // in search results, featured leading promoted. isPromoted mirrors a candidate's Plus-plan
+  // boost one level up: it reflects the posting *company's* plan (GROWTH/ENTERPRISE).
+  isPromoted: boolean
+  isFeatured: boolean
 }
 
 export interface JobDetail extends JobSummary {

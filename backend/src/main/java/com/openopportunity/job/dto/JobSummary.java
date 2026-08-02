@@ -29,4 +29,10 @@ public record JobSummary(
         // CompanyProfileService.uploadLogo) — derived dynamically from the job's companyId
         // rather than denormalized onto Job, so a later logo change/removal is reflected
         // immediately without needing to touch every existing job row.
-        String companyLogoUrl) {}
+        String companyLogoUrl,
+        // Backs the "Promoted" / "Featured" badges on the job search results list — see
+        // JobService#rankSearchResults for the ranking these also drive. isPromoted mirrors
+        // CandidateSearchService's Plus-plan boost, one level up: it's the *posting company's*
+        // plan (GROWTH/ENTERPRISE), not a per-job purchase.
+        boolean isPromoted,
+        boolean isFeatured) {}

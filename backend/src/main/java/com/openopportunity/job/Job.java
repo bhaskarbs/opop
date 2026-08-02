@@ -79,6 +79,11 @@ public class Job {
     @Column(name = "applicant_count", nullable = false)
     private int applicantCount;
 
+    // Set by an admin to pin this posting above the rest of a candidate's job search results
+    // (see JobService#feature) — null means not featured.
+    @Column(name = "featured_at")
+    private Instant featuredAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -171,6 +176,14 @@ public class Job {
         }
     }
 
+    public void feature() {
+        this.featuredAt = Instant.now();
+    }
+
+    public void unfeature() {
+        this.featuredAt = null;
+    }
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
@@ -249,6 +262,10 @@ public class Job {
 
     public int getApplicantCount() {
         return applicantCount;
+    }
+
+    public Instant getFeaturedAt() {
+        return featuredAt;
     }
 
     public Instant getCreatedAt() {

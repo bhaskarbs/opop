@@ -59,7 +59,9 @@ class SavedJobServiceTest {
                 JobStatus.ACTIVE,
                 3,
                 Instant.now(),
-                null);
+                null,
+                false,
+                false);
     }
 
     @Test

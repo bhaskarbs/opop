@@ -286,6 +286,10 @@ export const adminApi = {
       body: JSON.stringify({ reason }),
       headers: authHeaders(),
     }),
+  featureJob: (id: string) =>
+    request<JobDetail>(`/api/jobs/${id}/feature`, { method: 'POST', headers: authHeaders() }),
+  unfeatureJob: (id: string) =>
+    request<JobDetail>(`/api/jobs/${id}/unfeature`, { method: 'POST', headers: authHeaders() }),
 
   pendingIdeas: (q?: string) =>
     request<IdeaDetail[]>(`/api/ideas/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`, {

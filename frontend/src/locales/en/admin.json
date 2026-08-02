@@ -312,5 +312,21 @@
       "upgradeToGrowth": "Upgrade to Growth",
       "confirmDowngrade": "Downgrade this company to the Free plan?"
     }
+  },
+  "jobs": {
+    "title": "Jobs",
+    "subtitle": "Feature a live job posting to pin it above the rest of candidates' search results.",
+    "searchPlaceholder": "Search by job title, company, or skill",
+    "loading": "Loading jobs…",
+    "loadError": "Could not load jobs.",
+    "none": "No live job postings match your search.",
+    "jobMeta": "{{company}} · {{location}} · {{mode}}",
+    "featured": "Featured",
+    "promoted": "Promoted",
+    "feature": "Feature",
+    "unfeature": "Unfeature",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
   }
 }

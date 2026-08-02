@@ -45,6 +45,7 @@ export const NAV_BY_VARIANT: Record<HeaderVariant, NavItem[]> = {
       adminLevels: ['ADMIN', 'SUPER_ADMIN'],
     },
     { label: 'nav.billing', to: ROUTES.adminBilling, adminLevels: ['ADMIN', 'SUPER_ADMIN'] },
+    { label: 'nav.manageJobs', to: ROUTES.adminJobs, adminLevels: ['ADMIN', 'SUPER_ADMIN'] },
   ],
 }
 
