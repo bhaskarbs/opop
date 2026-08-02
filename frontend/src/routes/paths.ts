@@ -60,6 +60,7 @@ export const ROUTES = {
   adminMockInterviewQuestions: '/admin/mock-interview-questions',
   adminReports: '/admin/reports',
   adminBilling: '/admin/billing',
+  adminJobs: '/admin/jobs',
 } as const
 
 /** MyIdeasPage/IdeaSubmitPage are mounted twice — once under /candidate, once under /company

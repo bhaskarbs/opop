@@ -72,7 +72,9 @@ class JobAlertDigestServiceTest {
                 JobStatus.ACTIVE,
                 0,
                 Instant.now(),
-                null);
+                null,
+                false,
+                false);
     }
 
     @Test

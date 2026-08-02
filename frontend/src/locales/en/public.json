@@ -107,7 +107,9 @@
     "applied": "Applied",
     "viewDetails": "View details",
     "save": "Save job",
-    "unsave": "Remove from saved jobs"
+    "unsave": "Remove from saved jobs",
+    "featuredBadge": "Featured",
+    "promotedBadge": "Promoted"
   },
   "jobDetail": {
     "notFound": {

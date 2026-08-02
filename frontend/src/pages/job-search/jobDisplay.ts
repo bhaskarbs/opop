@@ -26,6 +26,8 @@ export interface DisplayJob {
   source: string
   sourceColorClass: string
   applicants: number
+  isPromoted: boolean
+  isFeatured: boolean
 }
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
@@ -67,5 +69,7 @@ export function toDisplayJob(job: JobSummary): DisplayJob {
     source: 'OpenOpportunity',
     sourceColorClass: 'text-slate',
     applicants: job.applicantCount,
+    isPromoted: job.isPromoted,
+    isFeatured: job.isFeatured,
   }
 }

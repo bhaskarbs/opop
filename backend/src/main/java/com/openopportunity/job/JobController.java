@@ -63,6 +63,16 @@ public class JobController {
         return jobService.reject(id, request.reason());
     }
 
+    @PostMapping("/{id}/feature")
+    public JobDetail feature(@PathVariable UUID id) {
+        return jobService.feature(id);
+    }
+
+    @PostMapping("/{id}/unfeature")
+    public JobDetail unfeature(@PathVariable UUID id) {
+        return jobService.unfeature(id);
+    }
+
     @GetMapping("/{id}")
     public JobDetail detail(@PathVariable UUID id) {
         return jobService.get(id, currentUserIdOrNull());

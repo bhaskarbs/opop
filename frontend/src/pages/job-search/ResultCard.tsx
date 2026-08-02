@@ -72,6 +72,16 @@ export function ResultCard({
                 {t('resultCard.applied')}
               </span>
             )}
+            {job.isFeatured && (
+              <span className="rounded-full bg-primary-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-primary">
+                {t('resultCard.featuredBadge')}
+              </span>
+            )}
+            {job.isPromoted && (
+              <span className="rounded-full bg-amber-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-amber">
+                {t('resultCard.promotedBadge')}
+              </span>
+            )}
           </div>
           <div className="mt-0.5 text-sm text-slate">
             {job.company} · {job.location}

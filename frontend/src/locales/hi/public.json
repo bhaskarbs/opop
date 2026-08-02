@@ -107,7 +107,9 @@
     "applied": "आवेदन किया",
     "viewDetails": "विवरण देखें",
     "save": "नौकरी सहेजें",
-    "unsave": "सहेजी गई नौकरियों से हटाएं"
+    "unsave": "सहेजी गई नौकरियों से हटाएं",
+    "featuredBadge": "फ़ीचर्ड",
+    "promotedBadge": "प्रमोटेड"
   },
   "jobDetail": {
     "notFound": {

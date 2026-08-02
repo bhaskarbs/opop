@@ -4,6 +4,9 @@ import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.billing.CompanySubscription;
+import com.openopportunity.billing.CompanySubscriptionPlan;
+import com.openopportunity.billing.CompanySubscriptionRepository;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSummary;
@@ -16,8 +19,11 @@ import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
@@ -36,16 +42,19 @@ public class JobService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
     private final CompanyProfileRepository companyProfileRepository;
+    private final CompanySubscriptionRepository companySubscriptionRepository;
     private final NotificationService notificationService;
 
     public JobService(
             JobRepository jobRepository,
             UserRepository userRepository,
             CompanyProfileRepository companyProfileRepository,
+            CompanySubscriptionRepository companySubscriptionRepository,
             NotificationService notificationService) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
+        this.companySubscriptionRepository = companySubscriptionRepository;
         this.notificationService = notificationService;
     }
 
@@ -65,9 +74,27 @@ public class JobService {
                 JobSpecifications.hasModeIn(modes),
                 JobSpecifications.hasMinSalaryAtLeast(minSalaryLakhs));
 
-        List<Job> jobs = jobRepository.findAll(spec, resolveSort(sort));
+        List<Job> unranked = jobRepository.findAll(spec, resolveSort(sort));
+        Set<UUID> promotedCompanyIds = promotedCompanyIdsFor(unranked);
+        List<Job> jobs = rankSearchResults(unranked, promotedCompanyIds);
         Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
-        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
+        return jobs.stream()
+                .map(job -> toSummary(
+                        job,
+                        profilesByCompanyId.get(job.getCompanyId()),
+                        promotedCompanyIds.contains(job.getCompanyId())))
+                .toList();
+    }
+
+    /** Layered on top of whatever the caller's sort already produced, same ranking model as
+     * CandidateSearchService#resolveSort: an admin-featured posting leads, then a posting from a
+     * company on a paid plan (GROWTH/ENTERPRISE), and Stream.sorted's stable-sort guarantee means
+     * everything else keeps the DB's original order within those tiers. */
+    private List<Job> rankSearchResults(List<Job> jobs, Set<UUID> promotedCompanyIds) {
+        return jobs.stream()
+                .sorted(Comparator.comparing((Job job) -> job.getFeaturedAt() != null ? 0 : 1)
+                        .thenComparing(job -> promotedCompanyIds.contains(job.getCompanyId()) ? 0 : 1))
+                .toList();
     }
 
     /** Mirrors IdeaService.get()'s owner-vs-everyone-else visibility split: anyone can view an
@@ -82,14 +109,18 @@ public class JobService {
         if (job.getStatus() != JobStatus.ACTIVE && !isOwner) {
             throw new JobNotFoundException(id);
         }
-        return toDetail(job, companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null));
+        return toDetail(
+                job,
+                companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
+                isPromoted(job.getCompanyId()));
     }
 
     @Transactional(readOnly = true)
     public List<JobSummary> getMine(UUID companyId) {
         CompanyProfile companyProfile = companyProfileRepository.findByUserId(companyId).orElse(null);
+        boolean promoted = isPromoted(companyId);
         return jobRepository.findByCompanyIdOrderByCreatedAtDesc(companyId).stream()
-                .map(job -> toSummary(job, companyProfile))
+                .map(job -> toSummary(job, companyProfile, promoted))
                 .toList();
     }
 
@@ -104,7 +135,13 @@ public class JobService {
         }
         List<Job> jobs = jobRepository.findAllById(ids);
         Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
-        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
+        Set<UUID> promotedCompanyIds = promotedCompanyIdsFor(jobs);
+        return jobs.stream()
+                .map(job -> toSummary(
+                        job,
+                        profilesByCompanyId.get(job.getCompanyId()),
+                        promotedCompanyIds.contains(job.getCompanyId())))
+                .toList();
     }
 
     /** Used by JobAlertDigestService's nightly sweep — same ACTIVE-only + keyword/location/
@@ -126,7 +163,13 @@ public class JobService {
                 JobSpecifications.createdAfter(after));
         List<Job> jobs = jobRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
         Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
-        return jobs.stream().map(job -> toSummary(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
+        Set<UUID> promotedCompanyIds = promotedCompanyIdsFor(jobs);
+        return jobs.stream()
+                .map(job -> toSummary(
+                        job,
+                        profilesByCompanyId.get(job.getCompanyId()),
+                        promotedCompanyIds.contains(job.getCompanyId())))
+                .toList();
     }
 
     @Transactional
@@ -157,7 +200,8 @@ public class JobService {
         if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
             notifyAdminsJobPending(job, company.getFullName());
         }
-        return toDetail(job, companyProfileRepository.findByUserId(companyId).orElse(null));
+        return toDetail(
+                job, companyProfileRepository.findByUserId(companyId).orElse(null), isPromoted(companyId));
     }
 
     @Transactional
@@ -185,7 +229,8 @@ public class JobService {
             User company = userRepository.findById(companyId).orElseThrow();
             notifyAdminsJobPending(job, company.getFullName());
         }
-        return toDetail(job, companyProfileRepository.findByUserId(companyId).orElse(null));
+        return toDetail(
+                job, companyProfileRepository.findByUserId(companyId).orElse(null), isPromoted(companyId));
     }
 
     @Transactional
@@ -203,7 +248,13 @@ public class JobService {
                 JobSpecifications.hasStatus(JobStatus.PENDING_APPROVAL), JobSpecifications.matchesAdminReviewQuery(q));
         List<Job> jobs = jobRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
         Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
-        return jobs.stream().map(job -> toDetail(job, profilesByCompanyId.get(job.getCompanyId()))).toList();
+        Set<UUID> promotedCompanyIds = promotedCompanyIdsFor(jobs);
+        return jobs.stream()
+                .map(job -> toDetail(
+                        job,
+                        profilesByCompanyId.get(job.getCompanyId()),
+                        promotedCompanyIds.contains(job.getCompanyId())))
+                .toList();
     }
 
     @Transactional
@@ -216,7 +267,10 @@ public class JobService {
                 NotificationType.JOB_APPROVED,
                 "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
                 "/company/dashboard");
-        return toDetail(job, companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null));
+        return toDetail(
+                job,
+                companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
+                isPromoted(job.getCompanyId()));
     }
 
     @Transactional
@@ -229,7 +283,35 @@ public class JobService {
                 NotificationType.JOB_REJECTED,
                 "Your job posting \"" + job.getTitle() + "\" was not approved. Reason: " + reason,
                 "/company/dashboard");
-        return toDetail(job, companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null));
+        return toDetail(
+                job,
+                companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
+                isPromoted(job.getCompanyId()));
+    }
+
+    /** Pins this posting above the rest of a candidate's job search results (see
+     * #rankSearchResults) — an editorial override, same admin-tier scope as AdminUserService's
+     * candidate-featuring equivalent. */
+    @Transactional
+    public JobDetail feature(UUID id) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        job.feature();
+        jobRepository.save(job);
+        return toDetail(
+                job,
+                companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
+                isPromoted(job.getCompanyId()));
+    }
+
+    @Transactional
+    public JobDetail unfeature(UUID id) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        job.unfeature();
+        jobRepository.save(job);
+        return toDetail(
+                job,
+                companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
+                isPromoted(job.getCompanyId()));
     }
 
     /** A company can only post once its verification profile is both complete (entityType/
@@ -286,6 +368,29 @@ public class JobService {
                 .collect(Collectors.toMap(CompanyProfile::getUserId, profile -> profile));
     }
 
+    /** Only currently-active paid subscriptions count — a lapsed plan the daily
+     * expireOverdueSubscriptions sweep hasn't gotten to yet shouldn't still get promoted. Mirrors
+     * CandidateSearchService's plusCandidateIds exactly, one level up (company, not candidate). */
+    private Set<UUID> promotedCompanyIdsFor(List<Job> jobs) {
+        if (jobs.isEmpty()) {
+            return Set.of();
+        }
+        return companySubscriptionRepository
+                .findByPlanNotAndCurrentPeriodEndAfter(CompanySubscriptionPlan.FREE, Instant.now())
+                .stream()
+                .map(CompanySubscription::getCompanyId)
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    private boolean isPromoted(UUID companyId) {
+        return companySubscriptionRepository
+                .findByCompanyId(companyId)
+                .filter(subscription -> subscription.getPlan() != CompanySubscriptionPlan.FREE)
+                .filter(subscription -> subscription.getCurrentPeriodEnd() != null
+                        && subscription.getCurrentPeriodEnd().isAfter(Instant.now()))
+                .isPresent();
+    }
+
     private String companyLogoUrl(CompanyProfile companyProfile) {
         if (companyProfile == null || companyProfile.getLogoStorageKey() == null) {
             return null;
@@ -293,7 +398,7 @@ public class JobService {
         return "/api/companies/" + companyProfile.getUserId() + "/logo";
     }
 
-    private JobSummary toSummary(Job job, CompanyProfile companyProfile) {
+    private JobSummary toSummary(Job job, CompanyProfile companyProfile, boolean isPromoted) {
         return new JobSummary(
                 job.getId(),
                 job.getTitle(),
@@ -308,10 +413,12 @@ public class JobService {
                 job.getStatus(),
                 job.getApplicantCount(),
                 job.getCreatedAt(),
-                companyLogoUrl(companyProfile));
+                companyLogoUrl(companyProfile),
+                isPromoted,
+                job.getFeaturedAt() != null);
     }
 
-    private JobDetail toDetail(Job job, CompanyProfile companyProfile) {
+    private JobDetail toDetail(Job job, CompanyProfile companyProfile, boolean isPromoted) {
         return new JobDetail(
                 job.getId(),
                 job.getTitle(),
@@ -330,6 +437,8 @@ public class JobService {
                 job.getStatus(),
                 job.getApplicantCount(),
                 job.getCreatedAt(),
-                companyLogoUrl(companyProfile));
+                companyLogoUrl(companyProfile),
+                isPromoted,
+                job.getFeaturedAt() != null);
     }
 }
