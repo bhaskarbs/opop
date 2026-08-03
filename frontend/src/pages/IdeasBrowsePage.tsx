@@ -16,7 +16,7 @@ import { IDEA_CATEGORIES } from '../mocks/ideas'
 import { ideaRoutesFor, ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 
-const IDEAS_PAGE_SIZE = 6
+const PAGE_SIZE = 6
 
 const STAGE_KEYS: Record<BackendIdeaStage, string> = {
   CONCEPT: 'browse.stages.concept',
@@ -44,7 +44,7 @@ export default function IdeasBrowsePage() {
   const [category, setCategory] = useState('')
   const [stage, setStage] = useState<BackendIdeaStage | ''>('')
 
-  const [ideasShown, setIdeasShown] = useState(IDEAS_PAGE_SIZE)
+  const [page, setPage] = useState(1)
   const [appliedIdeaIds, setAppliedIdeaIds] = useState<Set<string>>(new Set())
 
   // Debounced separately from the query itself — same reasoning as JobSearchPage — so the query
@@ -68,7 +68,7 @@ export default function IdeasBrowsePage() {
   const [prevBrowseParams, setPrevBrowseParams] = useState(browseParams)
   if (browseParams !== prevBrowseParams) {
     setPrevBrowseParams(browseParams)
-    setIdeasShown(IDEAS_PAGE_SIZE)
+    setPage(1)
   }
 
   const browseQuery = useQuery({
@@ -106,6 +106,10 @@ export default function IdeasBrowsePage() {
       cancelled = true
     }
   }, [authStatus, role])
+
+  const pageCount = Math.max(1, Math.ceil(ideas.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const visibleIdeas = ideas.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   return (
     <main>
@@ -185,7 +189,7 @@ export default function IdeasBrowsePage() {
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
-            {ideas.slice(0, ideasShown).map((idea) => {
+            {visibleIdeas.map((idea) => {
               const applied = appliedIdeaIds.has(idea.id)
               return (
                 <div
@@ -255,14 +259,26 @@ export default function IdeasBrowsePage() {
           </div>
         )}
 
-        {ideasShown < ideas.length && (
-          <div className="mt-7 flex justify-center">
+        {pageCount > 1 && (
+          <div className="mt-7 flex items-center justify-between">
             <button
               type="button"
-              onClick={() => setIdeasShown((prev) => prev + IDEAS_PAGE_SIZE)}
-              className="rounded-lg border border-border bg-surface px-5 py-2.5 text-[13.5px] font-bold text-ink"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {t('browse.showMore')}
+              {t('browse.previousPage')}
+            </button>
+            <span className="text-[13px] text-slate">
+              {t('browse.pageLabel', { page: currentPage, total: pageCount })}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))}
+              disabled={currentPage === pageCount}
+              className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t('browse.nextPage')}
             </button>
           </div>
         )}

@@ -23,7 +23,9 @@
     "noResults": "No ideas match your filters.",
     "loading": "Loading ideas…",
     "errorLoading": "Couldn't load ideas. Please try again.",
-    "showMore": "Show more ideas"
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
   },
   "detail": {
     "loading": "Loading…",
