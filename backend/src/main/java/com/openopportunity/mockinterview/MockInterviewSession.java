@@ -45,6 +45,13 @@ public class MockInterviewSession {
     @Column(name = "recorded_at", nullable = false, updatable = false)
     private Instant recordedAt;
 
+    // Off by default — a company only ever sees a session once the candidate explicitly opts it
+    // in (see MockInterviewService#updateVisibility). Every other field on this entity is
+    // owner-only regardless of this flag; this is the one exception, gated the same way resume
+    // access is (see CandidateSearchService#requireEligibleToContactCandidates).
+    @Column(name = "visible_to_companies", nullable = false)
+    private boolean visibleToCompanies;
+
     protected MockInterviewSession() {
         // JPA
     }
@@ -72,6 +79,10 @@ public class MockInterviewSession {
     @PrePersist
     void onCreate() {
         recordedAt = Instant.now();
+    }
+
+    public void setVisibleToCompanies(boolean visible) {
+        this.visibleToCompanies = visible;
     }
 
     public UUID getId() {
@@ -112,5 +123,9 @@ public class MockInterviewSession {
 
     public Instant getRecordedAt() {
         return recordedAt;
+    }
+
+    public boolean isVisibleToCompanies() {
+        return visibleToCompanies;
     }
 }

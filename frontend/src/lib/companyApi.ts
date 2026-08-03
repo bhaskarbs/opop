@@ -104,6 +104,19 @@ export interface ContactQuota {
   periodEnd: string | null
 }
 
+// Only the fields a company actually needs for its own view — deliberately narrower than the
+// candidate's own MockInterviewSessionSummary (lib/mockInterviewApi.ts). visibleToCompanies is
+// always true here, since only opted-in sessions are ever returned to a company in the first
+// place; kept on the type anyway so it round-trips the same shape as the backend DTO.
+export interface CandidateMockInterviewSessionSummary {
+  id: string
+  questionCount: number
+  durationSeconds: number
+  hasThumbnail: boolean
+  recordedAt: string
+  visibleToCompanies: boolean
+}
+
 // Richer than CandidateSearchSummary (see backend CandidateProfileForCompany) — still no
 // email/mobile up front, same boundary the search card already draws; resumeFileName is null
 // until the candidate has uploaded one.
@@ -122,6 +135,7 @@ export interface CandidateProfileForCompany {
   resumeFileName: string | null
   resumeUploadedAt: string | null
   resumeSizeBytes: number | null
+  mockInterviewSessions: CandidateMockInterviewSessionSummary[]
 }
 
 function authHeaders(): Record<string, string> {
@@ -194,6 +208,18 @@ export const companyApi = {
     request<ResumeHtmlResponse>(`/api/company/candidates/${userId}/resume/html`, {
       headers: authHeaders(),
     }),
+  // Both gated the same way the resume is (see CandidateSearchService#getMockInterviewVideo) —
+  // only reachable at all once the candidate has separately marked the specific session visible.
+  getCandidateMockInterviewVideo: (userId: string, sessionId: string) =>
+    blobRequest(
+      `/api/company/candidates/${userId}/mock-interviews/${sessionId}/video`,
+      authHeaders(),
+    ),
+  getCandidateMockInterviewThumbnail: (userId: string, sessionId: string) =>
+    blobRequest(
+      `/api/company/candidates/${userId}/mock-interviews/${sessionId}/thumbnail`,
+      authHeaders(),
+    ),
 }
 
 /** TanStack Query cache key for candidate search (see lib/queryClient.ts) — mirrors

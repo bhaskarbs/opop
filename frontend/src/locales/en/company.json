@@ -197,7 +197,11 @@
     "viewResume": "View resume",
     "hidePreview": "Hide preview",
     "resumeLoading": "Loading…",
-    "resumeError": "Could not load this candidate's resume. Please try again."
+    "resumeError": "Could not load this candidate's resume. Please try again.",
+    "mockInterviews": "Mock interview videos",
+    "mockInterviewMeta": "{{date}} · {{count}} questions",
+    "mockInterviewError": "Could not load this recording. Please try again.",
+    "closeVideo": "Close"
   },
   "jobApplicants": {
     "title": "Applicants",

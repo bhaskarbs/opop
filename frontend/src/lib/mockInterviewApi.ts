@@ -8,6 +8,10 @@ export interface MockInterviewSessionSummary {
   durationSeconds: number
   hasThumbnail: boolean
   recordedAt: string
+  // Off by default — a company only ever sees this session once the candidate opts it in (see
+  // mockInterviewApi.updateVisibility). Shown on the candidate's own "Recorded logs" list as a
+  // toggle; also embedded (always true) on a company's view of the candidate's profile.
+  visibleToCompanies: boolean
 }
 
 export interface GenerateQuestionsPayload {
@@ -57,6 +61,12 @@ export const mockInterviewApi = {
   remove: (id: string) =>
     request<void>(`/api/candidate/mock-interviews/${id}`, {
       method: 'DELETE',
+      headers: authHeaders(),
+    }),
+  updateVisibility: (id: string, visible: boolean) =>
+    request<MockInterviewSessionSummary>(`/api/candidate/mock-interviews/${id}/visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ visible }),
       headers: authHeaders(),
     }),
   // Both return raw bytes — the caller wraps them in URL.createObjectURL() (see

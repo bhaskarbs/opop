@@ -197,7 +197,11 @@
     "viewResume": "रिज़्यूमे देखें",
     "hidePreview": "प्रीव्यू छुपाएं",
     "resumeLoading": "लोड हो रहा है…",
-    "resumeError": "इस उम्मीदवार का रिज़्यूमे लोड नहीं हो सका। कृपया फिर से कोशिश करें।"
+    "resumeError": "इस उम्मीदवार का रिज़्यूमे लोड नहीं हो सका। कृपया फिर से कोशिश करें।",
+    "mockInterviews": "मॉक इंटरव्यू वीडियो",
+    "mockInterviewMeta": "{{date}} · {{count}} सवाल",
+    "mockInterviewError": "यह रिकॉर्डिंग लोड नहीं हो सकी। कृपया फिर से कोशिश करें।",
+    "closeVideo": "बंद करें"
   },
   "jobApplicants": {
     "title": "आवेदक",

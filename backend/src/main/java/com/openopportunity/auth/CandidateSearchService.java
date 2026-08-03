@@ -13,6 +13,7 @@ import com.openopportunity.billing.CandidateSubscriptionRepository;
 import com.openopportunity.billing.CompanyBillingService;
 import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.SubscriptionPlan;
+import com.openopportunity.mockinterview.MockInterviewService;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +44,7 @@ public class CandidateSearchService {
     private final CandidateSubscriptionRepository candidateSubscriptionRepository;
     private final FileStorageService fileStorageService;
     private final CompanyBillingService companyBillingService;
+    private final MockInterviewService mockInterviewService;
 
     public CandidateSearchService(
             UserRepository userRepository,
@@ -51,7 +53,8 @@ public class CandidateSearchService {
             CandidateContactRevealRepository candidateContactRevealRepository,
             CandidateSubscriptionRepository candidateSubscriptionRepository,
             FileStorageService fileStorageService,
-            CompanyBillingService companyBillingService) {
+            CompanyBillingService companyBillingService,
+            MockInterviewService mockInterviewService) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.companyProfileRepository = companyProfileRepository;
@@ -59,6 +62,7 @@ public class CandidateSearchService {
         this.candidateSubscriptionRepository = candidateSubscriptionRepository;
         this.fileStorageService = fileStorageService;
         this.companyBillingService = companyBillingService;
+        this.mockInterviewService = mockInterviewService;
     }
 
     @Transactional(readOnly = true)
@@ -152,7 +156,8 @@ public class CandidateSearchService {
                 user.getCreatedAt(),
                 profile.getResumeFileName(),
                 profile.getResumeUploadedAt(),
-                profile.getResumeSizeBytes());
+                profile.getResumeSizeBytes(),
+                mockInterviewService.getVisibleForCompany(candidateUserId));
     }
 
     /** Same eligibility gate as revealContact — a resume is at least as sensitive as a phone
@@ -174,6 +179,23 @@ public class CandidateSearchService {
     }
 
     public record LoadedResume(Resource resource, String fileName, String contentType) {}
+
+    /** Same eligibility gate as getResume — a candidate's mock interview recording is at least
+     * as sensitive, and is only reachable at all once the candidate has separately opted the
+     * specific session in (see MockInterviewService#getVideoForCompany). */
+    @Transactional(readOnly = true)
+    public MockInterviewService.LoadedFile getMockInterviewVideo(
+            UUID companyId, UUID candidateUserId, UUID sessionId) {
+        requireEligibleToContactCandidates(companyId);
+        return mockInterviewService.getVideoForCompany(sessionId, candidateUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public MockInterviewService.LoadedFile getMockInterviewThumbnail(
+            UUID companyId, UUID candidateUserId, UUID sessionId) {
+        requireEligibleToContactCandidates(companyId);
+        return mockInterviewService.getThumbnailForCompany(sessionId, candidateUserId);
+    }
 
     /** Renders the resume as an HTML fragment (see ResumeHtmlRenderer) for the "view resume as a
      * web view" preview — same eligibility gate and file lookup as getResume above, but returns

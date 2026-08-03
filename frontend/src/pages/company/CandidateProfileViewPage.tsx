@@ -35,6 +35,12 @@ function formatDate(iso: string): string {
   })
 }
 
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
 export default function CandidateProfileViewPage() {
   const { t } = useTranslation('company')
   const { userId } = useParams()
@@ -55,6 +61,13 @@ export default function CandidateProfileViewPage() {
   const [resumeHtmlLoading, setResumeHtmlLoading] = useState(false)
   const [resumeHtmlError, setResumeHtmlError] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
+
+  const [mockInterviewThumbnailUrls, setMockInterviewThumbnailUrls] = useState<
+    Record<string, string>
+  >({})
+  const [watchingSessionId, setWatchingSessionId] = useState<string | null>(null)
+  const [videoError, setVideoError] = useState<string | null>(null)
+  const [playback, setPlayback] = useState<{ url: string } | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -136,6 +149,64 @@ export default function CandidateProfileViewPage() {
       }
     }
     setPreviewOpen(true)
+  }
+
+  // Best-effort — fetches a thumbnail per visible session once the profile loads; a card just
+  // falls back to a generic play-icon placeholder if this fails or there's no thumbnail.
+  useEffect(() => {
+    if (!userId || !profile) return
+    let cancelled = false
+    profile.mockInterviewSessions
+      .filter((session) => session.hasThumbnail)
+      .forEach((session) => {
+        companyApi
+          .getCandidateMockInterviewThumbnail(userId, session.id)
+          .then((blob) => {
+            if (cancelled) return
+            setMockInterviewThumbnailUrls((prev) => ({
+              ...prev,
+              [session.id]: URL.createObjectURL(blob),
+            }))
+          })
+          .catch(() => {
+            // Best-effort — see comment above.
+          })
+      })
+    return () => {
+      cancelled = true
+    }
+    // profile is intentionally the trigger, not a dependency array entry re-run on every field
+    // change — this only needs to (re-)run when the session list itself changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, profile?.mockInterviewSessions])
+
+  useEffect(() => {
+    return () => {
+      Object.values(mockInterviewThumbnailUrls).forEach((url) => URL.revokeObjectURL(url))
+      if (playback) URL.revokeObjectURL(playback.url)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup only, not a reactive effect
+  }, [])
+
+  async function handleWatchMockInterview(sessionId: string) {
+    if (!userId) return
+    setVideoError(null)
+    setWatchingSessionId(sessionId)
+    try {
+      const blob = await companyApi.getCandidateMockInterviewVideo(userId, sessionId)
+      setPlayback({ url: URL.createObjectURL(blob) })
+    } catch (caught) {
+      setVideoError(
+        caught instanceof ApiError ? caught.message : t('candidateProfile.mockInterviewError'),
+      )
+    } finally {
+      setWatchingSessionId(null)
+    }
+  }
+
+  function closePlayback() {
+    if (playback) URL.revokeObjectURL(playback.url)
+    setPlayback(null)
   }
 
   if (loading) {
@@ -305,6 +376,71 @@ export default function CandidateProfileViewPage() {
           </>
         )}
       </div>
+
+      {profile.mockInterviewSessions.length > 0 && (
+        <div className="mt-4 rounded-card border border-border bg-surface p-7">
+          <h2 className="mb-3 text-base font-bold text-ink">
+            {t('candidateProfile.mockInterviews')}
+          </h2>
+          {videoError && <p className="mb-3 text-[13px] text-danger">{videoError}</p>}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
+            {profile.mockInterviewSessions.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                disabled={!canContact || watchingSessionId === session.id}
+                onClick={() => handleWatchMockInterview(session.id)}
+                title={canContact ? undefined : (contactHint ?? undefined)}
+                className="overflow-hidden rounded-card border border-border text-left disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <div
+                  className="relative flex aspect-video w-full items-center justify-center bg-neutral-tint bg-cover bg-center"
+                  style={
+                    mockInterviewThumbnailUrls[session.id]
+                      ? { backgroundImage: `url(${mockInterviewThumbnailUrls[session.id]})` }
+                      : undefined
+                  }
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(20,24,31,0.7)]">
+                    {watchingSessionId === session.id ? (
+                      <Spinner className="h-4 w-4 text-white" />
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFFFFF">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="absolute right-2 bottom-2 rounded bg-[rgba(20,24,31,0.7)] px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                    {formatDuration(session.durationSeconds)}
+                  </span>
+                </div>
+                <div className="p-2.5 text-[12.5px] font-semibold text-ink">
+                  {t('candidateProfile.mockInterviewMeta', {
+                    date: formatDate(session.recordedAt),
+                    count: session.questionCount,
+                  })}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {playback && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-[rgba(20,24,31,0.75)] p-5">
+          <div className="relative w-full max-w-[720px]">
+            <button
+              type="button"
+              onClick={closePlayback}
+              aria-label={t('candidateProfile.closeVideo')}
+              className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(255,255,255,0.12)] text-base text-white"
+            >
+              ×
+            </button>
+            <video src={playback.url} controls autoPlay className="w-full rounded-2xl bg-footer" />
+          </div>
+        </div>
+      )}
     </main>
   )
 }

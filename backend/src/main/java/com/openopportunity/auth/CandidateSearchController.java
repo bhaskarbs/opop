@@ -5,6 +5,7 @@ import com.openopportunity.auth.dto.CandidateSearchSummary;
 import com.openopportunity.auth.dto.ContactQuotaSummary;
 import com.openopportunity.auth.dto.ResumeHtmlResponse;
 import com.openopportunity.auth.dto.RevealCandidateContactResponse;
+import com.openopportunity.mockinterview.MockInterviewService;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -79,6 +80,24 @@ public class CandidateSearchController {
     @PostMapping("/{userId}/reveal-contact")
     public RevealCandidateContactResponse revealContact(@PathVariable UUID userId) {
         return candidateSearchService.revealContact(currentUserId(), userId);
+    }
+
+    @GetMapping("/{userId}/mock-interviews/{sessionId}/video")
+    public ResponseEntity<Resource> getMockInterviewVideo(
+            @PathVariable UUID userId, @PathVariable UUID sessionId) {
+        MockInterviewService.LoadedFile video =
+                candidateSearchService.getMockInterviewVideo(currentUserId(), userId, sessionId);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(video.contentType())).body(video.resource());
+    }
+
+    @GetMapping("/{userId}/mock-interviews/{sessionId}/thumbnail")
+    public ResponseEntity<Resource> getMockInterviewThumbnail(
+            @PathVariable UUID userId, @PathVariable UUID sessionId) {
+        MockInterviewService.LoadedFile thumbnail =
+                candidateSearchService.getMockInterviewThumbnail(currentUserId(), userId, sessionId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(thumbnail.contentType()))
+                .body(thumbnail.resource());
     }
 
     private UUID currentUserId() {

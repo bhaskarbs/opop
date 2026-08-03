@@ -208,4 +208,78 @@ class MockInterviewServiceTest {
         assertThat(mine).hasSize(1);
         assertThat(mine.get(0).questionCount()).isEqualTo(1);
     }
+
+    @Test
+    void updateVisibilityTogglesTheFlagForTheOwner() {
+        UUID ownerId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(ownerId);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(mockInterviewSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MockInterviewSessionSummary summary = mockInterviewService.updateVisibility(session.getId(), ownerId, true);
+
+        assertThat(summary.visibleToCompanies()).isTrue();
+        assertThat(session.isVisibleToCompanies()).isTrue();
+    }
+
+    @Test
+    void updateVisibilityRejectsANonOwner() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(ownerId);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> mockInterviewService.updateVisibility(session.getId(), otherId, true))
+                .isInstanceOf(MockInterviewSessionNotFoundException.class);
+    }
+
+    @Test
+    void getVisibleForCompanyOnlyReturnsSessionsMarkedVisible() {
+        UUID candidateId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(candidateId);
+        session.setVisibleToCompanies(true);
+        when(mockInterviewSessionRepository.findByCandidateIdAndVisibleToCompaniesTrueOrderByRecordedAtDesc(
+                        candidateId))
+                .thenReturn(List.of(session));
+
+        var visible = mockInterviewService.getVisibleForCompany(candidateId);
+
+        assertThat(visible).hasSize(1);
+        assertThat(visible.get(0).visibleToCompanies()).isTrue();
+    }
+
+    @Test
+    void getVideoForCompanyRejectsASessionThatIsNotVisible() {
+        UUID candidateId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(candidateId);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> mockInterviewService.getVideoForCompany(session.getId(), candidateId))
+                .isInstanceOf(MockInterviewSessionNotFoundException.class);
+    }
+
+    @Test
+    void getVideoForCompanyReturnsTheStoredResourceWhenVisible() throws Exception {
+        UUID candidateId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(candidateId);
+        session.setVisibleToCompanies(true);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(fileStorageService.load("mock-interviews/x.webm")).thenReturn(new ByteArrayResource(new byte[] {1}));
+
+        MockInterviewService.LoadedFile video = mockInterviewService.getVideoForCompany(session.getId(), candidateId);
+
+        assertThat(video.contentType()).isEqualTo("video/webm");
+    }
+
+    @Test
+    void getVideoForCompanyRejectsAWrongCandidateIdEvenIfVisible() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherCandidateId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(ownerId);
+        session.setVisibleToCompanies(true);
+        when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> mockInterviewService.getVideoForCompany(session.getId(), otherCandidateId))
+                .isInstanceOf(MockInterviewSessionNotFoundException.class);
+    }
 }

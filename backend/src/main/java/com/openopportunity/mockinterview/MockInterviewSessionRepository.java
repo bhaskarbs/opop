@@ -8,6 +8,10 @@ public interface MockInterviewSessionRepository extends JpaRepository<MockInterv
 
     List<MockInterviewSession> findByCandidateIdOrderByRecordedAtDesc(UUID candidateId);
 
+    // Backs the company-facing view (CandidateSearchService#get / #getMockInterviewVideo) — only
+    // sessions the candidate has explicitly opted in via MockInterviewService#updateVisibility.
+    List<MockInterviewSession> findByCandidateIdAndVisibleToCompaniesTrueOrderByRecordedAtDesc(UUID candidateId);
+
     long countByCandidateId(UUID candidateId);
 
     // Used only by admin hard-delete (AdminAccountDeletionService#deleteCandidate) — the caller
