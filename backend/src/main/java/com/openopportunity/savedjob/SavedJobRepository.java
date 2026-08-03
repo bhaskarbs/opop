@@ -11,4 +11,11 @@ public interface SavedJobRepository extends JpaRepository<SavedJob, UUID> {
     boolean existsByCandidateIdAndJobId(UUID candidateId, UUID jobId);
 
     void deleteByCandidateIdAndJobId(UUID candidateId, UUID jobId);
+
+    // Both used only by admin hard-delete (JobService#adminDelete, AdminAccountDeletionService)
+    // — saved_jobs has no DB-level FK to jobs/users, so this cleanup is entirely
+    // application-managed.
+    void deleteByJobId(UUID jobId);
+
+    void deleteByCandidateId(UUID candidateId);
 }

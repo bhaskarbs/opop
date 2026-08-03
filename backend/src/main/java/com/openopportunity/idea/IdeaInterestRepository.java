@@ -28,4 +28,10 @@ public interface IdeaInterestRepository extends JpaRepository<IdeaInterest, UUID
      * path" monthly chart (see AdminDashboardService), same broad definition as
      * partnershipMatches above. */
     long countByCreatedAtBetween(Instant start, Instant end);
+
+    // Used by IdeaService#delete/adminDelete and AdminAccountDeletionService — idea_interests
+    // has no DB-level FK to ideas/users, so this cleanup is entirely application-managed.
+    void deleteByIdeaId(UUID ideaId);
+
+    void deleteByInterestedUserId(UUID interestedUserId);
 }

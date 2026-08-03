@@ -83,6 +83,14 @@ public class IdeaController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Admin hard delete — distinct from delete(id) above, which is submitter-scoped; this one
+     * requires no ownership (see IdeaService#adminDelete). */
+    @DeleteMapping("/{id}/admin")
+    public ResponseEntity<Void> adminDelete(@PathVariable UUID id) {
+        ideaService.adminDelete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/interests")
     public ResponseEntity<IdeaInterestSummary> submitInterest(
             @PathVariable UUID id, @Valid @RequestBody IdeaInterestRequest request) {

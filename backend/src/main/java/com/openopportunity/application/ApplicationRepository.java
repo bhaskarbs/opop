@@ -17,6 +17,13 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
 
     List<Application> findByJobIdOrderByAppliedAtDesc(UUID jobId);
 
+    // Both used only by admin hard-delete (JobService#adminDelete, AdminAccountDeletionService)
+    // — applications has no DB-level FK to jobs/users, so this cleanup is entirely
+    // application-managed.
+    void deleteByJobId(UUID jobId);
+
+    void deleteByCandidateId(UUID candidateId);
+
     /** Candidates in the "applied to job" funnel stage — a candidate with several applications
      * still only counts once (see AdminDashboardService). */
     @Query("select count(distinct a.candidateId) from Application a")

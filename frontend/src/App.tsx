@@ -76,6 +76,7 @@ const AdminMockInterviewQuestionsPage = lazy(
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'))
 const AdminBillingPage = lazy(() => import('./pages/admin/AdminBillingPage'))
 const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'))
+const AdminIdeasPage = lazy(() => import('./pages/admin/AdminIdeasPage'))
 
 /** Every route lives under a `/:lang` prefix (see docs/DEVELOPMENT_ROADMAP.md Step 23). An
  * unrecognized or missing lang segment is treated as a path with no locale at all — e.g.
@@ -225,6 +226,7 @@ function App() {
                   <Route path="admin/reports" element={<AdminReportsPage />} />
                   <Route path="admin/billing" element={<AdminBillingPage />} />
                   <Route path="admin/jobs" element={<AdminJobsPage />} />
+                  <Route path="admin/ideas" element={<AdminIdeasPage />} />
                 </Route>
               </Route>
             </Route>

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.application.ApplicationRepository;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
@@ -25,6 +26,7 @@ import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
+import com.openopportunity.savedjob.SavedJobRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -55,6 +57,12 @@ class JobServiceTest {
     private CompanySubscriptionRepository companySubscriptionRepository;
 
     @Mock
+    private ApplicationRepository applicationRepository;
+
+    @Mock
+    private SavedJobRepository savedJobRepository;
+
+    @Mock
     private NotificationService notificationService;
 
     private JobService jobService;
@@ -66,6 +74,8 @@ class JobServiceTest {
                 userRepository,
                 companyProfileRepository,
                 companySubscriptionRepository,
+                applicationRepository,
+                savedJobRepository,
                 notificationService);
     }
 
@@ -268,6 +278,42 @@ class JobServiceTest {
 
         assertThatThrownBy(() -> jobService.delete(job.getId(), otherCompanyId))
                 .isInstanceOf(JobAccessDeniedException.class);
+    }
+
+    @Test
+    void adminDeleteRemovesTheJobAndItsApplicationsAndSavedBookmarksRegardlessOfOwner() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = new Job(
+                ownerId,
+                "Vertex Robotics",
+                "Senior Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "desc",
+                List.of(),
+                List.of(),
+                List.of(),
+                JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        jobService.adminDelete(job.getId());
+
+        verify(applicationRepository).deleteByJobId(job.getId());
+        verify(savedJobRepository).deleteByJobId(job.getId());
+        verify(jobRepository).delete(job);
+    }
+
+    @Test
+    void adminDeleteRejectsUnknownJob() {
+        when(jobRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.adminDelete(UUID.randomUUID()))
+                .isInstanceOf(JobNotFoundException.class);
     }
 
     @Test

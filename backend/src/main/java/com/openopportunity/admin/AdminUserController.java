@@ -10,13 +10,16 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -24,9 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final AdminAccountDeletionService adminAccountDeletionService;
 
-    public AdminUserController(AdminUserService adminUserService) {
+    public AdminUserController(
+            AdminUserService adminUserService, AdminAccountDeletionService adminAccountDeletionService) {
         this.adminUserService = adminUserService;
+        this.adminAccountDeletionService = adminAccountDeletionService;
     }
 
     @GetMapping
@@ -71,5 +77,14 @@ public class AdminUserController {
     @PostMapping("/candidates/{id}/unfeature")
     public AdminUserSummary unfeature(@PathVariable UUID id) {
         return adminUserService.unfeature(id);
+    }
+
+    /** Hard delete — also removes every dependent row and stored file (resume, photo, logo,
+     * certificates, mock interview recordings) for this account. See
+     * AdminAccountDeletionService for the full cascade. */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        adminAccountDeletionService.deleteAccount(id);
     }
 }

@@ -3,18 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
-import { jobsApi, type JobSummary } from '../../lib/jobsApi'
-import { workModeFromBackend } from '../../lib/jobEnums'
+import { ideasApi, type IdeaSummary } from '../../lib/ideasApi'
 
 const PAGE_SIZE = 10
 
-export default function AdminJobsPage() {
+export default function AdminIdeasPage() {
   const { t } = useTranslation('admin')
   const [query, setQuery] = useState('')
-  const [jobs, setJobs] = useState<JobSummary[]>([])
+  const [ideas, setIdeas] = useState<IdeaSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [featuringId, setFeaturingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
@@ -24,14 +22,14 @@ export default function AdminJobsPage() {
       setLoading(true)
       setError(null)
       setPage(1)
-      jobsApi
-        .search(query.trim() ? { q: [query.trim()] } : {})
+      ideasApi
+        .browse(query.trim() ? { q: query.trim() } : {})
         .then((result) => {
-          if (!cancelled) setJobs(result)
+          if (!cancelled) setIdeas(result)
         })
         .catch((caught) => {
           if (!cancelled) {
-            setError(caught instanceof ApiError ? caught.message : t('jobs.loadError'))
+            setError(caught instanceof ApiError ? caught.message : t('ideas.loadError'))
           }
         })
         .finally(() => {
@@ -44,42 +42,28 @@ export default function AdminJobsPage() {
     }
   }, [query, t])
 
-  async function handleToggleFeatured(job: JobSummary) {
-    setFeaturingId(job.id)
+  async function handleDelete(idea: IdeaSummary) {
+    if (!window.confirm(t('ideas.confirmDelete', { title: idea.title }))) return
+    setDeletingId(idea.id)
     try {
-      const updated = job.isFeatured
-        ? await adminApi.unfeatureJob(job.id)
-        : await adminApi.featureJob(job.id)
-      setJobs((prev) => prev.map((existing) => (existing.id === job.id ? updated : existing)))
-    } catch {
-      // Best-effort — the row simply keeps its current featured state if the call fails.
-    } finally {
-      setFeaturingId(null)
-    }
-  }
-
-  async function handleDelete(job: JobSummary) {
-    if (!window.confirm(t('jobs.confirmDelete', { title: job.title }))) return
-    setDeletingId(job.id)
-    try {
-      await adminApi.deleteJob(job.id)
-      setJobs((prev) => prev.filter((existing) => existing.id !== job.id))
+      await adminApi.deleteIdea(idea.id)
+      setIdeas((prev) => prev.filter((existing) => existing.id !== idea.id))
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : t('jobs.deleteError'))
+      setError(caught instanceof ApiError ? caught.message : t('ideas.deleteError'))
     } finally {
       setDeletingId(null)
     }
   }
 
-  const pageCount = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(ideas.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
-  const visibleJobs = jobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const visibleIdeas = ideas.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
       <div className="mb-5">
-        <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('jobs.title')}</h1>
-        <p className="text-sm text-slate">{t('jobs.subtitle')}</p>
+        <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('ideas.title')}</h1>
+        <p className="text-sm text-slate">{t('ideas.subtitle')}</p>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
@@ -99,7 +83,7 @@ export default function AdminJobsPage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={t('jobs.searchPlaceholder')}
+            placeholder={t('ideas.searchPlaceholder')}
             className="w-full text-[13.5px] text-ink outline-none"
           />
         </div>
@@ -113,62 +97,43 @@ export default function AdminJobsPage() {
 
       {loading ? (
         <div className="rounded-card border border-border bg-surface p-8">
-          <LoadingState message={t('jobs.loading')} />
+          <LoadingState message={t('ideas.loading')} />
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {visibleJobs.map((job) => (
+          {visibleIdeas.map((idea) => (
             <div
-              key={job.id}
+              key={idea.id}
               className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-5 py-4"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[14.5px] font-bold text-ink">{job.title}</span>
-                  {job.isFeatured && (
-                    <span className="rounded-full bg-primary-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-primary">
-                      {t('jobs.featured')}
-                    </span>
-                  )}
-                  {job.isPromoted && (
-                    <span className="rounded-full bg-amber-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-amber">
-                      {t('jobs.promoted')}
-                    </span>
-                  )}
+                  <span className="text-[14.5px] font-bold text-ink">{idea.title}</span>
+                  <span className="rounded-full bg-neutral-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-[#3A414D]">
+                    {idea.category}
+                  </span>
                 </div>
                 <div className="mt-0.5 text-[13px] text-slate">
-                  {t('jobs.jobMeta', {
-                    company: job.companyName,
-                    location: job.location,
-                    mode: workModeFromBackend(job.workMode),
+                  {t('ideas.ideaMeta', {
+                    submitter: idea.submitterName,
+                    type: t(`ideas.submitterTypes.${idea.submitterRole.toLowerCase()}`),
                   })}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={featuringId === job.id}
-                  onClick={() => handleToggleFeatured(job)}
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
-                >
-                  {featuringId === job.id && <Spinner className="h-3.5 w-3.5" />}
-                  {job.isFeatured ? t('jobs.unfeature') : t('jobs.feature')}
-                </button>
-                <button
-                  type="button"
-                  disabled={deletingId === job.id}
-                  onClick={() => handleDelete(job)}
-                  className="flex items-center gap-1.5 rounded-md border border-[#FCA5A5] bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-danger disabled:opacity-60"
-                >
-                  {deletingId === job.id && <Spinner className="h-3.5 w-3.5" />}
-                  {t('jobs.delete')}
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={deletingId === idea.id}
+                onClick={() => handleDelete(idea)}
+                className="flex items-center gap-1.5 rounded-md border border-[#FCA5A5] bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-danger disabled:opacity-60"
+              >
+                {deletingId === idea.id && <Spinner className="h-3.5 w-3.5" />}
+                {t('ideas.delete')}
+              </button>
             </div>
           ))}
-          {jobs.length === 0 && (
+          {ideas.length === 0 && (
             <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-slate">
-              {t('jobs.none')}
+              {t('ideas.none')}
             </div>
           )}
           {pageCount > 1 && (
@@ -179,10 +144,10 @@ export default function AdminJobsPage() {
                 disabled={currentPage === 1}
                 className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {t('jobs.previousPage')}
+                {t('ideas.previousPage')}
               </button>
               <span className="text-[13px] text-slate">
-                {t('jobs.pageLabel', { page: currentPage, total: pageCount })}
+                {t('ideas.pageLabel', { page: currentPage, total: pageCount })}
               </span>
               <button
                 type="button"
@@ -190,7 +155,7 @@ export default function AdminJobsPage() {
                 disabled={currentPage === pageCount}
                 className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {t('jobs.nextPage')}
+                {t('ideas.nextPage')}
               </button>
             </div>
           )}
