@@ -3,37 +3,32 @@ package com.openopportunity.notification;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
+import com.openopportunity.mail.AsyncEmailSender;
 import com.openopportunity.mail.EmailButton;
-import com.openopportunity.mail.EmailService;
 import com.openopportunity.notification.dto.NotificationSummary;
 import com.openopportunity.notification.exception.NotificationNotFoundException;
 import java.util.List;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class NotificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
-
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final EmailService emailService;
+    private final AsyncEmailSender asyncEmailSender;
     private final String frontendBaseUrl;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            EmailService emailService,
+            AsyncEmailSender asyncEmailSender,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
-        this.emailService = emailService;
+        this.asyncEmailSender = asyncEmailSender;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -42,17 +37,17 @@ public class NotificationService {
      * business logic of its own. link is an app-relative route with no /:lang prefix (the
      * frontend adds that); pass null when there's nothing to navigate to.
      *
-     * <p>Also attempts a real email to the recipient — best-effort: a delivery failure (e.g. no
-     * SMTP credentials configured locally, see spring.mail.username in application.properties)
-     * never fails the caller's own operation, it just leaves this notification's emailSent flag
-     * false (see getEmailSentCount, which backs the company dashboard's real sent count). */
+     * <p>Also attempts a real email to the recipient — best-effort and off the calling thread
+     * (see AsyncEmailSender): a delivery failure (e.g. no SMTP credentials configured locally,
+     * see spring.mail.username in application.properties) never fails the caller's own
+     * operation, and this notification's emailSent flag only flips to true once the async send
+     * actually succeeds (see getEmailSentCount, which backs the company dashboard's real sent
+     * count). */
     @Transactional
     public void notify(UUID recipientUserId, NotificationType type, String message, String link) {
-        Notification notification = new Notification(recipientUserId, type, message, link);
-        if (sendEmail(recipientUserId, message, link)) {
-            notification.markEmailSent();
-        }
-        notificationRepository.save(notification);
+        Notification notification =
+                notificationRepository.save(new Notification(recipientUserId, type, message, link));
+        sendEmailAsync(notification.getId(), recipientUserId, message, link);
     }
 
     /** Fans notify() out to every ADMIN user — for events that need platform-staff attention
@@ -63,25 +58,27 @@ public class NotificationService {
         userRepository.findByRole(UserRole.ADMIN).forEach(admin -> notify(admin.getId(), type, message, link));
     }
 
-    private boolean sendEmail(UUID recipientUserId, String message, String link) {
+    private void sendEmailAsync(UUID notificationId, UUID recipientUserId, String message, String link) {
         User recipient = userRepository.findById(recipientUserId).orElse(null);
         if (recipient == null) {
-            return false;
+            return;
         }
         EmailButton button =
                 link == null ? null : new EmailButton("View on OpenOpportunity", frontendBaseUrl + "/en" + link);
-        try {
-            emailService.send(
-                    recipient.getEmail(),
-                    "OpenOpportunity notification",
-                    "You have a new notification",
-                    List.of(message),
-                    button);
-            return true;
-        } catch (MailException ex) {
-            log.warn("Could not email notification to {}: {}", recipient.getEmail(), ex.getMessage());
-            return false;
-        }
+        asyncEmailSender.sendBestEffort(
+                recipient.getEmail(),
+                "OpenOpportunity notification",
+                "You have a new notification",
+                List.of(message),
+                button,
+                () -> markEmailSent(notificationId));
+    }
+
+    private void markEmailSent(UUID notificationId) {
+        notificationRepository.findById(notificationId).ifPresent(notification -> {
+            notification.markEmailSent();
+            notificationRepository.save(notification);
+        });
     }
 
     @Transactional(readOnly = true)
