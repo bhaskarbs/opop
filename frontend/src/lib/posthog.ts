@@ -12,9 +12,7 @@ if (projectToken && host) {
     },
   })
 } else if (import.meta.env.DEV) {
-  const missingVariable = !projectToken
-    ? 'VITE_POSTHOG_PROJECT_TOKEN'
-    : 'VITE_POSTHOG_HOST'
+  const missingVariable = !projectToken ? 'VITE_POSTHOG_PROJECT_TOKEN' : 'VITE_POSTHOG_HOST'
   throw new Error(
     `${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`,
   )
