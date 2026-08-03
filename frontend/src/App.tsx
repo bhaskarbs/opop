@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom'
 import { authApi } from './lib/apiClient'
 import { useAuthStore } from './stores/authStore'
+import { AnalyticsPageview } from './routes/AnalyticsPageview'
 import { RequireAdminLevel } from './routes/RequireAdminLevel'
 import { RequireAuth } from './routes/RequireAuth'
 import { ScrollToTop } from './routes/ScrollToTop'
@@ -138,6 +139,7 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <AnalyticsPageview />
       <Suspense fallback={<LoadingState />}>
         <Routes>
           <Route path="/" element={<Navigate to={`/${DEFAULT_LANGUAGE}`} replace />} />

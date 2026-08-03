@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.analytics.AnalyticsService;
 import com.openopportunity.application.dto.ApplicationSummary;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
@@ -57,6 +58,9 @@ class ApplicationServiceTest {
     @Mock
     private CandidateContactRevealRepository candidateContactRevealRepository;
 
+    @Mock
+    private AnalyticsService analyticsService;
+
     private ApplicationService applicationService;
 
     @BeforeEach
@@ -67,7 +71,8 @@ class ApplicationServiceTest {
                 notificationService,
                 userRepository,
                 candidateProfileRepository,
-                candidateContactRevealRepository);
+                candidateContactRevealRepository,
+                analyticsService);
     }
 
     private Job activeJob(UUID companyId) {

@@ -1,5 +1,6 @@
 package com.openopportunity.auth;
 
+import com.openopportunity.analytics.AnalyticsService;
 import com.openopportunity.auth.dto.AuthResponse;
 import com.openopportunity.auth.dto.ForgotPasswordRequest;
 import com.openopportunity.auth.dto.GoogleAuthRequest;
@@ -30,6 +31,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,6 +55,7 @@ public class AuthService {
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final EmailService emailService;
     private final NotificationService notificationService;
+    private final AnalyticsService analyticsService;
     private final long refreshTokenExpiryDays;
     private final String frontendBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -68,6 +71,7 @@ public class AuthService {
             GoogleTokenVerifierService googleTokenVerifierService,
             EmailService emailService,
             NotificationService notificationService,
+            AnalyticsService analyticsService,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.userRepository = userRepository;
@@ -80,6 +84,7 @@ public class AuthService {
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.emailService = emailService;
         this.notificationService = notificationService;
+        this.analyticsService = analyticsService;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
         this.frontendBaseUrl = frontendBaseUrl;
     }
@@ -129,6 +134,7 @@ public class AuthService {
             candidateProfileRepository.save(profile);
         }
 
+        analyticsService.capture(user.getId(), "user_registered", Map.of("role", role.name()));
         return issueTokens(user);
     }
 

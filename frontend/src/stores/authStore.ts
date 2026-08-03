@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { analytics } from '../lib/analytics'
 import type { UserSummary } from '../lib/apiClient'
 
 export type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated'
@@ -59,11 +60,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   candidatePhotoVersion: 0,
   companyLogoUrl: null,
   companyLogoVersion: 0,
-  setSession: (accessToken, user) => set({ accessToken, user, status: 'authenticated' }),
+  setSession: (accessToken, user) => {
+    analytics.identify(user.id, { role: user.role })
+    set({ accessToken, user, status: 'authenticated' })
+  },
   setCandidatePhoto: (photoUrl) =>
     set({ candidatePhotoUrl: photoUrl, candidatePhotoVersion: Date.now() }),
   setCompanyLogo: (logoUrl) => set({ companyLogoUrl: logoUrl, companyLogoVersion: Date.now() }),
   clearSession: () => {
+    analytics.reset()
     set({
       accessToken: null,
       user: null,
