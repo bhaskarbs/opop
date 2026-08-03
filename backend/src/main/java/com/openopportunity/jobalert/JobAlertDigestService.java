@@ -4,45 +4,42 @@ import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.job.JobService;
 import com.openopportunity.job.dto.JobSummary;
+import com.openopportunity.mail.AsyncEmailSender;
 import com.openopportunity.mail.EmailButton;
-import com.openopportunity.mail.EmailService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Nightly sweep, same cron-scheduling pattern as CompanyBillingService.expireOverdueSubscriptions
  * — for every saved alert, finds jobs posted since it last ran and emails a digest if there are
- * any. Best-effort like every other email in the app (see EmailService): a delivery failure for
- * one candidate's digest never blocks the sweep from finishing the rest. */
+ * any. Best-effort and off this method's own thread (see AsyncEmailSender): a delivery failure —
+ * or just a slow SMTP connection — for one candidate's digest never blocks the sweep from moving
+ * on to the rest. */
 @Service
 public class JobAlertDigestService {
 
-    private static final Logger log = LoggerFactory.getLogger(JobAlertDigestService.class);
     private static final int MAX_JOBS_LISTED_PER_EMAIL = 10;
 
     private final JobAlertRepository jobAlertRepository;
     private final UserRepository userRepository;
     private final JobService jobService;
-    private final EmailService emailService;
+    private final AsyncEmailSender asyncEmailSender;
     private final String frontendBaseUrl;
 
     public JobAlertDigestService(
             JobAlertRepository jobAlertRepository,
             UserRepository userRepository,
             JobService jobService,
-            EmailService emailService,
+            AsyncEmailSender asyncEmailSender,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.jobAlertRepository = jobAlertRepository;
         this.userRepository = userRepository;
         this.jobService = jobService;
-        this.emailService = emailService;
+        this.asyncEmailSender = asyncEmailSender;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -85,16 +82,13 @@ public class JobAlertDigestService {
         if (matches.size() > MAX_JOBS_LISTED_PER_EMAIL) {
             paragraphs.add("+ " + (matches.size() - MAX_JOBS_LISTED_PER_EMAIL) + " more.");
         }
-        try {
-            emailService.send(
-                    candidate.getEmail(),
-                    "New jobs matching your alert",
-                    "New jobs matching your alert",
-                    paragraphs,
-                    new EmailButton("View all matching jobs", frontendBaseUrl + "/en/jobs"));
-        } catch (MailException ex) {
-            log.warn("Could not send job alert digest to {}: {}", candidate.getEmail(), ex.getMessage());
-        }
+        asyncEmailSender.sendBestEffort(
+                candidate.getEmail(),
+                "New jobs matching your alert",
+                "New jobs matching your alert",
+                paragraphs,
+                new EmailButton("View all matching jobs", frontendBaseUrl + "/en/jobs"),
+                () -> {});
     }
 
     private static <T> List<T> singleOrEmpty(T value) {

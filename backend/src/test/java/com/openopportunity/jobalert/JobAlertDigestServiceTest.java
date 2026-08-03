@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -20,7 +19,8 @@ import com.openopportunity.job.JobService;
 import com.openopportunity.job.JobStatus;
 import com.openopportunity.job.WorkMode;
 import com.openopportunity.job.dto.JobSummary;
-import com.openopportunity.mail.EmailService;
+import com.openopportunity.mail.AsyncEmailSender;
+import com.openopportunity.mail.EmailButton;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -32,7 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.MailSendException;
 
 @ExtendWith(MockitoExtension.class)
 class JobAlertDigestServiceTest {
@@ -47,14 +46,14 @@ class JobAlertDigestServiceTest {
     private JobService jobService;
 
     @Mock
-    private EmailService emailService;
+    private AsyncEmailSender asyncEmailSender;
 
     private JobAlertDigestService digestService;
 
     @BeforeEach
     void setUp() {
         digestService = new JobAlertDigestService(
-                jobAlertRepository, userRepository, jobService, emailService, "http://localhost:5173");
+                jobAlertRepository, userRepository, jobService, asyncEmailSender, "http://localhost:5173");
     }
 
     private static JobSummary aMatch() {
@@ -88,7 +87,14 @@ class JobAlertDigestServiceTest {
 
         digestService.sendDailyDigests();
 
-        verify(emailService).send(eq("rohan@example.com"), anyString(), anyString(), anyList(), any());
+        verify(asyncEmailSender)
+                .sendBestEffort(
+                        eq("rohan@example.com"),
+                        anyString(),
+                        anyString(),
+                        anyList(),
+                        any(EmailButton.class),
+                        any(Runnable.class));
         verify(jobAlertRepository).save(alert);
     }
 
@@ -101,7 +107,7 @@ class JobAlertDigestServiceTest {
 
         digestService.sendDailyDigests();
 
-        verify(emailService, never()).send(any(), any(), any(), anyList(), any());
+        verify(asyncEmailSender, never()).sendBestEffort(any(), any(), any(), anyList(), any(), any());
         ArgumentCaptor<JobAlert> captor = ArgumentCaptor.forClass(JobAlert.class);
         verify(jobAlertRepository).save(captor.capture());
         assertThatCode(() -> captor.getValue().getLastNotifiedAt()).doesNotThrowAnyException();
@@ -117,28 +123,31 @@ class JobAlertDigestServiceTest {
 
         digestService.sendDailyDigests();
 
-        verify(emailService, never()).send(any(), any(), any(), anyList(), any());
+        verify(asyncEmailSender, never()).sendBestEffort(any(), any(), any(), anyList(), any(), any());
     }
 
+    /** Actually swallowing a send failure without stopping the sweep is AsyncEmailSender's job
+     * (see AsyncEmailSenderTest) — this class only needs to fire-and-forget to it for every
+     * matching alert, which is what this asserts. */
     @Test
-    void aFailedSendForOneAlertDoesNotStopTheSweep() {
+    void firesOffADigestForEveryMatchingAlertRegardlessOfHowTheOthersFare() {
         UUID candidateId1 = UUID.randomUUID();
         UUID candidateId2 = UUID.randomUUID();
-        JobAlert failing = new JobAlert(candidateId1, List.of("React"), List.of(), null, null);
-        JobAlert succeeding = new JobAlert(candidateId2, List.of("React"), List.of(), null, null);
-        User candidate1 = new User("fails@example.com", "hash", "Fails", UserRole.CANDIDATE);
-        User candidate2 = new User("succeeds@example.com", "hash", "Succeeds", UserRole.CANDIDATE);
-        when(jobAlertRepository.findAll()).thenReturn(List.of(failing, succeeding));
+        JobAlert alert1 = new JobAlert(candidateId1, List.of("React"), List.of(), null, null);
+        JobAlert alert2 = new JobAlert(candidateId2, List.of("React"), List.of(), null, null);
+        User candidate1 = new User("first@example.com", "hash", "First", UserRole.CANDIDATE);
+        User candidate2 = new User("second@example.com", "hash", "Second", UserRole.CANDIDATE);
+        when(jobAlertRepository.findAll()).thenReturn(List.of(alert1, alert2));
         when(jobService.searchPostedAfter(any(), any(), any(), any(), any())).thenReturn(List.of(aMatch()));
         when(userRepository.findById(candidateId1)).thenReturn(Optional.of(candidate1));
         when(userRepository.findById(candidateId2)).thenReturn(Optional.of(candidate2));
-        doThrow(new MailSendException("smtp down"))
-                .when(emailService)
-                .send(eq("fails@example.com"), anyString(), anyString(), anyList(), any());
 
         assertThatCode(() -> digestService.sendDailyDigests()).doesNotThrowAnyException();
 
-        verify(emailService).send(eq("succeeds@example.com"), anyString(), anyString(), anyList(), any());
+        verify(asyncEmailSender)
+                .sendBestEffort(eq("first@example.com"), anyString(), anyString(), anyList(), any(), any());
+        verify(asyncEmailSender)
+                .sendBestEffort(eq("second@example.com"), anyString(), anyString(), anyList(), any(), any());
         verify(jobAlertRepository, times(2)).save(any());
     }
 }
