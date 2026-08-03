@@ -73,6 +73,29 @@ public class MockInterviewService {
                 .toList();
     }
 
+    /** Backs the mock interview section on a company's "View profile" (see
+     * CandidateSearchService#get) — only sessions the candidate has opted in via
+     * updateVisibility below. No eligibility gate here; the caller (CandidateSearchService)
+     * already enforces that the same way it does for the resume. */
+    @Transactional(readOnly = true)
+    public List<MockInterviewSessionSummary> getVisibleForCompany(UUID candidateId) {
+        return mockInterviewSessionRepository
+                .findByCandidateIdAndVisibleToCompaniesTrueOrderByRecordedAtDesc(candidateId)
+                .stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    /** Toggling visibility is the one thing about a session a candidate can change after
+     * recording it — everything else is immutable (see the entity's updatable = false columns). */
+    @Transactional
+    public MockInterviewSessionSummary updateVisibility(UUID sessionId, UUID candidateId, boolean visible) {
+        MockInterviewSession session = findOwned(sessionId, candidateId);
+        session.setVisibleToCompanies(visible);
+        session = mockInterviewSessionRepository.save(session);
+        return toSummary(session);
+    }
+
     /** A session's video/thumbnail are only ever visible to the candidate who recorded it — a
      * non-owner gets the same "not found" as a truly unknown id, matching IdeaService.get()'s
      * treatment of a non-owner requesting an unapproved idea. */
@@ -85,6 +108,25 @@ public class MockInterviewService {
     @Transactional(readOnly = true)
     public LoadedFile getThumbnail(UUID sessionId, UUID candidateId) {
         MockInterviewSession session = findOwned(sessionId, candidateId);
+        if (session.getThumbnailStorageKey() == null) {
+            throw new MockInterviewSessionNotFoundException(sessionId);
+        }
+        return load(session.getThumbnailStorageKey(), session.getThumbnailContentType());
+    }
+
+    /** Company counterpart to getVideo above — same file, but reachable by the candidate's own
+     * companyId-agnostic identity check swapped for "is this session visible" instead of "is the
+     * caller the owner". A hidden (or someone else's) session id gets the same not-found as an
+     * unknown one, so a company can't probe which sessions exist. */
+    @Transactional(readOnly = true)
+    public LoadedFile getVideoForCompany(UUID sessionId, UUID candidateId) {
+        MockInterviewSession session = findVisible(sessionId, candidateId);
+        return load(session.getVideoStorageKey(), session.getVideoContentType());
+    }
+
+    @Transactional(readOnly = true)
+    public LoadedFile getThumbnailForCompany(UUID sessionId, UUID candidateId) {
+        MockInterviewSession session = findVisible(sessionId, candidateId);
         if (session.getThumbnailStorageKey() == null) {
             throw new MockInterviewSessionNotFoundException(sessionId);
         }
@@ -109,6 +151,14 @@ public class MockInterviewService {
         return mockInterviewSessionRepository
                 .findById(sessionId)
                 .filter(s -> s.getCandidateId().equals(candidateId))
+                .orElseThrow(() -> new MockInterviewSessionNotFoundException(sessionId));
+    }
+
+    private MockInterviewSession findVisible(UUID sessionId, UUID candidateId) {
+        return mockInterviewSessionRepository
+                .findById(sessionId)
+                .filter(s -> s.getCandidateId().equals(candidateId))
+                .filter(MockInterviewSession::isVisibleToCompanies)
                 .orElseThrow(() -> new MockInterviewSessionNotFoundException(sessionId));
     }
 
@@ -147,7 +197,8 @@ public class MockInterviewService {
                 session.getQuestionCount(),
                 session.getDurationSeconds(),
                 session.getThumbnailStorageKey() != null,
-                session.getRecordedAt());
+                session.getRecordedAt(),
+                session.isVisibleToCompanies());
     }
 
     public record LoadedFile(Resource resource, String contentType) {}

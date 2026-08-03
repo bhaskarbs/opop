@@ -3,6 +3,7 @@ package com.openopportunity.mockinterview;
 import com.openopportunity.mockinterview.dto.GenerateQuestionsRequest;
 import com.openopportunity.mockinterview.dto.GenerateQuestionsResponse;
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
+import com.openopportunity.mockinterview.dto.UpdateMockInterviewVisibilityRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -73,6 +75,12 @@ public class MockInterviewController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         mockInterviewService.delete(id, currentUserId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/visibility")
+    public MockInterviewSessionSummary updateVisibility(
+            @PathVariable UUID id, @Valid @RequestBody UpdateMockInterviewVisibilityRequest request) {
+        return mockInterviewService.updateVisibility(id, currentUserId(), request.visible());
     }
 
     private UUID currentUserId() {

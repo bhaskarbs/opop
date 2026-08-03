@@ -1,6 +1,7 @@
 package com.openopportunity.auth.dto;
 
 import com.openopportunity.job.ExperienceLevel;
+import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -26,4 +27,8 @@ public record CandidateProfileForCompany(
         Instant memberSince,
         String resumeFileName,
         Instant resumeUploadedAt,
-        Long resumeSizeBytes) {}
+        Long resumeSizeBytes,
+        // Only sessions the candidate has explicitly marked visible (see
+        // MockInterviewService#updateVisibility) — video/thumbnail bytes are fetched separately,
+        // gated the same way the resume is (see CandidateSearchService#getMockInterviewVideo).
+        List<MockInterviewSessionSummary> mockInterviewSessions) {}

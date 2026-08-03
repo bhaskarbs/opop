@@ -194,6 +194,7 @@ export default function MockInterviewPage() {
   const [sessionsLoading, setSessionsLoading] = useState(true)
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [visibilityUpdatingId, setVisibilityUpdatingId] = useState<string | null>(null)
   const [skills, setSkills] = useState<string[]>([])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [experienceLevel, setExperienceLevel] = useState<BackendExperienceLevel | null>(null)
@@ -488,6 +489,25 @@ export default function MockInterviewPage() {
     setPlayback(null)
   }
 
+  async function handleToggleVisibility(session: MockInterviewSessionSummary) {
+    setVisibilityUpdatingId(session.id)
+    try {
+      const updated = await mockInterviewApi.updateVisibility(
+        session.id,
+        !session.visibleToCompanies,
+      )
+      setSessions((prev) =>
+        prev.map((existing) => (existing.id === session.id ? updated : existing)),
+      )
+    } catch (caught) {
+      setUploadError(
+        caught instanceof ApiError ? caught.message : t('mockInterview.visibilityError'),
+      )
+    } finally {
+      setVisibilityUpdatingId(null)
+    }
+  }
+
   async function handleDelete(sessionId: string) {
     if (!window.confirm(t('mockInterview.deleteConfirm'))) return
     setDeletingId(sessionId)
@@ -718,12 +738,13 @@ export default function MockInterviewPage() {
         </div>
       </div>
 
-      <div className="mb-3.5 flex items-baseline justify-between">
+      <div className="mb-1 flex items-baseline justify-between">
         <h2 className="text-base font-bold text-ink">{t('mockInterview.recordedLogs')}</h2>
         <span className="text-[13px] text-fog">
           {t('mockInterview.sessionsCount', { count: sessions.length, max: MAX_SESSIONS })}
         </span>
       </div>
+      <p className="mb-3.5 text-[12.5px] text-fog">{t('mockInterview.visibilityNotice')}</p>
       {playbackError && (
         <p className="mb-3 text-[13px] font-semibold text-danger">{playbackError}</p>
       )}
@@ -762,28 +783,46 @@ export default function MockInterviewPage() {
                   {formatDuration(session.durationSeconds)}
                 </span>
               </button>
-              <div className="flex items-start justify-between gap-2 p-3.5">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold text-ink">
-                    {t('mockInterview.recordingMeta', {
-                      date: new Date(session.recordedAt).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      }),
-                      count: session.questionCount,
-                    })}
+              <div className="p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-ink">
+                      {t('mockInterview.recordingMeta', {
+                        date: new Date(session.recordedAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        }),
+                        count: session.questionCount,
+                      })}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(session.id)}
+                    disabled={deletingId === session.id}
+                    aria-label={t('mockInterview.delete')}
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[#FCA5A5] px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                  >
+                    {deletingId === session.id && <Spinner className="h-3 w-3" />}
+                    {t('mockInterview.delete')}
+                  </button>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleDelete(session.id)}
-                  disabled={deletingId === session.id}
-                  aria-label={t('mockInterview.delete')}
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[#FCA5A5] px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                  onClick={() => handleToggleVisibility(session)}
+                  disabled={visibilityUpdatingId === session.id}
+                  aria-pressed={session.visibleToCompanies}
+                  className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-bold disabled:opacity-50 ${
+                    session.visibleToCompanies
+                      ? 'border-teal bg-teal-tint text-teal'
+                      : 'border-border bg-surface text-slate'
+                  }`}
                 >
-                  {deletingId === session.id && <Spinner className="h-3 w-3" />}
-                  {t('mockInterview.delete')}
+                  {visibilityUpdatingId === session.id && <Spinner className="h-3 w-3" />}
+                  {session.visibleToCompanies
+                    ? t('mockInterview.visibleToCompanies')
+                    : t('mockInterview.hiddenFromCompanies')}
                 </button>
               </div>
             </div>
