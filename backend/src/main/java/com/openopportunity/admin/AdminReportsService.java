@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,6 +75,7 @@ public class AdminReportsService {
         this.jobRepository = jobRepository;
     }
 
+    @Cacheable("adminCandidateStats")
     @Transactional(readOnly = true)
     public AdminCandidateReportStats getCandidateStats() {
         return new AdminCandidateReportStats(
@@ -85,6 +87,7 @@ public class AdminReportsService {
     /** "Seminars held" and "Avg. partnership duration" are deliberately not here — there's no
      * seminar/event entity, and Idea.timeline is free text (not a structured duration), so
      * neither can be computed from real data. */
+    @Cacheable("adminPartnershipStats")
     @Transactional(readOnly = true)
     public AdminPartnershipReportStats getPartnershipStats() {
         long fundedListings = ideaRepository.countByStatusAndFundingIsNotNull(IdeaStatus.APPROVED);
@@ -96,6 +99,7 @@ public class AdminReportsService {
                 listingsWithoutFunding);
     }
 
+    @Cacheable("adminCommunityInterestSubmissions")
     @Transactional(readOnly = true)
     public List<AdminCommunityInterestSummary> getCommunityInterestSubmissions() {
         return communityInterestSubmissionRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -112,6 +116,7 @@ public class AdminReportsService {
     /** "Job posting fees" and "Featured listings" are deliberately not here — there's no
      * payment gate on job postings or featured listings anywhere in the schema, so those
      * aren't real revenue sources. */
+    @Cacheable("adminFinancialStats")
     @Transactional(readOnly = true)
     public AdminFinancialReportStats getFinancialStats() {
         long candidateRevenue = billingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID);
@@ -124,6 +129,7 @@ public class AdminReportsService {
     /** "Avg. time to fill" and a fill-rate column are deliberately not here — JobStatus has no
      * FILLED state (only DRAFT/PENDING_APPROVAL/ACTIVE/REJECTED/CLOSED), so there's no way to
      * tell a CLOSED job was actually filled rather than cancelled or expired. */
+    @Cacheable("adminEmployerStats")
     @Transactional(readOnly = true)
     public AdminEmployerReportStats getEmployerStats() {
         return new AdminEmployerReportStats(
