@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.analytics.AnalyticsService;
 import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
@@ -64,6 +65,9 @@ class AuthServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private AnalyticsService analyticsService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -79,6 +83,7 @@ class AuthServiceTest {
                 googleTokenVerifierService,
                 emailService,
                 notificationService,
+                analyticsService,
                 30,
                 "http://localhost:5173");
     }

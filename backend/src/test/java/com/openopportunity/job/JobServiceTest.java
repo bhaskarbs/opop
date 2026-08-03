@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.analytics.AnalyticsService;
 import com.openopportunity.application.ApplicationRepository;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
@@ -65,6 +66,9 @@ class JobServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private AnalyticsService analyticsService;
+
     private JobService jobService;
 
     @BeforeEach
@@ -76,7 +80,8 @@ class JobServiceTest {
                 companySubscriptionRepository,
                 applicationRepository,
                 savedJobRepository,
-                notificationService);
+                notificationService,
+                analyticsService);
     }
 
     private CompanyProfile eligibleProfile(UUID companyId) {

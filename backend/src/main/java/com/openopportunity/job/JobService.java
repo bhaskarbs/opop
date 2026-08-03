@@ -1,5 +1,6 @@
 package com.openopportunity.job;
 
+import com.openopportunity.analytics.AnalyticsService;
 import com.openopportunity.application.ApplicationRepository;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
@@ -48,6 +49,7 @@ public class JobService {
     private final ApplicationRepository applicationRepository;
     private final SavedJobRepository savedJobRepository;
     private final NotificationService notificationService;
+    private final AnalyticsService analyticsService;
 
     public JobService(
             JobRepository jobRepository,
@@ -56,7 +58,8 @@ public class JobService {
             CompanySubscriptionRepository companySubscriptionRepository,
             ApplicationRepository applicationRepository,
             SavedJobRepository savedJobRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            AnalyticsService analyticsService) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
@@ -64,6 +67,7 @@ public class JobService {
         this.applicationRepository = applicationRepository;
         this.savedJobRepository = savedJobRepository;
         this.notificationService = notificationService;
+        this.analyticsService = analyticsService;
     }
 
     @Transactional(readOnly = true)
@@ -208,6 +212,8 @@ public class JobService {
         if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
             notifyAdminsJobPending(job, company.getFullName());
         }
+        analyticsService.capture(
+                companyId, "job_posted", Map.of("jobId", job.getId(), "status", job.getStatus().name()));
         return toDetail(
                 job, companyProfileRepository.findByUserId(companyId).orElse(null), isPromoted(companyId));
     }
