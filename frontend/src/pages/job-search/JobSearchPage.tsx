@@ -7,8 +7,13 @@ import { TRENDING_SKILLS } from '../../mocks/jobs'
 import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ApiError } from '../../lib/apiClient'
+import { candidateApi } from '../../lib/candidateApi'
 import { jobsApi, jobQueryKeys, type JobSearchParams } from '../../lib/jobsApi'
-import { experienceLevelToBackend, workModeToBackend } from '../../lib/jobEnums'
+import {
+  experienceLevelFromBackend,
+  experienceLevelToBackend,
+  workModeToBackend,
+} from '../../lib/jobEnums'
 import { savedJobsApi } from '../../lib/savedJobsApi'
 import { useAuthStore } from '../../stores/authStore'
 import { useApplicationsStore } from '../../stores/applicationsStore'
@@ -108,6 +113,55 @@ export default function JobSearchPage() {
       cancelled = true
     }
   }, [authStatus, user?.role])
+
+  // Gives a logged-in candidate a personalized default view instead of the generic "start your
+  // search" prompt: try their profile skills + experience level first, fall back to skills
+  // alone if that's too narrow, and fall back to today's plain empty state (no auto-search) if
+  // even that finds nothing — so a sparse or unusual profile never dead-ends into a "no results"
+  // screen. Runs once per visit (personalizationAttempted) and bails immediately if the
+  // candidate starts their own search first (hasSearched), so it never clobbers a real search.
+  const [personalizationAttempted, setPersonalizationAttempted] = useState(false)
+
+  useEffect(() => {
+    if (hasSearched || personalizationAttempted) return
+    if (!(authStatus === 'authenticated' && user?.role === 'CANDIDATE')) return
+    let cancelled = false
+    candidateApi
+      .getProfile()
+      .then(async (profile) => {
+        if (cancelled || profile.skills.length === 0) return
+        const candidateSkills = profile.skills
+        const level = profile.experienceLevel
+        if (level) {
+          const withLevel = await jobsApi.search({ q: candidateSkills, level: [level] })
+          if (cancelled) return
+          if (withLevel.length > 0) {
+            setSkills(candidateSkills)
+            setFilters({
+              ...createDefaultFilterState(),
+              levels: new Set([experienceLevelFromBackend(level)]),
+            })
+            setHasSearched(true)
+            return
+          }
+        }
+        const skillsOnly = await jobsApi.search({ q: candidateSkills })
+        if (cancelled) return
+        if (skillsOnly.length > 0) {
+          setSkills(candidateSkills)
+          setHasSearched(true)
+        }
+      })
+      .catch(() => {
+        // Best-effort — falls through to the plain empty state if the profile/search calls fail.
+      })
+      .finally(() => {
+        if (!cancelled) setPersonalizationAttempted(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [authStatus, user?.role, hasSearched, personalizationAttempted])
 
   function toggleSaved(jobId: string) {
     const isSaved = savedJobIds.has(jobId)
