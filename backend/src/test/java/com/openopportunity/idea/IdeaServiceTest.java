@@ -289,7 +289,7 @@ class IdeaServiceTest {
     }
 
     @Test
-    void deleteRemovesTheOwnersIdea() {
+    void deleteRemovesTheOwnersIdeaAndItsInterests() {
         UUID ownerId = UUID.randomUUID();
         Idea idea = sampleIdea(ownerId);
         when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
@@ -297,6 +297,27 @@ class IdeaServiceTest {
         ideaService.delete(idea.getId(), ownerId);
 
         org.mockito.Mockito.verify(ideaRepository).delete(idea);
+        org.mockito.Mockito.verify(ideaInterestRepository).deleteByIdeaId(idea.getId());
+    }
+
+    @Test
+    void adminDeleteRemovesAnyIdeaRegardlessOfOwnerAndItsInterests() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        ideaService.adminDelete(idea.getId());
+
+        org.mockito.Mockito.verify(ideaRepository).delete(idea);
+        org.mockito.Mockito.verify(ideaInterestRepository).deleteByIdeaId(idea.getId());
+    }
+
+    @Test
+    void adminDeleteRejectsUnknownIdea() {
+        when(ideaRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> ideaService.adminDelete(UUID.randomUUID()))
+                .isInstanceOf(IdeaNotFoundException.class);
     }
 
     @Test

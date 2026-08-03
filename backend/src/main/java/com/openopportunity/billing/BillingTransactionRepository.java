@@ -25,4 +25,8 @@ public interface BillingTransactionRepository extends JpaRepository<BillingTrans
     long countByPlanAndCreatedAtBetween(SubscriptionPlan plan, Instant start, Instant end);
 
     List<BillingTransaction> findAllByOrderByCreatedAtDesc();
+
+    // Used only by admin hard-delete (AdminAccountDeletionService#deleteCandidate) — billing
+    // history has no DB-level FK to users, so this cleanup is entirely application-managed.
+    void deleteByCandidateId(UUID candidateId);
 }

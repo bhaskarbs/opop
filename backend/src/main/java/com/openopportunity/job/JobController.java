@@ -94,6 +94,15 @@ public class JobController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Admin hard delete — distinct from delete(id) above, which is owner-scoped; this one
+     * requires no ownership and also cleans up applications and saved-job bookmarks (see
+     * JobService#adminDelete). */
+    @DeleteMapping("/{id}/admin")
+    public ResponseEntity<Void> adminDelete(@PathVariable UUID id) {
+        jobService.adminDelete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID currentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

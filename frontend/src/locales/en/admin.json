@@ -116,7 +116,10 @@
       "active": "Active"
     },
     "loadError": "Could not load users.",
+    "deleteError": "Could not delete this account.",
     "confirmSuspend": "Suspend {{name}}'s account?",
+    "confirmDeleteCandidate": "Permanently delete {{name}}'s account? This removes their profile, resume, photo, mock interview recordings, applications, saved jobs, and submitted ideas — it can't be undone.",
+    "confirmDeleteCompany": "Permanently delete {{name}}'s account? This removes their profile, logo, verification documents, job postings, and submitted ideas — it can't be undone.",
     "title": "Users",
     "subtitle": "Manage candidates and company accounts across the platform.",
     "tabs": {
@@ -132,6 +135,7 @@
     "feature": "Feature",
     "unfeature": "Unfeature",
     "featured": "Featured",
+    "delete": "Delete",
     "noneCandidates": "No candidates match your search.",
     "noneCompanies": "No companies match your search.",
     "previousPage": "← Previous",
@@ -319,12 +323,34 @@
     "searchPlaceholder": "Search by job title, company, or skill",
     "loading": "Loading jobs…",
     "loadError": "Could not load jobs.",
+    "deleteError": "Could not delete this job.",
     "none": "No live job postings match your search.",
     "jobMeta": "{{company}} · {{location}} · {{mode}}",
     "featured": "Featured",
     "promoted": "Promoted",
     "feature": "Feature",
     "unfeature": "Unfeature",
+    "delete": "Delete",
+    "confirmDelete": "Permanently delete \"{{title}}\"? This also removes its applications and saved-job bookmarks — it can't be undone.",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
+  },
+  "ideas": {
+    "title": "Ideas",
+    "subtitle": "Moderate live partnership ideas.",
+    "searchPlaceholder": "Search by idea title or category",
+    "loading": "Loading ideas…",
+    "loadError": "Could not load ideas.",
+    "deleteError": "Could not delete this idea.",
+    "none": "No live ideas match your search.",
+    "ideaMeta": "Submitted by {{submitter}} · {{type}}",
+    "submitterTypes": {
+      "candidate": "Candidate",
+      "company": "Company"
+    },
+    "delete": "Delete",
+    "confirmDelete": "Permanently delete \"{{title}}\"? This also removes everyone's expressed interest in it — it can't be undone.",
     "previousPage": "← Previous",
     "nextPage": "Next →",
     "pageLabel": "Page {{page}} of {{total}}"

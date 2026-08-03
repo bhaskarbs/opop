@@ -290,6 +290,11 @@ export const adminApi = {
     request<JobDetail>(`/api/jobs/${id}/feature`, { method: 'POST', headers: authHeaders() }),
   unfeatureJob: (id: string) =>
     request<JobDetail>(`/api/jobs/${id}/unfeature`, { method: 'POST', headers: authHeaders() }),
+  // Distinct from the company-owner-scoped DELETE /api/jobs/{id} (jobsApi doesn't expose that
+  // one) — admin/super_admin only, no ownership required. Also removes the job's applications
+  // and saved-job bookmarks server-side (see JobService#adminDelete).
+  deleteJob: (id: string) =>
+    request<void>(`/api/jobs/${id}/admin`, { method: 'DELETE', headers: authHeaders() }),
 
   pendingIdeas: (q?: string) =>
     request<IdeaDetail[]>(`/api/ideas/pending${q ? `?q=${encodeURIComponent(q)}` : ''}`, {
@@ -303,6 +308,10 @@ export const adminApi = {
       body: JSON.stringify({ reason }),
       headers: authHeaders(),
     }),
+  // Distinct from the submitter-scoped DELETE /api/ideas/{id} (ideasApi doesn't expose that
+  // one) — admin/super_admin only, no submitter ownership required.
+  deleteIdea: (id: string) =>
+    request<void>(`/api/ideas/${id}/admin`, { method: 'DELETE', headers: authHeaders() }),
 
   pendingCompanies: (q?: string) =>
     request<AdminCompanyProfileSummary[]>(
@@ -347,6 +356,11 @@ export const adminApi = {
       method: 'POST',
       headers: authHeaders(),
     }),
+  // Hard delete — admin/super_admin only (not reviewer, unlike suspend/reactivate above).
+  // Backend dispatches to the right cascade (candidate vs. company) by the account's actual
+  // role and also removes its stored files — see AdminAccountDeletionService.
+  deleteUser: (id: string) =>
+    request<void>(`/api/admin/users/${id}`, { method: 'DELETE', headers: authHeaders() }),
   featureCandidate: (id: string) =>
     request<AdminUserSummary>(`/api/admin/users/candidates/${id}/feature`, {
       method: 'POST',

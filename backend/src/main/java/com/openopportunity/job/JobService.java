@@ -1,5 +1,6 @@
 package com.openopportunity.job;
 
+import com.openopportunity.application.ApplicationRepository;
 import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
@@ -17,6 +18,7 @@ import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
+import com.openopportunity.savedjob.SavedJobRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
@@ -43,6 +45,8 @@ public class JobService {
     private final UserRepository userRepository;
     private final CompanyProfileRepository companyProfileRepository;
     private final CompanySubscriptionRepository companySubscriptionRepository;
+    private final ApplicationRepository applicationRepository;
+    private final SavedJobRepository savedJobRepository;
     private final NotificationService notificationService;
 
     public JobService(
@@ -50,11 +54,15 @@ public class JobService {
             UserRepository userRepository,
             CompanyProfileRepository companyProfileRepository,
             CompanySubscriptionRepository companySubscriptionRepository,
+            ApplicationRepository applicationRepository,
+            SavedJobRepository savedJobRepository,
             NotificationService notificationService) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
         this.companySubscriptionRepository = companySubscriptionRepository;
+        this.applicationRepository = applicationRepository;
+        this.savedJobRepository = savedJobRepository;
         this.notificationService = notificationService;
     }
 
@@ -237,6 +245,18 @@ public class JobService {
     public void delete(UUID id, UUID companyId) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         requireOwner(job, companyId);
+        jobRepository.delete(job);
+    }
+
+    /** Admin-initiated hard delete — unlike delete(id, companyId) above, doesn't require company
+     * ownership, and also cleans up applications and saved-job bookmarks that reference this
+     * job, since neither has a DB-level FK enforcing that cleanup automatically. Also the
+     * per-job half of AdminAccountDeletionService#deleteCompany's cascade. */
+    @Transactional
+    public void adminDelete(UUID id) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        applicationRepository.deleteByJobId(id);
+        savedJobRepository.deleteByJobId(id);
         jobRepository.delete(job);
     }
 

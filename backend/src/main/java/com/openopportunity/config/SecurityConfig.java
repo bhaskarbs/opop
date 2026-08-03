@@ -98,6 +98,11 @@ public class SecurityConfig {
                         // delete vs. list.
                         .requestMatchers(HttpMethod.POST, "/api/jobs/*/feature", "/api/jobs/*/unfeature")
                         .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        // Admin hard delete (AdminJobsPage) — a distinct path from the
+                        // owner-scoped DELETE /api/jobs/* below, so no declaration-order
+                        // conflict with it either way.
+                        .requestMatchers(HttpMethod.DELETE, "/api/jobs/*/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/*")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/jobs")
@@ -115,6 +120,12 @@ public class SecurityConfig {
                         .hasAuthority("LEVEL_SUPER_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/admin/team/*")
                         .hasAuthority("LEVEL_SUPER_ADMIN")
+                        // Hard-deleting a candidate/company account (AdminAccountDeletionService)
+                        // is admin/super_admin only, unlike suspend/reactivate/feature just below
+                        // it in AdminUserController, which stay reviewer-reachable via the
+                        // general ROLE_ADMIN rule further down.
+                        .requestMatchers(HttpMethod.DELETE, "/api/admin/users/*")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         // Everything below is admin-tier but NOT reviewer — approvals
                         // (/api/admin/companies/**, /api/jobs/pending, /api/ideas/pending, ...)
                         // and user management (/api/admin/users/**) are reviewer's whole scope,
@@ -140,6 +151,11 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/ideas/*/approve", "/api/ideas/*/reject")
                         .hasRole("ADMIN")
+                        // Admin hard delete (a future AdminIdeasPage) — a distinct path from the
+                        // submitter-scoped DELETE /api/ideas/* below, so no declaration-order
+                        // conflict with it either way.
+                        .requestMatchers(HttpMethod.DELETE, "/api/ideas/*/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         // GET (browse/detail) is public — anyone can read the community ideas
                         // page (see IdeasBrowsePage); IdeaService.get() still hides
                         // PENDING/REJECTED ideas from everyone but their own submitter. Both

@@ -13,4 +13,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     long countByRecipientUserIdAndReadFalse(UUID recipientUserId);
 
     long countByRecipientUserIdAndEmailSentTrue(UUID recipientUserId);
+
+    // Used only by admin hard-delete (AdminAccountDeletionService) — notifications has no
+    // DB-level FK to users, so this cleanup is entirely application-managed.
+    void deleteByRecipientUserId(UUID recipientUserId);
 }

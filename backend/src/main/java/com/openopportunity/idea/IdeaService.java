@@ -144,6 +144,22 @@ public class IdeaService {
     @Transactional
     public void delete(UUID id, UUID submitterId) {
         Idea idea = findOwned(id, submitterId);
+        deleteWithInterests(idea);
+    }
+
+    /** Admin-initiated hard delete — unlike delete(id, submitterId) above, doesn't require
+     * submitter ownership. Also the per-idea half of AdminAccountDeletionService's candidate/
+     * company cascade. */
+    @Transactional
+    public void adminDelete(UUID id) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
+        deleteWithInterests(idea);
+    }
+
+    // idea_interests has no DB-level FK to ideas, so this cleanup is entirely
+    // application-managed — shared by both delete paths above.
+    private void deleteWithInterests(Idea idea) {
+        ideaInterestRepository.deleteByIdeaId(idea.getId());
         ideaRepository.delete(idea);
     }
 

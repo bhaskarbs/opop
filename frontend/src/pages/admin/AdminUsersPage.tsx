@@ -79,6 +79,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
   const [featuringId, setFeaturingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
   const currentUser = useAuthStore((state) => state.user)
@@ -87,6 +88,9 @@ export default function AdminUsersPage() {
   // of this same rule).
   const canSeeTeamTab = currentUser?.adminLevel !== 'REVIEWER'
   const canManageTeam = currentUser?.adminLevel === 'SUPER_ADMIN'
+  // Hard-deleting an account is admin/super_admin only — reviewer keeps suspend/reactivate/
+  // feature (see SecurityConfig's DELETE /api/admin/users/* rule).
+  const canDeleteAccounts = currentUser?.adminLevel !== 'REVIEWER'
 
   const [teamMembers, setTeamMembers] = useState<AdminTeamMemberSummary[]>([])
   const [teamLoading, setTeamLoading] = useState(true)
@@ -185,6 +189,24 @@ export default function AdminUsersPage() {
       // Best-effort — the row simply keeps its current featured state if the call fails.
     } finally {
       setFeaturingId(null)
+    }
+  }
+
+  async function handleDeleteUser(user: AdminUserSummary) {
+    const confirmed = window.confirm(
+      t(tab === 'candidates' ? 'users.confirmDeleteCandidate' : 'users.confirmDeleteCompany', {
+        name: user.fullName,
+      }),
+    )
+    if (!confirmed) return
+    setDeletingId(user.id)
+    try {
+      await adminApi.deleteUser(user.id)
+      setUsers((prev) => prev.filter((existing) => existing.id !== user.id))
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t('users.deleteError'))
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -506,6 +528,17 @@ export default function AdminUsersPage() {
                           ? t('users.suspend')
                           : t('users.reactivate')}
                       </button>
+                      {canDeleteAccounts && (
+                        <button
+                          type="button"
+                          disabled={deletingId === user.id}
+                          onClick={() => handleDeleteUser(user)}
+                          className="flex items-center gap-1.5 rounded-md border border-[#FCA5A5] bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-danger disabled:opacity-60"
+                        >
+                          {deletingId === user.id && <Spinner className="h-3.5 w-3.5" />}
+                          {t('users.delete')}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )
