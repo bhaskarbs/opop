@@ -7,6 +7,7 @@ import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { jobAlertsApi, type JobAlertSummary } from '../../lib/jobAlertsApi'
+import { posthog } from '../../lib/posthog'
 import {
   EXPERIENCE_LEVELS,
   WORK_MODES,
@@ -115,6 +116,12 @@ export default function JobAlertsPage() {
         workMode: mode === 'Any' ? null : workModeToBackend(mode),
       })
       setAlerts((prev) => [created, ...prev])
+      posthog.capture('job_alert_created', {
+        has_keywords: keywords.length > 0,
+        has_locations: locations.length > 0,
+        experience_level: level,
+        work_mode: mode,
+      })
       setKeywords([])
       setLocations([])
       setLevel('Any')
@@ -132,10 +139,13 @@ export default function JobAlertsPage() {
     setDeleteError(null)
     const previous = alerts
     setAlerts((prev) => prev.filter((alert) => alert.id !== id))
-    jobAlertsApi.remove(id).catch((caught) => {
-      setAlerts(previous)
-      setDeleteError(caught instanceof ApiError ? caught.message : t('jobAlerts.deleteError'))
-    })
+    jobAlertsApi
+      .remove(id)
+      .then(() => posthog.capture('job_alert_deleted'))
+      .catch((caught) => {
+        setAlerts(previous)
+        setDeleteError(caught instanceof ApiError ? caught.message : t('jobAlerts.deleteError'))
+      })
   }
 
   return (

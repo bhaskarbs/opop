@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
+import { posthog } from '../../lib/posthog'
 import {
   companyBillingApi,
   type BackendCompanySubscriptionPlan,
@@ -129,6 +130,7 @@ export default function CompanyBillingPage() {
               setCurrentPlan(toPlanKey(summary.currentPlan))
               setCurrentPlanValidUntil(summary.currentPlanValidUntil)
               setHistory(summary.history)
+              posthog.capture('company_plan_checkout_completed', { plan: key })
             })
             .catch((caught) => {
               setChangeError(caught instanceof ApiError ? caught.message : t('billing.changeError'))

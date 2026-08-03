@@ -7,6 +7,7 @@ import { LoadingState } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
+import { posthog } from '../../lib/posthog'
 import {
   companyApi,
   candidateQueryKeys,
@@ -242,6 +243,7 @@ export default function SearchCandidatesPage() {
                 : candidate,
             ),
         )
+        posthog.capture('candidate_contact_revealed')
       })
       .catch((caught) => {
         setRevealErrors((prev) => ({

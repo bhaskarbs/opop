@@ -9,6 +9,7 @@ import { applicationsApi } from '../lib/applicationsApi'
 import { jobsApi, jobQueryKeys, type JobDetail, type JobSummary } from '../lib/jobsApi'
 import { workModeFromBackend } from '../lib/jobEnums'
 import { savedJobsApi } from '../lib/savedJobsApi'
+import { posthog } from '../lib/posthog'
 import { ROUTES } from '../routes/paths'
 import { useAuthStore } from '../stores/authStore'
 import { useApplicationsStore } from '../stores/applicationsStore'
@@ -199,6 +200,9 @@ export default function JobDetailPage() {
     const request = wasSaved ? savedJobsApi.unsave(job.id) : savedJobsApi.save(job.id)
     request
       .then(() => {
+        posthog.capture(wasSaved ? 'job_unsaved' : 'job_saved', {
+          job_id: job.id,
+        })
         // Refreshes the shared cache in the background — see savedJobsStore's comment on why
         // this force-refetches rather than patching in place.
         useSavedJobsStore.getState().fetchSavedJobs(true)
@@ -218,6 +222,7 @@ export default function JobDetailPage() {
     setApplying(true)
     try {
       const created = await applicationsApi.apply(job.id)
+      posthog.capture('job_application_submitted', { job_id: job.id })
       setApplicationId(created.id)
       queryClient.setQueryData(jobQueryKeys.detail(job.id), (prev: JobDetail | undefined) =>
         prev ? { ...prev, applicantCount: prev.applicantCount + 1 } : prev,
