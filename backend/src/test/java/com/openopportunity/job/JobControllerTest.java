@@ -16,6 +16,7 @@ import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.RejectJobRequest;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -237,32 +238,62 @@ class JobControllerTest {
         // draft jobs never show up in public search
         mockMvc.perform(get("/api/jobs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].title").value(org.hamcrest.Matchers.not(
+                .andExpect(jsonPath("$.jobs[*].title").value(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.hasItem("Draft Role"))));
 
         // keyword matches a skill, not just the title
         mockMvc.perform(get("/api/jobs").param("q", "typescript"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].title").value("Senior Frontend Developer"));
+                .andExpect(jsonPath("$.jobs", hasSize(1)))
+                .andExpect(jsonPath("$.jobs[0].title").value("Senior Frontend Developer"))
+                .andExpect(jsonPath("$.totalCount").value(1));
 
         // location filter
         mockMvc.perform(get("/api/jobs").param("location", "Mumbai"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].title").value("Junior Data Analyst"));
+                .andExpect(jsonPath("$.jobs", hasSize(1)))
+                .andExpect(jsonPath("$.jobs[0].title").value("Junior Data Analyst"));
 
         // level + mode filters combine
         mockMvc.perform(get("/api/jobs").param("level", "SENIOR").param("mode", "HYBRID"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].title").value("Senior Frontend Developer"));
+                .andExpect(jsonPath("$.jobs", hasSize(1)))
+                .andExpect(jsonPath("$.jobs[0].title").value("Senior Frontend Developer"));
 
         // salary floor excludes the lower-paying job
         mockMvc.perform(get("/api/jobs").param("minSalaryLakhs", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].title").value("Senior Frontend Developer"));
+                .andExpect(jsonPath("$.jobs", hasSize(1)))
+                .andExpect(jsonPath("$.jobs[0].title").value("Senior Frontend Developer"));
+    }
+
+    @Test
+    void searchPaginatesAndCapsAnOversizedPageSize() throws Exception {
+        String companyToken = registerAndGetToken("search-page-co@example.com", "Search Page Co", "company");
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        for (int i = 0; i < 3; i++) {
+            createAndApproveJob(companyToken, jobRequest(
+                    "Paginated Role " + tag + " " + i, ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru",
+                    BigDecimal.valueOf(18), BigDecimal.valueOf(24), List.of("React"), JobStatus.PENDING_APPROVAL));
+        }
+
+        mockMvc.perform(get("/api/jobs").param("q", tag).param("page", "0").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobs", hasSize(2)))
+                .andExpect(jsonPath("$.totalCount").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(2));
+
+        mockMvc.perform(get("/api/jobs").param("q", tag).param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobs", hasSize(1)))
+                .andExpect(jsonPath("$.totalCount").value(3));
+
+        // A requested size beyond JobService.MAX_SEARCH_PAGE_SIZE (50) is clamped, not honored.
+        mockMvc.perform(get("/api/jobs").param("q", tag).param("size", "10000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(50));
     }
 
     @Test

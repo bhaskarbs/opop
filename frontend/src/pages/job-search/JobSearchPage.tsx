@@ -24,8 +24,6 @@ import { ResultCard } from './ResultCard'
 import { SearchTagAutocompleteField } from './SearchTagAutocompleteField'
 import { toDisplayJob } from './jobDisplay'
 
-const PAGE_SIZE = 10
-
 // Keyword suggestions combine job roles (TRENDING_SKILLS, despite the name) with individual
 // technical/soft skills, since candidates search by either — deduplicated in case of overlap.
 const KEYWORD_SUGGESTIONS = [...new Set([...TRENDING_SKILLS, ...SKILL_SUGGESTIONS])]
@@ -55,7 +53,7 @@ export default function JobSearchPage() {
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery || initialLocation))
   const [filters, setFilters] = useState<FilterState>(createDefaultFilterState())
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
-  const [jobsShown, setJobsShown] = useState(PAGE_SIZE)
+  const [page, setPage] = useState(1)
 
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set())
@@ -135,7 +133,7 @@ export default function JobSearchPage() {
         if (level) {
           const withLevel = await jobsApi.search({ q: candidateSkills, level: [level] })
           if (cancelled) return
-          if (withLevel.length > 0) {
+          if (withLevel.jobs.length > 0) {
             setSkills(candidateSkills)
             setFilters({
               ...createDefaultFilterState(),
@@ -147,7 +145,7 @@ export default function JobSearchPage() {
         }
         const skillsOnly = await jobsApi.search({ q: candidateSkills })
         if (cancelled) return
-        if (skillsOnly.length > 0) {
+        if (skillsOnly.jobs.length > 0) {
           setSkills(candidateSkills)
           setHasSearched(true)
         }
@@ -210,32 +208,41 @@ export default function JobSearchPage() {
     return () => clearTimeout(timeoutId)
   }, [hasSearched, skills, locations, filters, sortBy])
 
-  // Resets the "show more" pagination whenever a new search actually runs — including when it's
-  // served instantly from the query cache (see lib/queryClient.ts), so re-running a search you
-  // already made still lands back on page 1 of its (cached) results. Adjusted during render
-  // (React's documented pattern for "reset state when a value changes") rather than in an
-  // effect, since setting state synchronously inside an effect body causes an extra render.
+  // Resets to page 1 whenever a new search actually runs — including when it's served instantly
+  // from the query cache (see lib/queryClient.ts), so re-running a search you already made still
+  // lands back on its first page. Adjusted during render (React's documented pattern for "reset
+  // state when a value changes") rather than in an effect, since setting state synchronously
+  // inside an effect body causes an extra render.
   const [prevSearchQueryParams, setPrevSearchQueryParams] = useState(searchQueryParams)
   if (searchQueryParams !== prevSearchQueryParams) {
     setPrevSearchQueryParams(searchQueryParams)
-    setJobsShown(PAGE_SIZE)
+    setPage(1)
+  }
+
+  // page only ever added to the request once it's past the first one (0-indexed on the
+  // backend) — same minimal-params convention as the debounced fields above, so a first-page
+  // search still shares a query-cache entry with e.g. JobDetailPage's identically-shaped
+  // "similar jobs" fetch instead of missing it over an inconsequential {page: 0}.
+  const effectiveSearchParams: JobSearchParams | null = searchQueryParams && {
+    ...searchQueryParams,
+    page: page > 1 ? page - 1 : undefined,
   }
 
   const searchQuery = useQuery({
-    queryKey: jobQueryKeys.search(searchQueryParams ?? {}),
-    queryFn: () => jobsApi.search(searchQueryParams ?? {}),
-    enabled: searchQueryParams !== null,
+    queryKey: jobQueryKeys.search(effectiveSearchParams ?? {}),
+    queryFn: () => jobsApi.search(effectiveSearchParams ?? {}),
+    enabled: effectiveSearchParams !== null,
   })
 
-  const jobs = (searchQuery.data ?? []).map(toDisplayJob)
+  const jobs = (searchQuery.data?.jobs ?? []).map(toDisplayJob)
+  const totalCount = searchQuery.data?.totalCount ?? 0
+  const totalPages = searchQuery.data?.totalPages ?? 0
   const loading = searchQuery.isFetching
   const error = searchQuery.isError
     ? searchQuery.error instanceof ApiError
       ? searchQuery.error.message
       : t('jobSearch.errorLoading')
     : null
-
-  const visibleJobs = jobs.slice(0, jobsShown)
 
   function handleSkillsChange(next: string[]) {
     setSkills(next)
@@ -372,7 +379,7 @@ export default function JobSearchPage() {
                     <span className="text-lg font-medium">{t('jobSearch.searching')}</span>
                   </>
                 ) : (
-                  t('jobSearch.showingCount', { count: jobs.length })
+                  t('jobSearch.showingCount', { count: totalCount })
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -401,7 +408,7 @@ export default function JobSearchPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-3.5">
-                {visibleJobs.map((job) => (
+                {jobs.map((job) => (
                   <ResultCard
                     key={job.id}
                     job={job}
@@ -417,14 +424,26 @@ export default function JobSearchPage() {
               </div>
             )}
 
-            {jobsShown < jobs.length && (
-              <div className="mt-7 flex justify-center">
+            {totalPages > 1 && (
+              <div className="mt-7 flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => setJobsShown((prev) => prev + PAGE_SIZE)}
-                  className="rounded-lg border border-border bg-surface px-5 py-2.5 text-[13.5px] font-bold text-ink"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                  className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {t('jobSearch.showMore')}
+                  {t('jobSearch.previousPage')}
+                </button>
+                <span className="text-[13px] text-slate">
+                  {t('jobSearch.pageLabel', { page, total: totalPages })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                  className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t('jobSearch.nextPage')}
                 </button>
               </div>
             )}

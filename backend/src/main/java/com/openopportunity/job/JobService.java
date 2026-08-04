@@ -10,6 +10,7 @@ import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.CompanySubscriptionRepository;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
+import com.openopportunity.job.dto.JobSearchResult;
 import com.openopportunity.job.dto.JobSummary;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
@@ -66,14 +67,29 @@ public class JobService {
         this.notificationService = notificationService;
     }
 
+    // A client-suppliable page size that's too large would defeat pagination's whole point
+    // (an unbounded response payload), so this caps it independently of whatever the frontend
+    // itself defaults to.
+    private static final int MAX_SEARCH_PAGE_SIZE = 50;
+
+    /** Filtering happens at the DB (see JobSpecifications); the featured/promoted-company
+     * ranking pass that follows still runs in Java over every matching job, same as before
+     * pagination existed, since it needs promoted-company state that isn't worth expressing as
+     * a SQL ORDER BY — only the already-ranked result gets sliced down to the requested page,
+     * so a broad, unfiltered search can no longer return an unbounded response. */
     @Transactional(readOnly = true)
-    public List<JobSummary> search(
+    public JobSearchResult search(
             List<String> keywords,
             List<String> locations,
             List<ExperienceLevel> levels,
             List<WorkMode> modes,
             BigDecimal minSalaryLakhs,
-            String sort) {
+            String sort,
+            int page,
+            int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_SEARCH_PAGE_SIZE);
+
         Specification<Job> spec = Specification.allOf(
                 JobSpecifications.hasStatus(JobStatus.ACTIVE),
                 JobSpecifications.matchesAnyKeyword(keywords),
@@ -84,14 +100,21 @@ public class JobService {
 
         List<Job> unranked = jobRepository.findAll(spec, resolveSort(sort));
         Set<UUID> promotedCompanyIds = promotedCompanyIdsFor(unranked);
-        List<Job> jobs = rankSearchResults(unranked, promotedCompanyIds);
-        Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(jobs);
-        return jobs.stream()
+        List<Job> ranked = rankSearchResults(unranked, promotedCompanyIds);
+
+        int totalCount = ranked.size();
+        int totalPages = totalCount == 0 ? 0 : (totalCount + safeSize - 1) / safeSize;
+        List<Job> pageJobs =
+                ranked.stream().skip((long) safePage * safeSize).limit(safeSize).toList();
+
+        Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(pageJobs);
+        List<JobSummary> summaries = pageJobs.stream()
                 .map(job -> toSummary(
                         job,
                         profilesByCompanyId.get(job.getCompanyId()),
                         promotedCompanyIds.contains(job.getCompanyId())))
                 .toList();
+        return new JobSearchResult(summaries, safePage, safeSize, totalCount, totalPages);
     }
 
     /** Layered on top of whatever the caller's sort already produced, same ranking model as

@@ -31,9 +31,13 @@ public class AsyncConfig {
     @Bean(name = "emailTaskExecutor")
     public Executor emailTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(8);
-        executor.setQueueCapacity(200);
+        // Generous relative to real traffic — mainly headroom so a dense burst (e.g. a big
+        // integration test suite running dozens of registration/notification flows back to
+        // back) can't saturate this and get TaskRejectedException, now that EmailService also
+        // fails fast instead of blocking a thread on a real SMTP round trip when unconfigured.
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(1000);
         executor.setThreadNamePrefix("email-async-");
         executor.initialize();
         return executor;

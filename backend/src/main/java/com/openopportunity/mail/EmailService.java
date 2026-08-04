@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -18,10 +19,20 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
+    // Blank locally (see spring.mail.username in application.properties) — checked so an
+    // unconfigured deployment fails a send immediately instead of waiting out a real TCP
+    // connect + AUTH round trip to MAIL_HOST just to get the same auth failure back a second or
+    // two later. That real round-trip time is exactly what saturated AsyncConfig's bounded
+    // emailTaskExecutor under a busy test suite before this existed.
+    private final boolean configured;
 
-    public EmailService(JavaMailSender mailSender, @Value("${app.mail.from}") String fromAddress) {
+    public EmailService(
+            JavaMailSender mailSender,
+            @Value("${app.mail.from}") String fromAddress,
+            @Value("${spring.mail.username:}") String mailUsername) {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
+        this.configured = !mailUsername.isBlank();
     }
 
     public void send(String to, String subject, String heading, List<String> paragraphs) {
@@ -29,10 +40,15 @@ public class EmailService {
     }
 
     /** Throws MailException on any failure — a template build failure is wrapped as
-     * MailPreparationException, an actual send failure surfaces as whatever JavaMailSender
-     * throws (typically MailSendException). Both are MailException, so existing
-     * catch (MailException e) call sites don't need to change. */
+     * MailPreparationException, an unconfigured SMTP host throws MailAuthenticationException
+     * synthetically (see `configured`), and an actual send failure surfaces as whatever
+     * JavaMailSender throws (typically MailSendException). All three are MailException, so
+     * existing catch (MailException e) call sites don't need to change. */
     public void send(String to, String subject, String heading, List<String> paragraphs, EmailButton button) {
+        if (!configured) {
+            throw new MailAuthenticationException(
+                    "No SMTP credentials configured (spring.mail.username is blank)");
+        }
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
