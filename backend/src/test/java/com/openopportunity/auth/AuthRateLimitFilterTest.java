@@ -3,6 +3,8 @@ package com.openopportunity.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openopportunity.ratelimit.InMemoryRateLimiter;
+import com.openopportunity.ratelimit.RateLimiter;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -16,9 +18,14 @@ class AuthRateLimitFilterTest {
         return request;
     }
 
+    private static RateLimiter newRateLimiter() {
+        return new InMemoryRateLimiter();
+    }
+
     @Test
     void allowsRequestsUpToTheLimitThenBlocks() throws Exception {
-        AuthRateLimitFilter filter = new AuthRateLimitFilter(true, 2, 5, new ObjectMapper().findAndRegisterModules());
+        AuthRateLimitFilter filter =
+                new AuthRateLimitFilter(true, 2, 5, new ObjectMapper().findAndRegisterModules(), newRateLimiter());
 
         for (int i = 0; i < 2; i++) {
             MockHttpServletResponse response = new MockHttpServletResponse();
@@ -41,7 +48,8 @@ class AuthRateLimitFilterTest {
 
     @Test
     void tracksEachClientIndependently() throws Exception {
-        AuthRateLimitFilter filter = new AuthRateLimitFilter(true, 1, 5, new ObjectMapper().findAndRegisterModules());
+        AuthRateLimitFilter filter =
+                new AuthRateLimitFilter(true, 1, 5, new ObjectMapper().findAndRegisterModules(), newRateLimiter());
 
         MockFilterChain firstClientChain = new MockFilterChain();
         filter.doFilter(
@@ -56,7 +64,8 @@ class AuthRateLimitFilterTest {
 
     @Test
     void onlyAppliesToTheListedAuthPaths() throws Exception {
-        AuthRateLimitFilter filter = new AuthRateLimitFilter(true, 1, 5, new ObjectMapper().findAndRegisterModules());
+        AuthRateLimitFilter filter =
+                new AuthRateLimitFilter(true, 1, 5, new ObjectMapper().findAndRegisterModules(), newRateLimiter());
         filter.doFilter(
                 requestTo("/api/auth/login", "10.0.0.1"), new MockHttpServletResponse(), new MockFilterChain());
 
@@ -69,7 +78,8 @@ class AuthRateLimitFilterTest {
 
     @Test
     void alsoAppliesToTheCommunityInterestEndpoint() throws Exception {
-        AuthRateLimitFilter filter = new AuthRateLimitFilter(true, 1, 5, new ObjectMapper().findAndRegisterModules());
+        AuthRateLimitFilter filter =
+                new AuthRateLimitFilter(true, 1, 5, new ObjectMapper().findAndRegisterModules(), newRateLimiter());
         filter.doFilter(
                 requestTo("/api/community/interest", "10.0.0.1"),
                 new MockHttpServletResponse(),
@@ -84,7 +94,8 @@ class AuthRateLimitFilterTest {
 
     @Test
     void doesNothingWhenDisabled() throws Exception {
-        AuthRateLimitFilter filter = new AuthRateLimitFilter(false, 1, 5, new ObjectMapper().findAndRegisterModules());
+        AuthRateLimitFilter filter =
+                new AuthRateLimitFilter(false, 1, 5, new ObjectMapper().findAndRegisterModules(), newRateLimiter());
         filter.doFilter(
                 requestTo("/api/auth/login", "10.0.0.1"), new MockHttpServletResponse(), new MockFilterChain());
 

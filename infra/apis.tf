@@ -13,6 +13,8 @@ locals {
     "compute.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "iam.googleapis.com",
+    "redis.googleapis.com",
+    "vpcaccess.googleapis.com",
   ]
 }
 
