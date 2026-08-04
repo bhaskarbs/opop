@@ -52,15 +52,21 @@ dependencies {
 	implementation 'net.coobird:thumbnailator:0.4.20'
 	// Job search backend once app.search.provider=elasticsearch (see com.openopportunity.search)
 	// — the RestClient this configures is a plain HTTP client with no persistent connection to
-	// eagerly open, unlike Lettuce/Redis (see RedisRateLimitConfig's comment for that contrast),
-	// so having this on the classpath is harmless even when the property stays at its
-	// "postgres" default and no Elasticsearch instance exists locally.
+	// eagerly open, unlike Lettuce/Redis (see RedisCacheConfig's comment for that contrast), so
+	// having this on the classpath is harmless even when the property stays at its "postgres"
+	// default and no Elasticsearch instance exists locally.
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 	// File storage backend once app.storage.provider=gcs (see com.openopportunity.storage) —
 	// the Storage client this builds is a plain REST client (see GcsStorageConfig), not
 	// something that eagerly opens a connection, and it's only ever constructed at all behind
 	// that same @ConditionalOnProperty gate — harmless on the classpath at the "local" default.
 	implementation 'com.google.cloud:google-cloud-storage:2.71.0'
+	// Cache backend once app.cache.provider=redis (see com.openopportunity.config.RedisCacheConfig)
+	// — unlike the two HTTP-based clients above, Lettuce (the default Spring Data Redis client)
+	// eagerly opens a connection at startup, which is exactly why RedisCacheConfig excludes
+	// RedisAutoConfiguration and builds its connection factory manually with eager
+	// initialization disabled; see OpenOpportunityApplication's exclude list.
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	runtimeOnly 'org.postgresql:postgresql'
 	// Lets the JDBC URL connect through the Unix socket Cloud Run mounts at /cloudsql
 	// (see infra/run.tf) instead of a raw TCP host:port — only exercised in that

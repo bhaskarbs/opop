@@ -64,7 +64,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # Backs app.cache.provider=redis (see com.openopportunity.config.RedisCacheConfig) — shares
+  # cache entries across instances instead of each one keeping its own in-process Caffeine cache
+  # (see CacheConfig). Behind the "cache" profile, same opt-in-only reasoning as the other
+  # services above — app.cache.provider defaults to "caffeine", which never touches this
+  # container. No password locally, same local-dev-simplicity reasoning as Postgres/Elasticsearch
+  # above; a real deployment (Memorystore or similar) sets REDIS_PASSWORD instead.
+  redis:
+    image: redis:7-alpine
+    container_name: openopportunity-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - openopportunity-redis-data:/data
+    profiles: ['cache']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   openopportunity-postgres-data:
   openopportunity-elasticsearch-data:
   openopportunity-gcs-data:
+  openopportunity-redis-data:
