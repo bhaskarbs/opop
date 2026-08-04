@@ -116,10 +116,23 @@ Storage + Cloud CDN setup (`infra/frontend.tf`) locally:
 ```
 
 This builds `frontend/` and uploads `dist/` into a local `openopportunity-frontend` bucket with
-correct content types. Spot-check with, e.g.
-`curl "http://localhost:4443/storage/v1/b/openopportunity-frontend/o/index.html?alt=media"`. This
-doesn't replace the Vite dev server for day-to-day frontend work (no hot reload) — it's there to
-verify the CDN-serving path before it's ever deployed.
+correct content types. fake-gcs-server's raw JSON API doesn't map root-relative paths the way a
+real load balancer + backend bucket does, though, so `curl`ing an individual object (e.g.
+`curl "http://localhost:4443/storage/v1/b/openopportunity-frontend/o/index.html?alt=media"`) is a
+spot-check, not something you can browse directly — opening that URL in a tab 404s on every
+asset, since `/assets/x.js` resolves against the wrong base. To actually browse the built site:
+
+```bash
+node scripts/local-cdn-proxy.mjs   # http://localhost:8081/, Ctrl+C to stop
+```
+
+This rewrites clean root-relative requests into the emulator's object URLs underneath (what the
+real load balancer does automatically in production), falls back to `index.html` for any
+unmatched path so React Router's client-side routes still work on a full page load, and
+`app.cors.allowed-origins` already includes `http://localhost:8081` so the SPA's API calls to the
+backend on `:8080` work from it too. Neither of these replace the Vite dev server for day-to-day
+frontend work (no hot reload) — they're there to verify the CDN-serving path before it's ever
+deployed.
 
 ### Admin console access
 
