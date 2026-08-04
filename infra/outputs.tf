@@ -18,6 +18,11 @@ output "frontend_bucket" {
   value       = google_storage_bucket.frontend.name
 }
 
+output "uploads_bucket" {
+  description = "Cloud Storage bucket the backend writes resumes/photos/mock-interview recordings into (see STORAGE_GCS_BUCKET)."
+  value       = google_storage_bucket.uploads.name
+}
+
 output "sql_connection_name" {
   description = "Cloud SQL instance connection name (project:region:instance), useful for cloud-sql-proxy/psql access."
   value       = google_sql_database_instance.main.connection_name

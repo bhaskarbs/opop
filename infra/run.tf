@@ -83,6 +83,17 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "APP_CORS_ALLOWED_ORIGINS"
         value = local.frontend_origin
       }
+      env {
+        # Switches com.openopportunity.storage's active FileStorageService from local disk
+        # (dev default) to GCS (see storage.tf) — local disk doesn't survive across this
+        # service's multiple Cloud Run instances (max_instance_count above).
+        name  = "STORAGE_PROVIDER"
+        value = "gcs"
+      }
+      env {
+        name  = "STORAGE_GCS_BUCKET"
+        value = google_storage_bucket.uploads.name
+      }
 
       volume_mounts {
         name       = "cloudsql"
@@ -101,6 +112,7 @@ resource "google_cloud_run_v2_service" "backend" {
   depends_on = [
     google_project_iam_member.backend_cloudsql_client,
     google_secret_manager_secret_iam_member.backend_secret_access,
+    google_storage_bucket_iam_member.backend_uploads_access,
   ]
 }
 
