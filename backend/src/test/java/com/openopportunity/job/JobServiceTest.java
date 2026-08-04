@@ -19,6 +19,7 @@ import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.CompanySubscriptionRepository;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
+import com.openopportunity.job.dto.JobSearchResult;
 import com.openopportunity.job.dto.JobSummary;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
@@ -30,6 +31,7 @@ import com.openopportunity.savedjob.SavedJobRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -436,15 +438,45 @@ class JobServiceTest {
                         eq(CompanySubscriptionPlan.FREE), any()))
                 .thenReturn(List.of(promotedSubscription));
 
-        List<JobSummary> results = jobService.search(null, null, null, null, null, "relevant");
+        JobSearchResult result = jobService.search(null, null, null, null, null, "relevant", 0, 10);
 
-        assertThat(results)
+        assertThat(result.jobs())
                 .extracting(JobSummary::id)
                 .containsExactly(featuredJob.getId(), promotedJob.getId(), plainJob.getId());
-        assertThat(results.get(0).isFeatured()).isTrue();
-        assertThat(results.get(1).isPromoted()).isTrue();
-        assertThat(results.get(2).isFeatured()).isFalse();
-        assertThat(results.get(2).isPromoted()).isFalse();
+        assertThat(result.jobs().get(0).isFeatured()).isTrue();
+        assertThat(result.jobs().get(1).isPromoted()).isTrue();
+        assertThat(result.jobs().get(2).isFeatured()).isFalse();
+        assertThat(result.jobs().get(2).isPromoted()).isFalse();
+        assertThat(result.totalCount()).isEqualTo(3);
+        assertThat(result.totalPages()).isEqualTo(1);
+    }
+
+    @Test
+    void searchSlicesTheRankedResultsToTheRequestedPageAndCapsAnOversizedPageSize() {
+        List<Job> jobs = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            jobs.add(new Job(
+                    UUID.randomUUID(), "Co " + i, "Role " + i, EmploymentType.FULL_TIME,
+                    ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "About",
+                    List.of(), List.of(), List.of(), JobStatus.ACTIVE));
+        }
+        when(jobRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(jobs);
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+        when(companySubscriptionRepository.findByPlanNotAndCurrentPeriodEndAfter(
+                        eq(CompanySubscriptionPlan.FREE), any()))
+                .thenReturn(List.of());
+
+        JobSearchResult firstPage = jobService.search(null, null, null, null, null, "relevant", 0, 2);
+        JobSearchResult secondPage = jobService.search(null, null, null, null, null, "relevant", 1, 2);
+        // A page size beyond MAX_SEARCH_PAGE_SIZE (50) gets clamped rather than trusted verbatim.
+        JobSearchResult oversizedPage = jobService.search(null, null, null, null, null, "relevant", 0, 10_000);
+
+        assertThat(firstPage.jobs()).hasSize(2);
+        assertThat(firstPage.totalCount()).isEqualTo(5);
+        assertThat(firstPage.totalPages()).isEqualTo(3);
+        assertThat(secondPage.jobs()).hasSize(2);
+        assertThat(firstPage.jobs()).doesNotContainAnyElementsOf(secondPage.jobs());
+        assertThat(oversizedPage.size()).isEqualTo(50);
     }
 
     @Test

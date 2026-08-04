@@ -17,17 +17,30 @@ export default function AdminJobsPage() {
   const [featuringId, setFeaturingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+
+  // Resets to page 1 whenever the search query itself changes — adjusted during render (see
+  // JobSearchPage for the same pattern) rather than inside the fetch effect below, since that
+  // effect also depends on `page` (a Previous/Next click needs to refetch, unlike the old
+  // client-side-only pagination this replaced) and resetting page there too would fight it.
+  const [prevQuery, setPrevQuery] = useState(query)
+  if (query !== prevQuery) {
+    setPrevQuery(query)
+    setPage(1)
+  }
 
   useEffect(() => {
     let cancelled = false
     const timeoutId = setTimeout(() => {
       setLoading(true)
       setError(null)
-      setPage(1)
       jobsApi
-        .search(query.trim() ? { q: [query.trim()] } : {})
+        .search({ ...(query.trim() ? { q: [query.trim()] } : {}), page: page - 1, size: PAGE_SIZE })
         .then((result) => {
-          if (!cancelled) setJobs(result)
+          if (!cancelled) {
+            setJobs(result.jobs)
+            setTotalPages(Math.max(1, result.totalPages))
+          }
         })
         .catch((caught) => {
           if (!cancelled) {
@@ -42,7 +55,7 @@ export default function AdminJobsPage() {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [query, t])
+  }, [query, page, t])
 
   async function handleToggleFeatured(job: JobSummary) {
     setFeaturingId(job.id)
@@ -70,10 +83,6 @@ export default function AdminJobsPage() {
       setDeletingId(null)
     }
   }
-
-  const pageCount = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE))
-  const currentPage = Math.min(page, pageCount)
-  const visibleJobs = jobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
@@ -117,7 +126,7 @@ export default function AdminJobsPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {visibleJobs.map((job) => (
+          {jobs.map((job) => (
             <div
               key={job.id}
               className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-5 py-4"
@@ -171,23 +180,23 @@ export default function AdminJobsPage() {
               {t('jobs.none')}
             </div>
           )}
-          {pageCount > 1 && (
+          {totalPages > 1 && (
             <div className="mt-2 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
+                disabled={page === 1}
                 className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('jobs.previousPage')}
               </button>
               <span className="text-[13px] text-slate">
-                {t('jobs.pageLabel', { page: currentPage, total: pageCount })}
+                {t('jobs.pageLabel', { page, total: totalPages })}
               </span>
               <button
                 type="button"
-                onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))}
-                disabled={currentPage === pageCount}
+                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={page === totalPages}
                 className="rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-ink disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('jobs.nextPage')}

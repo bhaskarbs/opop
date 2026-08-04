@@ -101,7 +101,7 @@ export default function CandidateDashboardPage() {
         ]) => {
           if (cancelled) return
           setProfile(profileData)
-          setJobs(jobResults.map(toDisplayJob))
+          setJobs(jobResults.jobs.map(toDisplayJob))
           setFeaturedStartups(
             [...ideaResults].sort(() => Math.random() - 0.5).slice(0, MAX_FEATURED_STARTUPS),
           )

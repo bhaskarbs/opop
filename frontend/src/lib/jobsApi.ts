@@ -62,6 +62,21 @@ export interface JobSearchParams {
   mode?: BackendWorkMode[]
   minSalaryLakhs?: number
   sort?: 'relevant' | 'newest' | 'salary'
+  // 0-indexed, matching the backend (see JobController.search) — omit to get page 0.
+  page?: number
+  // Capped server-side at 50 (JobService.MAX_SEARCH_PAGE_SIZE) regardless of what's requested.
+  size?: number
+}
+
+// page/size in the response are what the backend actually applied after its own bounds-clamping
+// (see JobService.search), not necessarily an echo of the request — a huge or negative size gets
+// silently clamped rather than trusted verbatim.
+export interface JobSearchResult {
+  jobs: JobSummary[]
+  page: number
+  size: number
+  totalCount: number
+  totalPages: number
 }
 
 function authHeaders(): Record<string, string> {
@@ -77,12 +92,15 @@ function buildQuery(params: JobSearchParams): string {
   if (params.sort) search.set('sort', params.sort)
   params.level?.forEach((level) => search.append('level', level))
   params.mode?.forEach((mode) => search.append('mode', mode))
+  if (params.page != null) search.set('page', String(params.page))
+  if (params.size != null) search.set('size', String(params.size))
   const query = search.toString()
   return query ? `?${query}` : ''
 }
 
 export const jobsApi = {
-  search: (params: JobSearchParams = {}) => request<JobSummary[]>(`/api/jobs${buildQuery(params)}`),
+  search: (params: JobSearchParams = {}) =>
+    request<JobSearchResult>(`/api/jobs${buildQuery(params)}`),
   // GET /{id} is public (an anonymous visitor only ever sees an ACTIVE job — see
   // JobService.get), but attaching the auth header when we have one lets a logged-in company
   // load its own DRAFT/PENDING_APPROVAL/REJECTED/CLOSED posting too (see PostJobPage's edit

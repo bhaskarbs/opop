@@ -2,6 +2,7 @@ package com.openopportunity.job;
 
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
+import com.openopportunity.job.dto.JobSearchResult;
 import com.openopportunity.job.dto.JobSummary;
 import com.openopportunity.job.dto.RejectJobRequest;
 import jakarta.validation.Valid;
@@ -33,14 +34,16 @@ public class JobController {
     }
 
     @GetMapping
-    public List<JobSummary> search(
+    public JobSearchResult search(
             @RequestParam(required = false) List<String> q,
             @RequestParam(required = false) List<String> location,
             @RequestParam(required = false) List<ExperienceLevel> level,
             @RequestParam(required = false) List<WorkMode> mode,
             @RequestParam(required = false) BigDecimal minSalaryLakhs,
-            @RequestParam(required = false, defaultValue = "relevant") String sort) {
-        return jobService.search(q, location, level, mode, minSalaryLakhs, sort);
+            @RequestParam(required = false, defaultValue = "relevant") String sort,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        return jobService.search(q, location, level, mode, minSalaryLakhs, sort, page, size);
     }
 
     @GetMapping("/mine")

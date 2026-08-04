@@ -142,7 +142,7 @@ export default function JobDetailPage() {
   const job = detailQuery.data ?? null
   const loading = detailQuery.isLoading
   const notFound = detailQuery.isError
-  const similarJobs = job ? findSimilarJobs(job, similarQuery.data ?? []) : []
+  const similarJobs = job ? findSimilarJobs(job, similarQuery.data?.jobs ?? []) : []
 
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
