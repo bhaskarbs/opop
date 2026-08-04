@@ -75,6 +75,22 @@ to match.
 CORS is preconfigured (`app.cors.allowed-origins` in `application.properties`) to allow requests
 from the Vite dev server at `http://localhost:5173`.
 
+### Job search: Postgres (default) vs. Elasticsearch
+
+The public job search (`GET /api/jobs`) runs against Postgres by default — `docker compose up`
+above is all it needs. To try it against Elasticsearch instead (real relevance ranking instead of
+falling back to recency — see `com.openopportunity.search`):
+
+```bash
+docker compose up -d elasticsearch          # starts a local, security-disabled ES on :9200
+SEARCH_PROVIDER=elasticsearch ./gradlew bootRun
+```
+
+The index and its mapping are created automatically on startup, and every job in Postgres gets
+backfilled into it the first time (see `JobSearchIndexInitializer`) — no separate setup step. In
+a real deployment, point `spring.elasticsearch.uris`/`ELASTICSEARCH_URIS` (and
+`ELASTICSEARCH_API_KEY`) at Elastic Cloud instead.
+
 ### Admin console access
 
 There's no admin self-registration flow (by design). On first startup the backend seeds one
