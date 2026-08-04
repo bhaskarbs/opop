@@ -134,6 +134,26 @@ backend on `:8080` work from it too. Neither of these replace the Vite dev serve
 frontend work (no hot reload) — they're there to verify the CDN-serving path before it's ever
 deployed.
 
+### Caching: in-process Caffeine (default) vs. Redis
+
+`@Cacheable` entries (the admin dashboard's report stats — see `AdminReportsService`) are cached
+in-process by default (see `com.openopportunity.config.CacheConfig`) — correct for a single
+instance, nothing extra to run. To share the cache across instances instead:
+
+```bash
+docker compose up -d redis          # no password locally
+CACHE_PROVIDER=redis ./gradlew bootRun
+```
+
+Same cache names and 60s TTL either way — the `@Cacheable` call sites don't change
+(`RedisCacheConfig`). Cache values are JSON (`GenericJackson2JsonRedisSerializer`, using the
+app's own `ObjectMapper` so `Instant` fields serialize correctly), not Java serialization — the
+DTOs being cached are plain records that don't implement `Serializable`, and JSON is the right
+format for a cache anyway. Spot-check what landed in Redis with
+`docker exec openopportunity-redis redis-cli KEYS '*'`. In a real deployment, point
+`spring.data.redis.host`/`REDIS_HOST` (and `REDIS_PASSWORD`) at a real Redis (e.g. Memorystore)
+instead.
+
 ### Admin console access
 
 There's no admin self-registration flow (by design). On first startup the backend seeds one
