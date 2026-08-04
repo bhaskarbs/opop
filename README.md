@@ -91,6 +91,36 @@ backfilled into it the first time (see `JobSearchIndexInitializer`) — no separ
 a real deployment, point `spring.elasticsearch.uris`/`ELASTICSEARCH_URIS` (and
 `ELASTICSEARCH_API_KEY`) at Elastic Cloud instead.
 
+### File storage / local CDN: disk (default) vs. Google Cloud Storage
+
+Uploaded files (resumes, candidate photos, company logos, certificates) go to local disk by
+default (see `com.openopportunity.storage`) — nothing extra to run. To back them with Google
+Cloud Storage instead, using a local emulator so the exact same code path (not a rewrite) is what
+eventually talks to real GCS + Cloud CDN in production (see `infra/frontend.tf`):
+
+```bash
+docker compose up -d fake-gcs-server          # a real GCS API emulator on :4443, security off
+STORAGE_PROVIDER=gcs STORAGE_GCS_EMULATOR_HOST=http://localhost:4443 ./gradlew bootRun
+```
+
+The upload bucket is created automatically on first use. Every upload/download/delete still goes
+through this app's own authenticated endpoints exactly as it does with local disk — only where
+the bytes physically live changes. In a real deployment, leave `STORAGE_GCS_EMULATOR_HOST` unset
+(the default) so it falls back to real GCS via Application Default Credentials instead.
+
+The same emulator can also serve the frontend's static build, mirroring the production Cloud
+Storage + Cloud CDN setup (`infra/frontend.tf`) locally:
+
+```bash
+./scripts/sync-frontend-to-local-cdn.sh
+```
+
+This builds `frontend/` and uploads `dist/` into a local `openopportunity-frontend` bucket with
+correct content types. Spot-check with, e.g.
+`curl "http://localhost:4443/storage/v1/b/openopportunity-frontend/o/index.html?alt=media"`. This
+doesn't replace the Vite dev server for day-to-day frontend work (no hot reload) — it's there to
+verify the CDN-serving path before it's ever deployed.
+
 ### Admin console access
 
 There's no admin self-registration flow (by design). On first startup the backend seeds one
