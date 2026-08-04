@@ -103,10 +103,15 @@ docker compose up -d fake-gcs-server          # a real GCS API emulator on :4443
 STORAGE_PROVIDER=gcs STORAGE_GCS_EMULATOR_HOST=http://localhost:4443 ./gradlew bootRun
 ```
 
-The upload bucket is created automatically on first use. Every upload/download/delete still goes
-through this app's own authenticated endpoints exactly as it does with local disk — only where
-the bytes physically live changes. In a real deployment, leave `STORAGE_GCS_EMULATOR_HOST` unset
-(the default) so it falls back to real GCS via Application Default Credentials instead.
+The upload bucket is created automatically on first use, and every file already sitting in
+`app.storage.root-dir` (local disk) gets synced into it too (see `LocalUploadsSyncRunner`) — so
+switching a machine that already has local uploads over to `gcs` mode doesn't leave existing
+resumes/photos/logos 404ing (their storage key doesn't change, only where the bytes live; nothing
+in Postgres needs updating). Only uploads what's missing, so it's cheap and safe to leave running
+on every startup. Every upload/download/delete still goes through this app's own authenticated
+endpoints exactly as it does with local disk — only where the bytes physically live changes. In a
+real deployment, leave `STORAGE_GCS_EMULATOR_HOST` unset (the default) so it falls back to real
+GCS via Application Default Credentials instead.
 
 The same emulator can also serve the frontend's static build, mirroring the production Cloud
 Storage + Cloud CDN setup (`infra/frontend.tf`) locally:
