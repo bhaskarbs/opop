@@ -43,6 +43,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # Backs app.storage.provider=gcs (see com.openopportunity.storage) — a real Google Cloud
+  # Storage API emulator, not a generic S3-alike, so the backend's google-cloud-storage client
+  # code talks to it identically to how it'll talk to real GCS in production; only the
+  # host/credentials config differs (see GcsStorageConfig). Behind the "cdn" profile, same
+  # opt-in-only reasoning as Elasticsearch's "search" profile above — app.storage.provider
+  # defaults to "local" (disk), which never touches this container.
+  fake-gcs-server:
+    image: fsouza/fake-gcs-server:1.52.2
+    container_name: openopportunity-fake-gcs
+    command: -scheme http -public-host localhost:4443
+    ports:
+      - '4443:4443'
+    volumes:
+      - openopportunity-gcs-data:/data
+    profiles: ['cdn']
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4443/storage/v1/b']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   openopportunity-postgres-data:
   openopportunity-elasticsearch-data:
+  openopportunity-gcs-data:

@@ -7,16 +7,18 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 /** Writes uploaded files to a local directory — the default for local dev per the project's
- * local-first build philosophy (docs/DEVELOPMENT_ROADMAP.md). A cloud-backed
- * FileStorageService (e.g. Google Cloud Storage) is the natural next implementation once a
- * real deployment needs files to survive past a single container instance. */
+ * local-first build philosophy (docs/DEVELOPMENT_ROADMAP.md). See GcsFileStorageService for the
+ * cloud-backed alternative (app.storage.provider=gcs) once a real deployment needs files to
+ * survive past a single container instance. */
 @Service
+@ConditionalOnProperty(name = "app.storage.provider", havingValue = "local", matchIfMissing = true)
 public class LocalFileStorageService implements FileStorageService {
 
     private final Path rootDir;
