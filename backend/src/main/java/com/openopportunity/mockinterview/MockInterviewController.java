@@ -39,7 +39,7 @@ public class MockInterviewController {
     @PostMapping("/questions")
     public GenerateQuestionsResponse generateQuestions(@Valid @RequestBody GenerateQuestionsRequest request) {
         return new GenerateQuestionsResponse(mockInterviewQuestionService.getSessionQuestions(
-                request.skills(), request.experienceLevel(), request.industry(), request.count()));
+                currentUserId(), request.skills(), request.experienceLevel(), request.industry(), request.count()));
     }
 
     @PostMapping

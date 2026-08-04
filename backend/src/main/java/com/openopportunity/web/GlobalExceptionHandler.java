@@ -56,6 +56,7 @@ import com.openopportunity.jobalert.exception.JobAlertNotFoundException;
 import com.openopportunity.mockinterview.exception.DuplicateMockInterviewQuestionException;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFoundException;
+import com.openopportunity.mockinterview.exception.MockInterviewQuestionRateLimitedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
@@ -312,6 +313,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(QuestionGenerationUnavailableException.class)
     public ResponseEntity<ApiError> handleQuestionGenerationUnavailable(QuestionGenerationUnavailableException ex) {
         return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(MockInterviewQuestionRateLimitedException.class)
+    public ResponseEntity<ApiError> handleMockInterviewQuestionRateLimited(
+            MockInterviewQuestionRateLimitedException ex) {
+        return error(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MockInterviewQuestionNotFoundException.class)

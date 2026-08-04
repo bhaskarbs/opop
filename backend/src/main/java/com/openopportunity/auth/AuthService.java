@@ -208,7 +208,11 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    /** Rotates the refresh token on every use: the presented token is revoked, a new one is issued. */
+    /** Rotates the refresh token on every use: the presented token is revoked, a new one is
+     * issued. Also re-checks suspension on every call (unlike the access token, which is a
+     * stateless JWT an admin suspending the account can't retroactively invalidate) — otherwise
+     * a suspended user could keep refreshing indefinitely for up to the refresh token's full
+     * lifetime and the suspension would have no real effect until it naturally expired. */
     @Transactional
     public Issued refresh(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
@@ -223,6 +227,9 @@ public class AuthService {
 
         User user =
                 userRepository.findById(existing.getUserId()).orElseThrow(InvalidRefreshTokenException::new);
+        if (user.isSuspended()) {
+            throw new SuspendedAccountException();
+        }
         return issueTokens(user);
     }
 

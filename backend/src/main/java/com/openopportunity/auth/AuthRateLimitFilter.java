@@ -19,9 +19,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * A minimal in-memory, fixed-window rate limiter for the unauthenticated auth endpoints most
- * exposed to abuse — login/register/Google sign-in (credential stuffing, fake account creation)
- * and forgot/reset password (reset-email bombing) — none of which had any throttling before this.
+ * A minimal in-memory, fixed-window rate limiter for the unauthenticated endpoints most exposed
+ * to abuse — login/register/Google sign-in (credential stuffing, fake account creation),
+ * forgot/reset password (reset-email bombing), and the community-interest form (unauthenticated,
+ * sends a real email per submission — same email/SMTP-quota abuse risk as forgot-password) —
+ * none of which had any throttling before this.
  *
  * <p>In-memory and per-instance is a deliberate scope match for this app's current local-first,
  * single-instance deployment (see CLAUDE.md); a multi-instance deployment would need a shared
@@ -46,7 +48,8 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             "/api/auth/google",
             "/api/auth/google/company",
             "/api/auth/forgot-password",
-            "/api/auth/reset-password");
+            "/api/auth/reset-password",
+            "/api/community/interest");
 
     private final boolean enabled;
     private final int maxRequestsPerWindow;
