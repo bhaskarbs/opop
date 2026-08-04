@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.auth.dto.ForgotPasswordRequest;
 import com.openopportunity.auth.dto.GoogleAuthRequest;
 import com.openopportunity.auth.dto.LoginRequest;
 import com.openopportunity.auth.dto.RegisterRequest;
@@ -64,6 +66,9 @@ class AuthServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private PasswordResetRateLimiter passwordResetRateLimiter;
+
     private AuthService authService;
 
     @BeforeEach
@@ -79,6 +84,7 @@ class AuthServiceTest {
                 googleTokenVerifierService,
                 emailService,
                 notificationService,
+                passwordResetRateLimiter,
                 30,
                 "http://localhost:5173");
     }
@@ -359,5 +365,41 @@ class AuthServiceTest {
         AuthService.Issued issued = authService.loginWithGoogle(new GoogleAuthRequest("google-id-token"));
 
         assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
+    }
+
+    @Test
+    void requestPasswordResetSendsAResetEmailWhenAllowedAndAccountExists() {
+        User user = new User("rohan@example.com", "hashed", "Rohan Mehta", UserRole.CANDIDATE);
+        when(passwordResetRateLimiter.tryAcquire("rohan@example.com")).thenReturn(true);
+        when(userRepository.findByEmailAndRole("rohan@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.of(user));
+
+        authService.requestPasswordReset(new ForgotPasswordRequest("rohan@example.com", "candidate"));
+
+        verify(passwordResetTokenRepository).save(any());
+        verify(emailService).send(eq("rohan@example.com"), any(), any(), any(), any());
+    }
+
+    @Test
+    void requestPasswordResetDoesNothingWhenTheTargetAddressIsRateLimited() {
+        when(passwordResetRateLimiter.tryAcquire("rohan@example.com")).thenReturn(false);
+
+        authService.requestPasswordReset(new ForgotPasswordRequest("rohan@example.com", "candidate"));
+
+        verify(userRepository, never()).findByEmailAndRole(any(), any());
+        verify(passwordResetTokenRepository, never()).save(any());
+        verify(emailService, never()).send(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void requestPasswordResetDoesNothingWhenNoAccountMatchesTheEmailAndRole() {
+        when(passwordResetRateLimiter.tryAcquire("nobody@example.com")).thenReturn(true);
+        when(userRepository.findByEmailAndRole("nobody@example.com", UserRole.CANDIDATE))
+                .thenReturn(Optional.empty());
+
+        authService.requestPasswordReset(new ForgotPasswordRequest("nobody@example.com", "candidate"));
+
+        verify(passwordResetTokenRepository, never()).save(any());
+        verify(emailService, never()).send(any(), any(), any(), any(), any());
     }
 }

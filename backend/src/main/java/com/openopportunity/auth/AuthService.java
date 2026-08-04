@@ -53,6 +53,7 @@ public class AuthService {
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final EmailService emailService;
     private final NotificationService notificationService;
+    private final PasswordResetRateLimiter passwordResetRateLimiter;
     private final long refreshTokenExpiryDays;
     private final String frontendBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -68,6 +69,7 @@ public class AuthService {
             GoogleTokenVerifierService googleTokenVerifierService,
             EmailService emailService,
             NotificationService notificationService,
+            PasswordResetRateLimiter passwordResetRateLimiter,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.userRepository = userRepository;
@@ -80,6 +82,7 @@ public class AuthService {
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.emailService = emailService;
         this.notificationService = notificationService;
+        this.passwordResetRateLimiter = passwordResetRateLimiter;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
         this.frontendBaseUrl = frontendBaseUrl;
     }
@@ -236,14 +239,18 @@ public class AuthService {
 
     /** Always succeeds from the caller's point of view whether or not the email/role pair
      * matches an account — the controller returns 204 either way (see AuthController) so a
-     * response can't be used to enumerate registered emails. An unrecognized role is treated
-     * the same as "no such account" for the same reason. */
+     * response can't be used to enumerate registered emails. An unrecognized role, and a target
+     * address that's already hit PasswordResetRateLimiter, are both treated the same as "no such
+     * account" for the same reason — none of them are distinguishable from outside. */
     @Transactional
     public void requestPasswordReset(ForgotPasswordRequest request) {
         UserRole role;
         try {
             role = UserRole.valueOf(request.role().trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
+            return;
+        }
+        if (!passwordResetRateLimiter.tryAcquire(request.email())) {
             return;
         }
         User user = userRepository.findByEmailAndRole(request.email(), role).orElse(null);
