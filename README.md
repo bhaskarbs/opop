@@ -154,6 +154,7 @@ format for a cache anyway. Spot-check what landed in Redis with
 `spring.data.redis.host`/`REDIS_HOST` (and `REDIS_PASSWORD`) at a real Redis (e.g. Memorystore)
 instead.
 
+
 ### Admin console access
 
 There's no admin self-registration flow (by design). On first startup the backend seeds one
