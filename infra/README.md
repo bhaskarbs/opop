@@ -5,6 +5,14 @@ Storage/CDN (frontend), built up one small step at a time — see "Phase 2 — C
 `../docs/DEVELOPMENT_ROADMAP.md` for the full step list. This step (19) only wires up the Terraform
 plumbing and declares the APIs later steps need; it provisions no billable compute or data resources.
 
+The frontend load balancer's URL map (see `frontend.tf`) routes `/en/jobs/*`, `/hi/jobs/*`,
+`/sitemap.xml`, and `/robots.txt` straight to the backend's Cloud Run service instead of the SPA
+bucket (see `job-seo.tf`), so a single job's public URL returns the backend's server-rendered
+HTML (`com.openopportunity.seo.JobSeoController`), and the sitemap/robots files
+(`SitemapController`/`RobotsController`) are reachable at the domain crawlers actually check.
+Every other path
+still serves the static frontend build unchanged.
+
 ## Prerequisites
 
 - A GCP project with billing linked, and the Terraform state bucket created — see the "One-time GCP
