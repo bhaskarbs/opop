@@ -36,13 +36,16 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Small local dataset — filters in memory rather than building SQL Specifications like the
- * Job Service's search does, same approach AdminUserService takes for its own cross-entity
- * (User + CompanyProfile) search. There's no "visible to companies" opt-out anywhere yet — every
- * registered candidate is searchable, matching what the mock UI this replaces assumed. */
+/** search() filters at the DB via CandidateProfileSpecifications (same idiom as JobService's
+ * own search) rather than fetching every CandidateProfile row and filtering in Java — the
+ * ranking pass that follows (featured/Plus-plan boost, then name/contacted/newest) still runs
+ * in Java, same as JobService.rankSearchResults does, since it needs revealed-contact state that
+ * only makes sense per calling company. There's no "visible to companies" opt-out anywhere yet —
+ * every registered candidate is searchable, matching what the mock UI this replaces assumed. */
 @Service
 public class CandidateSearchService {
 
@@ -82,10 +85,11 @@ public class CandidateSearchService {
 
     @Transactional(readOnly = true)
     public List<CandidateSearchSummary> search(UUID companyId, String q, List<String> locations, String sort) {
-        String normalizedQuery = q == null ? null : q.trim().toLowerCase();
-        List<String> normalizedLocations = normalizeLocations(locations);
+        Specification<CandidateProfile> spec = Specification.allOf(
+                CandidateProfileSpecifications.matchesQuery(q),
+                CandidateProfileSpecifications.matchesAnyLocation(locations));
 
-        List<CandidateProfile> profiles = candidateProfileRepository.findAll();
+        List<CandidateProfile> profiles = candidateProfileRepository.findAll(spec);
         Map<UUID, User> usersById = userRepository
                 .findAllById(profiles.stream().map(CandidateProfile::getUserId).toList())
                 .stream()
@@ -105,8 +109,6 @@ public class CandidateSearchService {
 
         return profiles.stream()
                 .filter(profile -> usersById.containsKey(profile.getUserId()))
-                .filter(profile -> matchesQuery(profile, usersById.get(profile.getUserId()), normalizedQuery))
-                .filter(profile -> matchesAnyLocation(profile, normalizedLocations))
                 .sorted(resolveSort(sort, usersById, revealedCandidateIds, plusCandidateIds))
                 .map(profile -> toSummary(
                         profile,
@@ -323,43 +325,6 @@ public class CandidateSearchService {
             throw new CompanyNotEligibleToContactCandidatesException(
                     "You've used all " + quota.limit() + " candidate contacts for this billing period");
         }
-    }
-
-    private boolean matchesQuery(CandidateProfile profile, User user, String normalizedQuery) {
-        if (normalizedQuery == null || normalizedQuery.isBlank()) {
-            return true;
-        }
-        if (user.getFullName().toLowerCase().contains(normalizedQuery)) {
-            return true;
-        }
-        if (profile.getTitle() != null && profile.getTitle().toLowerCase().contains(normalizedQuery)) {
-            return true;
-        }
-        return profile.getSkills().stream().anyMatch(skill -> skill.toLowerCase().contains(normalizedQuery));
-    }
-
-    /** Matches if ANY of the given locations is a substring of the candidate's location — same
-     * multi-value relaxation as JobSpecifications.matchesAnyLocation, for the location filter's
-     * city tags. */
-    private boolean matchesAnyLocation(CandidateProfile profile, List<String> normalizedLocations) {
-        if (normalizedLocations.isEmpty()) {
-            return true;
-        }
-        if (profile.getLocation() == null) {
-            return false;
-        }
-        String lowerLocation = profile.getLocation().toLowerCase();
-        return normalizedLocations.stream().anyMatch(lowerLocation::contains);
-    }
-
-    private List<String> normalizeLocations(List<String> locations) {
-        if (locations == null || locations.isEmpty()) {
-            return List.of();
-        }
-        return locations.stream()
-                .filter(value -> value != null && !value.isBlank())
-                .map(value -> value.trim().toLowerCase())
-                .toList();
     }
 
     private String photoUrl(UUID userId) {

@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.jpa.domain.Specification;
 
 /** Covers the ranking layered on top of a company's chosen sort (see
  * CandidateSearchService#resolveSort) — an admin-featured candidate leads, then a Plus-plan
@@ -89,7 +90,7 @@ class CandidateSearchServiceTest {
                 new CandidateProfile(featuredUser.getId(), "9000000002", List.of(), null);
         featuredProfile.feature();
 
-        when(candidateProfileRepository.findAll())
+        when(candidateProfileRepository.findAll(any(Specification.class)))
                 .thenReturn(List.of(plainProfile, plusProfile, featuredProfile));
         when(userRepository.findAllById(any())).thenReturn(List.of(plainUser, plusUser, featuredUser));
         UUID companyId = UUID.randomUUID();
