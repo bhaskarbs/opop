@@ -38,6 +38,32 @@ resource "google_compute_backend_bucket" "frontend" {
 resource "google_compute_url_map" "frontend" {
   name            = "openopportunity-frontend"
   default_service = google_compute_backend_bucket.frontend.self_link
+
+  # No custom domain yet (see the file header comment), so "*" is the only host there is to
+  # match — this isn't narrowing anything down, just the required shape for attaching a
+  # path_matcher at all.
+  host_rule {
+    hosts        = ["*"]
+    path_matcher = "job-pages"
+  }
+
+  # Everything other than the paths below still falls through to the SPA bucket (including
+  # /en/jobs and /hi/jobs themselves — the search page, not a single job — and every other
+  # client-routed path), same as before this path_matcher existed.
+  path_matcher {
+    name            = "job-pages"
+    default_service = google_compute_backend_bucket.frontend.self_link
+
+    # See com.openopportunity.seo.JobSeoController — /{lang}/jobs/{jobId} is the one route the
+    # backend server-renders instead of the SPA shell — plus /sitemap.xml and /robots.txt
+    # (SitemapController/RobotsController), which need to be reachable at this same public
+    # domain for a crawler to ever find them. "en"/"hi" are hardcoded to match
+    # SUPPORTED_LANGUAGES in frontend/src/i18n/index.ts; add a path here if that list grows.
+    path_rule {
+      paths   = ["/en/jobs/*", "/hi/jobs/*", "/sitemap.xml", "/robots.txt"]
+      service = google_compute_backend_service.job_seo.self_link
+    }
+  }
 }
 
 resource "google_compute_target_http_proxy" "frontend" {

@@ -7,10 +7,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * A second, narrowly-scoped filter chain for {@code /{lang}/jobs/{jobId}} (see JobSeoController)
- * — public, and with a CSP relaxed just enough to emit a JSON-LD {@code <script>} block, unlike
- * the main SecurityConfig chain's {@code default-src 'none'}, which assumes this backend never
- * serves real HTML at all. {@code @Order(1)} makes this chain match first; every other request
+ * A second, narrowly-scoped filter chain for the whole com.openopportunity.seo surface —
+ * {@code /{lang}/jobs/{jobId}} (JobSeoController), {@code /sitemap.xml} (SitemapController), and
+ * {@code /robots.txt} (RobotsController) — public, and with a CSP relaxed just enough to emit a
+ * JSON-LD {@code <script>} block on the job page, unlike the main SecurityConfig chain's
+ * {@code default-src 'none'}, which assumes this backend never serves real HTML at all (the
+ * relaxation is harmless for the sitemap/robots responses too — neither one emits any markup for
+ * it to matter to). {@code @Order(1)} makes this chain match first; every other request
  * (including the JSON API at the very similar-looking {@code /api/jobs/*}) still falls through
  * to SecurityConfig's chain, which remains unordered (implicitly last).
  */
@@ -20,7 +23,7 @@ public class SeoSecurityConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain jobSeoFilterChain(HttpSecurity http) throws Exception {
-        http.securityMatcher("/en/jobs/*", "/hi/jobs/*")
+        http.securityMatcher("/en/jobs/*", "/hi/jobs/*", "/sitemap.xml", "/robots.txt")
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 // Every job/company field this page renders is HTML-escaped, and the JSON-LD
