@@ -15,6 +15,7 @@ import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.mockinterview.MockInterviewService;
 import com.openopportunity.storage.FileStorageService;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -25,7 +26,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +54,8 @@ public class CandidateSearchService {
     private final FileStorageService fileStorageService;
     private final CompanyBillingService companyBillingService;
     private final MockInterviewService mockInterviewService;
+    private final Executor resumeRenderExecutor;
+    private final long resumeRenderTimeoutSeconds;
 
     public CandidateSearchService(
             UserRepository userRepository,
@@ -54,7 +65,9 @@ public class CandidateSearchService {
             CandidateSubscriptionRepository candidateSubscriptionRepository,
             FileStorageService fileStorageService,
             CompanyBillingService companyBillingService,
-            MockInterviewService mockInterviewService) {
+            MockInterviewService mockInterviewService,
+            @Qualifier("resumeRenderExecutor") Executor resumeRenderExecutor,
+            @Value("${app.resume-render.timeout-seconds}") long resumeRenderTimeoutSeconds) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.companyProfileRepository = companyProfileRepository;
@@ -63,6 +76,8 @@ public class CandidateSearchService {
         this.fileStorageService = fileStorageService;
         this.companyBillingService = companyBillingService;
         this.mockInterviewService = mockInterviewService;
+        this.resumeRenderExecutor = resumeRenderExecutor;
+        this.resumeRenderTimeoutSeconds = resumeRenderTimeoutSeconds;
     }
 
     @Transactional(readOnly = true)
@@ -200,7 +215,13 @@ public class CandidateSearchService {
     /** Renders the resume as an HTML fragment (see ResumeHtmlRenderer) for the "view resume as a
      * web view" preview — same eligibility gate and file lookup as getResume above, but returns
      * markup instead of raw bytes so .docx/.doc resumes (which a browser can't render inline in
-     * an &lt;iframe&gt; the way it can a PDF) get a real preview too. */
+     * an &lt;iframe&gt; the way it can a PDF) get a real preview too.
+     *
+     * <p>The actual PDFBox/POI parse runs on resumeRenderExecutor (see AsyncConfig) with a
+     * bounded wait rather than inline on this request thread — a pathological but
+     * validly-signed upload (see ResumeContentValidator, which only checks the file is really a
+     * PDF/DOC/DOCX, not that it's well-formed enough to parse quickly) could otherwise tie up
+     * the calling thread indefinitely. */
     @Transactional(readOnly = true)
     public String getResumeHtml(UUID companyId, UUID candidateUserId) {
         requireEligibleToContactCandidates(companyId);
@@ -208,10 +229,32 @@ public class CandidateSearchService {
                 .findByUserId(candidateUserId)
                 .filter(existing -> existing.getResumeStorageKey() != null)
                 .orElseThrow(() -> new CandidateResumeNotFoundException(candidateUserId));
+        byte[] content;
         try (InputStream in = fileStorageService.load(profile.getResumeStorageKey()).getInputStream()) {
-            return ResumeHtmlRenderer.render(in, profile.getResumeFileName());
-        } catch (IOException | RuntimeException ex) {
+            content = in.readAllBytes();
+        } catch (IOException ex) {
             throw new ResumeRenderingFailedException(candidateUserId, ex);
+        }
+        String fileName = profile.getResumeFileName();
+        try {
+            return CompletableFuture.supplyAsync(() -> renderOrThrow(content, fileName), resumeRenderExecutor)
+                    .get(resumeRenderTimeoutSeconds, TimeUnit.SECONDS);
+        } catch (TimeoutException | RejectedExecutionException ex) {
+            throw new ResumeRenderingFailedException(candidateUserId, ex);
+        } catch (ExecutionException ex) {
+            throw new ResumeRenderingFailedException(
+                    candidateUserId, ex.getCause() != null ? ex.getCause() : ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ResumeRenderingFailedException(candidateUserId, ex);
+        }
+    }
+
+    private static String renderOrThrow(byte[] content, String fileName) {
+        try (InputStream in = new ByteArrayInputStream(content)) {
+            return ResumeHtmlRenderer.render(in, fileName);
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
         }
     }
 

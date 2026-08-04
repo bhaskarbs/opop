@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.openopportunity.auth.dto.CandidateProfileForCompany;
 import com.openopportunity.auth.dto.CandidateSearchSummary;
 import com.openopportunity.auth.exception.CompanyNotEligibleToContactCandidatesException;
+import com.openopportunity.auth.exception.ResumeRenderingFailedException;
 import com.openopportunity.billing.CandidateSubscription;
 import com.openopportunity.billing.CandidateSubscriptionRepository;
 import com.openopportunity.billing.CompanyBillingService;
@@ -19,15 +20,20 @@ import com.openopportunity.billing.SubscriptionPlan;
 import com.openopportunity.mockinterview.MockInterviewService;
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import com.openopportunity.storage.FileStorageService;
+import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ByteArrayResource;
 
 /** Covers the ranking layered on top of a company's chosen sort (see
  * CandidateSearchService#resolveSort) — an admin-featured candidate leads, then a Plus-plan
@@ -69,7 +75,9 @@ class CandidateSearchServiceTest {
                 candidateSubscriptionRepository,
                 fileStorageService,
                 companyBillingService,
-                mockInterviewService);
+                mockInterviewService,
+                Runnable::run,
+                10);
 
         User plainUser = new User("plain@example.com", "hash", "Plain Candidate", UserRole.CANDIDATE);
         User plusUser = new User("plus@example.com", "hash", "Plus Candidate", UserRole.CANDIDATE);
@@ -99,6 +107,10 @@ class CandidateSearchServiceTest {
     }
 
     private CandidateSearchService service() {
+        return service(Runnable::run, 10);
+    }
+
+    private CandidateSearchService service(Executor resumeRenderExecutor, long resumeRenderTimeoutSeconds) {
         return new CandidateSearchService(
                 userRepository,
                 candidateProfileRepository,
@@ -107,7 +119,9 @@ class CandidateSearchServiceTest {
                 candidateSubscriptionRepository,
                 fileStorageService,
                 companyBillingService,
-                mockInterviewService);
+                mockInterviewService,
+                resumeRenderExecutor,
+                resumeRenderTimeoutSeconds);
     }
 
     private CompanyProfile eligibleCompanyProfile(UUID companyId) {
@@ -172,5 +186,69 @@ class CandidateSearchServiceTest {
         MockInterviewService.LoadedFile result = service.getMockInterviewVideo(companyId, candidateId, sessionId);
 
         assertThat(result.contentType()).isEqualTo("video/webm");
+    }
+
+    private void stubEligibleForResumeAccess(UUID companyId) {
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(eligibleCompanyProfile(companyId)));
+        when(companyBillingService.getPlanPeriod(companyId))
+                .thenReturn(new CompanyBillingService.PlanPeriod(CompanySubscriptionPlan.GROWTH, null, null));
+    }
+
+    private void stubResume(UUID candidateId, String storageKey, byte[] content) throws Exception {
+        CandidateProfile profile = new CandidateProfile(candidateId, "9000000000", List.of(), "resume.pdf");
+        profile.updateResume("resume.pdf", storageKey, content.length, Instant.now());
+        when(candidateProfileRepository.findByUserId(candidateId)).thenReturn(Optional.of(profile));
+        when(fileStorageService.load(storageKey)).thenReturn(new ByteArrayResource(content));
+    }
+
+    private static byte[] minimalValidPdf() throws Exception {
+        try (PDDocument document = new PDDocument();
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            document.save(out);
+            return out.toByteArray();
+        }
+    }
+
+    @Test
+    void getResumeHtmlRendersOnTheConfiguredExecutorAndReturnsTheHtml() throws Exception {
+        UUID companyId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
+        stubEligibleForResumeAccess(companyId);
+        stubResume(candidateId, "resumes/x.pdf", minimalValidPdf());
+        CandidateSearchService service = service(Runnable::run, 10);
+
+        String html = service.getResumeHtml(companyId, candidateId);
+
+        assertThat(html).isNotNull();
+    }
+
+    @Test
+    void getResumeHtmlFailsCleanlyInsteadOfHangingWhenRenderingTimesOut() throws Exception {
+        UUID companyId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
+        stubEligibleForResumeAccess(companyId);
+        stubResume(candidateId, "resumes/x.pdf", new byte[] {1, 2, 3});
+        // Never actually runs the submitted task — simulates a render that's still going when
+        // the timeout elapses, without needing a real pathological file to hang on.
+        Executor neverRuns = task -> {};
+        CandidateSearchService service = service(neverRuns, 1);
+
+        assertThatThrownBy(() -> service.getResumeHtml(companyId, candidateId))
+                .isInstanceOf(ResumeRenderingFailedException.class);
+    }
+
+    @Test
+    void getResumeHtmlFailsCleanlyWhenTheExecutorIsSaturated() throws Exception {
+        UUID companyId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
+        stubEligibleForResumeAccess(companyId);
+        stubResume(candidateId, "resumes/x.pdf", new byte[] {1, 2, 3});
+        Executor saturated = task -> {
+            throw new RejectedExecutionException("pool full");
+        };
+        CandidateSearchService service = service(saturated, 10);
+
+        assertThatThrownBy(() -> service.getResumeHtml(companyId, candidateId))
+                .isInstanceOf(ResumeRenderingFailedException.class);
     }
 }
