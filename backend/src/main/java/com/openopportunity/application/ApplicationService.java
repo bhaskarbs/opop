@@ -1,5 +1,6 @@
 package com.openopportunity.application;
 
+import com.openopportunity.analytics.AnalyticsService;
 import com.openopportunity.application.dto.ApplicationSummary;
 import com.openopportunity.application.dto.JobApplicantSummary;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
@@ -34,6 +35,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final CandidateContactRevealRepository candidateContactRevealRepository;
+    private final AnalyticsService analyticsService;
 
     public ApplicationService(
             ApplicationRepository applicationRepository,
@@ -41,13 +43,15 @@ public class ApplicationService {
             NotificationService notificationService,
             UserRepository userRepository,
             CandidateProfileRepository candidateProfileRepository,
-            CandidateContactRevealRepository candidateContactRevealRepository) {
+            CandidateContactRevealRepository candidateContactRevealRepository,
+            AnalyticsService analyticsService) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.notificationService = notificationService;
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.candidateContactRevealRepository = candidateContactRevealRepository;
+        this.analyticsService = analyticsService;
     }
 
     @Transactional
@@ -70,6 +74,7 @@ public class ApplicationService {
                 candidate.getFullName() + " applied to your \"" + job.getTitle() + "\" job posting.",
                 "/company/job-postings/" + jobId + "/applicants");
 
+        analyticsService.capture(candidateId, "application_submitted", Map.of("jobId", jobId));
         return toSummary(application);
     }
 
