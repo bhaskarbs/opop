@@ -20,12 +20,16 @@ import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import com.openopportunity.savedjob.SavedJobRepository;
+import com.openopportunity.search.JobIndexingService;
+import com.openopportunity.search.JobSearchProvider;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,6 +53,8 @@ public class JobService {
     private final ApplicationRepository applicationRepository;
     private final SavedJobRepository savedJobRepository;
     private final NotificationService notificationService;
+    private final JobSearchProvider jobSearchProvider;
+    private final Optional<JobIndexingService> jobIndexingService;
 
     public JobService(
             JobRepository jobRepository,
@@ -57,7 +63,9 @@ public class JobService {
             CompanySubscriptionRepository companySubscriptionRepository,
             ApplicationRepository applicationRepository,
             SavedJobRepository savedJobRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            JobSearchProvider jobSearchProvider,
+            Optional<JobIndexingService> jobIndexingService) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
@@ -65,6 +73,11 @@ public class JobService {
         this.applicationRepository = applicationRepository;
         this.savedJobRepository = savedJobRepository;
         this.notificationService = notificationService;
+        this.jobSearchProvider = jobSearchProvider;
+        // Empty when app.search.provider=postgres (the default) — JobIndexingService only
+        // exists as a bean once app.search.provider=elasticsearch (see its
+        // @ConditionalOnProperty), so there's nothing to keep in sync in the default case.
+        this.jobIndexingService = jobIndexingService;
     }
 
     // A client-suppliable page size that's too large would defeat pagination's whole point
@@ -72,11 +85,12 @@ public class JobService {
     // itself defaults to.
     private static final int MAX_SEARCH_PAGE_SIZE = 50;
 
-    /** Filtering happens at the DB (see JobSpecifications); the featured/promoted-company
-     * ranking pass that follows still runs in Java over every matching job, same as before
-     * pagination existed, since it needs promoted-company state that isn't worth expressing as
-     * a SQL ORDER BY — only the already-ranked result gets sliced down to the requested page,
-     * so a broad, unfiltered search can no longer return an unbounded response. */
+    /** Filtering/ordering happens behind JobSearchProvider (Postgres or Elasticsearch — see its
+     * javadoc); the featured/promoted-company ranking pass that follows still runs in Java over
+     * every matching job, same as before pagination existed, since it needs promoted-company
+     * state that isn't worth expressing as a SQL ORDER BY (or an Elasticsearch sort) — only the
+     * already-ranked result gets sliced down to the requested page, so a broad, unfiltered
+     * search can no longer return an unbounded response. */
     @Transactional(readOnly = true)
     public JobSearchResult search(
             List<String> keywords,
@@ -90,15 +104,8 @@ public class JobService {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), MAX_SEARCH_PAGE_SIZE);
 
-        Specification<Job> spec = Specification.allOf(
-                JobSpecifications.hasStatus(JobStatus.ACTIVE),
-                JobSpecifications.matchesAnyKeyword(keywords),
-                JobSpecifications.matchesAnyLocation(locations),
-                JobSpecifications.hasLevelIn(levels),
-                JobSpecifications.hasModeIn(modes),
-                JobSpecifications.hasMinSalaryAtLeast(minSalaryLakhs));
-
-        List<Job> unranked = jobRepository.findAll(spec, resolveSort(sort));
+        List<UUID> orderedIds = jobSearchProvider.searchIds(keywords, locations, levels, modes, minSalaryLakhs, sort);
+        List<Job> unranked = hydrateInOrder(orderedIds);
         Set<UUID> promotedCompanyIds = promotedCompanyIdsFor(unranked);
         List<Job> ranked = rankSearchResults(unranked, promotedCompanyIds);
 
@@ -227,7 +234,7 @@ public class JobService {
                 nonNull(request.requirements()),
                 nonNull(request.skills()),
                 request.status());
-        jobRepository.save(job);
+        save(job);
         if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
             notifyAdminsJobPending(job, company.getFullName());
         }
@@ -255,7 +262,7 @@ public class JobService {
                 nonNull(request.requirements()),
                 nonNull(request.skills()),
                 request.status());
-        jobRepository.save(job);
+        save(job);
         if (previousStatus != JobStatus.PENDING_APPROVAL && job.getStatus() == JobStatus.PENDING_APPROVAL) {
             User company = userRepository.findById(companyId).orElseThrow();
             notifyAdminsJobPending(job, company.getFullName());
@@ -268,7 +275,7 @@ public class JobService {
     public void delete(UUID id, UUID companyId) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         requireOwner(job, companyId);
-        jobRepository.delete(job);
+        delete(job);
     }
 
     /** Admin-initiated hard delete — unlike delete(id, companyId) above, doesn't require company
@@ -280,7 +287,7 @@ public class JobService {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         applicationRepository.deleteByJobId(id);
         savedJobRepository.deleteByJobId(id);
-        jobRepository.delete(job);
+        delete(job);
     }
 
     /** Full detail (not the summary search()/mine() return) — the admin review card shows
@@ -304,7 +311,7 @@ public class JobService {
     public JobDetail approve(UUID id) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.approve();
-        jobRepository.save(job);
+        save(job);
         notificationService.notify(
                 job.getCompanyId(),
                 NotificationType.JOB_APPROVED,
@@ -320,7 +327,7 @@ public class JobService {
     public JobDetail reject(UUID id, String reason) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.reject();
-        jobRepository.save(job);
+        save(job);
         notificationService.notify(
                 job.getCompanyId(),
                 NotificationType.JOB_REJECTED,
@@ -339,7 +346,7 @@ public class JobService {
     public JobDetail feature(UUID id) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.feature();
-        jobRepository.save(job);
+        save(job);
         return toDetail(
                 job,
                 companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
@@ -350,7 +357,7 @@ public class JobService {
     public JobDetail unfeature(UUID id) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.unfeature();
-        jobRepository.save(job);
+        save(job);
         return toDetail(
                 job,
                 companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
@@ -392,17 +399,37 @@ public class JobService {
         }
     }
 
+    /** Every create/update/approve/reject/feature/unfeature goes through this instead of calling
+     * jobRepository.save directly, so the Elasticsearch index (when active — see
+     * JobIndexingService) never has a chance to drift out of sync with a write that used the
+     * other path. Runs inside the same @Transactional method as the write itself, but the index
+     * update is best-effort on top (see JobIndexingService's javadoc) — it never rolls back the
+     * actual save if it fails. */
+    private void save(Job job) {
+        jobRepository.save(job);
+        jobIndexingService.ifPresent(service -> service.index(job));
+    }
+
+    private void delete(Job job) {
+        jobIndexingService.ifPresent(service -> service.delete(job.getId()));
+        jobRepository.delete(job);
+    }
+
     private static List<String> nonNull(List<String> values) {
         return values == null ? List.of() : values;
     }
 
-    private Sort resolveSort(String sort) {
-        if ("salary".equals(sort)) {
-            return Sort.by(Sort.Direction.DESC, "salaryMaxLakhs");
-        }
-        // "newest" and the default ("relevant" — no ranking model exists yet) both fall back to
-        // recency, which is the only ordering signal this basic search actually has.
-        return Sort.by(Sort.Direction.DESC, "createdAt");
+    /** jobRepository.findAllById doesn't preserve its input list's order (JPA makes no such
+     * guarantee — in practice it comes back in whatever order the underlying SQL "IN" query's
+     * result happens to have), but JobSearchProvider's ordering (recency, salary, or
+     * Elasticsearch relevance) is the whole point of calling it — this re-applies that order
+     * after hydrating. Silently drops any id JobSearchProvider returned that no longer exists in
+     * Postgres (e.g. Elasticsearch briefly out of sync after a delete), same "don't error on a
+     * stale reference" convention as getByIds. */
+    private List<Job> hydrateInOrder(List<UUID> orderedIds) {
+        Map<UUID, Job> jobsById = jobRepository.findAllById(orderedIds).stream()
+                .collect(Collectors.toMap(Job::getId, job -> job));
+        return orderedIds.stream().map(jobsById::get).filter(Objects::nonNull).toList();
     }
 
     private Map<UUID, CompanyProfile> companyProfilesFor(List<Job> jobs) {

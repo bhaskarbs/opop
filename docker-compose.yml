@@ -16,5 +16,33 @@ services:
       timeout: 5s
       retries: 5
 
+  # Backs app.search.provider=elasticsearch (see com.openopportunity.search) — the "search"
+  # profile keeps this out of a bare `docker compose up`/`up -d` (which only starts Postgres,
+  # matching app.search.provider's "postgres" default — nothing here needs Elasticsearch
+  # running). Start it explicitly with `docker compose up -d elasticsearch` (naming a profiled
+  # service directly still starts it, profile or not) or `docker compose --profile search up -d`.
+  # Security is disabled here purely for local-dev simplicity, same reasoning as Postgres's
+  # plaintext password above; Elastic Cloud (where this shifts to in a real deployment) has it on
+  # by default and reached via an API key instead (see application.properties).
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: openopportunity-elasticsearch
+    profiles: ['search']
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      xpack.security.http.ssl.enabled: 'false'
+      ES_JAVA_OPTS: '-Xms512m -Xmx512m'
+    ports:
+      - '9200:9200'
+    volumes:
+      - openopportunity-elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:9200/_cluster/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   openopportunity-postgres-data:
+  openopportunity-elasticsearch-data:

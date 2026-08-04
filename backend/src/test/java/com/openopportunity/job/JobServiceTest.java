@@ -28,6 +28,7 @@ import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import com.openopportunity.savedjob.SavedJobRepository;
+import com.openopportunity.search.JobSearchProvider;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -67,6 +68,9 @@ class JobServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private JobSearchProvider jobSearchProvider;
+
     private JobService jobService;
 
     @BeforeEach
@@ -78,7 +82,9 @@ class JobServiceTest {
                 companySubscriptionRepository,
                 applicationRepository,
                 savedJobRepository,
-                notificationService);
+                notificationService,
+                jobSearchProvider,
+                Optional.empty());
     }
 
     private CompanyProfile eligibleProfile(UUID companyId) {
@@ -427,8 +433,10 @@ class JobServiceTest {
                 List.of(), List.of(), JobStatus.ACTIVE);
         featuredJob.feature();
 
-        when(jobRepository.findAll(any(Specification.class), any(Sort.class)))
-                .thenReturn(List.of(plainJob, promotedJob, featuredJob));
+        List<Job> orderedJobs = List.of(plainJob, promotedJob, featuredJob);
+        when(jobSearchProvider.searchIds(any(), any(), any(), any(), any(), any()))
+                .thenReturn(orderedJobs.stream().map(Job::getId).toList());
+        when(jobRepository.findAllById(any())).thenReturn(orderedJobs);
         when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
         CompanySubscription promotedSubscription =
                 new CompanySubscription(promotedCompanyId, CompanySubscriptionPlan.GROWTH);
@@ -460,7 +468,9 @@ class JobServiceTest {
                     ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "About",
                     List.of(), List.of(), List.of(), JobStatus.ACTIVE));
         }
-        when(jobRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(jobs);
+        when(jobSearchProvider.searchIds(any(), any(), any(), any(), any(), any()))
+                .thenReturn(jobs.stream().map(Job::getId).toList());
+        when(jobRepository.findAllById(any())).thenReturn(jobs);
         when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
         when(companySubscriptionRepository.findByPlanNotAndCurrentPeriodEndAfter(
                         eq(CompanySubscriptionPlan.FREE), any()))
