@@ -4,9 +4,10 @@ import java.io.IOException;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
-/** Abstracts where uploaded files (resumes, mock interview recordings, and eventually company
- * certificates) actually live, so the local-disk implementation used in dev can be swapped for
- * a cloud-backed one (e.g. Google Cloud Storage) later without touching callers. */
+/** Abstracts where uploaded files (resumes, photos/logos, company certificates, mock interview
+ * recordings) actually live, so callers never know or care whether the active implementation is
+ * {@link LocalFileStorageService} (local dev's default) or {@link GcsFileStorageService} (a
+ * real deployment, see app.storage.provider). */
 public interface FileStorageService {
 
     /** Stores the file under the given subdirectory and returns an opaque storage key that

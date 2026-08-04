@@ -3,20 +3,20 @@ package com.openopportunity.storage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 /** Writes uploaded files to a local directory — the default for local dev per the project's
- * local-first build philosophy (docs/DEVELOPMENT_ROADMAP.md). A cloud-backed
- * FileStorageService (e.g. Google Cloud Storage) is the natural next implementation once a
- * real deployment needs files to survive past a single container instance. */
+ * local-first build philosophy (docs/DEVELOPMENT_ROADMAP.md), and active whenever
+ * app.storage.provider isn't explicitly set to "gcs" (see GcsFileStorageService, the cloud-backed
+ * implementation a real deployment switches to once uploads need to survive past a single
+ * container instance / be visible across more than one). */
 @Service
+@ConditionalOnProperty(name = "app.storage.provider", havingValue = "local", matchIfMissing = true)
 public class LocalFileStorageService implements FileStorageService {
 
     private final Path rootDir;
@@ -27,7 +27,7 @@ public class LocalFileStorageService implements FileStorageService {
 
     @Override
     public String store(MultipartFile file, String subdirectory) throws IOException {
-        String storageKey = newStorageKey(subdirectory, file.getOriginalFilename());
+        String storageKey = StorageKeyGenerator.newKey(subdirectory, file.getOriginalFilename());
         Files.createDirectories(rootDir.resolve(subdirectory));
         file.transferTo(rootDir.resolve(storageKey));
         return storageKey;
@@ -35,14 +35,10 @@ public class LocalFileStorageService implements FileStorageService {
 
     @Override
     public String store(byte[] content, String originalFilename, String subdirectory) throws IOException {
-        String storageKey = newStorageKey(subdirectory, originalFilename);
+        String storageKey = StorageKeyGenerator.newKey(subdirectory, originalFilename);
         Files.createDirectories(rootDir.resolve(subdirectory));
         Files.write(rootDir.resolve(storageKey), content);
         return storageKey;
-    }
-
-    private String newStorageKey(String subdirectory, String originalFilename) {
-        return subdirectory + "/" + UUID.randomUUID() + extensionOf(originalFilename);
     }
 
     @Override
@@ -53,24 +49,5 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public void delete(String storageKey) throws IOException {
         Files.deleteIfExists(rootDir.resolve(storageKey));
-    }
-
-    // The generated storage key is always <UUID><extension> under a fixed subdirectory, so this
-    // is the only piece of a client-supplied filename that ever reaches disk — allowlisting it
-    // to plain alphanumeric characters rules out path separators/traversal segments (`/`, `..`)
-    // ever being part of the path, rather than relying on how the rest of the key happens to be
-    // built to incidentally block them.
-    private static final Pattern SAFE_EXTENSION = Pattern.compile("\\.[a-zA-Z0-9]{1,10}");
-
-    private static String extensionOf(String originalFilename) {
-        if (originalFilename == null) {
-            return "";
-        }
-        int dot = originalFilename.lastIndexOf('.');
-        if (dot < 0) {
-            return "";
-        }
-        String candidate = originalFilename.substring(dot).toLowerCase(Locale.ROOT);
-        return SAFE_EXTENSION.matcher(candidate).matches() ? candidate : "";
     }
 }
