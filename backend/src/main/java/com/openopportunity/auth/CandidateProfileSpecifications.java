@@ -34,8 +34,12 @@ final class CandidateProfileSpecifications {
                             cb.equal(userRoot.get("id"), root.get("userId")),
                             cb.like(cb.lower(userRoot.get("fullName")), pattern));
 
+            // immutable_array_to_string (see V54 migration), not the built-in array_to_string —
+            // the built-in is STABLE rather than IMMUTABLE, so idx_candidate_profiles_skills_trgm's
+            // expression index only matches (and only gets used by the planner for) this exact
+            // function.
             Expression<String> skillsJoined = cb.lower(
-                    cb.function("array_to_string", String.class, root.get("skills"), cb.literal(",")));
+                    cb.function("immutable_array_to_string", String.class, root.get("skills"), cb.literal(",")));
             return cb.or(
                     cb.like(cb.lower(root.get("title")), pattern),
                     cb.like(skillsJoined, pattern),
