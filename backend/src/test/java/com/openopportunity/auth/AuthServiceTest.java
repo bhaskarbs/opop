@@ -18,6 +18,7 @@ import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
+import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.mail.EmailService;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
@@ -299,6 +300,24 @@ class AuthServiceTest {
     void refreshRejectsBlankOrMissingToken() {
         assertThatThrownBy(() -> authService.refresh(" ")).isInstanceOf(InvalidRefreshTokenException.class);
         assertThatThrownBy(() -> authService.refresh(null)).isInstanceOf(InvalidRefreshTokenException.class);
+    }
+
+    @Test
+    void refreshRejectsATokenBelongingToANowSuspendedUser() {
+        UUID userId = UUID.randomUUID();
+        RefreshToken active = new RefreshToken(userId, "irrelevant-hash", Instant.now().plusSeconds(60));
+        User suspended = new User("rohan@example.com", "hashed", "Rohan Mehta", UserRole.CANDIDATE);
+        suspended.suspend();
+        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(active));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(suspended));
+
+        assertThatThrownBy(() -> authService.refresh("some-raw-token"))
+                .isInstanceOf(SuspendedAccountException.class);
+
+        // The presented token must still be burned even though the refresh itself is rejected —
+        // otherwise a suspended user could keep retrying the same token instead of it being a
+        // guaranteed one-shot.
+        verify(refreshTokenRepository).save(active);
     }
 
     @Test

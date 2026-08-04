@@ -3,7 +3,9 @@ package com.openopportunity.storage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -53,11 +55,22 @@ public class LocalFileStorageService implements FileStorageService {
         Files.deleteIfExists(rootDir.resolve(storageKey));
     }
 
+    // The generated storage key is always <UUID><extension> under a fixed subdirectory, so this
+    // is the only piece of a client-supplied filename that ever reaches disk — allowlisting it
+    // to plain alphanumeric characters rules out path separators/traversal segments (`/`, `..`)
+    // ever being part of the path, rather than relying on how the rest of the key happens to be
+    // built to incidentally block them.
+    private static final Pattern SAFE_EXTENSION = Pattern.compile("\\.[a-zA-Z0-9]{1,10}");
+
     private static String extensionOf(String originalFilename) {
         if (originalFilename == null) {
             return "";
         }
         int dot = originalFilename.lastIndexOf('.');
-        return dot >= 0 ? originalFilename.substring(dot) : "";
+        if (dot < 0) {
+            return "";
+        }
+        String candidate = originalFilename.substring(dot).toLowerCase(Locale.ROOT);
+        return SAFE_EXTENSION.matcher(candidate).matches() ? candidate : "";
     }
 }

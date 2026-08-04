@@ -7,11 +7,13 @@ import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.StructuredMessageCreateParams;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.openopportunity.job.ExperienceLevel;
+import com.openopportunity.mockinterview.exception.MockInterviewQuestionRateLimitedException;
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -41,9 +43,12 @@ public class MockInterviewQuestionService {
 
     private final AnthropicClient client;
     private final MockInterviewQuestionRepository questionRepository;
+    private final MockInterviewQuestionRateLimiter rateLimiter;
 
-    public MockInterviewQuestionService(MockInterviewQuestionRepository questionRepository) {
+    public MockInterviewQuestionService(
+            MockInterviewQuestionRepository questionRepository, MockInterviewQuestionRateLimiter rateLimiter) {
         this.questionRepository = questionRepository;
+        this.rateLimiter = rateLimiter;
         AnthropicClient created;
         try {
             created = AnthropicOkHttpClient.fromEnv();
@@ -54,7 +59,10 @@ public class MockInterviewQuestionService {
     }
 
     public List<String> getSessionQuestions(
-            List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
+            UUID candidateId, List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
+        if (!rateLimiter.tryAcquire(candidateId)) {
+            throw new MockInterviewQuestionRateLimitedException();
+        }
         List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, industry);
         if (bankMatches.size() > BANK_THRESHOLD) {
             return pickFromBank(bankMatches, count);

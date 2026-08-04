@@ -38,11 +38,19 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
             helper.setFrom(fromAddress);
             helper.setTo(to);
-            helper.setSubject(subject);
+            helper.setSubject(sanitizeSubject(subject));
             helper.setText(EmailTemplate.render(heading, paragraphs, button), true);
         } catch (MessagingException e) {
             throw new MailPreparationException(e);
         }
         mailSender.send(mimeMessage);
+    }
+
+    // Some callers build subject from user-supplied text (e.g. CommunityInterestService, which
+    // includes the submitter's own name) with no server-side restriction on its characters — a
+    // CR or LF in there could otherwise inject extra headers into the outgoing message. Stripped
+    // here rather than at each call site, since this is the one place every send goes through.
+    private static String sanitizeSubject(String subject) {
+        return subject.replaceAll("[\r\n]", "");
     }
 }

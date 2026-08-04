@@ -189,6 +189,9 @@ public class MockInterviewService {
         if (contentType == null || !contentType.startsWith("video/")) {
             throw new InvalidMockInterviewVideoException("Recording must be a video file");
         }
+        if (!VideoContentValidator.isWebm(video)) {
+            throw new InvalidMockInterviewVideoException("Recording must be a valid WebM video file");
+        }
     }
 
     private MockInterviewSessionSummary toSummary(MockInterviewSession session) {

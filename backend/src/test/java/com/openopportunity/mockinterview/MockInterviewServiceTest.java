@@ -42,7 +42,10 @@ class MockInterviewServiceTest {
     }
 
     private MockMultipartFile sampleVideo() {
-        return new MockMultipartFile("video", "interview.webm", "video/webm", new byte[] {1, 2, 3});
+        // Starts with the real WebM/Matroska EBML header (see VideoContentValidator) since
+        // MockInterviewService.validate now checks it, not just the Content-Type header.
+        byte[] content = {(byte) 0x1A, (byte) 0x45, (byte) 0xDF, (byte) 0xA3, 1, 2, 3};
+        return new MockMultipartFile("video", "interview.webm", "video/webm", content);
     }
 
     private MockInterviewSession sampleSession(UUID candidateId) {
@@ -135,6 +138,18 @@ class MockInterviewServiceTest {
         MockMultipartFile notVideo = new MockMultipartFile("video", "notes.txt", "text/plain", new byte[] {1});
 
         assertThatThrownBy(() -> mockInterviewService.create(candidateId, notVideo, null, 1, 10))
+                .isInstanceOf(InvalidMockInterviewVideoException.class);
+    }
+
+    @Test
+    void createRejectsContentThatClaimsToBeVideoButIsntActuallyWebm() {
+        UUID candidateId = UUID.randomUUID();
+        when(mockInterviewSessionRepository.countByCandidateId(candidateId)).thenReturn(0L);
+        // A spoofed Content-Type header alone shouldn't be enough — see VideoContentValidator.
+        MockMultipartFile spoofed =
+                new MockMultipartFile("video", "interview.webm", "video/webm", new byte[] {1, 2, 3, 4});
+
+        assertThatThrownBy(() -> mockInterviewService.create(candidateId, spoofed, null, 1, 10))
                 .isInstanceOf(InvalidMockInterviewVideoException.class);
     }
 

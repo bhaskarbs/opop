@@ -68,6 +68,21 @@ class AuthRateLimitFilterTest {
     }
 
     @Test
+    void alsoAppliesToTheCommunityInterestEndpoint() throws Exception {
+        AuthRateLimitFilter filter = new AuthRateLimitFilter(true, 1, 5, new ObjectMapper().findAndRegisterModules());
+        filter.doFilter(
+                requestTo("/api/community/interest", "10.0.0.1"),
+                new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        MockHttpServletResponse blockedResponse = new MockHttpServletResponse();
+        filter.doFilter(
+                requestTo("/api/community/interest", "10.0.0.1"), blockedResponse, new MockFilterChain());
+
+        assertThat(blockedResponse.getStatus()).isEqualTo(429);
+    }
+
+    @Test
     void doesNothingWhenDisabled() throws Exception {
         AuthRateLimitFilter filter = new AuthRateLimitFilter(false, 1, 5, new ObjectMapper().findAndRegisterModules());
         filter.doFilter(
