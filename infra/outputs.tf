@@ -23,6 +23,11 @@ output "sql_connection_name" {
   value       = google_sql_database_instance.main.connection_name
 }
 
+output "redis_host" {
+  description = "Memorystore instance's internal IP (VPC-only, not reachable outside the connector in redis.tf)."
+  value       = google_redis_instance.rate_limit.host
+}
+
 output "admin_seed_password" {
   description = "Generated password for the bootstrap admin account (see APP_ADMIN_SEED_EMAIL). Retrieve with: terraform output -raw admin_seed_password"
   value       = random_password.admin_seed_password.result

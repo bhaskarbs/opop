@@ -83,6 +83,22 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "APP_CORS_ALLOWED_ORIGINS"
         value = local.frontend_origin
       }
+      env {
+        # See infra/redis.tf — makes every rate limiter (auth, password-reset, mock-interview)
+        # share one Redis-backed counter instead of each instance keeping its own (the default,
+        # correct only for a single instance; see app.security.rate-limit.store's comment in
+        # application.properties).
+        name  = "RATE_LIMIT_STORE"
+        value = "redis"
+      }
+      env {
+        name  = "REDIS_HOST"
+        value = google_redis_instance.rate_limit.host
+      }
+      env {
+        name  = "REDIS_PORT"
+        value = tostring(google_redis_instance.rate_limit.port)
+      }
 
       volume_mounts {
         name       = "cloudsql"
@@ -95,6 +111,14 @@ resource "google_cloud_run_v2_service" "backend" {
       cloud_sql_instance {
         instances = [google_sql_database_instance.main.connection_name]
       }
+    }
+
+    vpc_access {
+      connector = google_vpc_access_connector.redis.id
+      # Only routes RFC1918-private-destined traffic (i.e. Memorystore) through the connector;
+      # everything else (Anthropic/Razorpay/SMTP calls) keeps the normal public internet egress
+      # path rather than being forced through the connector's narrower throughput.
+      egress = "PRIVATE_RANGES_ONLY"
     }
   }
 

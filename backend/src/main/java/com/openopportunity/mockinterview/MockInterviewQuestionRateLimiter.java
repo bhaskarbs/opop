@@ -1,10 +1,8 @@
 package com.openopportunity.mockinterview;
 
+import com.openopportunity.ratelimit.RateLimiter;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,35 +14,29 @@ import org.springframework.stereotype.Component;
  * a real, metered call to the Claude API. Without this, an attacker could loop that miss path to
  * run up the app owner's Anthropic bill.
  *
- * <p>Same in-memory, per-instance, fixed-window approach as AuthRateLimitFilter/
- * PasswordResetRateLimiter (see their Javadoc for the local-first/single-instance scope caveat)
- * — keyed by candidate id rather than IP or email, since this endpoint is authenticated.
+ * <p>Delegates the actual counting to RateLimiter (in-memory and per-instance by default, or
+ * shared via Redis once app.security.rate-limit.store=redis) — keyed by candidate id rather than
+ * IP or email, since this endpoint is authenticated.
  */
 @Component
 public class MockInterviewQuestionRateLimiter {
 
+    private static final String KEY_PREFIX = "mock-interview-question-rate-limit:";
+
     private final boolean enabled;
     private final int maxRequestsPerWindow;
     private final Duration window;
-    private final ConcurrentHashMap<UUID, Window> windowsByCandidateId = new ConcurrentHashMap<>();
+    private final RateLimiter rateLimiter;
 
     public MockInterviewQuestionRateLimiter(
             @Value("${app.security.rate-limit.enabled}") boolean enabled,
             @Value("${app.security.mock-interview-question-rate-limit.max-requests}") int maxRequestsPerWindow,
-            @Value("${app.security.mock-interview-question-rate-limit.window-minutes}") long windowMinutes) {
+            @Value("${app.security.mock-interview-question-rate-limit.window-minutes}") long windowMinutes,
+            RateLimiter rateLimiter) {
         this.enabled = enabled;
         this.maxRequestsPerWindow = maxRequestsPerWindow;
         this.window = Duration.ofMinutes(windowMinutes);
-    }
-
-    private static final class Window {
-        private final Instant start;
-        private final AtomicInteger count;
-
-        private Window(Instant start) {
-            this.start = start;
-            this.count = new AtomicInteger(1);
-        }
+        this.rateLimiter = rateLimiter;
     }
 
     /** True if another question-generation request is allowed for this candidate right now.
@@ -53,14 +45,6 @@ public class MockInterviewQuestionRateLimiter {
         if (!enabled) {
             return true;
         }
-        Instant now = Instant.now();
-        Window current = windowsByCandidateId.compute(candidateId, (ignored, existing) -> {
-            if (existing == null || Duration.between(existing.start, now).compareTo(window) >= 0) {
-                return new Window(now);
-            }
-            existing.count.incrementAndGet();
-            return existing;
-        });
-        return current.count.get() <= maxRequestsPerWindow;
+        return rateLimiter.tryAcquire(KEY_PREFIX + candidateId, maxRequestsPerWindow, window);
     }
 }

@@ -1,7 +1,8 @@
 # Infra (Terraform, GCP)
 
 Minimal cloud footprint for OpenOpportunity: Cloud Run (backend) + Cloud SQL for Postgres + Cloud
-Storage/CDN (frontend), built up one small step at a time — see "Phase 2 — Cloud infra" in
+Storage/CDN (frontend) + Memorystore for Redis (shared rate-limit counters across Cloud Run
+instances, see `redis.tf`), built up one small step at a time — see "Phase 2 — Cloud infra" in
 `../docs/DEVELOPMENT_ROADMAP.md` for the full step list. This step (19) only wires up the Terraform
 plumbing and declares the APIs later steps need; it provisions no billable compute or data resources.
 

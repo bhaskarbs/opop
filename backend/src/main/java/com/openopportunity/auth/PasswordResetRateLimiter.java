@@ -1,9 +1,7 @@
 package com.openopportunity.auth;
 
+import com.openopportunity.ratelimit.RateLimiter;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -14,35 +12,28 @@ import org.springframework.stereotype.Component;
  * email-bombing one specific victim's inbox — this closes that gap by keying on the address
  * being reset instead.
  *
- * <p>Same in-memory, per-instance, fixed-window approach as AuthRateLimitFilter, for the same
- * local-first/single-instance reason (see that class's Javadoc) — a multi-instance deployment
- * would need a shared store (e.g. Redis) instead.
+ * <p>Delegates the actual counting to RateLimiter (in-memory and per-instance by default, or
+ * shared via Redis once app.security.rate-limit.store=redis).
  */
 @Component
 public class PasswordResetRateLimiter {
 
+    private static final String KEY_PREFIX = "password-reset-rate-limit:";
+
     private final boolean enabled;
     private final int maxRequestsPerWindow;
     private final Duration window;
-    private final ConcurrentHashMap<String, Window> windowsByEmail = new ConcurrentHashMap<>();
+    private final RateLimiter rateLimiter;
 
     public PasswordResetRateLimiter(
             @Value("${app.security.rate-limit.enabled}") boolean enabled,
             @Value("${app.security.password-reset-rate-limit.max-requests}") int maxRequestsPerWindow,
-            @Value("${app.security.password-reset-rate-limit.window-minutes}") long windowMinutes) {
+            @Value("${app.security.password-reset-rate-limit.window-minutes}") long windowMinutes,
+            RateLimiter rateLimiter) {
         this.enabled = enabled;
         this.maxRequestsPerWindow = maxRequestsPerWindow;
         this.window = Duration.ofMinutes(windowMinutes);
-    }
-
-    private static final class Window {
-        private final Instant start;
-        private final AtomicInteger count;
-
-        private Window(Instant start) {
-            this.start = start;
-            this.count = new AtomicInteger(1);
-        }
+        this.rateLimiter = rateLimiter;
     }
 
     /** True if another reset email is allowed for this address right now. Counts this call
@@ -52,15 +43,7 @@ public class PasswordResetRateLimiter {
         if (!enabled) {
             return true;
         }
-        String key = email.trim().toLowerCase();
-        Instant now = Instant.now();
-        Window current = windowsByEmail.compute(key, (ignored, existing) -> {
-            if (existing == null || Duration.between(existing.start, now).compareTo(window) >= 0) {
-                return new Window(now);
-            }
-            existing.count.incrementAndGet();
-            return existing;
-        });
-        return current.count.get() <= maxRequestsPerWindow;
+        String key = KEY_PREFIX + email.trim().toLowerCase();
+        return rateLimiter.tryAcquire(key, maxRequestsPerWindow, window);
     }
 }
