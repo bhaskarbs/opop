@@ -31,8 +31,11 @@ final class JobSpecifications {
     private static Specification<Job> matchesKeyword(String keyword) {
         String pattern = "%" + keyword.toLowerCase() + "%";
         return (root, query, cb) -> {
+            // immutable_array_to_string (see V54), not the built-in array_to_string — the
+            // built-in is STABLE rather than IMMUTABLE, so idx_jobs_skills_trgm's expression
+            // index only matches (and only gets used by the planner for) this exact function.
             Expression<String> skillsJoined = cb.lower(cb.function(
-                    "array_to_string", String.class, root.get("skills"), cb.literal(",")));
+                    "immutable_array_to_string", String.class, root.get("skills"), cb.literal(",")));
             return cb.or(
                     cb.like(cb.lower(root.get("title")), pattern),
                     cb.like(cb.lower(root.get("companyName")), pattern),
