@@ -18,18 +18,20 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-/** Phase A+B of the AI chat/voice support assistant — plain conversational Q&A about how
- * OpenOpportunity works (see chat-support-system-prompt.md), plus read-only tool-calling
- * (search_jobs, search_candidates — see the {@code chat.tool} package) that's always safe to
- * auto-execute since neither changes any state. Phase C's state-changing tools (post a job,
- * apply, post/express-interest-in an idea) will need a confirmation turn before execute() runs,
- * which this loop doesn't have yet.
+/** The AI chat/voice support assistant — plain conversational Q&A about how OpenOpportunity works
+ * (see chat-support-system-prompt.md), read-only tool-calling (search_jobs, search_candidates),
+ * and state-changing tool-calling with a confirm-before-execute protocol (post_job, apply_to_job,
+ * post_idea, express_interest_in_idea) — see the {@code chat.tool} package for all of those.
+ * Before any of that, chat() checks ChatFaqCache for a small set of very common questions that
+ * are answered without ever calling the LLM, since that's a real per-request cost — see its
+ * Javadoc for when it does (and deliberately doesn't) fire.
  *
  * <p>Deliberately keeps no server-side conversation history — the caller (ChatController) passes
  * the running conversation back on every request, same "client owns the state, server is
@@ -53,11 +55,13 @@ public class ChatService {
 
     private final AnthropicClient client;
     private final ChatRateLimiter rateLimiter;
+    private final ChatFaqCache faqCache;
     private final String systemPrompt;
     private final List<ChatTool> tools;
 
-    public ChatService(ChatRateLimiter rateLimiter, List<ChatTool> tools) {
+    public ChatService(ChatRateLimiter rateLimiter, ChatFaqCache faqCache, List<ChatTool> tools) {
         this.rateLimiter = rateLimiter;
+        this.faqCache = faqCache;
         this.tools = tools;
         this.systemPrompt = loadSystemPrompt();
         AnthropicClient created;
@@ -73,6 +77,10 @@ public class ChatService {
             String clientIp, UUID currentUserId, String currentUserRole, String message, List<ChatTurn> history) {
         if (!rateLimiter.tryAcquire(clientIp)) {
             throw new ChatRateLimitedException();
+        }
+        Optional<String> cachedAnswer = faqCache.lookup(message, !history.isEmpty());
+        if (cachedAnswer.isPresent()) {
+            return cachedAnswer.get();
         }
         if (client == null) {
             throw new ChatUnavailableException();

@@ -1,0 +1,93 @@
+[
+  {
+    "id": "post-job",
+    "triggers": [
+      "how do i post a job",
+      "how to post a job",
+      "how can i post a job",
+      "steps to post a job",
+      "posting a job listing",
+      "how do i list a job"
+    ],
+    "answer": "To post a job: register a company account, then complete your company profile (entity details, tax/registration identifiers) and wait for OpenOpportunity admin verification — this can take a little time. Once verified, you can post job listings from your company dashboard; each posting goes through admin approval before it's publicly visible and searchable."
+  },
+  {
+    "id": "apply-job",
+    "triggers": [
+      "how do i apply to a job",
+      "how do i apply for a job",
+      "how to apply for a job",
+      "how to apply to a job",
+      "how can i apply for a job",
+      "steps to apply to a job"
+    ],
+    "answer": "To apply to a job: create a free candidate account, build your profile (skills, experience level, resume upload), then open any job listing and apply directly from its detail page. You can track your application status anytime from \"My Applications.\""
+  },
+  {
+    "id": "pricing",
+    "triggers": [
+      "what are your pricing plans",
+      "what are the pricing plans",
+      "how much does it cost",
+      "what are the plans",
+      "subscription plans",
+      "how much do you charge",
+      "cost of the plans"
+    ],
+    "answer": "For companies: Free (₹0/month, no candidate contact reveals), Growth (₹399/month, up to 50 contact reveals), and Enterprise (₹899/month, up to 250). Candidate accounts also have paid tiers with extra benefits. Check the billing/upgrade page in your dashboard for the exact current terms, since these can change."
+  },
+  {
+    "id": "why-not-visible",
+    "triggers": [
+      "why is my job not showing",
+      "why isn't my job visible",
+      "why is my company not verified",
+      "why is my idea not showing",
+      "why isn't my idea visible",
+      "still pending approval",
+      "not approved yet"
+    ],
+    "answer": "New job postings, company signups, and submitted ideas are all reviewed by OpenOpportunity's admin team before going live — that's why a newly-posted job, newly-registered company, or newly-submitted idea might not be visible or functional immediately. This usually doesn't take long, but if it's been a while, reach out via the Community/Contact page."
+  },
+  {
+    "id": "submit-idea",
+    "triggers": [
+      "how do i submit an idea",
+      "how to submit a business idea",
+      "how can i post an idea",
+      "how do i post an idea",
+      "submitting a startup idea"
+    ],
+    "answer": "Anyone with a candidate or company account can submit a business/startup idea — include a title, category, stage (concept, prototype, or live), the problem, your solution, and other details. It'll be reviewed by our admin team before appearing in the community for others to browse."
+  },
+  {
+    "id": "express-interest",
+    "triggers": [
+      "how do i express interest in an idea",
+      "how to express interest in an idea",
+      "how can i join an idea",
+      "how do i invest in an idea"
+    ],
+    "answer": "On any idea's detail page, you can express interest as a potential collaborator, investor, or team member, with an optional message — anyone with a candidate or company account can do this."
+  },
+  {
+    "id": "mock-interview",
+    "triggers": [
+      "how do mock interview questions work",
+      "what is the mock interview feature",
+      "how does the mock interview feature work",
+      "practice interview questions"
+    ],
+    "answer": "Candidates can practice with AI-generated mock interview questions tailored to their skills, experience, and industry, and optionally record a practice video session — you'll find this in your candidate dashboard."
+  },
+  {
+    "id": "what-is-openopportunity",
+    "triggers": [
+      "what is openopportunity",
+      "what does this platform do",
+      "what does this site do",
+      "what is this website for"
+    ],
+    "answer": "OpenOpportunity is a two-sided job marketplace connecting job candidates and hiring companies. Candidates can search and apply for jobs, and companies can post listings and search for candidates — there's also a community space for submitting and backing startup ideas."
+  }
+]
