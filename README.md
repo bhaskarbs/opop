@@ -159,6 +159,31 @@ format for a cache anyway. Spot-check what landed in Redis with
 `spring.data.redis.host`/`REDIS_HOST` (and `REDIS_PASSWORD`) at a real Redis (e.g. Memorystore)
 instead.
 
+### Notification events: in-process (default) vs. Kafka
+
+Creating a notification (see `NotificationService.notify`, called by `JobService`/
+`ApplicationService`/etc. as a side effect of their own state changes) always writes the
+in-app notification row synchronously — only the "send the email" side effect's transport is
+swappable (see `com.openopportunity.notification`). In-process (the default) dispatches it
+directly, in the same JVM. To publish it as a real domain event on Kafka instead:
+
+```bash
+docker compose --profile events up -d kafka   # local single-node KRaft broker, no Zookeeper
+EVENTS_PROVIDER=kafka ./gradlew bootRun
+```
+
+Durable across a restart between publish and delivery (unlike the in-process default's pure
+in-memory thread pool), and the same "notifications" topic other consumers (search indexing,
+analytics) could subscribe to later without touching `JobService`/`ApplicationService`/etc.
+again. Spot-check what's actually on the topic with:
+
+```bash
+docker exec openopportunity-kafka /opt/kafka/bin/kafka-console-consumer.sh \
+  --topic notifications --from-beginning --bootstrap-server localhost:9092
+```
+
+In a real deployment, point `spring.kafka.bootstrap-servers`/`KAFKA_BOOTSTRAP_SERVERS` at a real
+Kafka (e.g. Confluent Cloud) instead.
 
 ### Admin console access
 
