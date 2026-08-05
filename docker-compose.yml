@@ -163,6 +163,36 @@ services:
     volumes:
       - openopportunity-kafka-data:/tmp/kraft-combined-logs
 
+  # Round-robins across two locally-running backend instances — see docker/nginx/nginx.conf for
+  # the full explanation, including why there's no session affinity config and what changes
+  # (rate limits, per-instance caching) once you're actually running more than one instance.
+  # Behind the "load-balancer" profile, same opt-in-only reasoning as the other services above —
+  # nothing here is needed for a normal single-instance `docker compose up`. The backend
+  # instances themselves aren't containers (see nginx.conf's host.docker.internal upstreams) —
+  # run them yourself the normal way, just on two different ports. Don't use the PORT env var for
+  # this (it's specifically what StartupSecurityChecks treats as "this looks like a real
+  # deployment", so setting it locally makes the app refuse to start with the committed default
+  # JWT secret) — override server.port directly instead:
+  #   ./gradlew bootRun --args='--server.port=8080'
+  #   ./gradlew bootRun --args='--server.port=8082'
+  # then `docker compose --profile load-balancer up -d nginx` and hit http://localhost:8090.
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: openopportunity-nginx
+    profiles: ['load-balancer']
+    ports:
+      - '8090:80'
+    # Docker Desktop doesn't populate /etc/hosts with a host.docker.internal entry at all unless
+    # something asks for one — this is what makes that entry exist for docker-entrypoint-lb.sh to
+    # read (see nginx.conf.template's header comment for why it can't just use the hostname
+    # directly in the config).
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    entrypoint: ['sh', '/docker-entrypoint-lb.sh']
+    volumes:
+      - ./docker/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./docker/nginx/docker-entrypoint-lb.sh:/docker-entrypoint-lb.sh:ro
+
 volumes:
   openopportunity-postgres-data:
   openopportunity-postgres-replica-data:
