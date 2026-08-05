@@ -216,15 +216,52 @@ gsutil versioning set on gs://openopportunity-tfstate
 
 ---
 
+## Ahead-of-schedule features (opt-in, local-first)
+
+Built outside the numbered step sequence above, at the point real usage/scale made each one worth
+having rather than waiting for Phase 2/"Later phases" to reach it. Each follows the same pattern
+established in Phase 0–1: a local-first default that needs nothing extra running, and an opt-in
+switch (one config property/env var) to the real target-architecture piece from
+`docs/OpenOpportunity_Architecture.docx` — so local dev/CI never depend on the cloud service, but
+the same code path is what talks to it in production.
+
+- **Job page SEO** (`com.openopportunity.seo`) — job detail pages, `sitemap.xml`, and
+  `robots.txt` are server-rendered by the backend (schema.org `JobPosting` structured data for
+  Google Jobs) instead of relying on the client-rendered SPA, which a non-JS crawler never sees.
+  `infra/frontend.tf`/`infra/job-seo.tf` route those specific paths through the load balancer to
+  Cloud Run instead of the static frontend bucket.
+- **Elasticsearch job search** (`com.openopportunity.search`, `app.search.provider`) — real
+  relevance-ranked search instead of Postgres's substring-match-only fallback. Postgres stays the
+  default; `app.search.provider=elasticsearch` switches to a local Docker instance
+  (`docker compose --profile search up -d`) or Elastic Cloud in a real deployment.
+- **Cloud Storage-backed file storage / local CDN** (`com.openopportunity.storage`,
+  `app.storage.provider`) — resumes/photos/logos/certificates on local disk by default;
+  `app.storage.provider=gcs` backs them with Google Cloud Storage instead, via a local emulator
+  (`docker compose --profile cdn up -d`) or real GCS. `scripts/sync-frontend-to-local-cdn.sh` and
+  `scripts/local-cdn-proxy.mjs` let the frontend's Cloud Storage + Cloud CDN hosting path (already
+  built for Step 21) be exercised locally too, not just for file uploads.
+- **Redis-backed caching** (`com.openopportunity.config.RedisCacheConfig`, `app.cache.provider`)
+  — the admin dashboard's `@Cacheable` report stats are in-process (Caffeine) by default;
+  `app.cache.provider=redis` shares them across instances instead, via local Docker
+  (`docker compose --profile cache up -d`) or Memorystore in a real deployment.
+
+See `README.md`'s corresponding sections for the exact commands, and each package's Javadoc for
+the local-vs-cloud design reasoning.
+
 ## Later phases (revisit once Phase 0–2 are done)
 
 These map to the remaining parts of Phases 2–4 in `docs/OpenOpportunity_Architecture.docx` and aren't
 broken into steps yet because priorities may shift once the app is live on minimal infra:
 
-- **Search & i18n** — Elastic Cloud multilingual search, react-i18next, locale routing, RTL support.
+- **RTL support** — react-i18next, locale routing (`/:lang`), and English/Hindi translations are
+  already in place (see `frontend/src/i18n/`); right-to-left layout support for a future RTL
+  locale is what's left of the original "Search & i18n" item (search itself is done — see
+  "Ahead-of-schedule features" above).
 - **Mobile** — pull the frontend into an Nx/Turborepo monorepo, add the React Native app, shared design tokens.
 - **Analytics** — RudderStack, Kafka, BigQuery/dbt, Looker, PostHog.
 - **Hardening / scale-up** — GKE, AlloyDB, Confluent Kafka, Argo CD/Rollouts, multi-region, Cloud Armor,
   observability (Prometheus/Grafana/Sentry) — the enterprise-scale pieces of Section 9–10 deferred above.
+  (Memorystore/Redis and Elastic Cloud, also part of Section 9–10, are already available as opt-in
+  switches — see "Ahead-of-schedule features" above.)
 
 When you're ready for one of these, ask and we'll break it into the same small-step format.
