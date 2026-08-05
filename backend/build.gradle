@@ -37,7 +37,7 @@ dependencies {
 	// Generates mock-interview questions via the Claude API (com.openopportunity.mockinterview.MockInterviewQuestionService).
 	implementation 'com.anthropic:anthropic-java:2.49.0'
 	// Candidate billing checkout/payments (com.openopportunity.billing.CandidateBillingService).
-	implementation 'com.razorpay:razorpay-java:1.4.9'
+	implementation 'com.razorpay:razorpay-java:1.4.10'
 	// Generates the candidate billing invoice PDF (com.openopportunity.billing.InvoicePdfGenerator);
 	// also used to extract text from PDF resumes for the "view as web view" HTML preview
 	// (com.openopportunity.auth.ResumeHtmlRenderer).
