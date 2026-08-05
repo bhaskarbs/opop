@@ -45,8 +45,8 @@ dependencies {
 	// Reads .docx/.doc resumes to render them as HTML for the "view as web view" preview
 	// (com.openopportunity.auth.ResumeHtmlRenderer) — poi-scratchpad adds legacy binary .doc
 	// (HWPF) support on top of poi-ooxml's .docx (XWPF) support.
-	implementation 'org.apache.poi:poi-ooxml:5.3.0'
-	implementation 'org.apache.poi:poi-scratchpad:5.3.0'
+	implementation 'org.apache.poi:poi-ooxml:5.5.1'
+	implementation 'org.apache.poi:poi-scratchpad:5.5.1'
 	// Downscales candidate photos/company logos on upload before they're stored (see
 	// com.openopportunity.storage.AvatarImageResizer) — both only ever render as small avatars.
 	implementation 'net.coobird:thumbnailator:0.4.20'
