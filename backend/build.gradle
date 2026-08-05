@@ -35,7 +35,7 @@ dependencies {
 	// Verifies "Sign in with Google" ID tokens against Google's public keys (GoogleIdTokenVerifier).
 	implementation 'com.google.api-client:google-api-client:2.7.0'
 	// Generates mock-interview questions via the Claude API (com.openopportunity.mockinterview.MockInterviewQuestionService).
-	implementation 'com.anthropic:anthropic-java:2.49.0'
+	implementation 'com.anthropic:anthropic-java:2.52.0'
 	// Candidate billing checkout/payments (com.openopportunity.billing.CandidateBillingService).
 	implementation 'com.razorpay:razorpay-java:1.4.9'
 	// Generates the candidate billing invoice PDF (com.openopportunity.billing.InvoicePdfGenerator);
