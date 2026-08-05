@@ -2,8 +2,6 @@ package com.openopportunity.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -13,10 +11,7 @@ import static org.mockito.Mockito.when;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
-import com.openopportunity.mail.AsyncEmailSender;
-import com.openopportunity.mail.EmailButton;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +20,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/** Only NotificationService's own responsibility — save the notification row, then hand the
+ * email side effect off to whichever NotificationEventPublisher is active. What actually happens
+ * to the email from there is NotificationEmailDispatcher's concern (see its own test) — this
+ * class shouldn't need to change if that transport changes. */
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
 
@@ -35,14 +34,14 @@ class NotificationServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private AsyncEmailSender asyncEmailSender;
+    private NotificationEventPublisher notificationEventPublisher;
 
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(
-                notificationRepository, userRepository, asyncEmailSender, "http://localhost:5173");
+        notificationService =
+                new NotificationService(notificationRepository, userRepository, notificationEventPublisher);
     }
 
     @Test
@@ -72,70 +71,22 @@ class NotificationServiceTest {
         notificationService.notifyAdmins(NotificationType.IDEA_PENDING_APPROVAL, "New idea.", null);
 
         verify(notificationRepository, never()).save(any());
+        verify(notificationEventPublisher, never()).publish(any(), any(), any(), any());
     }
 
     @Test
-    void notifySavesImmediatelyThenDelegatesEmailToAsyncEmailSender() {
+    void notifySavesTheNotificationThenPublishesTheEmailEvent() {
         UUID recipientId = UUID.randomUUID();
-        User recipient = new User("candidate@test.com", "hash", "Candidate", UserRole.CANDIDATE);
-        when(userRepository.findById(recipientId)).thenReturn(Optional.of(recipient));
         when(notificationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         notificationService.notify(
                 recipientId, NotificationType.APPLICATION_STATUS_CHANGED, "Your application moved forward.", "/jobs");
 
-        verify(notificationRepository).save(any());
-        verify(asyncEmailSender)
-                .sendBestEffort(
-                        eq("candidate@test.com"),
-                        anyString(),
-                        anyString(),
-                        anyList(),
-                        any(EmailButton.class),
-                        any(Runnable.class));
-    }
-
-    @Test
-    void notifyMarksTheNotificationEmailSentOnceTheAsyncSendSucceeds() {
-        UUID recipientId = UUID.randomUUID();
-        User recipient = new User("candidate@test.com", "hash", "Candidate", UserRole.CANDIDATE);
-        when(userRepository.findById(recipientId)).thenReturn(Optional.of(recipient));
-        when(notificationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         ArgumentCaptor<Notification> savedCaptor = ArgumentCaptor.forClass(Notification.class);
-
-        notificationService.notify(
-                recipientId, NotificationType.APPLICATION_STATUS_CHANGED, "Your application moved forward.", "/jobs");
-
         verify(notificationRepository).save(savedCaptor.capture());
         Notification saved = savedCaptor.getValue();
-        when(notificationRepository.findById(saved.getId())).thenReturn(Optional.of(saved));
 
-        ArgumentCaptor<Runnable> onSuccessCaptor = ArgumentCaptor.forClass(Runnable.class);
-        verify(asyncEmailSender)
-                .sendBestEffort(
-                        eq("candidate@test.com"),
-                        anyString(),
-                        anyString(),
-                        anyList(),
-                        any(EmailButton.class),
-                        onSuccessCaptor.capture());
-        assertThat(saved.isEmailSent()).isFalse();
-
-        onSuccessCaptor.getValue().run();
-
-        assertThat(saved.isEmailSent()).isTrue();
-        verify(notificationRepository, times(2)).save(saved);
-    }
-
-    @Test
-    void notifyDoesNotAttemptEmailWhenRecipientNoLongerExists() {
-        UUID recipientId = UUID.randomUUID();
-        when(userRepository.findById(recipientId)).thenReturn(Optional.empty());
-        when(notificationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        notificationService.notify(recipientId, NotificationType.IDEA_PENDING_APPROVAL, "New idea.", null);
-
-        verify(asyncEmailSender, never())
-                .sendBestEffort(any(), any(), any(), anyList(), any(), any());
+        verify(notificationEventPublisher)
+                .publish(eq(saved.getId()), eq(recipientId), eq("Your application moved forward."), eq("/jobs"));
     }
 }

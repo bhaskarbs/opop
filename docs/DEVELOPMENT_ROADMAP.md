@@ -244,6 +244,17 @@ the same code path is what talks to it in production.
   — the admin dashboard's `@Cacheable` report stats are in-process (Caffeine) by default;
   `app.cache.provider=redis` shares them across instances instead, via local Docker
   (`docker compose --profile cache up -d`) or Memorystore in a real deployment.
+- **Kafka-backed notification events** (`com.openopportunity.notification`, `app.events.provider`)
+  — creating a notification (`NotificationService.notify`, called by `JobService`/
+  `ApplicationService`/etc. as a side effect of their own state changes) always writes the in-app
+  notification row synchronously; only the "send the email" side effect is in-process by default.
+  `app.events.provider=kafka` publishes it as a real domain event to a `notifications` topic
+  instead, via a local single-node KRaft broker (`docker compose --profile events up -d`) or a
+  real Kafka in a deployment — durable across a restart between publish and delivery, and the
+  same topic other consumers (search indexing, analytics) could subscribe to later without
+  touching any of `NotificationService`'s callers. Scoped to notification delivery only — not yet
+  the broader per-domain-event-type vocabulary (`job.published`, `application.submitted`, ...),
+  schema registry, or outbox pattern from Section 6.2 of the architecture doc.
 
 See `README.md`'s corresponding sections for the exact commands, and each package's Javadoc for
 the local-vs-cloud design reasoning.
@@ -258,10 +269,11 @@ broken into steps yet because priorities may shift once the app is live on minim
   locale is what's left of the original "Search & i18n" item (search itself is done — see
   "Ahead-of-schedule features" above).
 - **Mobile** — pull the frontend into an Nx/Turborepo monorepo, add the React Native app, shared design tokens.
-- **Analytics** — RudderStack, Kafka, BigQuery/dbt, Looker, PostHog.
-- **Hardening / scale-up** — GKE, AlloyDB, Confluent Kafka, Argo CD/Rollouts, multi-region, Cloud Armor,
+- **Analytics** — RudderStack, BigQuery/dbt, Looker, PostHog. (Kafka itself is available — see
+  "Ahead-of-schedule features" above — but nothing publishes analytics events to it yet.)
+- **Hardening / scale-up** — GKE, AlloyDB, Argo CD/Rollouts, multi-region, Cloud Armor,
   observability (Prometheus/Grafana/Sentry) — the enterprise-scale pieces of Section 9–10 deferred above.
-  (Memorystore/Redis and Elastic Cloud, also part of Section 9–10, are already available as opt-in
+  (Memorystore/Redis, Elastic Cloud, and Kafka, also part of Section 9–10, are already available as opt-in
   switches — see "Ahead-of-schedule features" above.)
 
 When you're ready for one of these, ask and we'll break it into the same small-step format.

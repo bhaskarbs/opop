@@ -1,15 +1,11 @@
 package com.openopportunity.notification;
 
-import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
-import com.openopportunity.mail.AsyncEmailSender;
-import com.openopportunity.mail.EmailButton;
 import com.openopportunity.notification.dto.NotificationSummary;
 import com.openopportunity.notification.exception.NotificationNotFoundException;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,18 +14,15 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final AsyncEmailSender asyncEmailSender;
-    private final String frontendBaseUrl;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            AsyncEmailSender asyncEmailSender,
-            @Value("${app.frontend.base-url}") String frontendBaseUrl) {
+            NotificationEventPublisher notificationEventPublisher) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
-        this.asyncEmailSender = asyncEmailSender;
-        this.frontendBaseUrl = frontendBaseUrl;
+        this.notificationEventPublisher = notificationEventPublisher;
     }
 
     /** Called by other domain services (JobService, IdeaService, AdminCompanyService,
@@ -37,17 +30,18 @@ public class NotificationService {
      * business logic of its own. link is an app-relative route with no /:lang prefix (the
      * frontend adds that); pass null when there's nothing to navigate to.
      *
-     * <p>Also attempts a real email to the recipient — best-effort and off the calling thread
-     * (see AsyncEmailSender): a delivery failure (e.g. no SMTP credentials configured locally,
-     * see spring.mail.username in application.properties) never fails the caller's own
-     * operation, and this notification's emailSent flag only flips to true once the async send
-     * actually succeeds (see getEmailSentCount, which backs the company dashboard's real sent
-     * count). */
+     * <p>The notification row itself is always written synchronously, right here — but the
+     * actual email send is a side effect handed off to NotificationEventPublisher (in-process by
+     * default, or a real Kafka topic once app.events.provider=kafka — see its javadoc), so a
+     * delivery failure (e.g. no SMTP credentials configured locally, see spring.mail.username in
+     * application.properties) never fails the caller's own operation. This notification's
+     * emailSent flag only flips to true once that send actually succeeds (see
+     * getEmailSentCount, which backs the company dashboard's real sent count). */
     @Transactional
     public void notify(UUID recipientUserId, NotificationType type, String message, String link) {
         Notification notification =
                 notificationRepository.save(new Notification(recipientUserId, type, message, link));
-        sendEmailAsync(notification.getId(), recipientUserId, message, link);
+        notificationEventPublisher.publish(notification.getId(), recipientUserId, message, link);
     }
 
     /** Fans notify() out to every ADMIN user — for events that need platform-staff attention
@@ -56,29 +50,6 @@ public class NotificationService {
     @Transactional
     public void notifyAdmins(NotificationType type, String message, String link) {
         userRepository.findByRole(UserRole.ADMIN).forEach(admin -> notify(admin.getId(), type, message, link));
-    }
-
-    private void sendEmailAsync(UUID notificationId, UUID recipientUserId, String message, String link) {
-        User recipient = userRepository.findById(recipientUserId).orElse(null);
-        if (recipient == null) {
-            return;
-        }
-        EmailButton button =
-                link == null ? null : new EmailButton("View on OpenOpportunity", frontendBaseUrl + "/en" + link);
-        asyncEmailSender.sendBestEffort(
-                recipient.getEmail(),
-                "OpenOpportunity notification",
-                "You have a new notification",
-                List.of(message),
-                button,
-                () -> markEmailSent(notificationId));
-    }
-
-    private void markEmailSent(UUID notificationId) {
-        notificationRepository.findById(notificationId).ifPresent(notification -> {
-            notification.markEmailSent();
-            notificationRepository.save(notification);
-        });
     }
 
     @Transactional(readOnly = true)
@@ -94,8 +65,8 @@ public class NotificationService {
     }
 
     /** Backs the company dashboard's "Notifications sent" stat — a real count of notifications
-     * that were actually emailed (see notify()/sendEmail() above), not the total number of
-     * in-app notifications created. */
+     * that were actually emailed (see notify() above), not the total number of in-app
+     * notifications created. */
     @Transactional(readOnly = true)
     public long getEmailSentCount(UUID userId) {
         return notificationRepository.countByRecipientUserIdAndEmailSentTrue(userId);

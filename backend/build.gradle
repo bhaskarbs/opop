@@ -67,6 +67,14 @@ dependencies {
 	// RedisAutoConfiguration and builds its connection factory manually with eager
 	// initialization disabled; see OpenOpportunityApplication's exclude list.
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	// Notification-delivery event bus once app.events.provider=kafka (see
+	// com.openopportunity.notification) — the KafkaTemplate this configures is backed by the
+	// plain Kafka Java client, which (unlike Lettuce) resolves broker metadata lazily on first
+	// send rather than eagerly connecting at bean-creation time, and KafkaNotificationEventPublisher
+	// (the only thing that ever calls send()) only exists behind that same @ConditionalOnProperty
+	// gate — harmless on the classpath at the "inprocess" default. Verified: the app starts
+	// cleanly with this on the classpath and no Kafka broker running.
+	implementation 'org.springframework.kafka:spring-kafka'
 	runtimeOnly 'org.postgresql:postgresql'
 	// Lets the JDBC URL connect through the Unix socket Cloud Run mounts at /cloudsql
 	// (see infra/run.tf) instead of a raw TCP host:port — only exercised in that

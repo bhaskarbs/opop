@@ -84,8 +84,35 @@ services:
       timeout: 5s
       retries: 10
 
+  # Backs app.events.provider=kafka (see com.openopportunity.notification) — domain-event
+  # delivery (currently: notification emails) goes through a real Kafka topic instead of an
+  # in-process thread pool. Single-node KRaft mode (broker + controller combined, no Zookeeper).
+  # Behind the "events" profile, same opt-in-only reasoning as the other services above —
+  # app.events.provider defaults to "inprocess", which never touches this container.
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: openopportunity-kafka
+    profiles: ['events']
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - '9092:9092'
+    volumes:
+      - openopportunity-kafka-data:/tmp/kraft-combined-logs
+
 volumes:
   openopportunity-postgres-data:
   openopportunity-elasticsearch-data:
   openopportunity-gcs-data:
   openopportunity-redis-data:
+  openopportunity-kafka-data:
