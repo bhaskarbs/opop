@@ -1,0 +1,62 @@
+# Round-robins across two locally-running backend instances (see docker-compose.yml's
+# "load-balancer" profile) — nginx's default balancing algorithm needs no extra directive.
+# __BACKEND_HOST__ (substituted by docker-entrypoint-lb.sh before nginx starts) is the host
+# machine's IPv4 address, since the backend instances run as normal `./gradlew bootRun`
+# processes on the host, not as containers themselves; only this proxy runs in Docker. Not the
+# hostname host.docker.internal directly — on this Docker Desktop setup it resolves to BOTH an
+# IPv4 and an IPv6 address, and the IPv6 route is unreachable from inside a container, which
+# made nginx silently retry a fraction of requests against the other upstream instead of
+# actually failing (confirmed via nginx's own error log while first testing this locally) — see
+# docker-entrypoint-lb.sh for how the IPv4-only address is resolved.
+#
+# No sticky sessions/session affinity here, and none are needed: auth is a stateless JWT bearer
+# token (see app.jwt.* in application.properties), not a server-side session, so either instance
+# can handle any request regardless of which one handled the last one from the same client.
+#
+# Two things DO become visible for the first time once you're actually running more than one
+# instance, though neither is fixed by this file:
+#   - Rate limiters (ChatRateLimiter, AuthRateLimitFilter, etc.) are in-memory per instance — the
+#     effective combined limit across both instances is roughly double the configured
+#     per-instance number, since each instance keeps its own counters.
+#   - app.cache.provider=caffeine (the default) is also per-instance — an admin action that
+#     invalidates a cached report on the instance that served it can still return stale data from
+#     the other instance's own cache. Switch to app.cache.provider=redis (see
+#     docker-compose.yml's "cache" profile) if you want to see/avoid that while testing this.
+worker_processes auto;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  # $upstream_addr makes it possible to see which of the two backend instances actually served
+  # each request (`docker logs openopportunity-nginx`) — genuinely useful for confirming the
+  # balancing is working, not just a debugging leftover.
+  log_format upstream_log '$remote_addr - [$time_local] "$request" $status upstream=$upstream_addr';
+  access_log /dev/stdout upstream_log;
+
+  upstream backend {
+    # Without this, each nginx worker process keeps its own independent round-robin counter
+    # (plain open-source nginx behavior, not a bug or a Plus-only limitation) — with
+    # worker_processes auto spinning up several workers, and the OS free to route any given
+    # connection to any of them, that shows up as visibly clustered/uneven distribution under
+    # bursty traffic (confirmed empirically while testing this locally: a rapid batch of
+    # requests came out 14/6 instead of ~10/10). A shared memory zone makes the round-robin
+    # state — and so the actual distribution — consistent across every worker.
+    zone backend 64k;
+    server __BACKEND_HOST__:8080;
+    server __BACKEND_HOST__:8082;
+  }
+
+  server {
+    listen 80;
+
+    location / {
+      proxy_pass http://backend;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+  }
+}
