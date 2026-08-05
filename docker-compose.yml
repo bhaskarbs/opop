@@ -1,20 +1,73 @@
 services:
+  # wal_level=replica/max_wal_senders/max_replication_slots are harmless to run unconditionally
+  # (a single-node setup with no replica connected just retains slightly more WAL, effectively
+  # free for local dev) and only actually matter once postgres-replica below connects — so they
+  # live here rather than being gated behind the "read-replica" profile too. primary-init.sh
+  # (see docker/postgres-replica/) creates the replication role and pg_hba.conf rule the replica
+  # needs; it only runs once, the first time this container starts with an empty data volume.
   postgres:
     image: postgres:16
     container_name: openopportunity-postgres
+    command:
+      [
+        'postgres',
+        '-c',
+        'wal_level=replica',
+        '-c',
+        'max_wal_senders=5',
+        '-c',
+        'max_replication_slots=5',
+        '-c',
+        'hot_standby=on',
+      ]
     environment:
       POSTGRES_DB: openopportunity
       POSTGRES_USER: openopportunity
       POSTGRES_PASSWORD: openopportunity
+      # Local-dev-only plaintext password, same reasoning as POSTGRES_PASSWORD above — read by
+      # primary-init.sh to create the replication role postgres-replica connects as.
+      POSTGRES_REPLICATION_PASSWORD: replicator
     ports:
       - '5432:5432'
     volumes:
       - openopportunity-postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-replica/primary-init.sh:/docker-entrypoint-initdb.d/primary-init.sh:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U openopportunity']
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Backs app.datasource.read-replica.enabled=true (see
+  # com.openopportunity.config.ReadReplicaDataSourceConfig) — a streaming-replication standby of
+  # the postgres service above, kept in sync automatically by Postgres itself rather than any
+  # application code. Behind the "read-replica" profile, same opt-in-only reasoning as the other
+  # services in this file — app.datasource.read-replica.enabled defaults to false, which never
+  # touches this container. Start it with `docker compose --profile read-replica up -d` (needs
+  # the primary healthy first, which depends_on below waits for). replica-entrypoint.sh (see
+  # docker/postgres-replica/) clones the primary via pg_basebackup on first start, then this
+  # behaves like a normal postgres server in continuous hot-standby/read-only mode.
+  postgres-replica:
+    image: postgres:16
+    container_name: openopportunity-postgres-replica
+    profiles: ['read-replica']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ['bash', '/docker-entrypoint-replica.sh']
+    environment:
+      PRIMARY_HOST: postgres
+      PGPASSWORD: replicator
+    ports:
+      - '5433:5432'
+    volumes:
+      - openopportunity-postgres-replica-data:/var/lib/postgresql/data
+      - ./docker/postgres-replica/replica-entrypoint.sh:/docker-entrypoint-replica.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U openopportunity']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # Backs app.search.provider=elasticsearch (see com.openopportunity.search) — the "search"
   # profile keeps this out of a bare `docker compose up`/`up -d` (which only starts Postgres,
@@ -112,6 +165,7 @@ services:
 
 volumes:
   openopportunity-postgres-data:
+  openopportunity-postgres-replica-data:
   openopportunity-elasticsearch-data:
   openopportunity-gcs-data:
   openopportunity-redis-data:
