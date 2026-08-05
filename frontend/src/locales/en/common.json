@@ -16,6 +16,12 @@
     "close": "Close chat",
     "greeting": "Hi! I can answer questions about how OpenOpportunity works — posting or finding jobs, applications, ideas, and billing. What do you need help with?",
     "error": "Sorry, I couldn't respond just now. Please try again in a moment.",
-    "rateLimited": "You've sent a lot of messages in a short time — please wait a bit before trying again."
+    "rateLimited": "You've sent a lot of messages in a short time — please wait a bit before trying again.",
+    "micStart": "Start voice input",
+    "micStop": "Stop voice input",
+    "listening": "Listening…",
+    "micNotAllowed": "Microphone access was denied — allow it in your browser settings to use voice input.",
+    "voiceOutputOn": "Read replies aloud",
+    "voiceOutputOff": "Turn off reading replies aloud"
   }
 }
