@@ -17,13 +17,14 @@ import org.junit.jupiter.api.Test;
 class ChatServiceTest {
 
     private final ChatRateLimiter rateLimiter = mock(ChatRateLimiter.class);
-    private final ChatService service = new ChatService(rateLimiter);
+    private final ChatService service = new ChatService(rateLimiter, List.of());
 
     @Test
     void refusesToChatWhenTheClientIsRateLimited() {
         when(rateLimiter.tryAcquire("10.0.0.1")).thenReturn(false);
 
-        assertThatThrownBy(() -> service.chat("10.0.0.1", "How do I post a job?", List.of()))
+        assertThatThrownBy(() ->
+                        service.chat("10.0.0.1", null, null, "How do I post a job?", List.of()))
                 .isInstanceOf(ChatRateLimitedException.class);
     }
 
