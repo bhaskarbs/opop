@@ -41,6 +41,8 @@ import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
 import com.openopportunity.billing.exception.PlanNotAdminAssignableException;
 import com.openopportunity.billing.exception.SamePlanException;
+import com.openopportunity.chat.exception.ChatRateLimitedException;
+import com.openopportunity.chat.exception.ChatUnavailableException;
 import com.openopportunity.community.exception.EmailDeliveryException;
 import com.openopportunity.idea.exception.DuplicateIdeaInterestException;
 import com.openopportunity.idea.exception.IdeaAccessDeniedException;
@@ -384,6 +386,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotificationNotFoundException.class)
     public ResponseEntity<ApiError> handleNotificationNotFound(NotificationNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(ChatUnavailableException.class)
+    public ResponseEntity<ApiError> handleChatUnavailable(ChatUnavailableException ex) {
+        return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(ChatRateLimitedException.class)
+    public ResponseEntity<ApiError> handleChatRateLimited(ChatRateLimitedException ex) {
+        return error(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

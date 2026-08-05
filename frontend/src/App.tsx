@@ -22,6 +22,7 @@ import { LoadingState } from './components/ui'
 // the chunk for the destination route loads.
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
+const ChatWidget = lazy(() => import('./components/chat/ChatWidget'))
 
 const StyleGuidePage = lazy(() => import('./pages/dev/StyleGuidePage'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
@@ -235,6 +236,12 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
+      </Suspense>
+      {/* Own Suspense boundary (fallback={null}) so the widget's lazy chunk loading never
+          blocks/replaces the page itself with the full-screen LoadingState fallback above —
+          it just pops in once ready, same as it would after any other async load. */}
+      <Suspense fallback={null}>
+        <ChatWidget />
       </Suspense>
     </BrowserRouter>
   )

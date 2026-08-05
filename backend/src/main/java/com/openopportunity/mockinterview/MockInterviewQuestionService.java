@@ -124,7 +124,7 @@ public class MockInterviewQuestionService {
         }
         try {
             StructuredMessageCreateParams<QuestionList> params = MessageCreateParams.builder()
-                    .model(Model.CLAUDE_OPUS_4_8)
+                    .model(Model.CLAUDE_HAIKU_4_5)
                     .maxTokens(2048L)
                     .outputConfig(QuestionList.class)
                     .addUserMessage(buildPrompt(skills, experienceLevel, industry, count))

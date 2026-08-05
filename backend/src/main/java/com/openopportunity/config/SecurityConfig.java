@@ -67,6 +67,10 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/community/interest",
+                                // Public so the support chat widget works for a visitor who
+                                // hasn't signed up yet, not just logged-in users — see
+                                // ChatController/ChatRateLimiter.
+                                "/api/chat",
                                 // Razorpay calls this server-to-server with no JWT — auth is the
                                 // HMAC signature check inside CandidateBillingService, not Spring
                                 // Security. See RazorpayWebhookController.

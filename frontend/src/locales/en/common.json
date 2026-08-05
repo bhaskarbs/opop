@@ -6,5 +6,16 @@
   "nav": {
     "jobs": "Find Jobs",
     "login": "Log in"
+  },
+  "chat": {
+    "launcherLabel": "Chat with support",
+    "title": "OpenOpportunity Support",
+    "subtitle": "Ask about jobs, applications, ideas, or your account",
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "close": "Close chat",
+    "greeting": "Hi! I can answer questions about how OpenOpportunity works — posting or finding jobs, applications, ideas, and billing. What do you need help with?",
+    "error": "Sorry, I couldn't respond just now. Please try again in a moment.",
+    "rateLimited": "You've sent a lot of messages in a short time — please wait a bit before trying again."
   }
 }
