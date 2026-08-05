@@ -21,6 +21,14 @@ final class ToolSchemas {
         return JsonValue.from(Map.of("type", "number", "description", description));
     }
 
+    static JsonValue booleanProperty(String description) {
+        return JsonValue.from(Map.of("type", "boolean", "description", description));
+    }
+
+    static JsonValue enumProperty(String description, List<String> allowedValues) {
+        return JsonValue.from(Map.of("type", "string", "enum", allowedValues, "description", description));
+    }
+
     static JsonValue stringArrayProperty(String description) {
         return JsonValue.from(Map.of(
                 "type", "array", "items", Map.of("type", "string"), "description", description));
@@ -37,11 +45,16 @@ final class ToolSchemas {
     }
 
     static Tool.InputSchema schema(Map<String, JsonValue> properties) {
+        return schema(properties, List.of());
+    }
+
+    static Tool.InputSchema schema(Map<String, JsonValue> properties, List<String> required) {
         Tool.InputSchema.Properties.Builder propertiesBuilder = Tool.InputSchema.Properties.builder();
         properties.forEach(propertiesBuilder::putAdditionalProperty);
         return Tool.InputSchema.builder()
                 .type(JsonValue.from("object"))
                 .properties(propertiesBuilder.build())
+                .required(required)
                 .build();
     }
 }

@@ -5,10 +5,13 @@ import com.anthropic.models.messages.Tool;
 import java.util.UUID;
 
 /** One action the chat assistant can take on the caller's behalf (see ChatService's tool-use
- * loop). Phase B: read-only, always auto-executed, no confirmation step — search_jobs and
- * search_candidates below don't change any state. Phase C's state-changing tools (post a job,
- * apply, post/express-interest-in an idea) are expected to need a confirmation turn before
- * ChatService actually calls execute(), which this interface doesn't model yet.
+ * loop). Phase B's search_jobs/search_candidates are read-only and always auto-execute. Phase
+ * C's state-changing tools (post_job, apply_to_job, post_idea, express_interest_in_idea) share a
+ * confirm-before-execute convention instead: each takes a {@code confirmed} input field, returns
+ * a plain-text preview with no side effect when it's not true, and only performs the real action
+ * when the model calls it again with confirmed=true — see PostJobChatTool's Javadoc for the full
+ * protocol. This interface doesn't need to know about that distinction; it's entirely encoded in
+ * each tool's own execute() and its Tool definition's description/schema.
  *
  * <p>Every implementation is a Spring bean, auto-collected by ChatService — adding a new tool
  * later is just adding a new {@code @Component} here, no changes to ChatService itself. */
