@@ -43,7 +43,9 @@ export default function ChatWidget() {
       setMessages([...withUserMessage, { role: 'assistant', content: response.reply }])
     } catch (caught) {
       setError(
-        caught instanceof ApiError && caught.status === 429 ? t('chat.rateLimited') : t('chat.error'),
+        caught instanceof ApiError && caught.status === 429
+          ? t('chat.rateLimited')
+          : t('chat.error'),
       )
     } finally {
       setSending(false)
