@@ -8,6 +8,7 @@ import { LoadingState, Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { ideasApi, type BackendIdeaStage, type IdeaRequestPayload } from '../../lib/ideasApi'
+import { posthog } from '../../lib/posthog'
 import { IDEA_CATEGORIES } from '../../mocks/ideas'
 import { ideaRoutesFor } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
@@ -152,8 +153,18 @@ export default function IdeaSubmitPage() {
       const payload = toIdeaRequest(values)
       if (editing && ideaId) {
         await ideasApi.update(ideaId, payload)
+        posthog.capture('idea_submitted_for_review', {
+          submission_type: 'update',
+          category: values.category,
+          stage: values.stage,
+        })
       } else {
         await ideasApi.create(payload)
+        posthog.capture('idea_submitted_for_review', {
+          submission_type: 'create',
+          category: values.category,
+          stage: values.stage,
+        })
       }
       goToMyIdeas()
     } catch (error) {

@@ -22,6 +22,7 @@ import {
 } from '../../lib/jobEnums'
 import { ApiError } from '../../lib/apiClient'
 import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
+import { posthog } from '../../lib/posthog'
 import { ROUTES } from '../../routes/paths'
 import { useCompanyProfileStore } from '../../stores/companyProfileStore'
 
@@ -202,9 +203,11 @@ export default function PostJobPage() {
       // live with unreviewed changes.
       if (editing && jobId) {
         await jobsApi.update(jobId, toJobRequest(values, 'PENDING_APPROVAL'))
+        posthog.capture('job_published_for_review', { submission_type: 'update' })
         goToMyJobPostings()
       } else {
         await jobsApi.create(toJobRequest(values, 'PENDING_APPROVAL'))
+        posthog.capture('job_published_for_review', { submission_type: 'create' })
         navigate(localize(ROUTES.companyDashboard))
       }
     } catch (error) {
@@ -222,9 +225,11 @@ export default function PostJobPage() {
     try {
       if (editing && jobId) {
         await jobsApi.update(jobId, toJobRequest(values, 'DRAFT'))
+        posthog.capture('job_draft_saved', { submission_type: 'update' })
         goToMyJobPostings()
       } else {
         await jobsApi.create(toJobRequest(values, 'DRAFT'))
+        posthog.capture('job_draft_saved', { submission_type: 'create' })
         navigate(localize(ROUTES.companyDashboard))
       }
     } catch (error) {

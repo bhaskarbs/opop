@@ -12,6 +12,7 @@ import {
 } from '../../lib/applicationsApi'
 import { ApiError } from '../../lib/apiClient'
 import { companyApi } from '../../lib/companyApi'
+import { posthog } from '../../lib/posthog'
 import { jobsApi } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
 
@@ -98,6 +99,7 @@ export default function JobApplicantsPage() {
               : applicant,
           ),
         )
+        posthog.capture('candidate_contact_revealed')
       })
       .catch((caught) => {
         setRevealErrors((prev) => ({

@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/apiClient'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
 import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
+import { posthog } from '../../lib/posthog'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 // Questions are generated per-session by the backend via the Claude API (see
@@ -445,6 +446,11 @@ export default function MockInterviewPage() {
         durationSeconds,
       })
       setSessions((prev) => [summary, ...prev])
+      posthog.capture('mock_interview_completed', {
+        question_count: questionCount,
+        duration_seconds: durationSeconds,
+        selected_skill_count: selectedSkills.length,
+      })
       loadThumbnail(summary)
       setLastQuestionSet(sessionQuestionsRef.current)
     } catch (caught) {

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { UserSummary } from '../lib/apiClient'
+import { posthog } from '../lib/posthog'
 
 export type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated'
 
@@ -59,11 +60,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   candidatePhotoVersion: 0,
   companyLogoUrl: null,
   companyLogoVersion: 0,
-  setSession: (accessToken, user) => set({ accessToken, user, status: 'authenticated' }),
+  setSession: (accessToken, user) => {
+    posthog.identify(user.id, {
+      email: user.email,
+      name: user.fullName,
+      role: user.role,
+      admin_level: user.adminLevel,
+    })
+    set({ accessToken, user, status: 'authenticated' })
+  },
   setCandidatePhoto: (photoUrl) =>
     set({ candidatePhotoUrl: photoUrl, candidatePhotoVersion: Date.now() }),
   setCompanyLogo: (logoUrl) => set({ companyLogoUrl: logoUrl, companyLogoVersion: Date.now() }),
   clearSession: () => {
+    posthog.reset()
     set({
       accessToken: null,
       user: null,
