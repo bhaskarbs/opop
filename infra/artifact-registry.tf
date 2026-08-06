@@ -1,8 +1,7 @@
-# Already exists (created manually during the original one-time backend image push — see
-# infra/README.md) — this resource just formalizes it declaratively so `.github/workflows/
-# deploy.yml`'s `terraform apply` doesn't drift from what's actually there. Needs a one-time
-# `terraform import` before the first apply after adding this resource, or Terraform will try
-# (and fail) to create a repository that already exists:
+# If you already pushed a backend image manually before this resource existed (some earlier
+# version of this file assumed that was always true here — confirmed via `gcloud artifacts
+# repositories describe` that it wasn't, for this project), Terraform will try and fail to create
+# a duplicate; import the existing one first instead:
 #
 #   terraform import google_artifact_registry_repository.backend \
 #     projects/<project_id>/locations/<region>/repositories/openopportunity
