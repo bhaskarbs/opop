@@ -37,6 +37,12 @@ anything — the scripts don't add `-auto-approve`.
 | SEO job-page routing | `../firebase.json` rewrites `/en/jobs/*` etc. to Cloud Run | `frontend.tf`'s URL map routes the same paths to Cloud Run |
 | Extra monthly cost | ~$0 (within Firebase Hosting's free tier at MVP traffic) | ~$18/month flat (the load balancer's forwarding-rule charge) |
 
+**`../firebase.json`'s rewrites hardcode a `region`** (each `run.serviceId`/`run.region` pair) — unlike
+`frontend.tf`'s URL map, which derives everything from `var.region` automatically, plain JSON has no
+way to reference a Terraform variable. If you ever change `region` in `terraform.tfvars`, update
+`firebase.json`'s four `region` values to match too, or Firebase Hosting's SEO-path routing will
+silently point at a Cloud Run region your backend isn't actually in.
+
 Start with `firebase` — it's cheaper and does everything `load-balancer` does for an app this size.
 Move to `load-balancer` once you actually need something Firebase Hosting can't do: Cloud Armor
 (WAF/DDoS — only attaches to GCP's own load balancer), a move to GKE (which sits behind GCP's own
@@ -155,6 +161,40 @@ separate, bigger decision this pair of scripts deliberately doesn't touch.
 Both take the target number directly (not a relative step) and refuse a value that doesn't
 actually move in the direction the script name promises — e.g. `scale-up-backend.sh 1` when
 it's currently 5 errors instead of silently doing the opposite of what the name says.
+
+## Load monitoring: alerts, not automation
+
+Cloud Run's own instance count already scales continuously and automatically with real traffic
+within whatever `backend_max_instances` currently allows — there's nothing to watch or trigger
+for that specific part, it's inherent to the platform. What actually needs a human decision is
+the other three scale-up toggles: enabling/disabling Redis, Elasticsearch, or the SQL read
+replica all have real recurring cost either way, and disabling Elasticsearch or the read replica
+actually destroys provisioned infrastructure (a fresh Elasticsearch deployment, or a replica that
+has to fully re-sync from scratch next time it's enabled). An unattended policy that flips those
+on/off by itself risks flapping near a threshold and real cost/data churn nobody ever looks at —
+so this project deliberately stops at **notifying you**, not running anything automatically.
+
+Set an email and apply to turn it on (blank/unset, the default, creates no alerting at all):
+
+```bash
+# terraform.tfvars:
+alert_notification_email = "you@example.com"
+```
+
+Three alert policies get created (`monitoring.tf`), each emailing a specific runbook pointing at
+which `scripts/*.sh` to consider:
+
+| Alert | Fires when | Suggests |
+|---|---|---|
+| Backend CPU high | Cloud Run backend CPU > 80% for 5m | `scale-up-backend.sh`, `enable-redis.sh`, or `upgrade-sql-replica.sh` |
+| Backend CPU sustained low | Cloud Run backend CPU < 10% for 30m | `scale-down-backend.sh` / disabling whichever extras were enabled for a spike that's now over |
+| Database CPU high | Cloud SQL primary CPU > 80% for 5m | `upgrade-sql-replica.sh` (only helps if reads, not writes, are the driver — check Cloud SQL's query insights first) |
+
+Thresholds/durations are reasonable starting points, not tuned against this app's real traffic
+(which doesn't exist yet) — revisit them once it does, same as you would for any new alerting
+setup. There's no dedicated Elasticsearch alert: Elastic Cloud's own metrics live in Elastic's
+observability tooling, not GCP Cloud Monitoring, so nothing here can watch it directly — the
+backend CPU alerts are the closest proxy available.
 
 ## Prerequisites
 
