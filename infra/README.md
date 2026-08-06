@@ -1,17 +1,160 @@
 # Infra (Terraform, GCP)
 
-Minimal cloud footprint for OpenOpportunity: Cloud Run (backend) + Cloud SQL for Postgres + Cloud
-Storage/CDN (frontend), built up one small step at a time — see "Phase 2 — Cloud infra" in
-`../docs/DEVELOPMENT_ROADMAP.md` for the full step list. This step (19) only wires up the Terraform
-plumbing and declares the APIs later steps need; it provisions no billable compute or data resources.
+Minimal cloud footprint for OpenOpportunity: Cloud Run (backend) + Cloud SQL for Postgres + one of
+two interchangeable frontend-serving setups + four independent scale-up switches (Redis,
+Elasticsearch, a Cloud SQL read replica, the backend's instance ceiling) — built up one small step
+at a time, see "Phase 2 — Cloud infra" in `../docs/DEVELOPMENT_ROADMAP.md` for the full step list.
+Cloud Run/Cloud SQL/IAM/secrets are identical regardless of which toggles are on.
 
-The frontend load balancer's URL map (see `frontend.tf`) routes `/en/jobs/*`, `/hi/jobs/*`,
-`/sitemap.xml`, and `/robots.txt` straight to the backend's Cloud Run service instead of the SPA
-bucket (see `job-seo.tf`), so a single job's public URL returns the backend's server-rendered
-HTML (`com.openopportunity.seo.JobSeoController`), and the sitemap/robots files
-(`SitemapController`/`RobotsController`) are reachable at the domain crawlers actually check.
-Every other path
-still serves the static frontend build unchanged.
+## Every toggle is a script — never a `-var` flag to remember
+
+All six settings below live together in one file, `infra/deploy.tfvars` (gitignored, copied
+from `deploy.tfvars.example` on first use) — every `scripts/*.sh` in this section only flips the
+one line it's responsible for and leaves the others exactly as they were, then runs
+`terraform apply -var-file=deploy.tfvars`. You never type a `-var` flag or need to remember what's
+currently on; run the script for the thing you want, it handles the rest.
+
+| Script | Effect |
+|---|---|
+| `scripts/deploy-firebase.sh` | `frontend_mode = "firebase"`, then build + `firebase deploy` |
+| `scripts/deploy-loadbalancer.sh` | `frontend_mode = "load-balancer"`, then build + `gsutil rsync` |
+| `scripts/enable-redis.sh` / `disable-redis.sh` | `enable_redis = true` / `false` |
+| `scripts/enable-elasticsearch.sh` / `disable-elasticsearch.sh` | `enable_elasticsearch = true` / `false` |
+| `scripts/set-loadbalancer-domain.sh <domain>` | `load_balancer_domain = "<domain>"` (see below) |
+| `scripts/upgrade-sql-replica.sh` / `downgrade-sql-replica.sh` | `enable_sql_read_replica = true` / `false` |
+| `scripts/scale-up-backend.sh <n>` / `scale-down-backend.sh <n>` | `backend_max_instances = <n>` (see below) |
+
+All eleven live at the repo root's `scripts/` and just run (no arguments, except the ones that
+explicitly take a value): `../scripts/enable-redis.sh`, `../scripts/scale-up-backend.sh 5`, etc.
+`terraform apply` will still show you the real plan and ask to confirm before changing
+anything — the scripts don't add `-auto-approve`.
+
+## Frontend modes: `firebase` vs `load-balancer`
+
+| | `firebase` (default) | `load-balancer` |
+|---|---|---|
+| What it creates | `firebase.tf` — a Firebase Hosting site | `frontend.tf` + `job-seo.tf` — Cloud Storage bucket + Cloud CDN + global HTTP load balancer |
+| SEO job-page routing | `../firebase.json` rewrites `/en/jobs/*` etc. to Cloud Run | `frontend.tf`'s URL map routes the same paths to Cloud Run |
+| Extra monthly cost | ~$0 (within Firebase Hosting's free tier at MVP traffic) | ~$18/month flat (the load balancer's forwarding-rule charge) |
+
+Start with `firebase` — it's cheaper and does everything `load-balancer` does for an app this size.
+Move to `load-balancer` once you actually need something Firebase Hosting can't do: Cloud Armor
+(WAF/DDoS — only attaches to GCP's own load balancer), a move to GKE (which sits behind GCP's own
+Ingress/LB), or routing/caching rules more advanced than Firebase Hosting's rewrite config exposes.
+Switching is just running the other script — Terraform destroys whichever mode's resources aren't
+currently active (via each resource's `count`, see `variables.tf`) and creates the other's. Cloud
+Run/Cloud SQL are untouched either way, so this never touches your data.
+
+**Switching a live custom domain between modes is disruptive, though** — see the next section for
+`load-balancer`'s side; `firebase`'s side is a custom domain added via the Firebase console
+(outside anything this Terraform manages), which would need re-adding there if you switch back.
+Neither mode carries a domain over to the other automatically.
+
+### Custom domain + HTTPS on `load-balancer`
+
+Blank by default (`load_balancer_domain = ""`) — `load-balancer` mode serves plain HTTP on a bare
+IP with no domain, same as before this existed. Set a domain to provision a Google-managed SSL
+cert for it and switch the HTTP listener from serving content directly to redirecting to HTTPS:
+
+```bash
+../scripts/set-loadbalancer-domain.sh openopportunity.com
+```
+
+This only provisions anything while `frontend_mode=load-balancer` is also active (`local.has_custom_domain`
+in `frontend.tf` requires both) — running it while `frontend_mode=firebase` just records the setting
+for later. After it applies, **you still have to point the domain's DNS at the reserved IP yourself**
+— this project doesn't assume your domain's DNS zone is in Cloud DNS, so Terraform can't do that part.
+The script prints the exact record to create; find it again anytime with:
+
+```bash
+terraform output load_balancer_dns_instructions
+```
+
+The managed cert sits in `PROVISIONING` until that DNS record exists and propagates (can take
+minutes to a few hours), then Google auto-validates and flips it to `ACTIVE` — no action needed on
+your side once DNS is correct. Check status with:
+
+```bash
+gcloud compute ssl-certificates describe openopportunity-frontend --global --format='value(managed.status)'
+```
+
+Clear it with `../scripts/set-loadbalancer-domain.sh ""` — back to bare-IP HTTP-only.
+
+## Scale-up toggles: Redis and Elasticsearch
+
+Two more independent, opt-in switches — off by default, and each mirrors a local Docker-based
+opt-in this app already has (see `app.search.provider`/`app.cache.provider` in
+`application.properties`, and `docker-compose.yml`'s `search`/`cache` profiles). Neither is needed
+until real traffic/data volume actually justifies it — a plain `terraform apply` never provisions
+either by accident.
+
+| | `enable_redis` | `enable_elasticsearch` |
+|---|---|---|
+| What it creates | `redis.tf` — Memorystore for Redis, BASIC tier, 1GB | `elasticsearch.tf` — a real Elastic Cloud deployment (`ec` provider — a separate vendor from GCP, see below) |
+| Switches the backend to | `app.cache.provider=redis` | `app.search.provider=elasticsearch` |
+| Extra monthly cost | ~$36/month (Memorystore has no free tier) | ~$16-40/month, on Elastic's own bill, not GCP's |
+| How the backend reaches it | Cloud Run's Direct VPC Egress (`vpc_access.network_interfaces` in `run.tf`) — no VPC connector, so this adds no separate fixed cost of its own | Public HTTPS endpoint (Elastic Cloud deployments are internet-reachable by default, authenticated via username/password) |
+
+Both work with either frontend mode — every toggle in this file is independent of every other.
+
+**Elasticsearch needs a one-time Elastic Cloud account first** — this is a genuinely separate
+vendor/bill from GCP, not something `gcloud`/the one-time GCP setup covers:
+
+```bash
+# Sign up at https://cloud.elastic.co if you haven't already, then create an API key:
+# Elastic Cloud console -> your user menu -> Organization -> API Keys -> Create API key
+export TF_VAR_elastic_cloud_api_key="<the key you just created>"
+```
+
+Do this in your own terminal, same reasoning as the GCP billing decision in the one-time setup
+below — never commit this key (it's `sensitive = true` in `variables.tf`, and `TF_VAR_*` env vars
+never touch `terraform.tfvars`/`deploy.tfvars`). `scripts/enable-elasticsearch.sh` checks it's set
+before doing anything. Verify `elastic_deployment_template_id`'s default (`gcp-general-purpose`)
+is actually a valid template for your account/region in the Elastic Cloud console before the first
+apply — exact template ids vary; `terraform plan` will fail clearly with an "unknown template"
+error if it isn't, not silently do the wrong thing.
+
+## Scale-up toggle: Cloud SQL read replica
+
+The same read/write split already built and tested locally (`app.datasource.read-replica.*` in
+`application.properties`, `ReadReplicaDataSourceConfig`, `ReadOnlyRoutingAspect` — see
+`docker-compose.yml`'s `read-replica` profile for the local equivalent), now against a real Cloud
+SQL instance instead of a local Docker standby. `@Transactional(readOnly = true)` calls (already
+used throughout the backend's read-only service methods) start routing to the replica the moment
+this is enabled — no code change, no new image to build/push, just the `terraform apply`.
+
+```bash
+../scripts/upgrade-sql-replica.sh     # provisions the replica, ~$9-11/month, same tier as the primary
+../scripts/downgrade-sql-replica.sh   # deletes it — always safe, it holds no data the primary doesn't have
+```
+
+Reuses the primary's existing database user/password (Cloud SQL replicas replicate users along
+with data), so there's no new secret to manage. Reached the same way the primary is — the Cloud
+SQL Auth Proxy socket mount already on the Cloud Run service, just with a second instance
+connection added to it, not a new networking path like Redis needed. Same async-replication-lag
+caveat as the local version: a write immediately followed by a read of the same row isn't
+guaranteed to see it yet if that read lands on the replica.
+
+## Scale-up toggle: backend instance ceiling
+
+`backend_max_instances` (default 2, matching what this was hardcoded to before the variable
+existed) is the ceiling on how many Cloud Run backend instances can run *concurrently* — not a
+fixed count the way `docker-compose.yml`'s local load-balancer setup runs exactly two named
+processes. Cloud Run auto-scales within `[0, backend_max_instances]` based on real traffic the
+whole time; raising the ceiling doesn't spin anything up by itself and costs nothing on its own
+(Cloud Run bills for actual usage, not headroom) — it just raises how far it's *allowed* to scale
+out before requests start queuing/failing under load. `min_instance_count` (always-on instances,
+a real 24/7 cost) stays fixed at 0/scale-to-zero — see `run.tf`'s comment for why that's a
+separate, bigger decision this pair of scripts deliberately doesn't touch.
+
+```bash
+../scripts/scale-up-backend.sh 5     # raise the ceiling to 5
+../scripts/scale-down-backend.sh 1   # lower it to 1
+```
+
+Both take the target number directly (not a relative step) and refuse a value that doesn't
+actually move in the direction the script name promises — e.g. `scale-up-backend.sh 1` when
+it's currently 5 errors instead of silently doing the opposite of what the name says.
 
 ## Prerequisites
 
@@ -22,6 +165,11 @@ still serves the static frontend build unchanged.
 - [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.7.
 - [gcloud CLI](https://cloud.google.com/sdk/docs/install), already authenticated
   (`gcloud auth application-default login`) — the Google provider uses your user credentials locally.
+- For `frontend_mode=firebase` specifically: the [Firebase CLI](https://firebase.google.com/docs/cli)
+  (`npm install -g firebase-tools`), then `firebase login`, then `cp ../.firebaserc.example ../.firebaserc`
+  and set your real project id in it (gitignored, same reasoning as `terraform.tfvars`).
+- For `frontend_mode=load-balancer` specifically: nothing extra beyond gcloud — `gsutil` ships with it.
+- For `enable_elasticsearch` specifically: an Elastic Cloud API key (see above).
 
 ## First run
 
@@ -29,44 +177,56 @@ still serves the static frontend build unchanged.
 cd infra
 cp terraform.tfvars.example terraform.tfvars
 # edit terraform.tfvars: set project_id to the project you created in the one-time setup
+cp deploy.tfvars.example deploy.tfvars
+# deploy.tfvars' defaults (frontend_mode=firebase, everything else off) are a fine starting point —
+# scripts/*.sh will edit this file for you from here on, you don't need to hand-edit it further
 
 terraform init -backend-config="bucket=openopportunity-tfstate"
-terraform plan
-terraform apply
+terraform plan -var-file="deploy.tfvars"
+terraform apply -var-file="deploy.tfvars"
 ```
 
 `terraform apply` should report the `google_project_service.required` resources being created (one per
 API) and no other changes. The `enabled_apis` output lists what got turned on — check it against
 `gcloud services list --enabled` if you want a second source of truth.
 
-## Frontend deploy (Step 21)
+## Deploying the frontend build
 
-`terraform apply` provisions the bucket/CDN/load balancer but doesn't build or upload the frontend
-itself — Step 22 automates that via CI, but until then it's a manual build+sync, same reasoning as the
-manual backend image push in Step 20:
+`terraform apply` provisions the hosting shell (Firebase site, or bucket/CDN/load balancer) but
+doesn't build or upload the frontend itself — Step 22 automates that via CI, but until then
+`../scripts/deploy-firebase.sh` / `../scripts/deploy-loadbalancer.sh` do the full
+apply → build → deploy sequence in one command (see the toggles table above). Manually, the same
+steps are:
 
 ```bash
 cd infra
 terraform output backend_url    # use this as VITE_API_BASE_URL below
-terraform output frontend_bucket
+terraform output frontend_bucket # frontend_mode=load-balancer only
 
 cd ../frontend
 VITE_API_BASE_URL=<backend_url from above> npm run build --workspace=frontend
+
+# frontend_mode=firebase:
+cd .. && firebase deploy --only hosting
+
+# frontend_mode=load-balancer:
 gsutil -m rsync -r -d dist gs://<frontend_bucket from above>
 ```
 
-`-d` deletes stale objects in the bucket that are no longer in `dist/` (safe here — the bucket only ever
-holds this build output). Then open `terraform output frontend_url` in a browser — it's a bare IP over
-plain HTTP for now (no custom domain yet, so no managed SSL cert to attach to the load balancer).
+`-d` on `gsutil rsync` deletes stale objects in the bucket that are no longer in `dist/` (safe here —
+the bucket only ever holds this build output). `frontend_mode=load-balancer`'s `frontend_url` is a bare
+IP over plain HTTP until `load_balancer_domain` is set (see above) — `frontend_mode=firebase` gets free
+HTTPS on its `*.web.app` URL immediately, no domain needed.
 
 ## Day-to-day
 
 ```bash
-terraform fmt -recursive   # format .tf files
-terraform validate         # check syntax/types without touching GCP
-terraform plan             # preview changes before applying
+terraform fmt -recursive               # format .tf files
+terraform validate                     # check syntax/types without touching GCP
+terraform plan -var-file="deploy.tfvars"   # preview changes before applying
 ```
 
-`terraform.tfvars` is gitignored (it holds your real project id) — `terraform.tfvars.example` is the
-committed template. The state bucket name is passed via `-backend-config` rather than a variable because
-Terraform backend blocks can't reference variables.
+`terraform.tfvars` (project id, backend image) and `deploy.tfvars` (the toggles above) are both
+gitignored — `terraform.tfvars.example`/`deploy.tfvars.example` are the committed templates. The state
+bucket name is passed via `-backend-config` rather than a variable because Terraform backend blocks
+can't reference variables.

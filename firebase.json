@@ -1,0 +1,25 @@
+{
+  "hosting": {
+    "public": "frontend/dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/en/jobs/**",
+        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+      },
+      {
+        "source": "/hi/jobs/**",
+        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+      },
+      {
+        "source": "/sitemap.xml",
+        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+      },
+      {
+        "source": "/robots.txt",
+        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+      },
+      { "source": "**", "destination": "/index.html" }
+    ]
+  }
+}

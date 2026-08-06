@@ -9,13 +9,20 @@ output "backend_url" {
 }
 
 output "frontend_url" {
-  description = "Public HTTP URL of the deployed frontend (bare IP — no custom domain yet)."
+  description = "Public URL of the deployed frontend — an HTTPS *.web.app URL in frontend_mode=firebase, https://<load_balancer_domain> once that's set and its managed cert is ACTIVE, or a bare HTTP IP in the meantime in frontend_mode=load-balancer."
   value       = local.frontend_origin
 }
 
 output "frontend_bucket" {
-  description = "Cloud Storage bucket name to sync the frontend build into."
-  value       = google_storage_bucket.frontend.name
+  description = "Cloud Storage bucket name to sync the frontend build into — only set in frontend_mode=load-balancer; use `firebase deploy` instead in frontend_mode=firebase (see scripts/deploy-firebase.sh)."
+  value       = try(google_storage_bucket.frontend[0].name, null)
+}
+
+output "load_balancer_dns_instructions" {
+  description = "What DNS record to create at your domain registrar/DNS provider so load_balancer_domain actually reaches this load balancer — only set once frontend_mode=load-balancer and load_balancer_domain are both set. Google can't issue the managed SSL cert until this record exists and has propagated; check status with: gcloud compute ssl-certificates describe openopportunity-frontend --global --format='value(managed.status)' (expect PROVISIONING, then ACTIVE)."
+  value = local.has_custom_domain ? (
+    "Create an A record: ${var.load_balancer_domain} -> ${try(google_compute_global_address.frontend[0].address, "<run terraform apply first>")}"
+  ) : null
 }
 
 output "sql_connection_name" {
