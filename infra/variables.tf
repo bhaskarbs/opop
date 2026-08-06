@@ -14,9 +14,20 @@ variable "backend_image" {
     Full Artifact Registry image reference for the backend, e.g.
     us-central1-docker.pkg.dev/<project_id>/openopportunity/backend:<tag>.
     Must already be pushed before the first `terraform apply` — see infra/README.md
-    for the one-time manual build+push (Step 22 automates this via CI).
+    for the one-time manual build+push. .github/workflows/deploy.yml overrides this
+    on every push to main with the image it just built (tagged with the commit SHA),
+    so the value here only matters for a manual apply.
   EOT
   type        = string
+}
+
+# See cicd.tf — which GitHub repo is trusted to authenticate as the CI/CD service account via
+# Workload Identity Federation. "owner/repo" format. Deliberately narrow (one specific repo, not
+# just "anyone in this GitHub org") — see cicd.tf's attribute_condition.
+variable "github_repository" {
+  description = "GitHub repository allowed to deploy via Workload Identity Federation, as \"owner/repo\"."
+  type        = string
+  default     = "bhaskarbs/opop"
 }
 
 variable "admin_seed_email" {

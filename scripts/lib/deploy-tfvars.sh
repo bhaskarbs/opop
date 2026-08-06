@@ -45,3 +45,15 @@ get_deploy_tfvar() {
   # result (confirmed by hitting this for real while testing scale-up-backend.sh, not assumed).
   grep "^${key}[[:space:]]*=" "$tfvars" 2>/dev/null | sed -E 's/^[^=]+=[[:space:]]*//' || true
 }
+
+# Called once, at the very end of each toggle script, only after `terraform apply` has already
+# succeeded — deploy.tfvars is tracked in git (unlike terraform.tfvars) specifically because
+# .github/workflows/deploy.yml reads this exact file on every push to main (see its own header
+# comment); an uncommitted local change here is invisible to CI, which would just reapply the
+# last-committed value on its next run and silently undo what this script just did.
+remind_to_commit_deploy_tfvars() {
+  echo "" >&2
+  echo "Applied locally — now commit + push infra/deploy.tfvars so CI applies the same thing" >&2
+  echo "next time it runs, instead of reverting it on the next push to main:" >&2
+  echo "  git add infra/deploy.tfvars && git commit -m \"infra: update deploy.tfvars\" && git push" >&2
+}

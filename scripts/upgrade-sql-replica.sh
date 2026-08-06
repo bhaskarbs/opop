@@ -24,3 +24,4 @@ echo "Cloud Run won't be deployed pointing at a replica that doesn't exist yet. 
 echo "a while after that to finish its initial full sync from the primary, though — reads may see"
 echo "some replication lag (stale-but-not-wrong data) during that window. Writes are unaffected"
 echo "throughout (they always go to the primary)."
+remind_to_commit_deploy_tfvars

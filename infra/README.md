@@ -8,11 +8,16 @@ Cloud Run/Cloud SQL/IAM/secrets are identical regardless of which toggles are on
 
 ## Every toggle is a script — never a `-var` flag to remember
 
-All six settings below live together in one file, `infra/deploy.tfvars` (gitignored, copied
-from `deploy.tfvars.example` on first use) — every `scripts/*.sh` in this section only flips the
-one line it's responsible for and leaves the others exactly as they were, then runs
-`terraform apply -var-file=deploy.tfvars`. You never type a `-var` flag or need to remember what's
-currently on; run the script for the thing you want, it handles the rest.
+All six settings below live together in one file, `infra/deploy.tfvars` — every `scripts/*.sh` in
+this section only flips the one line it's responsible for and leaves the others exactly as they
+were, then runs `terraform apply -var-file=deploy.tfvars`. You never type a `-var` flag or need to
+remember what's currently on; run the script for the thing you want, it handles the rest.
+
+Unlike `terraform.tfvars` (gitignored — holds your project id and other per-environment values),
+`deploy.tfvars` is tracked in git: CI (see "CI/CD" below) checks out a fresh clone on every run and
+has no other way to know which toggles are currently on. Each script reminds you to `git add
+infra/deploy.tfvars && git commit && git push` after `terraform apply` succeeds — an uncommitted
+local toggle change is invisible to CI and would get silently reverted on the next deploy.
 
 | Script | Effect |
 |---|---|
@@ -229,6 +234,66 @@ terraform apply -var-file="deploy.tfvars"
 `terraform apply` should report the `google_project_service.required` resources being created (one per
 API) and no other changes. The `enabled_apis` output lists what got turned on — check it against
 `gcloud services list --enabled` if you want a second source of truth.
+
+If the Artifact Registry repo (`openopportunity`) already exists from an earlier manual
+`docker push` (it does, if you followed this repo's history), import it before this apply instead
+of letting Terraform try to create a duplicate:
+
+```bash
+terraform import google_artifact_registry_repository.backend \
+  projects/<project_id>/locations/<region>/repositories/openopportunity
+```
+
+## CI/CD
+
+`.github/workflows/ci.yml`'s `deploy` job runs on every push to `main` (after the `backend`/
+`frontend` test jobs pass): builds and pushes the backend image, `terraform apply`s whatever
+`infra/deploy.tfvars` currently says, then builds and deploys the frontend to whichever mode is
+active. It authenticates via **Workload Identity Federation** — no GCP service account key is
+ever generated, downloaded, or stored as a GitHub secret; GitHub mints a short-lived OIDC token
+per run, scoped to this one repo (`cicd.tf`'s `attribute_condition`).
+
+### One-time setup (after you've already done the "First run" apply above)
+
+The WIF pool/provider/CI service account (`cicd.tf`) get created by that same `terraform apply`
+— they're regular resources in this same config, not a separate manual gcloud dance. What *is*
+still manual: telling GitHub about the identifiers `terraform apply` just created, since GitHub
+Actions has no way to read your Terraform state itself.
+
+```bash
+cd infra
+gh variable set WIF_PROVIDER --body "$(terraform output -raw cicd_workload_identity_provider)"
+gh variable set DEPLOY_SA_EMAIL --body "$(terraform output -raw cicd_service_account_email)"
+gh variable set GCP_PROJECT_ID --body "<the project_id from your terraform.tfvars>"
+gh variable set GCP_REGION --body "<the region from your terraform.tfvars, e.g. asia-south1>"
+```
+
+Neither `WIF_PROVIDER`/`DEPLOY_SA_EMAIL`/`GCP_PROJECT_ID`/`GCP_REGION` is sensitive (they're
+identifiers, not credentials — the actual security boundary is the WIF `attribute_condition`
+restricting *which repo* can authenticate at all) — set as repo **variables**, not secrets. Two
+secrets you *do* need, both optional, only if you actually use the feature they back:
+
+```bash
+# Only if you ever set enable_elasticsearch=true in deploy.tfvars:
+gh secret set ELASTIC_CLOUD_API_KEY --body "<same key from infra/README.md's Elasticsearch section>"
+
+# Only as a fallback if the primary `firebase deploy` auth approach (ADC via WIF) turns out not
+# to work for your account/setup — see ci.yml's comment on that step:
+firebase login:ci   # opens a browser, prints a token
+gh secret set FIREBASE_TOKEN --body "<the token just printed>"
+```
+
+### Why `deploy.tfvars` is tracked in git (unlike `terraform.tfvars`)
+
+CI checks out a fresh clone on every run — it has no access to your laptop's local
+`deploy.tfvars`. For `terraform apply` in CI to know which toggles should currently be on, that
+state has to live somewhere CI can read it, which means version control. `scripts/*.sh` still
+apply immediately from your terminal, same as before — they now also remind you to commit + push
+`infra/deploy.tfvars` afterward (`scripts/lib/deploy-tfvars.sh`'s `remind_to_commit_deploy_tfvars`),
+since an uncommitted local toggle change is invisible to CI and would get silently reverted the
+next time it runs. `terraform.tfvars` (project id, backend image) stays gitignored — CI gets
+those from the `GCP_PROJECT_ID`/`GCP_REGION` repo variables and the image it just built instead,
+not from that file at all.
 
 ## Deploying the frontend build
 

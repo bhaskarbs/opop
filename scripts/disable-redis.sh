@@ -14,3 +14,4 @@ set_deploy_tfvar "$REPO_ROOT" "enable_redis" "false"
 
 echo "==> terraform apply"
 (cd "$REPO_ROOT/infra" && terraform apply -var-file="deploy.tfvars")
+remind_to_commit_deploy_tfvars

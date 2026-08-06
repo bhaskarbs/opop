@@ -46,8 +46,10 @@ docker-compose.override.yml
 *.tfstate.*
 terraform.tfvars
 !terraform.tfvars.example
-deploy.tfvars
-!deploy.tfvars.example
+# deploy.tfvars is NOT ignored (unlike terraform.tfvars) — it's the CI/CD pipeline's source of
+# truth for which scale toggles should currently be applied (see .github/workflows/deploy.yml),
+# so it has to be tracked for CI to see it at all. scripts/*.sh update it locally AND remind you
+# to commit + push, same as any other tracked-file change.
 
 # Firebase (holds your real project id — see .firebaserc.example)
 .firebaserc
