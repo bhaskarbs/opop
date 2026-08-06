@@ -98,7 +98,7 @@ resource "google_cloud_run_v2_service" "backend" {
       }
       env {
         name  = "APP_CORS_ALLOWED_ORIGINS"
-        value = local.frontend_origin
+        value = local.cors_allowed_origins
       }
 
       # See uploads.tf — unlike Redis/Elasticsearch/the read replica, this isn't behind a

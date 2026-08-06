@@ -76,6 +76,19 @@ variable "load_balancer_domain" {
   default     = ""
 }
 
+# Only used in frontend_mode=firebase (see frontend.tf's cors_allowed_origins). Unlike
+# load_balancer_domain, this doesn't provision anything — Firebase Hosting's custom domains are
+# added and cert-managed entirely in the Firebase console (see infra/README.md), outside
+# anything Terraform touches. This variable exists purely so the backend's CORS allowlist knows
+# about a custom domain you've added there, since Terraform has no other way to find out about
+# it. Firebase always serves both its default domains regardless of this setting — see
+# cors_allowed_origins for why both are included unconditionally.
+variable "firebase_custom_domain" {
+  description = "Custom domain added to Firebase Hosting via the Firebase console, e.g. \"openopportunity.com\" — only affects the backend's CORS allowlist. Blank (default) if you haven't added one."
+  type        = string
+  default     = ""
+}
+
 # Scale-up toggles — see redis.tf/elasticsearch.tf. Both default to false: the backend already
 # runs correctly without either (app.cache.provider=caffeine, app.search.provider=postgres are
 # its own local-first defaults — see application.properties), so a plain `terraform apply` never
