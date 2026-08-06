@@ -87,6 +87,21 @@ resource "google_cloud_run_v2_service" "backend" {
         value = local.frontend_origin
       }
 
+      # See uploads.tf — unlike Redis/Elasticsearch/the read replica, this isn't behind a
+      # toggle: without it the backend silently falls back to app.storage.provider=local
+      # (Cloud Run's ephemeral per-instance disk), which loses uploads on every
+      # redeploy/restart. Names match application.properties' own ${STORAGE_PROVIDER:...}/
+      # ${STORAGE_GCS_BUCKET:...} placeholders exactly, same "not Spring Boot's relaxed-binding
+      # names" reasoning as CACHE_PROVIDER/SEARCH_PROVIDER above.
+      env {
+        name  = "STORAGE_PROVIDER"
+        value = "gcs"
+      }
+      env {
+        name  = "STORAGE_GCS_BUCKET"
+        value = google_storage_bucket.uploads.name
+      }
+
       # See redis.tf — omitted entirely (not just left at its local-first default) when
       # enable_redis=false, since CACHE_PROVIDER's own default (caffeine, see
       # application.properties) already means "no Redis needed" with zero env vars set. Env var
@@ -239,6 +254,7 @@ resource "google_cloud_run_v2_service" "backend" {
     google_project_iam_member.backend_cloudsql_client,
     google_secret_manager_secret_iam_member.backend_secret_access,
     google_secret_manager_secret_iam_member.backend_elasticsearch_password_access,
+    google_storage_bucket_iam_member.uploads_backend_access,
   ]
 }
 

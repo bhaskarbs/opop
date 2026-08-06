@@ -1,10 +1,25 @@
 # Infra (Terraform, GCP)
 
-Minimal cloud footprint for OpenOpportunity: Cloud Run (backend) + Cloud SQL for Postgres + one of
-two interchangeable frontend-serving setups + four independent scale-up switches (Redis,
-Elasticsearch, a Cloud SQL read replica, the backend's instance ceiling) — built up one small step
-at a time, see "Phase 2 — Cloud infra" in `../docs/DEVELOPMENT_ROADMAP.md` for the full step list.
-Cloud Run/Cloud SQL/IAM/secrets are identical regardless of which toggles are on.
+Minimal cloud footprint for OpenOpportunity: Cloud Run (backend) + Cloud SQL for Postgres + a
+private GCS bucket for uploads + one of two interchangeable frontend-serving setups + four
+independent scale-up switches (Redis, Elasticsearch, a Cloud SQL read replica, the backend's
+instance ceiling) — built up one small step at a time, see "Phase 2 — Cloud infra" in
+`../docs/DEVELOPMENT_ROADMAP.md` for the full step list. Cloud Run/Cloud SQL/IAM/secrets are
+identical regardless of which toggles are on.
+
+## Uploads (resumes, photos, logos) — always on, not a toggle
+
+`uploads.tf` creates a private GCS bucket (`<project_id>-uploads`) and `run.tf` points the backend
+at it (`STORAGE_PROVIDER=gcs`, `STORAGE_GCS_BUCKET`) unconditionally. This isn't optional the way
+Redis/Elasticsearch are: without it, `com.openopportunity.storage.GcsFileStorageService` falls
+back to local disk inside the Cloud Run container, which is ephemeral (wiped on every
+redeploy/restart) and per-instance (a file uploaded to one instance 404s from another whenever
+`backend_max_instances > 1`). The bucket has no public-read binding and no website/CDN config —
+every upload is served back through the backend's own authenticated endpoints
+(`CandidatePhotoController`, `CompanyLogoController`, resume download), never a direct bucket URL,
+so it's unaffected by which `frontend_mode` is active. `force_destroy` is left at its default
+(`false`) — unlike the frontend build bucket, this holds real user documents, not something
+`terraform destroy` should be able to wipe by accident.
 
 ## Every toggle is a script — never a `-var` flag to remember
 
