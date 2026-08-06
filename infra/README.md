@@ -21,6 +21,26 @@ so it's unaffected by which `frontend_mode` is active. `force_destroy` is left a
 (`false`) — unlike the frontend build bucket, this holds real user documents, not something
 `terraform destroy` should be able to wipe by accident.
 
+## Observability: the monitoring dashboard
+
+`dashboard.tf` creates one Cloud Monitoring dashboard, always on (free — dashboards cost nothing;
+the metrics behind them are already collected for Cloud Run/Cloud SQL regardless of whether
+anything reads them). Eight widgets: backend request count by response class (2xx/4xx/5xx),
+request latency (p50/p95/p99), backend CPU/memory utilization, backend instance count, and Cloud
+SQL CPU utilization/memory utilization/active connections. Find the link with:
+
+```bash
+cd infra && terraform output -raw monitoring_dashboard_url
+```
+
+This is a different tool for a different moment than the "Load monitoring" alerts below: the
+dashboard is for looking — during/after an incident, or before deciding whether a scale-up toggle
+is warranted — while the alert policies are for finding out something needs attention in the
+first place, without anyone having to be looking at the dashboard at the time. The widget queries
+(metric names, `aggregation`/`groupByFields` syntax) were confirmed by creating this exact JSON as
+a real dashboard via `gcloud monitoring dashboards create` against the project and deleting it
+straight after — not assumed from documentation alone.
+
 ## Every toggle is a script — never a `-var` flag to remember
 
 All six settings below live together in one file, `infra/deploy.tfvars` — every `scripts/*.sh` in

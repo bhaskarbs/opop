@@ -50,3 +50,8 @@ output "cicd_service_account_email" {
   description = "Email for google-github-actions/auth's service_account input."
   value       = google_service_account.cicd.email
 }
+
+output "monitoring_dashboard_url" {
+  description = "Console link to the always-on request/latency/CPU/memory dashboard (see dashboard.tf)."
+  value       = "https://console.cloud.google.com/monitoring/dashboards/builder/${element(split("/", google_monitoring_dashboard.main.id), length(split("/", google_monitoring_dashboard.main.id)) - 1)}?project=${var.project_id}"
+}
