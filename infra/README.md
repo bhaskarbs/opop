@@ -305,8 +305,19 @@ gh variable set GCP_REGION --body "<the region from your terraform.tfvars, e.g. 
 
 Neither `WIF_PROVIDER`/`DEPLOY_SA_EMAIL`/`GCP_PROJECT_ID`/`GCP_REGION` is sensitive (they're
 identifiers, not credentials — the actual security boundary is the WIF `attribute_condition`
-restricting *which repo* can authenticate at all) — set as repo **variables**, not secrets. Two
-secrets you *do* need, both optional, only if you actually use the feature they back:
+restricting *which repo* can authenticate at all) — set as repo **variables**, not secrets.
+
+Two more optional variables, only relevant if you've set up PostHog (see `frontend/.env`'s own
+comment on `VITE_POSTHOG_KEY`/`VITE_POSTHOG_HOST` for where to get these) — also non-sensitive,
+same reasoning as `GCP_PROJECT_ID` above: a PostHog project API key is a public, embedded-in-the-
+bundle token by design, not a credential to protect:
+
+```bash
+gh variable set POSTHOG_KEY --body "<your PostHog project API key, phc_...>"
+gh variable set POSTHOG_HOST --body "<only if not on PostHog's US cloud — see frontend/.env>"
+```
+
+Two secrets you *do* need, both optional, only if you actually use the feature they back:
 
 ```bash
 # Only if you ever set enable_elasticsearch=true in deploy.tfvars:
