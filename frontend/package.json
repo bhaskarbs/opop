@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@posthog/react": "^1.10.3",
     "@tanstack/react-query": "^5.101.4",
     "clsx": "^2.1.1",
     "i18next": "^26.3.6",
+    "posthog-js": "^1.413.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.81.0",
