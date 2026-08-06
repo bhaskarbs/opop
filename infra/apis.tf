@@ -13,6 +13,12 @@ locals {
     "compute.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "iam.googleapis.com",
+    # Only used by firebase.tf's resources (frontend_mode=firebase) — enabled unconditionally
+    # like everything else here, since API enablement itself is free (see the file header).
+    "firebase.googleapis.com",
+    "firebasehosting.googleapis.com",
+    # Only used by redis.tf's google_redis_instance (enable_redis=true).
+    "redis.googleapis.com",
   ]
 }
 

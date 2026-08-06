@@ -11,10 +11,13 @@ resource "google_cloud_run_v2_service" "backend" {
     service_account = google_service_account.backend_run.email
 
     scaling {
-      # Scale-to-zero — this is a low/no-traffic deploy, so idle cost matters more
-      # than cold-start latency. Raise min_instance_count once that trade-off flips.
+      # Scale-to-zero — this is a low/no-traffic deploy, so idle cost matters more than
+      # cold-start latency. Raise this (a bigger decision than max_instance_count below — it's
+      # what actually costs money 24/7, not just a ceiling) once that trade-off flips; not
+      # something scale-up/down-backend.sh touch, on purpose.
       min_instance_count = 0
-      max_instance_count = 2
+      # See variables.tf — scripts/scale-up-backend.sh / scale-down-backend.sh set this.
+      max_instance_count = var.backend_max_instances
     }
 
     containers {
@@ -84,6 +87,112 @@ resource "google_cloud_run_v2_service" "backend" {
         value = local.frontend_origin
       }
 
+      # See redis.tf — omitted entirely (not just left at its local-first default) when
+      # enable_redis=false, since CACHE_PROVIDER's own default (caffeine, see
+      # application.properties) already means "no Redis needed" with zero env vars set. Env var
+      # names here match application.properties' own ${CACHE_PROVIDER:...}/${REDIS_HOST:...}
+      # placeholders exactly — not Spring Boot's native relaxed-binding names (there is no
+      # SPRING_DATA_REDIS_HOST equivalent read anywhere here, on purpose, same as
+      # SEARCH_PROVIDER/ELASTICSEARCH_* below).
+      dynamic "env" {
+        for_each = var.enable_redis ? [1] : []
+        content {
+          name  = "CACHE_PROVIDER"
+          value = "redis"
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_redis ? [1] : []
+        content {
+          name  = "REDIS_HOST"
+          value = google_redis_instance.cache[0].host
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_redis ? [1] : []
+        content {
+          name  = "REDIS_PORT"
+          value = tostring(google_redis_instance.cache[0].port)
+        }
+      }
+
+      # See elasticsearch.tf — same "omit rather than set to the default" reasoning as Redis
+      # above (app.search.provider=postgres is the local-first default), and same "match
+      # application.properties' own placeholder names exactly" reasoning too.
+      dynamic "env" {
+        for_each = var.enable_elasticsearch ? [1] : []
+        content {
+          name  = "SEARCH_PROVIDER"
+          value = "elasticsearch"
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_elasticsearch ? [1] : []
+        content {
+          name  = "ELASTICSEARCH_URIS"
+          value = ec_deployment.search[0].elasticsearch.https_endpoint
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_elasticsearch ? [1] : []
+        content {
+          name  = "ELASTICSEARCH_USERNAME"
+          value = ec_deployment.search[0].elasticsearch_username
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_elasticsearch ? [1] : []
+        content {
+          name = "ELASTICSEARCH_PASSWORD"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.elasticsearch_password[0].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      # See sql-replica.tf — same "omit rather than set to the default" reasoning as Redis/
+      # Elasticsearch above, and same application.properties-placeholder-exact naming too
+      # (${READ_REPLICA_ENABLED:...} etc., not Spring Boot's relaxed-binding names). Reuses the
+      # SAME db-password secret as SPRING_DATASOURCE_PASSWORD above — a Cloud SQL read replica
+      # shares its primary's users/passwords via replication, so there's no separate replica
+      # credential to manage.
+      dynamic "env" {
+        for_each = var.enable_sql_read_replica ? [1] : []
+        content {
+          name  = "READ_REPLICA_ENABLED"
+          value = "true"
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_sql_read_replica ? [1] : []
+        content {
+          name  = "READ_REPLICA_URL"
+          value = "jdbc:postgresql:///${google_sql_database.app.name}?cloudSqlInstance=${google_sql_database_instance.replica[0].connection_name}&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_sql_read_replica ? [1] : []
+        content {
+          name  = "READ_REPLICA_USERNAME"
+          value = google_sql_user.app.name
+        }
+      }
+      dynamic "env" {
+        for_each = var.enable_sql_read_replica ? [1] : []
+        content {
+          name = "READ_REPLICA_PASSWORD"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.app["db-password"].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
       volume_mounts {
         name       = "cloudsql"
         mount_path = "/cloudsql"
@@ -93,7 +202,35 @@ resource "google_cloud_run_v2_service" "backend" {
     volumes {
       name = "cloudsql"
       cloud_sql_instance {
-        instances = [google_sql_database_instance.main.connection_name]
+        # Cloud Run's cloudsql volume happily exposes more than one instance's socket at once —
+        # each gets its own path under /cloudsql/<connection_name>, which is exactly what the
+        # primary-vs-replica JDBC URLs above each reference. try() (not a bare index) on the
+        # replica's connection_name for the same reason as every other count-gated reference in
+        # this codebase: the "false" branch of a ternary still gets the "true" branch's [0]
+        # index eagerly evaluated, which errors when that resource's count is 0 — confirmed
+        # empirically (see frontend.tf's identical reasoning) rather than assumed.
+        instances = var.enable_sql_read_replica ? [
+          google_sql_database_instance.main.connection_name,
+          try(google_sql_database_instance.replica[0].connection_name, ""),
+        ] : [google_sql_database_instance.main.connection_name]
+      }
+    }
+
+    # Direct VPC Egress (not the older Serverless VPC Access connector — see redis.tf) so the
+    # backend can reach Memorystore's private IP. Only attached when enable_redis=true; Cloud
+    # SQL doesn't need this (it connects over the separate cloudsql Unix-socket volume mount
+    # above, not a VPC route), and nothing else in this app needs VPC-internal access.
+    dynamic "vpc_access" {
+      for_each = var.enable_redis ? [1] : []
+      content {
+        network_interfaces {
+          network    = "default"
+          subnetwork = "default"
+        }
+        # Only routes traffic to RFC 1918 ranges (i.e. Memorystore) through the VPC — public
+        # internet egress (the Anthropic API, SMTP, etc.) stays on Cloud Run's normal direct
+        # path rather than being forced through the VPC too.
+        egress = "PRIVATE_RANGES_ONLY"
       }
     }
   }
@@ -101,6 +238,7 @@ resource "google_cloud_run_v2_service" "backend" {
   depends_on = [
     google_project_iam_member.backend_cloudsql_client,
     google_secret_manager_secret_iam_member.backend_secret_access,
+    google_secret_manager_secret_iam_member.backend_elasticsearch_password_access,
   ]
 }
 

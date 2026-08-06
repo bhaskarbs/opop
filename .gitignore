@@ -46,3 +46,9 @@ docker-compose.override.yml
 *.tfstate.*
 terraform.tfvars
 !terraform.tfvars.example
+deploy.tfvars
+!deploy.tfvars.example
+
+# Firebase (holds your real project id — see .firebaserc.example)
+.firebaserc
+.firebase/
