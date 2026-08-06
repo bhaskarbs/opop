@@ -19,6 +19,8 @@ locals {
     "firebasehosting.googleapis.com",
     # Only used by redis.tf's google_redis_instance (enable_redis=true).
     "redis.googleapis.com",
+    # Only used by monitoring.tf's alert policies (alert_notification_email set).
+    "monitoring.googleapis.com",
   ]
 }
 

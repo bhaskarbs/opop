@@ -130,3 +130,15 @@ variable "backend_max_instances" {
     error_message = "backend_max_instances must be at least 1 — 0 would make the backend completely unreachable."
   }
 }
+
+# See monitoring.tf — blank (default) creates no alerting at all, so a plain `terraform apply`
+# never starts emailing anyone. Deliberately notification-only, not automation: enabling/disabling
+# Redis/Elasticsearch/the SQL read replica has real cost and (for Elasticsearch/the replica) data
+# consequences, so a human deciding whether to actually run the relevant scripts/*.sh after
+# reading an alert is the intended workflow — see infra/README.md's "Load monitoring" section for
+# why this doesn't auto-run anything itself.
+variable "alert_notification_email" {
+  description = "Email address to notify when backend/database load crosses a threshold (see monitoring.tf). Blank (default) skips creating any alerting."
+  type        = string
+  default     = ""
+}

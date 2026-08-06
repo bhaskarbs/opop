@@ -5,19 +5,19 @@
     "rewrites": [
       {
         "source": "/en/jobs/**",
-        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+        "run": { "serviceId": "openopportunity-backend", "region": "asia-south1" }
       },
       {
         "source": "/hi/jobs/**",
-        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+        "run": { "serviceId": "openopportunity-backend", "region": "asia-south1" }
       },
       {
         "source": "/sitemap.xml",
-        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+        "run": { "serviceId": "openopportunity-backend", "region": "asia-south1" }
       },
       {
         "source": "/robots.txt",
-        "run": { "serviceId": "openopportunity-backend", "region": "us-central1" }
+        "run": { "serviceId": "openopportunity-backend", "region": "asia-south1" }
       },
       { "source": "**", "destination": "/index.html" }
     ]
