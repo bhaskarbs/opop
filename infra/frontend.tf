@@ -172,4 +172,23 @@ locals {
     local.has_custom_domain ? "https://${var.load_balancer_domain}" :
     "http://${try(google_compute_global_address.frontend[0].address, "")}"
   )
+
+  # What run.tf actually sends as APP_CORS_ALLOWED_ORIGINS — distinct from frontend_origin (the
+  # single "here's the primary URL" value used for the frontend_url output) because CORS has to
+  # allow every origin the frontend might really be served from, not just one. In firebase mode
+  # that's always both of Firebase Hosting's default domains at once (Firebase doesn't let you
+  # disable .firebaseapp.com even if you never link to it) plus var.firebase_custom_domain if
+  # you've added one via the Firebase console. Before this, frontend_origin (just .web.app) was
+  # reused directly as the CORS value too — caught as a real gap while adding custom-domain
+  # support, not by an actual failure yet, since nothing had linked a custom domain or hit
+  # .firebaseapp.com in practice. See a separate, already-hit issue with the same
+  # symptom-shape: Google Sign-In's Authorized JavaScript origins is a completely different
+  # allowlist (Cloud Console credentials, not this Terraform) that needs the same domains added
+  # to it by hand — fixing this doesn't fix that; see infra/README.md. load-balancer mode is
+  # unaffected: it only ever serves from the one origin frontend_origin already computes.
+  cors_allowed_origins = var.frontend_mode == "firebase" ? join(",", compact([
+    "https://${var.project_id}.web.app",
+    "https://${var.project_id}.firebaseapp.com",
+    var.firebase_custom_domain != "" ? "https://${var.firebase_custom_domain}" : "",
+  ])) : local.frontend_origin
 }

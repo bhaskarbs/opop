@@ -61,10 +61,11 @@ local toggle change is invisible to CI and would get silently reverted on the ne
 | `scripts/enable-redis.sh` / `disable-redis.sh` | `enable_redis = true` / `false` |
 | `scripts/enable-elasticsearch.sh` / `disable-elasticsearch.sh` | `enable_elasticsearch = true` / `false` |
 | `scripts/set-loadbalancer-domain.sh <domain>` | `load_balancer_domain = "<domain>"` (see below) |
+| `scripts/set-firebase-domain.sh <domain>` | `firebase_custom_domain = "<domain>"` (see below) |
 | `scripts/upgrade-sql-replica.sh` / `downgrade-sql-replica.sh` | `enable_sql_read_replica = true` / `false` |
 | `scripts/scale-up-backend.sh <n>` / `scale-down-backend.sh <n>` | `backend_max_instances = <n>` (see below) |
 
-All eleven live at the repo root's `scripts/` and just run (no arguments, except the ones that
+All twelve live at the repo root's `scripts/` and just run (no arguments, except the ones that
 explicitly take a value): `../scripts/enable-redis.sh`, `../scripts/scale-up-backend.sh 5`, etc.
 `terraform apply` will still show you the real plan and ask to confirm before changing
 anything — the scripts don't add `-auto-approve`.
@@ -125,6 +126,29 @@ gcloud compute ssl-certificates describe openopportunity-frontend --global --for
 ```
 
 Clear it with `../scripts/set-loadbalancer-domain.sh ""` — back to bare-IP HTTP-only.
+
+### Custom domain on `firebase`
+
+Firebase Hosting's custom domains are entirely a Firebase-console feature — Terraform can't add
+one, provision its cert, or tell you what DNS records to create; do that part at
+[console.firebase.google.com](https://console.firebase.google.com) → Hosting → Add custom
+domain. `firebase_custom_domain` exists for the one piece Firebase's console doesn't handle for
+you: telling the *backend* that domain is allowed to call it. Firebase always keeps serving both
+its own default domains (`<project_id>.web.app` and `<project_id>.firebaseapp.com`) regardless —
+`cors_allowed_origins` in `frontend.tf` includes both of those unconditionally, plus this domain
+once set:
+
+```bash
+../scripts/set-firebase-domain.sh openopportunity.com
+```
+
+This only touches `APP_CORS_ALLOWED_ORIGINS` — it doesn't add the domain to Firebase Hosting
+itself (do that in the console first) or to Google Sign-In. Google Sign-In's Authorized
+JavaScript origins is a *separate* allowlist entirely outside Terraform, at
+[console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials) →
+your OAuth 2.0 Client ID → Authorized JavaScript origins — miss this step and "Continue with
+Google" fails with `origin_mismatch` on the new domain even though the site itself loads fine.
+Clear the CORS entry with `../scripts/set-firebase-domain.sh ""`.
 
 ## Scale-up toggles: Redis and Elasticsearch
 

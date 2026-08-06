@@ -7,5 +7,6 @@ frontend_mode           = "firebase"
 enable_redis            = false
 enable_elasticsearch    = false
 load_balancer_domain    = ""
+firebase_custom_domain  = ""
 enable_sql_read_replica = false
 backend_max_instances   = 2
