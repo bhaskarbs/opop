@@ -9,10 +9,14 @@ provider "google-beta" {
   region  = var.region
 }
 
-# See versions.tf — only elasticsearch.tf's ec_deployment resource uses this. Blank api_key is
-# fine when enable_elasticsearch=false — a provider block never authenticates just from being
-# declared, only when a resource from it is actually planned/applied (and that resource is
-# itself gated by enable_elasticsearch, see elasticsearch.tf).
+# See versions.tf — only elasticsearch.tf's ec_deployment/ec_stack use this, both count-gated on
+# enable_elasticsearch. Unlike google/google-beta above, the ec provider builds its API client
+# (and rejects a blank apikey) at provider-configure time — before Terraform gets to deciding
+# which resources have count=0 — confirmed empirically (an earlier version of this comment
+# assumed otherwise; a real `terraform plan` with enable_elasticsearch=false and a blank
+# elastic_cloud_api_key failed here). "unused" is never sent as a real credential anywhere: with
+# enable_elasticsearch=false, no ec_stack/ec_deployment is planned, so the provider's client is
+# constructed but never actually makes a call to Elastic's API.
 provider "ec" {
-  apikey = var.elastic_cloud_api_key
+  apikey = var.elastic_cloud_api_key != "" ? var.elastic_cloud_api_key : "unused"
 }

@@ -266,13 +266,17 @@ terraform plan -var-file="deploy.tfvars"
 terraform apply -var-file="deploy.tfvars"
 ```
 
-`terraform apply` should report the `google_project_service.required` resources being created (one per
-API) and no other changes. The `enabled_apis` output lists what got turned on — check it against
+On a genuinely first-ever apply against a fresh project, expect Terraform to want to create
+everything in this directory — Cloud Run, Cloud SQL, IAM, the uploads bucket, the CI/CD identity
+setup, the dashboard, and (one per API) `google_project_service.required` — that's normal, not a
+sign something's wrong. The `enabled_apis` output lists what got turned on — check it against
 `gcloud services list --enabled` if you want a second source of truth.
 
 If the Artifact Registry repo (`openopportunity`) already exists from an earlier manual
-`docker push` (it does, if you followed this repo's history), import it before this apply instead
-of letting Terraform try to create a duplicate:
+`docker push`, import it before this apply instead of letting Terraform try to create a
+duplicate (check first — `gcloud artifacts repositories describe openopportunity
+--location=<region>` — don't assume; this repo's own history briefly assumed it always existed
+when for at least one real project it didn't):
 
 ```bash
 terraform import google_artifact_registry_repository.backend \
