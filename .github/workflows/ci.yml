@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# id-token: write is required by google-github-actions/auth's Workload Identity Federation flow
+# (deploy job only) — no long-lived GCP service account key is stored anywhere in this repo.
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -49,3 +55,103 @@ jobs:
       - run: npm run lint --workspace=frontend
       - run: npm run format:check --workspace=frontend
       - run: npm run build --workspace=frontend
+
+  # Only after both test jobs above pass, and only on an actual push to main (not a PR — a PR
+  # from a fork wouldn't have access to the secrets/vars below anyway, and even from a branch in
+  # this repo, deploying on every PR push would be surprising). See infra/README.md's "CI/CD"
+  # section for the one-time setup this depends on (Workload Identity Federation, repo
+  # variables/secrets) — none of that is automated here since it needs a human's own gcloud
+  # credentials to create, same reasoning as every other one-time GCP setup step in this repo.
+  deploy:
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Build and push backend image
+        id: image
+        run: |
+          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/openopportunity/backend:${{ github.sha }}"
+          docker build -t "$IMAGE" backend
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: terraform apply
+        working-directory: infra
+        # deploy.tfvars is tracked in git (see its own header comment) specifically so this step
+        # applies whatever the repo currently says every scale/cost toggle should be — the same
+        # file scripts/*.sh update locally. elastic_cloud_api_key is blank unless
+        # ELASTIC_CLOUD_API_KEY is set as a repo secret, matching that variable's own
+        # blank-means-unused default (see variables.tf) — harmless to always pass.
+        env:
+          TF_VAR_elastic_cloud_api_key: ${{ secrets.ELASTIC_CLOUD_API_KEY }}
+        run: |
+          terraform init -backend-config="bucket=openopportunity-tfstate"
+          terraform apply -auto-approve \
+            -var-file="deploy.tfvars" \
+            -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
+            -var="region=${{ vars.GCP_REGION }}" \
+            -var="backend_image=${{ steps.image.outputs.image }}"
+
+      - name: Read deploy outputs
+        id: tf
+        run: |
+          echo "backend_url=$(cd infra && terraform output -raw backend_url)" >> "$GITHUB_OUTPUT"
+          # frontend_mode is a Terraform *input*, not an output — read it straight from
+          # deploy.tfvars (the actual source of truth) the same way scripts/lib/deploy-tfvars.sh's
+          # get_deploy_tfvar does, rather than round-tripping it through a Terraform output that
+          # doesn't exist.
+          echo "frontend_mode=$(grep '^frontend_mode' infra/deploy.tfvars | sed -E 's/^[^=]+=[[:space:]]*"([^"]+)".*/\1/')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Build frontend
+        run: |
+          npm ci
+          VITE_API_BASE_URL="${{ steps.tf.outputs.backend_url }}" npm run build --workspace=frontend
+
+      # firebase-tools reads GOOGLE_APPLICATION_CREDENTIALS (set by the auth step above) for
+      # `firebase deploy` — this is the one step in this workflow I couldn't fully verify without
+      # actually running it against real GCP/GitHub infrastructure, so watch this specifically on
+      # the first real run. If it doesn't authenticate correctly, the documented fallback is a
+      # `firebase login:ci`-generated token stored as a FIREBASE_TOKEN repo secret, passed via
+      # `firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}"` instead of relying on ADC — see
+      # infra/README.md's CI/CD section.
+      - name: Deploy frontend (firebase)
+        if: steps.tf.outputs.frontend_mode == 'firebase'
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only hosting --project "${{ vars.GCP_PROJECT_ID }}" --non-interactive
+
+      - name: Deploy frontend (load-balancer)
+        if: steps.tf.outputs.frontend_mode == 'load-balancer'
+        run: |
+          BUCKET="$(cd infra && terraform output -raw frontend_bucket)"
+          gsutil -m rsync -r -d frontend/dist "gs://$BUCKET"
+          # Best-effort — a fresh index.html should still reach users on its own CDN TTL even
+          # if this fails for some reason, so this doesn't fail the whole deploy.
+          gcloud compute url-maps invalidate-cdn-cache openopportunity-frontend \
+            --path "/index.html" --async || true

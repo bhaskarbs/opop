@@ -20,3 +20,4 @@ echo "The replica instance (openopportunity-db-replica) has been deleted — it 
 echo "doesn't already exist on the primary, so this is safe. Re-run"
 echo "scripts/upgrade-sql-replica.sh anytime to recreate it (a fresh full sync from the primary,"
 echo "not a resume of the old one)."
+remind_to_commit_deploy_tfvars

@@ -35,3 +35,4 @@ echo "==> firebase deploy --only hosting"
 echo ""
 echo "Done. Frontend URL:"
 (cd "$REPO_ROOT/infra" && terraform output frontend_url)
+remind_to_commit_deploy_tfvars

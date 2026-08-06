@@ -1,15 +1,8 @@
-# Current desired state of every scale/cost toggle (see variables.tf: frontend_mode,
-# enable_redis, enable_elasticsearch, load_balancer_domain, enable_sql_read_replica,
-# backend_max_instances) — kept in its own -var-file, separate from terraform.tfvars' one-time
-# project_id/backend_image, so each scripts/*.sh toggle script only has to flip the one line it's
-# responsible for, never needing to know or guess what every other toggle is currently set to.
-#
-# Copy to deploy.tfvars (gitignored, same reasoning as terraform.tfvars) — from then on,
-# scripts/deploy-firebase.sh, deploy-loadbalancer.sh, enable-redis.sh, disable-redis.sh,
-# enable-elasticsearch.sh, disable-elasticsearch.sh, set-loadbalancer-domain.sh,
-# upgrade/downgrade-sql-replica.sh, and scale-up/down-backend.sh keep it in sync automatically.
-# You only need to hand-edit it if you want to change a value without running the matching
-# script.
+# Reference/reset-to-defaults copy of ../deploy.tfvars, which is the file that actually matters
+# — it's tracked in git and read by both scripts/*.sh and .github/workflows/deploy.yml (see its
+# own header comment for why it has to be tracked, unlike terraform.tfvars). This .example file
+# is just a clean starting point if you ever need to regenerate deploy.tfvars from scratch;
+# scripts/*.sh never touch this one, only the real deploy.tfvars.
 frontend_mode           = "firebase"
 enable_redis            = false
 enable_elasticsearch    = false

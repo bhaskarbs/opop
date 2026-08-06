@@ -35,3 +35,4 @@ set_deploy_tfvar "$REPO_ROOT" "backend_max_instances" "$NEW_MAX"
 
 echo "==> terraform apply"
 (cd "$REPO_ROOT/infra" && terraform apply -var-file="deploy.tfvars")
+remind_to_commit_deploy_tfvars

@@ -35,3 +35,18 @@ output "admin_seed_password" {
   value       = random_password.admin_seed_password.result
   sensitive   = true
 }
+
+# Neither of these two is sensitive (they're identifiers, not credentials — the actual security
+# boundary is cicd.tf's attribute_condition, not secrecy of these strings) — set them as GitHub
+# Actions repository *variables* (not secrets), see infra/README.md's CI/CD section:
+#   gh variable set WIF_PROVIDER --body "$(terraform output -raw cicd_workload_identity_provider)"
+#   gh variable set DEPLOY_SA_EMAIL --body "$(terraform output -raw cicd_service_account_email)"
+output "cicd_workload_identity_provider" {
+  description = "Full resource name for google-github-actions/auth's workload_identity_provider input."
+  value       = google_iam_workload_identity_pool_provider.github.name
+}
+
+output "cicd_service_account_email" {
+  description = "Email for google-github-actions/auth's service_account input."
+  value       = google_service_account.cicd.email
+}

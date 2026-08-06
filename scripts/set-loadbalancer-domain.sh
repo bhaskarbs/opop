@@ -39,3 +39,4 @@ if [ -n "$DOMAIN" ]; then
   echo "check status with:"
   echo "  gcloud compute ssl-certificates describe openopportunity-frontend --global --format='value(managed.status)'"
 fi
+remind_to_commit_deploy_tfvars
