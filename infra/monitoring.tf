@@ -42,9 +42,16 @@ resource "google_monitoring_alert_policy" "backend_cpu_high" {
       threshold_value = 0.8
       duration        = "300s"
 
+      # ALIGN_MEAN doesn't work here — confirmed against the real API (this alert policy's
+      # first-ever real apply failed with "The aligner cannot be applied to metrics with kind
+      # DELTA and value type DISTRIBUTION"): run.googleapis.com/container/cpu/utilizations is a
+      # DISTRIBUTION (a histogram of per-instance samples each period, see dashboard.tf's use of
+      # the same metric), not a plain scalar, so alerting needs a percentile aligner to reduce it
+      # to one. p99 catches the worst-loaded instance, which is what "is the app under real load"
+      # actually wants — a single struggling instance matters even if others are idle.
       aggregations {
         alignment_period   = "300s"
-        per_series_aligner = "ALIGN_MEAN"
+        per_series_aligner = "ALIGN_PERCENTILE_99"
       }
     }
   }
@@ -81,9 +88,12 @@ resource "google_monitoring_alert_policy" "backend_cpu_low" {
       threshold_value = 0.1
       duration        = "1800s"
 
+      # See backend_cpu_high's comment on why ALIGN_MEAN fails here. p50 (rather than p99)
+      # because this alert asks whether *typical* utilization is low enough to scale down —
+      # a single idle p99 instance while the median instance is busy shouldn't trigger it.
       aggregations {
         alignment_period   = "300s"
-        per_series_aligner = "ALIGN_MEAN"
+        per_series_aligner = "ALIGN_PERCENTILE_50"
       }
     }
   }

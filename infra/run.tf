@@ -23,6 +23,20 @@ resource "google_cloud_run_v2_service" "backend" {
     containers {
       image = var.backend_image
 
+      # Cloud Run's own default (512Mi) when this block is omitted turned out too small for a
+      # real first boot — confirmed against actual Cloud Run logs, not assumed: the first-ever
+      # revision was OOM-killed mid-startup ("Memory limit of 512 MiB exceeded with 518 MiB
+      # used"), well before Flyway even finished its 54 migrations. JPA + Flyway + the
+      # Elasticsearch client libraries (loaded at boot even when app.search.provider=postgres —
+      # see build.gradle's comment) push a cold JVM over 512Mi before the app is even serving
+      # traffic. 1Gi leaves real headroom rather than min-maxing right against another OOM.
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "1Gi"
+        }
+      }
+
       ports {
         container_port = 8080
       }
