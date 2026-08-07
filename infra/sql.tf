@@ -21,8 +21,14 @@ resource "google_sql_database_instance" "main" {
       ipv4_enabled = true
     }
 
+    # See variables.tf's enable_automated_backups — off by default, on request: backups only
+    # happen when scripts/backup-db-now.sh is run manually. point_in_time_recovery_enabled has
+    # to move with the same variable, not stay independently true — Cloud SQL rejects PITR
+    # enabled while backups themselves are disabled.
     backup_configuration {
-      enabled = true
+      enabled                        = var.enable_automated_backups
+      point_in_time_recovery_enabled = var.enable_automated_backups
+      transaction_log_retention_days = 7
     }
   }
 

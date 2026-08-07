@@ -45,6 +45,19 @@ variable "sql_deletion_protection" {
   default     = true
 }
 
+# Off by default — an explicit choice, not an oversight: automated daily backups + point-in-time
+# recovery were enabled once already (see git history), then deliberately turned back off on
+# request in favor of triggering backups manually instead (see scripts/backup-db-now.sh). Real
+# tradeoff either way: automated means protected even if nobody remembers to trigger one; manual
+# means zero backup exists at all between whenever you last ran the script and now. Both this and
+# point_in_time_recovery_enabled in sql.tf move together — PITR requires backups enabled, so
+# there's no state where one is on and the other isn't.
+variable "enable_automated_backups" {
+  description = "Daily automated Cloud SQL backups + point-in-time recovery. Off by default — trigger backups manually with scripts/backup-db-now.sh instead. Adds ~$0.096/GiB-month for backup storage when true (Mumbai pricing)."
+  type        = bool
+  default     = false
+}
+
 # Backend (Cloud Run + Cloud SQL + IAM/secrets) is identical either way — this only switches how
 # the frontend build gets served. "firebase" (the default: cheapest, see infra/README.md's cost
 # comparison) creates a Firebase Hosting site instead of any of the load-balancer resources below
