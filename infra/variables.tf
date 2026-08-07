@@ -13,12 +13,15 @@ variable "backend_image" {
   description = <<-EOT
     Full Artifact Registry image reference for the backend, e.g.
     us-central1-docker.pkg.dev/<project_id>/openopportunity/backend:<tag>.
-    Must already be pushed before the first `terraform apply` — see infra/README.md
-    for the one-time manual build+push. .github/workflows/deploy.yml overrides this
-    on every push to main with the image it just built (tagged with the commit SHA),
-    so the value here only matters for a manual apply.
+    Must already be pushed. Blank (the default) means "keep whatever's currently deployed" —
+    see local.backend_image in run.tf — which is what makes a manual apply safe to run for
+    infra-only changes (e.g. scripts/set-sql-tier.sh) without needing to know or guess the exact
+    image tag CI last deployed. Only pass this explicitly when you actually mean to change the
+    deployed code — .github/workflows/deploy.yml always does, with the image it just built
+    (tagged with the commit SHA).
   EOT
   type        = string
+  default     = ""
 }
 
 # See cicd.tf — which GitHub repo is trusted to authenticate as the CI/CD service account via

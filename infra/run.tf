@@ -1,3 +1,22 @@
+# Only looked up when var.backend_image is blank — i.e. every manual apply that isn't explicitly
+# trying to change the deployed code (see variables.tf's backend_image). Confirmed the real bug
+# this fixes: terraform.tfvars's backend_image is gitignored/per-machine and only ever updated by
+# hand, so it silently went stale the moment CI deployed a newer image — a plain local
+# `terraform apply` for something unrelated (e.g. a SQL tier change) would have rolled the
+# backend back to whatever old tag happened to still be sitting in terraform.tfvars. On a
+# genuinely first-ever apply (no service exists yet) this is never evaluated, since bootstrapping
+# requires passing a real image explicitly (see infra/README.md's "First run") — backend_image is
+# never blank at that point, so count stays 0.
+data "google_cloud_run_v2_service" "current" {
+  count    = var.backend_image == "" ? 1 : 0
+  name     = "openopportunity-backend"
+  location = var.region
+}
+
+locals {
+  backend_image = var.backend_image != "" ? var.backend_image : data.google_cloud_run_v2_service.current[0].template[0].containers[0].image
+}
+
 resource "google_cloud_run_v2_service" "backend" {
   name     = "openopportunity-backend"
   location = var.region
@@ -21,7 +40,7 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
-      image = var.backend_image
+      image = local.backend_image
 
       # Cloud Run's own default (512Mi) when this block is omitted turned out too small for a
       # real first boot — confirmed against actual Cloud Run logs, not assumed: the first-ever
