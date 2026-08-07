@@ -103,6 +103,13 @@ jobs:
         # file scripts/*.sh update locally. elastic_cloud_api_key is blank unless
         # ELASTIC_CLOUD_API_KEY is set as a repo secret, matching that variable's own
         # blank-means-unused default (see variables.tf) — harmless to always pass.
+        #
+        # alert_notification_email is passed here, not via deploy.tfvars, since (unlike every
+        # other deploy.tfvars value) it's a personal email address and this repo is public — see
+        # deploy.tfvars's own comment. Blank if ALERT_NOTIFICATION_EMAIL isn't set as a repo
+        # variable, matching that variable's own blank-means-no-alerting default. Confirmed the
+        # hard way: an earlier apply run without this planned to destroy every alert policy and
+        # the notification channel, because as far as CI could see the email had never been set.
         env:
           TF_VAR_elastic_cloud_api_key: ${{ secrets.ELASTIC_CLOUD_API_KEY }}
         run: |
@@ -111,7 +118,8 @@ jobs:
             -var-file="deploy.tfvars" \
             -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
             -var="region=${{ vars.GCP_REGION }}" \
-            -var="backend_image=${{ steps.image.outputs.image }}"
+            -var="backend_image=${{ steps.image.outputs.image }}" \
+            -var="alert_notification_email=${{ vars.ALERT_NOTIFICATION_EMAIL }}"
 
       - name: Read deploy outputs
         id: tf

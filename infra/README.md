@@ -238,12 +238,21 @@ has to fully re-sync from scratch next time it's enabled). An unattended policy 
 on/off by itself risks flapping near a threshold and real cost/data churn nobody ever looks at —
 so this project deliberately stops at **notifying you**, not running anything automatically.
 
-Set an email and apply to turn it on (blank/unset, the default, creates no alerting at all):
+Set an email and apply to turn it on (blank/unset, the default, creates no alerting at all).
+Locally, this goes in `terraform.tfvars` like any other per-environment value:
 
 ```bash
 # terraform.tfvars:
 alert_notification_email = "you@example.com"
 ```
+
+For CI, this is the one exception to "everything CI needs lives in `deploy.tfvars`" — since this
+repo is public, a personal email address shouldn't sit in permanent commit history the way
+`frontend_mode`/`enable_redis`/etc. do. It's passed to CI as the `ALERT_NOTIFICATION_EMAIL` repo
+variable instead (see the CI/CD section below) — set once, never committed. Forgetting this step
+doesn't just mean no alerts: CI's `terraform apply` would see the email as blank and plan to
+*destroy* the notification channel and all 3 alert policies, since `local.monitoring_enabled` in
+`monitoring.tf` reacts to whatever CI actually passes it, same as a human forgetting `-var-file`.
 
 Three alert policies get created (`monitoring.tf`), each emailing a specific runbook pointing at
 which `scripts/*.sh` to consider:
@@ -344,6 +353,23 @@ bundle token by design, not a credential to protect:
 gh variable set POSTHOG_KEY --body "<your PostHog project API key, phc_...>"
 gh variable set POSTHOG_HOST --body "<only if not on PostHog's US cloud — see frontend/.env>"
 ```
+
+One more variable, this one **not optional** if you want load-monitoring alerts to survive a CI
+deploy: `ALERT_NOTIFICATION_EMAIL`. Unlike everything above, this genuinely is treated
+differently on purpose — not because it's more sensitive in the credential sense, but because
+this repo is public and a personal email address shouldn't sit in permanent commit history the
+way `deploy.tfvars` does (see that file's own comment, and "Load monitoring" above). Still set as
+a repo **variable**, not a secret — it's not that kind of sensitive, it's just not something to
+commit:
+
+```bash
+gh variable set ALERT_NOTIFICATION_EMAIL --body "<same email from your terraform.tfvars>"
+```
+
+Skipping this one doesn't just mean silently no alerts — CI's `terraform apply` sees a blank
+email exactly like `alert_notification_email=""`, and `monitoring.tf`'s alert policies and
+notification channel are `count`-gated on it being set, so CI would plan to **destroy** them if
+they already exist. Set this before your first real CI deploy after enabling load monitoring.
 
 Two secrets you *do* need, both optional, only if you actually use the feature they back:
 

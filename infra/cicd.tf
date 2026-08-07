@@ -73,6 +73,13 @@ locals {
     "roles/compute.admin",
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountUser",
+    # This CI service account's own apply has to be able to read/reconcile the very WIF pool and
+    # provider it authenticates through (both defined in this same file) — without this, the
+    # first real CI-run apply fails outright: "Permission 'iam.workloadIdentityPools.get' denied
+    # ... (or it may not exist)" trying to refresh google_iam_workload_identity_pool.github.
+    # Confirmed against a real failed run, not assumed — roles/iam.serviceAccountAdmin above
+    # covers the service account itself but not the separate WIF pool/provider resources.
+    "roles/iam.workloadIdentityPoolAdmin",
     "roles/resourcemanager.projectIamAdmin",
     "roles/redis.admin",
     "roles/monitoring.admin",
