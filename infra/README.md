@@ -335,6 +335,16 @@ Neither `WIF_PROVIDER`/`DEPLOY_SA_EMAIL`/`GCP_PROJECT_ID`/`GCP_REGION` is sensit
 identifiers, not credentials — the actual security boundary is the WIF `attribute_condition`
 restricting *which repo* can authenticate at all) — set as repo **variables**, not secrets.
 
+One more variable that's easy to miss and doesn't fail loudly if you do: `GOOGLE_CLIENT_ID`
+(same Client ID as `frontend/.env`'s `VITE_GOOGLE_CLIENT_ID`). Skipping this doesn't break the
+build or the deploy — it just makes `GoogleSignInButton` render nothing, so "Continue with
+Google" silently disappears from every CI-built deploy with no error anywhere. Non-sensitive,
+same reasoning as the PostHog key below — it's a public, embedded-in-the-bundle token by design:
+
+```bash
+gh variable set GOOGLE_CLIENT_ID --body "<same Client ID from frontend/.env>"
+```
+
 Two more optional variables, only relevant if you've set up PostHog (see `frontend/.env`'s own
 comment on `VITE_POSTHOG_KEY`/`VITE_POSTHOG_HOST` for where to get these) — also non-sensitive,
 same reasoning as `GCP_PROJECT_ID` above: a PostHog project API key is a public, embedded-in-the-
