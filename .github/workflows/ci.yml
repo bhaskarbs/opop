@@ -137,14 +137,19 @@ jobs:
           cache: npm
 
       - name: Build frontend
-        # VITE_POSTHOG_KEY/VITE_POSTHOG_HOST are optional repo variables (see frontend/.env's own
-        # comment) — blank/unset here builds exactly like blank/unset locally: PostHog stays
-        # disabled (src/lib/analytics.ts), same as VITE_GA_MEASUREMENT_ID/VITE_GOOGLE_CLIENT_ID
-        # already do. Neither is sensitive enough to need a secret (same reasoning as GA's
-        # measurement ID) — it's a public, embedded-in-the-bundle token by design.
+        # VITE_GOOGLE_CLIENT_ID/VITE_POSTHOG_KEY/VITE_POSTHOG_HOST are optional repo variables
+        # (see frontend/.env's own comments) — blank/unset here builds exactly like blank/unset
+        # locally: GoogleSignInButton renders nothing, PostHog stays disabled
+        # (src/lib/analytics.ts). Neither is sensitive enough to need a secret — both are public,
+        # embedded-in-the-bundle tokens by design, same reasoning as GA's measurement ID.
+        # VITE_GOOGLE_CLIENT_ID was missing from this list for a while — the comment claimed it
+        # was handled but the env var was never actually passed, so every CI-built deploy
+        # silently shipped with no "Continue with Google" button at all. Confirmed against a
+        # real deploy, not caught by tests (nothing asserts the button renders).
         run: |
           npm ci
           VITE_API_BASE_URL="${{ steps.tf.outputs.backend_url }}" \
+          VITE_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID }}" \
           VITE_POSTHOG_KEY="${{ vars.POSTHOG_KEY }}" \
           VITE_POSTHOG_HOST="${{ vars.POSTHOG_HOST }}" \
           npm run build --workspace=frontend
