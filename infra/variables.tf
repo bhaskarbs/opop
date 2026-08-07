@@ -124,15 +124,29 @@ variable "elastic_deployment_template_id" {
   default     = "gcp-general-purpose"
 }
 
+# Cloud SQL sizes max_connections off available memory, not something you set directly —
+# confirmed empirically (SHOW max_connections;), not assumed: db-f1-micro caps at 25,
+# db-g1-small at 50; Google doesn't publish an exact formula for dedicated-core db-custom-*
+# tiers beyond "it scales with memory", so check the real value after upgrading rather than
+# trust a number here. This is normally the actual ceiling on concurrent load long before raw
+# CPU/throughput is (see infra/README.md's performance notes) — HikariCP's default pool
+# (10 connections/instance) times backend_max_instances can eat most of db-f1-micro's 25 on its
+# own, before anything else (a read replica, a human psql session, admin tooling) needs one.
+variable "sql_tier" {
+  description = "Cloud SQL machine type for both the primary (sql.tf) and, if enabled, the read replica (sql-replica.tf) — they always match, since a replica weaker than its primary just becomes its own bottleneck. \"db-f1-micro\" (default, shared-core, 25 max_connections) is the cheapest tier and this project's local-first starting point. \"db-g1-small\" (shared-core, 50 max_connections) is the next step up at modest extra cost. Beyond that, dedicated-core \"db-custom-<vCPUs>-<MB>\" tiers (e.g. \"db-custom-2-7680\") scale further but cost meaningfully more — verify pricing for your region before applying."
+  type        = string
+  default     = "db-f1-micro"
+}
+
 # See sql-replica.tf — the same read/write split already built and tested locally (see
 # app.datasource.read-replica.* in application.properties, ReadReplicaDataSourceConfig,
 # ReadOnlyRoutingAspect), now against a real Cloud SQL read replica instead of a local Docker
-# standby. Off by default: db-f1-micro has no free tier, so this is a real ~$9-11/month cost the
-# moment it's enabled, on top of the primary — same tier/cost as sql.tf's primary instance
-# (read replicas share the primary's users/passwords via replication, so no new Secret Manager
-# entry is needed either).
+# standby. Off by default: db-f1-micro (var.sql_tier's default) has no free tier, so this is a
+# real ~$9-11/month cost the moment it's enabled, on top of the primary — same tier/cost as
+# sql.tf's primary instance, whatever var.sql_tier currently is (read replicas share the
+# primary's users/passwords via replication, so no new Secret Manager entry is needed either).
 variable "enable_sql_read_replica" {
-  description = "Provision a Cloud SQL read replica (db-f1-micro, same tier as the primary) and switch the backend to routing @Transactional(readOnly = true) reads to it. ~$9-11/month when true."
+  description = "Provision a Cloud SQL read replica (same tier as the primary, see sql_tier) and switch the backend to routing @Transactional(readOnly = true) reads to it. ~$9-11/month at the default sql_tier when true."
   type        = bool
   default     = false
 }

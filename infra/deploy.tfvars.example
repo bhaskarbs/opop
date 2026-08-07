@@ -8,5 +8,6 @@ enable_redis            = false
 enable_elasticsearch    = false
 load_balancer_domain    = ""
 firebase_custom_domain  = ""
+sql_tier                = "db-f1-micro"
 enable_sql_read_replica = false
 backend_max_instances   = 2

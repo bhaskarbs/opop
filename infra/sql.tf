@@ -1,15 +1,16 @@
-# Cheapest available tier — this is a low/no-traffic deploy, not the multi-region
-# AlloyDB setup the architecture doc describes for real scale. Bump the tier (and
-# revisit AlloyDB) before any real traffic arrives; see the "Hardening / scale-up"
-# phase in docs/DEVELOPMENT_ROADMAP.md.
+# var.sql_tier defaults to the cheapest available tier — this is a low/no-traffic deploy by
+# default, not the multi-region AlloyDB setup the architecture doc describes for real scale.
+# Bump sql_tier (see scripts/set-sql-tier.sh) before any real traffic arrives; revisit AlloyDB
+# separately if you outgrow Cloud SQL entirely — see the "Hardening / scale-up" phase in
+# docs/DEVELOPMENT_ROADMAP.md.
 resource "google_sql_database_instance" "main" {
   name             = "openopportunity-db"
   region           = var.region
   database_version = "POSTGRES_16"
 
   settings {
-    tier              = "db-f1-micro"
-    edition           = "ENTERPRISE" # required for shared-core tiers like db-f1-micro
+    tier              = var.sql_tier
+    edition           = "ENTERPRISE" # covers both shared-core (db-f1-micro/db-g1-small) and dedicated-core (db-custom-*) tiers
     availability_type = "ZONAL"
 
     ip_configuration {

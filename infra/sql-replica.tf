@@ -17,8 +17,8 @@ resource "google_sql_database_instance" "replica" {
   master_instance_name = google_sql_database_instance.main.name
 
   settings {
-    tier              = "db-f1-micro"
-    edition           = "ENTERPRISE" # required for shared-core tiers like db-f1-micro, see sql.tf
+    tier              = var.sql_tier # always matches the primary — see variables.tf's sql_tier
+    edition           = "ENTERPRISE" # covers both shared-core and dedicated-core tiers, see sql.tf
     availability_type = "ZONAL"
 
     ip_configuration {
