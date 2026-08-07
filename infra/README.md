@@ -62,10 +62,11 @@ local toggle change is invisible to CI and would get silently reverted on the ne
 | `scripts/enable-elasticsearch.sh` / `disable-elasticsearch.sh` | `enable_elasticsearch = true` / `false` |
 | `scripts/set-loadbalancer-domain.sh <domain>` | `load_balancer_domain = "<domain>"` (see below) |
 | `scripts/set-firebase-domain.sh <domain>` | `firebase_custom_domain = "<domain>"` (see below) |
+| `scripts/set-sql-tier.sh <tier>` | `sql_tier = "<tier>"` (see below) |
 | `scripts/upgrade-sql-replica.sh` / `downgrade-sql-replica.sh` | `enable_sql_read_replica = true` / `false` |
 | `scripts/scale-up-backend.sh <n>` / `scale-down-backend.sh <n>` | `backend_max_instances = <n>` (see below) |
 
-All twelve live at the repo root's `scripts/` and just run (no arguments, except the ones that
+All thirteen live at the repo root's `scripts/` and just run (no arguments, except the ones that
 explicitly take a value): `../scripts/enable-redis.sh`, `../scripts/scale-up-backend.sh 5`, etc.
 `terraform apply` will still show you the real plan and ask to confirm before changing
 anything — the scripts don't add `-auto-approve`.
@@ -183,6 +184,35 @@ before doing anything. Verify `elastic_deployment_template_id`'s default (`gcp-g
 is actually a valid template for your account/region in the Elastic Cloud console before the first
 apply — exact template ids vary; `terraform plan` will fail clearly with an "unknown template"
 error if it isn't, not silently do the wrong thing.
+
+## Scale-up toggle: Cloud SQL machine tier
+
+`sql_tier` controls both the primary (`sql.tf`) and, if enabled, the read replica
+(`sql-replica.tf`) below — they always match. This is the toggle that matters most once real
+traffic arrives: a real load test against this project's own production backend (200 requests,
+concurrency 20, zero failures, 59 req/s at sub-second p99 latency) found that Cloud Run itself
+held up fine, but Cloud SQL's `db-f1-micro` default was already sitting at 22–28 of its 25 max
+connections just from normal idle connection-pool-holding — before that load test even added any
+traffic. That's the real ceiling on concurrent load in this setup, not backend compute.
+
+```bash
+../scripts/set-sql-tier.sh db-g1-small       # shared-core, 50 max_connections, modest cost increase
+../scripts/set-sql-tier.sh db-custom-2-7680  # dedicated-core, scales further, costs meaningfully more
+../scripts/set-sql-tier.sh db-f1-micro       # back to the cheapest default, 25 max_connections
+```
+
+Cloud SQL sizes `max_connections` off available memory automatically — there's no flag to set it
+directly, and Google doesn't publish an exact formula for dedicated-core `db-custom-*` tiers
+beyond "it scales with memory". Check the real value on the resized instance rather than assume:
+
+```bash
+cloud-sql-proxy --port 5433 $(cd infra && terraform output -raw sql_connection_name) &
+psql -h 127.0.0.1 -p 5433 -U openopportunity -d openopportunity -c "SHOW max_connections;"
+```
+
+This is a real, in-place Cloud SQL machine-type change — expect a short restart/unavailability
+window while it applies (same as resizing any managed database), and a real recurring cost change
+if you're moving to a bigger tier; verify pricing for your region before applying.
 
 ## Scale-up toggle: Cloud SQL read replica
 
