@@ -73,7 +73,7 @@ export default function PartnershipsPage() {
         <button
           type="button"
           onClick={() => setVideoOpen(true)}
-          className="relative flex aspect-[4/3] cursor-pointer items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#101522,#1B2130)]"
+          className="relative flex aspect-[4/3] cursor-pointer items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,rgba(16,21,34,0.55),rgba(27,33,48,0.75)),url(/videos/partnerships-hero-thumbnail.jpg)] bg-cover bg-center"
         >
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[rgba(255,255,255,0.12)]">
             <PlayIcon size={22} />
@@ -86,17 +86,23 @@ export default function PartnershipsPage() {
 
       {videoOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(20,24,31,0.75)] p-5">
-          <div className="relative flex aspect-video w-full max-w-[800px] items-center justify-center rounded-2xl bg-footer">
+          <div className="relative flex aspect-video w-full max-w-[800px] items-center justify-center overflow-hidden rounded-2xl bg-footer">
             <button
               type="button"
               onClick={() => setVideoOpen(false)}
-              className="absolute top-3.5 right-3.5 h-8 w-8 rounded-full bg-[rgba(255,255,255,0.12)] text-base text-white"
+              className="absolute top-3.5 right-3.5 z-10 h-8 w-8 rounded-full bg-[rgba(255,255,255,0.12)] text-base text-white"
             >
               ×
             </button>
-            <div className="text-center font-mono text-[12.5px] text-[#7FA0F2]">
+            <video
+              src="/videos/partnerships-hero.mp4"
+              poster="/videos/partnerships-hero-thumbnail.jpg"
+              controls
+              autoPlay
+              className="h-full w-full rounded-2xl object-contain"
+            >
               {t('partnerships.videoModal.caption')}
-            </div>
+            </video>
           </div>
         </div>
       )}
