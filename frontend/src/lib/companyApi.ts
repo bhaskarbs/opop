@@ -76,12 +76,7 @@ export interface CandidateSearchSummary {
 }
 
 export type CandidateSortOption =
-  | 'relevant'
-  | 'newest'
-  | 'name'
-  | 'contacted'
-  | 'recentLogin'
-  | 'mostActive'
+  'relevant' | 'newest' | 'name' | 'contacted' | 'recentLogin' | 'mostActive'
 
 export interface CandidateSearchParams {
   q?: string
