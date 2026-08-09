@@ -147,6 +147,8 @@ public class AuthService {
         if (user.isSuspended()) {
             throw new SuspendedAccountException();
         }
+        user.recordLogin();
+        userRepository.save(user);
         return issueTokens(user);
     }
 
@@ -175,6 +177,8 @@ public class AuthService {
         if (user.isSuspended()) {
             throw new SuspendedAccountException();
         }
+        user.recordLogin();
+        userRepository.save(user);
         return issueTokens(user);
     }
 
@@ -205,6 +209,8 @@ public class AuthService {
         if (user.isSuspended()) {
             throw new SuspendedAccountException();
         }
+        user.recordLogin();
+        userRepository.save(user);
         return issueTokens(user);
     }
 

@@ -75,7 +75,7 @@ export interface CandidateSearchSummary {
   isFeatured: boolean
 }
 
-export type CandidateSortOption = 'relevant' | 'newest' | 'name' | 'contacted'
+export type CandidateSortOption = 'relevant' | 'newest' | 'name' | 'contacted' | 'recentLogin'
 
 export interface CandidateSearchParams {
   q?: string

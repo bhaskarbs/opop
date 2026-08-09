@@ -26,6 +26,7 @@ const SORT_LABEL_KEYS: Record<CandidateSortOption, string> = {
   newest: 'searchCandidates.sort.newest',
   name: 'searchCandidates.sort.name',
   contacted: 'searchCandidates.sort.contacted',
+  recentLogin: 'searchCandidates.sort.recentLogin',
 }
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
