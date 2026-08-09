@@ -238,6 +238,7 @@ class AuthServiceTest {
 
         assertThat(issued.response().accessToken()).isEqualTo("access-token");
         assertThat(user.getLastLoginAt()).isNotNull();
+        assertThat(user.getLoginCount()).isEqualTo(1);
     }
 
     @Test
@@ -341,6 +342,7 @@ class AuthServiceTest {
         verify(userRepository, org.mockito.Mockito.times(2)).save(userCaptor.capture());
         assertThat(userCaptor.getValue().getFullName()).isEqualTo("Rohan Mehta");
         assertThat(userCaptor.getValue().getLastLoginAt()).isNotNull();
+        assertThat(userCaptor.getValue().getLoginCount()).isEqualTo(1);
         verify(candidateProfileRepository).save(any(CandidateProfile.class));
     }
 
@@ -359,6 +361,7 @@ class AuthServiceTest {
 
         assertThat(issued.response().accessToken()).isEqualTo("access-token");
         assertThat(user.getLastLoginAt()).isNotNull();
+        assertThat(user.getLoginCount()).isEqualTo(1);
         verify(userRepository).save(user);
     }
 

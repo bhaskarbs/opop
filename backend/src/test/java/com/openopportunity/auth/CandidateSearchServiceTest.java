@@ -142,6 +142,39 @@ class CandidateSearchServiceTest {
                 .containsExactly(loggedInRecently.getId(), loggedInEarlier.getId(), neverLoggedIn.getId());
     }
 
+    @Test
+    void mostActiveSortPutsHighestLoginCountFirstRegardlessOfRecency() throws Exception {
+        CandidateSearchService service = service();
+
+        User frequentButStale = new User("frequent@example.com", "hash", "Frequent But Stale", UserRole.CANDIDATE);
+        User rareButRecent = new User("rare@example.com", "hash", "Rare But Recent", UserRole.CANDIDATE);
+        // Logs in three times (stale — no logins since), so it should still outrank a candidate
+        // who's logged in just once, even though that once was more recent.
+        frequentButStale.recordLogin();
+        frequentButStale.recordLogin();
+        frequentButStale.recordLogin();
+        Thread.sleep(5);
+        rareButRecent.recordLogin();
+
+        CandidateProfile frequentProfile =
+                new CandidateProfile(frequentButStale.getId(), "9000000000", List.of(), null);
+        CandidateProfile rareProfile = new CandidateProfile(rareButRecent.getId(), "9000000001", List.of(), null);
+
+        when(candidateProfileRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(rareProfile, frequentProfile));
+        when(userRepository.findAllById(any())).thenReturn(List.of(frequentButStale, rareButRecent));
+        UUID companyId = UUID.randomUUID();
+        when(candidateContactRevealRepository.findByCompanyId(companyId)).thenReturn(List.of());
+        when(candidateSubscriptionRepository.findByPlanNotAndCurrentPeriodEndAfter(eq(SubscriptionPlan.FREE), any()))
+                .thenReturn(List.of());
+
+        List<CandidateSearchSummary> results = service.search(companyId, null, null, "mostActive");
+
+        assertThat(results)
+                .extracting(CandidateSearchSummary::userId)
+                .containsExactly(frequentButStale.getId(), rareButRecent.getId());
+    }
+
     private CandidateSearchService service() {
         return service(Runnable::run, 10);
     }

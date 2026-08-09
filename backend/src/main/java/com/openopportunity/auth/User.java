@@ -59,6 +59,12 @@ public class User {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    // Backs the "most active" sort (CandidateSearchService) — total successful logins, not just
+    // the most recent one. Incremented alongside lastLoginAt by recordLogin(), so the two always
+    // move together.
+    @Column(name = "login_count", nullable = false)
+    private int loginCount;
+
     protected User() {
         // JPA
     }
@@ -114,6 +120,7 @@ public class User {
 
     public void recordLogin() {
         this.lastLoginAt = Instant.now();
+        this.loginCount++;
     }
 
     public UUID getId() {
@@ -154,5 +161,9 @@ public class User {
 
     public Instant getLastLoginAt() {
         return lastLoginAt;
+    }
+
+    public int getLoginCount() {
+        return loginCount;
     }
 }
