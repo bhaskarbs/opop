@@ -29,8 +29,11 @@ const EMPLOYER_LINKS: FooterLink[] = [
 const LEGAL_LINKS: FooterLink[] = [
   { label: 'footer.legal.privacyPolicy', to: ROUTES.privacyPolicy },
   { label: 'footer.legal.termsOfService', to: ROUTES.termsOfService },
-  { label: 'footer.legal.grievanceRedressal' },
 ]
+
+// Temporarily hidden on request — flip back to true to bring the social icons back. Not
+// removed, since this is expected to be re-enabled later.
+const SHOW_SOCIAL_LINKS = false
 
 const SOCIAL_LINKS: Array<{ label: string; href: string; icon: ReactNode }> = [
   {
@@ -103,27 +106,29 @@ export function Footer() {
             <Logo context="footer" />
           </RouteLink>
           <p className="mb-5 max-w-[320px] text-sm leading-[1.6] text-[#9AA1AF]">{t('tagline')}</p>
-          <div className="flex gap-2.5">
-            {SOCIAL_LINKS.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                aria-label={social.label}
-                className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[#2A3040] no-underline"
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#C7CCD6"
-                  strokeWidth={2}
+          {SHOW_SOCIAL_LINKS && (
+            <div className="flex gap-2.5">
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  aria-label={social.label}
+                  className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[#2A3040] no-underline"
                 >
-                  {social.icon}
-                </svg>
-              </a>
-            ))}
-          </div>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#C7CCD6"
+                    strokeWidth={2}
+                  >
+                    {social.icon}
+                  </svg>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         <FooterColumn title={t('footer.candidates.heading')} links={CANDIDATE_LINKS} />
@@ -137,8 +142,8 @@ export function Footer() {
           >
             hello@openopportunity.com
           </a>
-          <a href="tel:+911234567890" className="mb-3 block text-sm text-[#B4BAC6] no-underline">
-            +91 12345 67890
+          <a href="tel:+918088076264" className="mb-3 block text-sm text-[#B4BAC6] no-underline">
+            +91 80880 76264
           </a>
           <div className="text-sm leading-[1.6] text-[#B4BAC6]">
             {t('footer.contact.city')}

@@ -24,6 +24,10 @@ const PublicLayout = lazy(() => import('./layouts/PublicLayout'))
 const AuthenticatedLayout = lazy(() => import('./layouts/AuthenticatedLayout'))
 const ChatWidget = lazy(() => import('./components/chat/ChatWidget'))
 
+// Temporarily hidden on request — flip back to true to bring the chat bubble back. Not removed,
+// since this is expected to be re-enabled later.
+const SHOW_CHAT_WIDGET = false
+
 const StyleGuidePage = lazy(() => import('./pages/dev/StyleGuidePage'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const JobSearchPage = lazy(() => import('./pages/job-search/JobSearchPage'))
@@ -240,9 +244,11 @@ function App() {
       {/* Own Suspense boundary (fallback={null}) so the widget's lazy chunk loading never
           blocks/replaces the page itself with the full-screen LoadingState fallback above —
           it just pops in once ready, same as it would after any other async load. */}
-      <Suspense fallback={null}>
-        <ChatWidget />
-      </Suspense>
+      {SHOW_CHAT_WIDGET && (
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+      )}
     </BrowserRouter>
   )
 }
