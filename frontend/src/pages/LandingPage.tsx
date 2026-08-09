@@ -333,10 +333,15 @@ export default function LandingPage() {
               </Link>
             </div>
           </div>
-          <div className="flex aspect-video items-center justify-center rounded-card border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)]">
-            <div className="text-center font-mono text-[12.5px] text-[#7FE0C4]">
+          <div className="aspect-video overflow-hidden rounded-card border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)]">
+            <video
+              src="/videos/community-hero.mp4"
+              poster="/videos/community-hero-thumbnail.jpg"
+              controls
+              className="h-full w-full object-contain"
+            >
               {t('landing.community.videoPlaceholder')}
-            </div>
+            </video>
           </div>
         </div>
       </section>

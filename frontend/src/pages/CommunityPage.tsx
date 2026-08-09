@@ -196,7 +196,7 @@ export default function CommunityPage() {
           <button
             type="button"
             onClick={() => setVideoOpen(true)}
-            className="flex aspect-video items-center justify-center rounded-card border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)]"
+            className="flex aspect-video items-center justify-center rounded-card border border-[rgba(255,255,255,0.12)] bg-[linear-gradient(rgba(10,12,18,0.35),rgba(10,12,18,0.55)),url(/videos/community-hero-thumbnail.jpg)] bg-cover bg-center"
           >
             <div className="text-center text-[#7FE0C4]">
               <svg
@@ -217,17 +217,23 @@ export default function CommunityPage() {
 
       {videoOpen && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-[rgba(20,24,31,0.75)] p-5">
-          <div className="relative flex aspect-video w-full max-w-[800px] items-center justify-center rounded-2xl bg-footer">
+          <div className="relative flex aspect-video w-full max-w-[800px] items-center justify-center overflow-hidden rounded-2xl bg-footer">
             <button
               type="button"
               onClick={() => setVideoOpen(false)}
-              className="absolute top-3.5 right-3.5 h-8 w-8 rounded-full bg-[rgba(255,255,255,0.12)] text-base text-white"
+              className="absolute top-3.5 right-3.5 z-10 h-8 w-8 rounded-full bg-[rgba(255,255,255,0.12)] text-base text-white"
             >
               ×
             </button>
-            <div className="text-center font-mono text-[12.5px] text-[#7FA0F2]">
+            <video
+              src="/videos/community-hero.mp4"
+              poster="/videos/community-hero-thumbnail.jpg"
+              controls
+              autoPlay
+              className="h-full w-full rounded-2xl object-contain"
+            >
               {t('community.hero.videoCaption')}
-            </div>
+            </video>
           </div>
         </div>
       )}
