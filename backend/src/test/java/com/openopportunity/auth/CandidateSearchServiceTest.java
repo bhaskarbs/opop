@@ -107,6 +107,41 @@ class CandidateSearchServiceTest {
                 .containsExactly(featuredUser.getId(), plusUser.getId(), plainUser.getId());
     }
 
+    @Test
+    void recentLoginSortPutsMostRecentlyLoggedInFirstAndNeverLoggedInLast() throws Exception {
+        CandidateSearchService service = service();
+
+        User neverLoggedIn = new User("never@example.com", "hash", "Never Logged In", UserRole.CANDIDATE);
+        User loggedInEarlier = new User("earlier@example.com", "hash", "Earlier Login", UserRole.CANDIDATE);
+        User loggedInRecently = new User("recent@example.com", "hash", "Recent Login", UserRole.CANDIDATE);
+        // recordLogin() stamps Instant.now() — sleep between calls so the two timestamps land
+        // in different milliseconds; otherwise this assertion is flaky under a fast/warm JVM.
+        loggedInEarlier.recordLogin();
+        Thread.sleep(5);
+        loggedInRecently.recordLogin();
+
+        CandidateProfile neverProfile = new CandidateProfile(neverLoggedIn.getId(), "9000000000", List.of(), null);
+        CandidateProfile earlierProfile =
+                new CandidateProfile(loggedInEarlier.getId(), "9000000001", List.of(), null);
+        CandidateProfile recentProfile =
+                new CandidateProfile(loggedInRecently.getId(), "9000000002", List.of(), null);
+
+        when(candidateProfileRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(earlierProfile, neverProfile, recentProfile));
+        when(userRepository.findAllById(any()))
+                .thenReturn(List.of(neverLoggedIn, loggedInEarlier, loggedInRecently));
+        UUID companyId = UUID.randomUUID();
+        when(candidateContactRevealRepository.findByCompanyId(companyId)).thenReturn(List.of());
+        when(candidateSubscriptionRepository.findByPlanNotAndCurrentPeriodEndAfter(eq(SubscriptionPlan.FREE), any()))
+                .thenReturn(List.of());
+
+        List<CandidateSearchSummary> results = service.search(companyId, null, null, "recentLogin");
+
+        assertThat(results)
+                .extracting(CandidateSearchSummary::userId)
+                .containsExactly(loggedInRecently.getId(), loggedInEarlier.getId(), neverLoggedIn.getId());
+    }
+
     private CandidateSearchService service() {
         return service(Runnable::run, 10);
     }

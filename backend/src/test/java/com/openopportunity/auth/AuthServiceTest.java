@@ -237,6 +237,7 @@ class AuthServiceTest {
                 authService.login(new LoginRequest("rohan@example.com", "password123", "candidate"));
 
         assertThat(issued.response().accessToken()).isEqualTo("access-token");
+        assertThat(user.getLastLoginAt()).isNotNull();
     }
 
     @Test
@@ -337,8 +338,9 @@ class AuthServiceTest {
         assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
+        verify(userRepository, org.mockito.Mockito.times(2)).save(userCaptor.capture());
         assertThat(userCaptor.getValue().getFullName()).isEqualTo("Rohan Mehta");
+        assertThat(userCaptor.getValue().getLastLoginAt()).isNotNull();
         verify(candidateProfileRepository).save(any(CandidateProfile.class));
     }
 
@@ -356,7 +358,8 @@ class AuthServiceTest {
         AuthService.Issued issued = authService.loginWithGoogle(new GoogleAuthRequest("google-id-token"));
 
         assertThat(issued.response().accessToken()).isEqualTo("access-token");
-        verify(userRepository, org.mockito.Mockito.never()).save(any());
+        assertThat(user.getLastLoginAt()).isNotNull();
+        verify(userRepository).save(user);
     }
 
     @Test

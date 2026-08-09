@@ -122,6 +122,8 @@ public class CandidateSearchService {
      * AdminUserService#feature) always leads, then a Plus-plan candidate, and only within those
      * tiers does the company's chosen sort apply — "name" alphabetically; "contacted" puts
      * candidates whose contact this company has already revealed (see revealContact) first;
+     * "recentLogin" puts candidates who've signed in most recently first, with anyone who's
+     * never logged in (User#lastLoginAt null — e.g. seeded/admin-created accounts) sorted last;
      * "newest" and the default ("relevant" — no ranking model exists yet) both fall back to
      * recency, same reasoning as JobService.resolveSort. */
     private Comparator<CandidateProfile> resolveSort(
@@ -140,6 +142,11 @@ public class CandidateSearchService {
         if ("contacted".equals(sort)) {
             return Comparator.comparing(
                     (CandidateProfile profile) -> revealedCandidateIds.contains(profile.getUserId()) ? 0 : 1);
+        }
+        if ("recentLogin".equals(sort)) {
+            return Comparator.comparing(
+                    (CandidateProfile profile) -> usersById.get(profile.getUserId()).getLastLoginAt(),
+                    Comparator.nullsLast(Comparator.reverseOrder()));
         }
         return Comparator.comparing(
                         (CandidateProfile profile) -> usersById.get(profile.getUserId()).getCreatedAt())

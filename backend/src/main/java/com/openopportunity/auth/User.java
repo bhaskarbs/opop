@@ -53,6 +53,12 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    // Null until the first successful login — see AuthService#login/loginWithGoogle/
+    // loginWithGoogleAsCompany. Not touched by refresh(), since that's a continuation of an
+    // existing session rather than a new login.
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
+
     protected User() {
         // JPA
     }
@@ -106,6 +112,10 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    public void recordLogin() {
+        this.lastLoginAt = Instant.now();
+    }
+
     public UUID getId() {
         return id;
     }
@@ -140,5 +150,9 @@ public class User {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Instant getLastLoginAt() {
+        return lastLoginAt;
     }
 }
