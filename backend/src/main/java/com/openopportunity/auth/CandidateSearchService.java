@@ -124,8 +124,11 @@ public class CandidateSearchService {
      * candidates whose contact this company has already revealed (see revealContact) first;
      * "recentLogin" puts candidates who've signed in most recently first, with anyone who's
      * never logged in (User#lastLoginAt null — e.g. seeded/admin-created accounts) sorted last;
-     * "newest" and the default ("relevant" — no ranking model exists yet) both fall back to
-     * recency, same reasoning as JobService.resolveSort. */
+     * "mostActive" puts candidates with the highest total login count first (ties broken by
+     * most recent login) — a coarse activity signal distinct from recency, since a candidate who
+     * logs in constantly should outrank one who logged in once, recently; "newest" and the
+     * default ("relevant" — no ranking model exists yet) both fall back to recency, same
+     * reasoning as JobService.resolveSort. */
     private Comparator<CandidateProfile> resolveSort(
             String sort, Map<UUID, User> usersById, Set<UUID> revealedCandidateIds, Set<UUID> plusCandidateIds) {
         return Comparator.comparing((CandidateProfile profile) -> profile.getFeaturedAt() != null ? 0 : 1)
@@ -147,6 +150,15 @@ public class CandidateSearchService {
             return Comparator.comparing(
                     (CandidateProfile profile) -> usersById.get(profile.getUserId()).getLastLoginAt(),
                     Comparator.nullsLast(Comparator.reverseOrder()));
+        }
+        if ("mostActive".equals(sort)) {
+            return Comparator.comparing(
+                            (CandidateProfile profile) -> usersById.get(profile.getUserId()).getLoginCount())
+                    .reversed()
+                    .thenComparing(
+                            (CandidateProfile profile) ->
+                                    usersById.get(profile.getUserId()).getLastLoginAt(),
+                            Comparator.nullsLast(Comparator.reverseOrder()));
         }
         return Comparator.comparing(
                         (CandidateProfile profile) -> usersById.get(profile.getUserId()).getCreatedAt())

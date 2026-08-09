@@ -256,7 +256,8 @@
       "newest": "Newest first",
       "name": "Name (A–Z)",
       "contacted": "Already contacted first",
-      "recentLogin": "Recently active first"
+      "recentLogin": "Recently active first",
+      "mostActive": "Most active"
     },
     "noResults": "No candidates match your filters. Try clearing some filters or searching a different keyword.",
     "previousPage": "← Previous",
