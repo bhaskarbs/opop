@@ -2,6 +2,8 @@ package com.openopportunity.admin;
 
 import com.openopportunity.admin.exception.AdminUserNotFoundException;
 import com.openopportunity.application.ApplicationRepository;
+import com.openopportunity.auth.CandidateCertification;
+import com.openopportunity.auth.CandidateCertificationRepository;
 import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.CompanyCertificate;
 import com.openopportunity.auth.CompanyCertificateRepository;
@@ -42,6 +44,7 @@ public class AdminAccountDeletionService {
 
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
+    private final CandidateCertificationRepository candidateCertificationRepository;
     private final CompanyProfileRepository companyProfileRepository;
     private final CompanyCertificateRepository companyCertificateRepository;
     private final MockInterviewSessionRepository mockInterviewSessionRepository;
@@ -63,6 +66,7 @@ public class AdminAccountDeletionService {
     public AdminAccountDeletionService(
             UserRepository userRepository,
             CandidateProfileRepository candidateProfileRepository,
+            CandidateCertificationRepository candidateCertificationRepository,
             CompanyProfileRepository companyProfileRepository,
             CompanyCertificateRepository companyCertificateRepository,
             MockInterviewSessionRepository mockInterviewSessionRepository,
@@ -82,6 +86,7 @@ public class AdminAccountDeletionService {
             FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
+        this.candidateCertificationRepository = candidateCertificationRepository;
         this.companyProfileRepository = companyProfileRepository;
         this.companyCertificateRepository = companyCertificateRepository;
         this.mockInterviewSessionRepository = mockInterviewSessionRepository;
@@ -128,6 +133,13 @@ public class AdminAccountDeletionService {
             deleteFileQuietly(profile.getResumeStorageKey());
             deleteFileQuietly(profile.getPhotoStorageKey());
         });
+        // Work samples and research papers carry no files, so their rows are cleaned up by the
+        // DB cascade below with nothing further to do — only certification logos need deleting
+        // by hand, same reasoning as company_certificates above deleteCompany.
+        for (CandidateCertification certification :
+                candidateCertificationRepository.findByCandidateIdOrderByCreatedAtDesc(candidateId)) {
+            deleteFileQuietly(certification.getLogoStorageKey());
+        }
         mockInterviewSessionRepository.findByCandidateIdOrderByRecordedAtDesc(candidateId).forEach(session -> {
             deleteFileQuietly(session.getVideoStorageKey());
             deleteFileQuietly(session.getThumbnailStorageKey());

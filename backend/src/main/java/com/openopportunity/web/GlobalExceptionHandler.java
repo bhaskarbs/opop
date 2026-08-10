@@ -9,6 +9,9 @@ import com.openopportunity.admin.exception.InvalidAdminLevelException;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
+import com.openopportunity.auth.exception.CandidateAccomplishmentLimitReachedException;
+import com.openopportunity.auth.exception.CandidateAccomplishmentNotFoundException;
+import com.openopportunity.auth.exception.CandidateCertificationLogoNotFoundException;
 import com.openopportunity.auth.exception.CandidateProfileNotFoundException;
 import com.openopportunity.auth.exception.CandidateResumeNotFoundException;
 import com.openopportunity.auth.exception.CompanyCertificateLimitReachedException;
@@ -21,6 +24,7 @@ import com.openopportunity.auth.exception.IncompleteCompanyProfileException;
 import com.openopportunity.auth.exception.InvalidCredentialsException;
 import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidOrExpiredResetTokenException;
+import com.openopportunity.auth.exception.InvalidCandidateCertificationLogoException;
 import com.openopportunity.auth.exception.InvalidCompanyCertificateException;
 import com.openopportunity.auth.exception.InvalidCompanyLogoException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
@@ -173,6 +177,29 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CompanyCertificateLimitReachedException.class)
     public ResponseEntity<ApiError> handleCompanyCertificateLimitReached(CompanyCertificateLimitReachedException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CandidateAccomplishmentNotFoundException.class)
+    public ResponseEntity<ApiError> handleCandidateAccomplishmentNotFound(CandidateAccomplishmentNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CandidateAccomplishmentLimitReachedException.class)
+    public ResponseEntity<ApiError> handleCandidateAccomplishmentLimitReached(
+            CandidateAccomplishmentLimitReachedException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidCandidateCertificationLogoException.class)
+    public ResponseEntity<ApiError> handleInvalidCandidateCertificationLogo(
+            InvalidCandidateCertificationLogoException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CandidateCertificationLogoNotFoundException.class)
+    public ResponseEntity<ApiError> handleCandidateCertificationLogoNotFound(
+            CandidateCertificationLogoNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

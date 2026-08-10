@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 import com.openopportunity.admin.exception.AdminUserNotFoundException;
 import com.openopportunity.application.Application;
 import com.openopportunity.application.ApplicationRepository;
+import com.openopportunity.auth.CandidateCertification;
+import com.openopportunity.auth.CandidateCertificationRepository;
 import com.openopportunity.auth.CandidateProfile;
 import com.openopportunity.auth.CandidateProfileRepository;
 import com.openopportunity.auth.CompanyCertificate;
@@ -55,6 +57,9 @@ class AdminAccountDeletionServiceTest {
 
     @Mock
     private CandidateProfileRepository candidateProfileRepository;
+
+    @Mock
+    private CandidateCertificationRepository candidateCertificationRepository;
 
     @Mock
     private CompanyProfileRepository companyProfileRepository;
@@ -114,6 +119,7 @@ class AdminAccountDeletionServiceTest {
         service = new AdminAccountDeletionService(
                 userRepository,
                 candidateProfileRepository,
+                candidateCertificationRepository,
                 companyProfileRepository,
                 companyCertificateRepository,
                 mockInterviewSessionRepository,
@@ -166,6 +172,11 @@ class AdminAccountDeletionServiceTest {
         when(mockInterviewSessionRepository.findByCandidateIdOrderByRecordedAtDesc(candidateId))
                 .thenReturn(List.of(session));
 
+        CandidateCertification certification = new CandidateCertification(
+                candidateId, "AWS Certified", "AWS-123", "https://aws.example.com/cert", "cert-logo-key-1", "image/png");
+        when(candidateCertificationRepository.findByCandidateIdOrderByCreatedAtDesc(candidateId))
+                .thenReturn(List.of(certification));
+
         Job job = new Job(
                 UUID.randomUUID(), "Vertex Robotics", "Backend Engineer",
                 com.openopportunity.job.EmploymentType.FULL_TIME, com.openopportunity.job.ExperienceLevel.SENIOR,
@@ -187,6 +198,7 @@ class AdminAccountDeletionServiceTest {
         verify(fileStorageService).delete("photo-key-1");
         verify(fileStorageService).delete("video-key-1");
         verify(fileStorageService).delete("thumb-key-1");
+        verify(fileStorageService).delete("cert-logo-key-1");
 
         assertThat(job.getApplicantCount()).isZero();
         verify(jobRepository).save(job);

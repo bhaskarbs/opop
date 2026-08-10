@@ -1,5 +1,8 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CertificationsSection } from '../../components/candidate/CertificationsSection'
+import { ResearchPapersSection } from '../../components/candidate/ResearchPapersSection'
+import { WorkSamplesSection } from '../../components/candidate/WorkSamplesSection'
 import { Button, Card, LoadingState, SkillsTagInput, Spinner } from '../../components/ui'
 import { ApiError, API_BASE_URL } from '../../lib/apiClient'
 import { candidateApi, type CandidateProfileResponse } from '../../lib/candidateApi'
@@ -35,6 +38,7 @@ const NAV_SECTIONS = [
   { labelKey: 'profile.nav.resume', href: '#resume' },
   { labelKey: 'profile.nav.skills', href: '#skills' },
   { labelKey: 'profile.nav.background', href: '#background' },
+  { labelKey: 'profile.nav.accomplishments', href: '#accomplishments' },
   { labelKey: 'profile.nav.lifeGoals', href: '#goals' },
   { labelKey: 'profile.nav.workPreferences', href: '#preferences' },
   { labelKey: 'profile.nav.accountSettings', href: '#account' },
@@ -769,6 +773,32 @@ export default function CandidateProfilePage() {
                 <span className="text-sm font-semibold text-teal">{t('profile.saved')}</span>
               )}
             </div>
+          </Card>
+
+          <Card id="accomplishments" className="mb-[18px] p-[26px]">
+            <h2 className="mb-1.5 text-base font-bold text-ink">
+              {t('profile.nav.accomplishments')}
+            </h2>
+            <p className="mb-4 text-[13px] text-fog">{t('accomplishments.body')}</p>
+
+            <h3 className="mb-2 text-[14px] font-bold text-ink">
+              {t('accomplishments.workSamples.heading')}
+            </h3>
+            <div className="mb-5">
+              <WorkSamplesSection />
+            </div>
+
+            <h3 className="mb-2 text-[14px] font-bold text-ink">
+              {t('accomplishments.researchPapers.heading')}
+            </h3>
+            <div className="mb-5">
+              <ResearchPapersSection />
+            </div>
+
+            <h3 className="mb-2 text-[14px] font-bold text-ink">
+              {t('accomplishments.certifications.heading')}
+            </h3>
+            <CertificationsSection />
           </Card>
 
           <Card id="goals" className="mb-[18px] p-[26px]">

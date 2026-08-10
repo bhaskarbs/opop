@@ -86,6 +86,60 @@ export interface UpdateBackgroundPayload {
   educationGraduationYear: number | null
 }
 
+// Work samples, research papers, and certifications are each managed independently of the main
+// profile (own list/add/delete endpoints), not fields on CandidateProfileResponse — so a page
+// only needs to touch these when it actually renders that section, same reasoning as resume/
+// photo being separate upload endpoints rather than fields on UpdatePersonalDetailsPayload.
+export interface CandidateWorkSampleSummary {
+  id: string
+  title: string
+  url: string
+  description: string | null
+  createdAt: string
+}
+
+export interface CandidateResearchPaperSummary {
+  id: string
+  title: string
+  url: string
+  description: string | null
+  createdAt: string
+}
+
+// logoUrl is null until a logo has been uploaded — relative path, prefix with API_BASE_URL for
+// an <img src>, same convention as CandidateProfileResponse.photoUrl.
+export interface CandidateCertificationSummary {
+  id: string
+  name: string
+  certificationId: string | null
+  certificationUrl: string | null
+  logoUrl: string | null
+  createdAt: string
+}
+
+export const WORK_SAMPLE_LIMIT = 10
+export const RESEARCH_PAPER_LIMIT = 10
+export const CERTIFICATION_LIMIT = 10
+
+export interface AddWorkSamplePayload {
+  title: string
+  url: string
+  description: string
+}
+
+export interface AddResearchPaperPayload {
+  title: string
+  url: string
+  description: string
+}
+
+export interface AddCertificationPayload {
+  name: string
+  certificationId: string
+  certificationUrl: string
+  logo: File | null
+}
+
 function authHeaders(): Record<string, string> {
   const token = useAuthStore.getState().accessToken
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -140,4 +194,55 @@ export const candidateApi = {
     formData.append('file', file)
     return uploadRequest<PhotoUploadResponse>('/api/candidate/photo', formData, authHeaders())
   },
+  listWorkSamples: () =>
+    request<CandidateWorkSampleSummary[]>('/api/candidate/work-samples', {
+      headers: authHeaders(),
+    }),
+  addWorkSample: (payload: AddWorkSamplePayload) =>
+    request<CandidateWorkSampleSummary>('/api/candidate/work-samples', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  deleteWorkSample: (id: string) =>
+    request<void>(`/api/candidate/work-samples/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }),
+  listResearchPapers: () =>
+    request<CandidateResearchPaperSummary[]>('/api/candidate/research-papers', {
+      headers: authHeaders(),
+    }),
+  addResearchPaper: (payload: AddResearchPaperPayload) =>
+    request<CandidateResearchPaperSummary>('/api/candidate/research-papers', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  deleteResearchPaper: (id: string) =>
+    request<void>(`/api/candidate/research-papers/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }),
+  listCertifications: () =>
+    request<CandidateCertificationSummary[]>('/api/candidate/certifications', {
+      headers: authHeaders(),
+    }),
+  addCertification: (payload: AddCertificationPayload) => {
+    const formData = new FormData()
+    formData.append('name', payload.name)
+    if (payload.certificationId) formData.append('certificationId', payload.certificationId)
+    if (payload.certificationUrl) formData.append('certificationUrl', payload.certificationUrl)
+    if (payload.logo) formData.append('logo', payload.logo)
+    return uploadRequest<CandidateCertificationSummary>(
+      '/api/candidate/certifications',
+      formData,
+      authHeaders(),
+    )
+  },
+  deleteCertification: (id: string) =>
+    request<void>(`/api/candidate/certifications/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }),
 }
