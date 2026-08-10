@@ -53,6 +53,7 @@ public class JobService {
     private final ApplicationRepository applicationRepository;
     private final SavedJobRepository savedJobRepository;
     private final NotificationService notificationService;
+    private final NewJobMatchEmailService newJobMatchEmailService;
     private final JobSearchProvider jobSearchProvider;
     private final Optional<JobIndexingService> jobIndexingService;
 
@@ -64,6 +65,7 @@ public class JobService {
             ApplicationRepository applicationRepository,
             SavedJobRepository savedJobRepository,
             NotificationService notificationService,
+            NewJobMatchEmailService newJobMatchEmailService,
             JobSearchProvider jobSearchProvider,
             Optional<JobIndexingService> jobIndexingService) {
         this.jobRepository = jobRepository;
@@ -73,6 +75,7 @@ public class JobService {
         this.applicationRepository = applicationRepository;
         this.savedJobRepository = savedJobRepository;
         this.notificationService = notificationService;
+        this.newJobMatchEmailService = newJobMatchEmailService;
         this.jobSearchProvider = jobSearchProvider;
         // Empty when app.search.provider=postgres (the default) — JobIndexingService only
         // exists as a bean once app.search.provider=elasticsearch (see its
@@ -317,6 +320,7 @@ public class JobService {
                 NotificationType.JOB_APPROVED,
                 "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
                 "/company/dashboard");
+        newJobMatchEmailService.notifyMatchingCandidates(job);
         return toDetail(
                 job,
                 companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
