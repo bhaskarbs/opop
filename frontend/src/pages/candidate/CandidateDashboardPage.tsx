@@ -142,8 +142,8 @@ export default function CandidateDashboardPage() {
   }, [profile, jobs])
 
   // Real activity feed: recent job applications (status-aware) merged with recent partnership
-  // interests, newest first — no "viewed by recruiter" / "profile views" tracking exists in the
-  // backend, so unlike the earlier mock this only surfaces events we actually record.
+  // interests, newest first. Search appearances/recruiter views are aggregate counters (see the
+  // "visibility" card above), not individually timestamped events, so they don't feed this feed.
   const recentActivity = useMemo<ActivityEntry[]>(() => {
     const jobEntries: ActivityEntry[] = applications.map((application) => ({
       id: application.id,
@@ -414,6 +414,30 @@ export default function CandidateDashboardPage() {
               {t('dashboard.addMissingDetails')}
             </Link>
           </Card>
+
+          {(profile.searchAppearanceCount > 0 || profile.profileViewCount > 0) && (
+            <Card className="mb-4 p-5">
+              <h3 className="mb-3 text-[14.5px] font-bold text-ink">
+                {t('dashboard.visibility.heading')}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border p-3.5 text-center">
+                  <div className="text-xl font-extrabold text-ink">
+                    {profile.searchAppearanceCount}
+                  </div>
+                  <div className="mt-0.5 text-[12px] text-slate">
+                    {t('dashboard.visibility.searchAppearances')}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border p-3.5 text-center">
+                  <div className="text-xl font-extrabold text-ink">{profile.profileViewCount}</div>
+                  <div className="mt-0.5 text-[12px] text-slate">
+                    {t('dashboard.visibility.recruiterViews')}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <Card className="mb-4 p-5">
             <h3 className="mb-3 text-[14.5px] font-bold text-ink">

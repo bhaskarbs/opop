@@ -83,7 +83,7 @@ public class CandidateSearchService {
         this.resumeRenderTimeoutSeconds = resumeRenderTimeoutSeconds;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CandidateSearchSummary> search(UUID companyId, String q, List<String> locations, String sort) {
         Specification<CandidateProfile> spec = Specification.allOf(
                 CandidateProfileSpecifications.matchesQuery(q),
@@ -107,9 +107,17 @@ public class CandidateSearchService {
                 .map(CandidateSubscription::getCandidateId)
                 .collect(Collectors.toCollection(HashSet::new));
 
-        return profiles.stream()
+        List<CandidateProfile> visibleProfiles = profiles.stream()
                 .filter(profile -> usersById.containsKey(profile.getUserId()))
                 .sorted(resolveSort(sort, usersById, revealedCandidateIds, plusCandidateIds))
+                .toList();
+        // Backs the candidate dashboard's "search appearances" stat — every candidate who shows
+        // up in this results list counts, regardless of the searching company's eligibility to
+        // actually contact them (see CandidateProfile#recordSearchAppearance).
+        visibleProfiles.forEach(CandidateProfile::recordSearchAppearance);
+        candidateProfileRepository.saveAll(visibleProfiles);
+
+        return visibleProfiles.stream()
                 .map(profile -> toSummary(
                         profile,
                         usersById.get(profile.getUserId()),
@@ -169,7 +177,7 @@ public class CandidateSearchService {
      * verified company profile, on a paid plan, with contact-reveal quota remaining for this
      * billing period). Viewing a candidate's full profile is treated as sensitive as their
      * resume/contact details, not freely browsable like the search results list. */
-    @Transactional(readOnly = true)
+    @Transactional
     public CandidateProfileForCompany get(UUID companyId, UUID candidateUserId) {
         requireEligibleToContactCandidates(companyId);
         CandidateProfile profile = candidateProfileRepository
@@ -178,6 +186,9 @@ public class CandidateSearchService {
         User user = userRepository
                 .findById(candidateUserId)
                 .orElseThrow(() -> new CandidateProfileNotFoundException(candidateUserId));
+        // Backs the candidate dashboard's "recruiter views" stat.
+        profile.recordProfileView();
+        candidateProfileRepository.save(profile);
         return new CandidateProfileForCompany(
                 user.getId(),
                 user.getFullName(),

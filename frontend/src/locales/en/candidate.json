@@ -33,6 +33,11 @@
     },
     "profileStrength": "Profile strength",
     "addMissingDetails": "Add missing details",
+    "visibility": {
+      "heading": "Profile visibility",
+      "searchAppearances": "Search appearances",
+      "recruiterViews": "Recruiter views"
+    },
     "mockInterviews": "Mock interviews",
     "mockInterviewsBody": "Practice on camera and review your recorded sessions anytime.",
     "startMockInterview": "Start a mock interview",
