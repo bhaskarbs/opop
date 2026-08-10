@@ -25,6 +25,7 @@ import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.jobalert.JobAlertMatchEmailService;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import com.openopportunity.savedjob.SavedJobRepository;
@@ -72,6 +73,9 @@ class JobServiceTest {
     private NewJobMatchEmailService newJobMatchEmailService;
 
     @Mock
+    private JobAlertMatchEmailService jobAlertMatchEmailService;
+
+    @Mock
     private JobSearchProvider jobSearchProvider;
 
     private JobService jobService;
@@ -87,6 +91,7 @@ class JobServiceTest {
                 savedJobRepository,
                 notificationService,
                 newJobMatchEmailService,
+                jobAlertMatchEmailService,
                 jobSearchProvider,
                 Optional.empty());
     }
