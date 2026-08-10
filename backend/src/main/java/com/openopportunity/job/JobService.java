@@ -17,6 +17,7 @@ import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.job.exception.JobPostingLimitReachedException;
+import com.openopportunity.jobalert.JobAlertMatchEmailService;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import com.openopportunity.savedjob.SavedJobRepository;
@@ -54,6 +55,7 @@ public class JobService {
     private final SavedJobRepository savedJobRepository;
     private final NotificationService notificationService;
     private final NewJobMatchEmailService newJobMatchEmailService;
+    private final JobAlertMatchEmailService jobAlertMatchEmailService;
     private final JobSearchProvider jobSearchProvider;
     private final Optional<JobIndexingService> jobIndexingService;
 
@@ -66,6 +68,7 @@ public class JobService {
             SavedJobRepository savedJobRepository,
             NotificationService notificationService,
             NewJobMatchEmailService newJobMatchEmailService,
+            JobAlertMatchEmailService jobAlertMatchEmailService,
             JobSearchProvider jobSearchProvider,
             Optional<JobIndexingService> jobIndexingService) {
         this.jobRepository = jobRepository;
@@ -76,6 +79,7 @@ public class JobService {
         this.savedJobRepository = savedJobRepository;
         this.notificationService = notificationService;
         this.newJobMatchEmailService = newJobMatchEmailService;
+        this.jobAlertMatchEmailService = jobAlertMatchEmailService;
         this.jobSearchProvider = jobSearchProvider;
         // Empty when app.search.provider=postgres (the default) — JobIndexingService only
         // exists as a bean once app.search.provider=elasticsearch (see its
@@ -321,6 +325,7 @@ public class JobService {
                 "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
                 "/company/dashboard");
         newJobMatchEmailService.notifyMatchingCandidates(job);
+        jobAlertMatchEmailService.notifyMatchingAlerts(job);
         return toDetail(
                 job,
                 companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
