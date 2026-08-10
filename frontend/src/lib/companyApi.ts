@@ -1,4 +1,5 @@
 import { useAuthStore } from '../stores/authStore'
+import type { BackendNoticePeriod } from './candidateApi'
 import { blobRequest, request, uploadRequest } from './apiClient'
 import type { BackendExperienceLevel } from './jobsApi'
 
@@ -132,6 +133,12 @@ export interface CandidateProfileForCompany {
   skills: string[]
   workModePreference: string | null
   openToPreference: string | null
+  yearsOfExperience: number | null
+  currentSalaryLakhs: number | null
+  noticePeriod: BackendNoticePeriod | null
+  educationDegree: string | null
+  educationInstitution: string | null
+  educationGraduationYear: number | null
   memberSince: string
   resumeFileName: string | null
   resumeUploadedAt: string | null

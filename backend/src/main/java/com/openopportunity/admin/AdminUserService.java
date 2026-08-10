@@ -154,6 +154,12 @@ public class AdminUserService {
                 profile == null ? null : profile.getWorkCulture(),
                 profile == null ? null : profile.getWorkModePreference(),
                 profile == null ? null : profile.getOpenToPreference(),
+                profile == null ? null : profile.getYearsOfExperience(),
+                profile == null ? null : profile.getCurrentSalaryLakhs(),
+                profile == null ? null : profile.getNoticePeriod(),
+                profile == null ? null : profile.getEducationDegree(),
+                profile == null ? null : profile.getEducationInstitution(),
+                profile == null ? null : profile.getEducationGraduationYear(),
                 profile == null ? null : profile.getFeaturedAt(),
                 user.getCreatedAt());
     }

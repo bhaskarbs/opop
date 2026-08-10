@@ -1,7 +1,11 @@
+import type { BackendNoticePeriod } from './candidateApi'
 import type { BackendEmploymentType, BackendExperienceLevel, BackendWorkMode } from './jobsApi'
 
 export const EXPERIENCE_LEVELS = ['Entry level', 'Mid level', 'Senior', 'Leadership'] as const
 export type ExperienceLevelLabel = (typeof EXPERIENCE_LEVELS)[number]
+
+export const NOTICE_PERIODS = ['Immediate', '15 days', '1 month', '2 months', '3+ months'] as const
+export type NoticePeriodLabel = (typeof NOTICE_PERIODS)[number]
 
 export const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
 export type WorkModeLabel = (typeof WORK_MODES)[number]
@@ -20,6 +24,21 @@ const BACKEND_TO_EXPERIENCE_LEVEL: Record<BackendExperienceLevel, ExperienceLeve
   MID_LEVEL: 'Mid level',
   SENIOR: 'Senior',
   LEADERSHIP: 'Leadership',
+}
+
+const NOTICE_PERIOD_TO_BACKEND: Record<NoticePeriodLabel, BackendNoticePeriod> = {
+  Immediate: 'IMMEDIATE',
+  '15 days': 'DAYS_15',
+  '1 month': 'MONTH_1',
+  '2 months': 'MONTH_2',
+  '3+ months': 'MONTHS_3_PLUS',
+}
+const BACKEND_TO_NOTICE_PERIOD: Record<BackendNoticePeriod, NoticePeriodLabel> = {
+  IMMEDIATE: 'Immediate',
+  DAYS_15: '15 days',
+  MONTH_1: '1 month',
+  MONTH_2: '2 months',
+  MONTHS_3_PLUS: '3+ months',
 }
 
 const WORK_MODE_TO_BACKEND: Record<WorkModeLabel, BackendWorkMode> = {
@@ -51,6 +70,12 @@ export function experienceLevelToBackend(label: ExperienceLevelLabel): BackendEx
 }
 export function experienceLevelFromBackend(value: BackendExperienceLevel): ExperienceLevelLabel {
   return BACKEND_TO_EXPERIENCE_LEVEL[value]
+}
+export function noticePeriodToBackend(label: NoticePeriodLabel): BackendNoticePeriod {
+  return NOTICE_PERIOD_TO_BACKEND[label]
+}
+export function noticePeriodFromBackend(value: BackendNoticePeriod): NoticePeriodLabel {
+  return BACKEND_TO_NOTICE_PERIOD[value]
 }
 export function workModeToBackend(label: WorkModeLabel): BackendWorkMode {
   return WORK_MODE_TO_BACKEND[label]

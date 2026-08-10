@@ -1,6 +1,8 @@
 package com.openopportunity.auth.dto;
 
+import com.openopportunity.auth.NoticePeriod;
 import com.openopportunity.job.ExperienceLevel;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -26,4 +28,10 @@ public record CandidateProfileResponse(
         String workCulture,
         String workModePreference,
         String openToPreference,
+        BigDecimal yearsOfExperience,
+        BigDecimal currentSalaryLakhs,
+        NoticePeriod noticePeriod,
+        String educationDegree,
+        String educationInstitution,
+        Integer educationGraduationYear,
         Instant createdAt) {}

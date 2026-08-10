@@ -3,6 +3,7 @@ package com.openopportunity.auth;
 import com.openopportunity.auth.dto.CandidateProfileResponse;
 import com.openopportunity.auth.dto.PhotoUploadResponse;
 import com.openopportunity.auth.dto.ResumeUploadResponse;
+import com.openopportunity.auth.dto.UpdateBackgroundRequest;
 import com.openopportunity.auth.dto.UpdateGoalsRequest;
 import com.openopportunity.auth.dto.UpdateMobileRequest;
 import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
@@ -91,6 +92,20 @@ public class CandidateProfileService {
     public CandidateProfileResponse updatePreferences(UUID userId, UpdatePreferencesRequest request) {
         CandidateProfile profile = findProfile(userId);
         profile.updatePreferences(request.workMode(), request.openTo());
+        candidateProfileRepository.save(profile);
+        return toResponse(userRepository.findById(userId).orElseThrow(), profile);
+    }
+
+    @Transactional
+    public CandidateProfileResponse updateBackground(UUID userId, UpdateBackgroundRequest request) {
+        CandidateProfile profile = findProfile(userId);
+        profile.updateBackground(
+                request.yearsOfExperience(),
+                request.currentSalaryLakhs(),
+                request.noticePeriod(),
+                request.educationDegree(),
+                request.educationInstitution(),
+                request.educationGraduationYear());
         candidateProfileRepository.save(profile);
         return toResponse(userRepository.findById(userId).orElseThrow(), profile);
     }
@@ -186,6 +201,12 @@ public class CandidateProfileService {
                 profile.getWorkCulture(),
                 profile.getWorkModePreference(),
                 profile.getOpenToPreference(),
+                profile.getYearsOfExperience(),
+                profile.getCurrentSalaryLakhs(),
+                profile.getNoticePeriod(),
+                profile.getEducationDegree(),
+                profile.getEducationInstitution(),
+                profile.getEducationGraduationYear(),
                 user.getCreatedAt());
     }
 

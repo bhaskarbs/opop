@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom'
 import { BackButton, LoadingState, Spinner } from '../../components/ui'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminCandidateProfileSummary } from '../../lib/adminApi'
-import { experienceLevelFromBackend } from '../../lib/jobEnums'
+import { experienceLevelFromBackend, noticePeriodFromBackend } from '../../lib/jobEnums'
 
 const EXPERIENCE_LEVEL_KEYS: Record<string, string> = {
   'Entry level': 'public:filters.experienceLevel.entry',
@@ -188,6 +188,47 @@ export default function AdminCandidateDetailPage() {
                 {[candidate.workModePreference, candidate.openToPreference]
                   .filter(Boolean)
                   .join(' · ')}
+              </div>
+            </div>
+          )}
+          {candidate.yearsOfExperience != null && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateDetail.yearsOfExperience')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">{candidate.yearsOfExperience}</div>
+            </div>
+          )}
+          {candidate.currentSalaryLakhs != null && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateDetail.currentSalary')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">
+                {t('candidateDetail.lakhsPerYear', { amount: candidate.currentSalaryLakhs })}
+              </div>
+            </div>
+          )}
+          {candidate.noticePeriod && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateDetail.noticePeriod')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">
+                {noticePeriodFromBackend(candidate.noticePeriod)}
+              </div>
+            </div>
+          )}
+          {(candidate.educationDegree || candidate.educationInstitution) && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateDetail.education')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">
+                {[candidate.educationDegree, candidate.educationInstitution]
+                  .filter(Boolean)
+                  .join(', ')}
+                {candidate.educationGraduationYear ? ` (${candidate.educationGraduationYear})` : ''}
               </div>
             </div>
           )}

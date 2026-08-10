@@ -14,6 +14,11 @@ export function deriveCompletedSections(
     goals: Boolean(profile.lifeGoals || profile.workCulture),
     mobile: profile.mobileVerified,
     prefs: Boolean(profile.workModePreference && profile.openToPreference),
+    // Salary is deliberately left out of the bar — plenty of candidates don't want to disclose
+    // it, and requiring it would make "complete" unreachable for them.
+    background: Boolean(
+      profile.yearsOfExperience != null && profile.noticePeriod && profile.educationDegree,
+    ),
   }
 }
 

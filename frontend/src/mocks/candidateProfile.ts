@@ -1,4 +1,5 @@
-export type ChecklistKey = 'personal' | 'resume' | 'skills' | 'goals' | 'mobile' | 'prefs'
+export type ChecklistKey =
+  'personal' | 'resume' | 'skills' | 'goals' | 'mobile' | 'prefs' | 'background'
 
 export interface ChecklistItem {
   key: ChecklistKey
@@ -12,4 +13,5 @@ export const PROFILE_CHECKLIST: ChecklistItem[] = [
   { key: 'goals', label: 'Life goals & values' },
   { key: 'mobile', label: 'Mobile verification' },
   { key: 'prefs', label: 'Work preferences' },
+  { key: 'background', label: 'Experience & education' },
 ]

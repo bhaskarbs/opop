@@ -59,6 +59,7 @@
       "personalDetails": "Personal details",
       "resume": "Resume",
       "skills": "Skills",
+      "background": "Experience & education",
       "lifeGoals": "Life goals & values",
       "workPreferences": "Work preferences",
       "accountSettings": "Account settings"
@@ -73,7 +74,18 @@
       "experienceLevel": "Experience level",
       "experienceLevelPlaceholder": "Select your experience level",
       "industry": "Industry",
-      "industryPlaceholder": "e.g. Fintech, Healthtech, E-commerce"
+      "industryPlaceholder": "e.g. Fintech, Healthtech, E-commerce",
+      "yearsOfExperience": "Years of experience",
+      "currentSalary": "Current salary (₹ lakhs/year)",
+      "currentSalaryPlaceholder": "e.g. 8.5",
+      "noticePeriod": "Notice period",
+      "noticePeriodPlaceholder": "Select your notice period",
+      "educationDegree": "Degree",
+      "educationDegreePlaceholder": "e.g. B.Tech Computer Science",
+      "educationInstitution": "Institution",
+      "educationInstitutionPlaceholder": "e.g. IIT Delhi",
+      "educationGraduationYear": "Graduation year",
+      "educationGraduationYearPlaceholder": "e.g. 2020"
     },
     "replace": "Replace",
     "resumeUploaded": "Uploaded {{uploaded}} · {{size}}",
@@ -81,6 +93,7 @@
     "skillsBody": "Technical or soft — these power matches across jobs, partnerships, and community roles.",
     "removeSkill": "Remove {{skill}}",
     "addSkillPlaceholder": "Add a skill and press enter",
+    "backgroundBody": "Helps employers quickly see your experience level, availability, and education.",
     "lifeGoalsBody": "Shared with startups when you apply for a partnership.",
     "lifeGoalsPlaceholder": "What are you working toward?",
     "workCulturePlaceholder": "What ethics and work culture matter most to you?",
@@ -95,7 +108,8 @@
       "skills": "Skills",
       "goals": "Life goals & values",
       "mobile": "Mobile number verification",
-      "prefs": "Work preferences"
+      "prefs": "Work preferences",
+      "background": "Experience & education"
     },
     "complete": "Complete",
     "missing": "Missing",
@@ -104,6 +118,7 @@
     "subtitle": "Finish these to unlock better job, partnership, and community matches.",
     "goalsDescription": "Shared with startups when you apply for a partnership — helps them assess fit beyond your resume.",
     "personalDescription": "Your location and professional title help employers and startups quickly see who you are.",
+    "backgroundDescription": "Helps employers quickly see your experience level, availability, and education.",
     "save": "Save",
     "mobileDescription": "So employers and startups can reach you.",
     "prefsDescription": "Helps us match jobs, partnerships, and community roles to how you want to work.",

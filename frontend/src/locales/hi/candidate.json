@@ -59,6 +59,7 @@
       "personalDetails": "व्यक्तिगत जानकारी",
       "resume": "रिज़्यूमे",
       "skills": "हुनर",
+      "background": "अनुभव और शिक्षा",
       "lifeGoals": "जीवन के लक्ष्य और मूल्य",
       "workPreferences": "कार्य वरीयताएं",
       "accountSettings": "खाता सेटिंग्स"
@@ -73,7 +74,18 @@
       "experienceLevel": "अनुभव स्तर",
       "experienceLevelPlaceholder": "अपना अनुभव स्तर चुनें",
       "industry": "इंडस्ट्री",
-      "industryPlaceholder": "जैसे फिनटेक, हेल्थटेक, ई-कॉमर्स"
+      "industryPlaceholder": "जैसे फिनटेक, हेल्थटेक, ई-कॉमर्स",
+      "yearsOfExperience": "अनुभव के वर्ष",
+      "currentSalary": "वर्तमान वेतन (₹ लाख/वर्ष)",
+      "currentSalaryPlaceholder": "जैसे 8.5",
+      "noticePeriod": "नोटिस अवधि",
+      "noticePeriodPlaceholder": "अपनी नोटिस अवधि चुनें",
+      "educationDegree": "डिग्री",
+      "educationDegreePlaceholder": "जैसे B.Tech कंप्यूटर साइंस",
+      "educationInstitution": "संस्थान",
+      "educationInstitutionPlaceholder": "जैसे IIT दिल्ली",
+      "educationGraduationYear": "स्नातक वर्ष",
+      "educationGraduationYearPlaceholder": "जैसे 2020"
     },
     "replace": "बदलें",
     "resumeUploaded": "{{uploaded}} को अपलोड किया गया · {{size}}",
@@ -81,6 +93,7 @@
     "skillsBody": "तकनीकी या सॉफ्ट — ये नौकरियों, पार्टनरशिप और कम्युनिटी भूमिकाओं से मेल कराने में मदद करते हैं।",
     "removeSkill": "{{skill}} हटाएं",
     "addSkillPlaceholder": "एक हुनर जोड़ें और एंटर दबाएं",
+    "backgroundBody": "इससे नियोक्ताओं को आपका अनुभव स्तर, उपलब्धता और शिक्षा जल्दी दिखाई देती है।",
     "lifeGoalsBody": "जब आप पार्टनरशिप के लिए आवेदन करते हैं तो यह स्टार्टअप्स के साथ साझा किया जाता है।",
     "lifeGoalsPlaceholder": "आप किस दिशा में काम कर रहे हैं?",
     "workCulturePlaceholder": "आपके लिए कौन सी नैतिकता और वर्क कल्चर सबसे ज़्यादा मायने रखते हैं?",
@@ -95,7 +108,8 @@
       "skills": "हुनर",
       "goals": "जीवन के लक्ष्य और मूल्य",
       "mobile": "मोबाइल नंबर सत्यापन",
-      "prefs": "काम की प्राथमिकताएं"
+      "prefs": "काम की प्राथमिकताएं",
+      "background": "अनुभव और शिक्षा"
     },
     "complete": "पूरा",
     "missing": "छूटा हुआ",
@@ -104,6 +118,7 @@
     "subtitle": "बेहतर जॉब, पार्टनरशिप और कम्युनिटी मैच पाने के लिए इन्हें पूरा करें।",
     "goalsDescription": "जब आप पार्टनरशिप के लिए आवेदन करते हैं तो यह स्टार्टअप्स के साथ साझा किया जाता है — इससे उन्हें आपके रिज़्यूमे से परे फिट आंकने में मदद मिलती है।",
     "personalDescription": "आपका स्थान और व्यावसायिक पदनाम नियोक्ताओं और स्टार्टअप्स को यह जल्दी समझने में मदद करता है कि आप कौन हैं।",
+    "backgroundDescription": "इससे नियोक्ताओं को आपका अनुभव स्तर, उपलब्धता और शिक्षा जल्दी दिखाई देती है।",
     "save": "सेव करें",
     "mobileDescription": "ताकि नियोक्ता और स्टार्टअप्स आपसे संपर्क कर सकें।",
     "prefsDescription": "इससे हमें नौकरियों, पार्टनरशिप और कम्युनिटी भूमिकाओं को आपकी पसंद के हिसाब से मैच करने में मदद मिलती है।",

@@ -9,6 +9,12 @@ import {
   deriveCompletedSections,
   profileCompletionPercent,
 } from '../../lib/candidateProfileCompletion'
+import {
+  NOTICE_PERIODS,
+  noticePeriodFromBackend,
+  noticePeriodToBackend,
+  type NoticePeriodLabel,
+} from '../../lib/jobEnums'
 import { PROFILE_CHECKLIST, type ChecklistKey } from '../../mocks/candidateProfile'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ROUTES } from '../../routes/paths'
@@ -22,6 +28,15 @@ const CHECKLIST_LABEL_KEYS: Record<ChecklistKey, string> = {
   goals: 'addDetails.checklist.goals',
   mobile: 'addDetails.checklist.mobile',
   prefs: 'addDetails.checklist.prefs',
+  background: 'addDetails.checklist.background',
+}
+
+// Matches CandidateProfilePage's parseOptionalNumber — numeric fields stay plain strings in
+// component state here too (no React Hook Form on this page), parsed right before the API call.
+function parseOptionalNumber(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number.parseFloat(value)
+  return Number.isNaN(parsed) ? null : parsed
 }
 
 function CheckIcon() {
@@ -96,6 +111,15 @@ export default function AddMissingDetailsPage() {
   const [savingPrefs, setSavingPrefs] = useState(false)
   const [prefsError, setPrefsError] = useState<string | null>(null)
 
+  const [yearsOfExperience, setYearsOfExperience] = useState('')
+  const [currentSalary, setCurrentSalary] = useState('')
+  const [noticePeriod, setNoticePeriod] = useState<NoticePeriodLabel | ''>('')
+  const [educationDegree, setEducationDegree] = useState('')
+  const [educationInstitution, setEducationInstitution] = useState('')
+  const [educationGraduationYear, setEducationGraduationYear] = useState('')
+  const [savingBackground, setSavingBackground] = useState(false)
+  const [backgroundError, setBackgroundError] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelled = false
     useCandidateProfileStore
@@ -112,6 +136,14 @@ export default function AddMissingDetailsPage() {
         setMobile(data.mobile)
         setWorkMode(data.workModePreference ?? 'Remote')
         setOpenTo(data.openToPreference ?? 'Jobs only')
+        setYearsOfExperience(data.yearsOfExperience != null ? String(data.yearsOfExperience) : '')
+        setCurrentSalary(data.currentSalaryLakhs != null ? String(data.currentSalaryLakhs) : '')
+        setNoticePeriod(data.noticePeriod ? noticePeriodFromBackend(data.noticePeriod) : '')
+        setEducationDegree(data.educationDegree ?? '')
+        setEducationInstitution(data.educationInstitution ?? '')
+        setEducationGraduationYear(
+          data.educationGraduationYear != null ? String(data.educationGraduationYear) : '',
+        )
       })
       .catch((error) => {
         if (!cancelled) {
@@ -202,6 +234,27 @@ export default function AddMissingDetailsPage() {
       setPrefsError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {
       setSavingPrefs(false)
+    }
+  }
+
+  async function saveBackground() {
+    setBackgroundError(null)
+    setSavingBackground(true)
+    try {
+      const updated = await candidateApi.updateBackground({
+        yearsOfExperience: parseOptionalNumber(yearsOfExperience),
+        currentSalaryLakhs: parseOptionalNumber(currentSalary),
+        noticePeriod: noticePeriod ? noticePeriodToBackend(noticePeriod) : null,
+        educationDegree: educationDegree || null,
+        educationInstitution: educationInstitution || null,
+        educationGraduationYear: parseOptionalNumber(educationGraduationYear),
+      })
+      setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
+    } catch (error) {
+      setBackgroundError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    } finally {
+      setSavingBackground(false)
     }
   }
 
@@ -305,6 +358,126 @@ export default function AddMissingDetailsPage() {
             </div>
             {personalError && <p className="mb-3.5 text-[13px] text-danger">{personalError}</p>}
             <Button type="button" onClick={savePersonal} loading={savingPersonal}>
+              {t('addDetails.save')}
+            </Button>
+          </SectionCard>
+
+          <SectionCard
+            title={t('addDetails.checklist.background')}
+            description={t('addDetails.backgroundDescription')}
+            done={completed.background}
+          >
+            <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-years-of-experience"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.yearsOfExperience')}
+                </label>
+                <input
+                  id="add-details-years-of-experience"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={yearsOfExperience}
+                  onChange={(event) => setYearsOfExperience(event.target.value)}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-current-salary"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.currentSalary')}
+                </label>
+                <input
+                  id="add-details-current-salary"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={currentSalary}
+                  onChange={(event) => setCurrentSalary(event.target.value)}
+                  placeholder={t('profile.fields.currentSalaryPlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-notice-period"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.noticePeriod')}
+                </label>
+                <select
+                  id="add-details-notice-period"
+                  value={noticePeriod}
+                  onChange={(event) =>
+                    setNoticePeriod(event.target.value as NoticePeriodLabel | '')
+                  }
+                  className="rounded-control border border-border bg-surface px-3 py-2.5 text-sm text-ink"
+                >
+                  <option value="">{t('profile.fields.noticePeriodPlaceholder')}</option>
+                  {NOTICE_PERIODS.map((period) => (
+                    <option key={period} value={period}>
+                      {period}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-education-degree"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.educationDegree')}
+                </label>
+                <input
+                  id="add-details-education-degree"
+                  value={educationDegree}
+                  onChange={(event) => setEducationDegree(event.target.value)}
+                  placeholder={t('profile.fields.educationDegreePlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-education-institution"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.educationInstitution')}
+                </label>
+                <input
+                  id="add-details-education-institution"
+                  value={educationInstitution}
+                  onChange={(event) => setEducationInstitution(event.target.value)}
+                  placeholder={t('profile.fields.educationInstitutionPlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-education-graduation-year"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.educationGraduationYear')}
+                </label>
+                <input
+                  id="add-details-education-graduation-year"
+                  type="number"
+                  min={1950}
+                  max={2100}
+                  step={1}
+                  value={educationGraduationYear}
+                  onChange={(event) => setEducationGraduationYear(event.target.value)}
+                  placeholder={t('profile.fields.educationGraduationYearPlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+            </div>
+            {backgroundError && <p className="mb-3.5 text-[13px] text-danger">{backgroundError}</p>}
+            <Button type="button" onClick={saveBackground} loading={savingBackground}>
               {t('addDetails.save')}
             </Button>
           </SectionCard>

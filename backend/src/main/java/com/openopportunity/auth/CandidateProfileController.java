@@ -3,6 +3,7 @@ package com.openopportunity.auth;
 import com.openopportunity.auth.dto.CandidateProfileResponse;
 import com.openopportunity.auth.dto.PhotoUploadResponse;
 import com.openopportunity.auth.dto.ResumeUploadResponse;
+import com.openopportunity.auth.dto.UpdateBackgroundRequest;
 import com.openopportunity.auth.dto.UpdateGoalsRequest;
 import com.openopportunity.auth.dto.UpdateMobileRequest;
 import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
@@ -61,6 +62,12 @@ public class CandidateProfileController {
     public ResponseEntity<CandidateProfileResponse> updatePreferences(
             @Valid @RequestBody UpdatePreferencesRequest request) {
         return ResponseEntity.ok(candidateProfileService.updatePreferences(currentUserId(), request));
+    }
+
+    @PatchMapping("/profile/background")
+    public ResponseEntity<CandidateProfileResponse> updateBackground(
+            @RequestBody UpdateBackgroundRequest request) {
+        return ResponseEntity.ok(candidateProfileService.updateBackground(currentUserId(), request));
     }
 
     @PostMapping("/resume")
