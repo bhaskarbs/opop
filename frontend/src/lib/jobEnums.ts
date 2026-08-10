@@ -1,4 +1,4 @@
-import type { BackendNoticePeriod } from './candidateApi'
+import type { BackendGender, BackendMaritalStatus, BackendNoticePeriod } from './candidateApi'
 import type { BackendEmploymentType, BackendExperienceLevel, BackendWorkMode } from './jobsApi'
 
 export const EXPERIENCE_LEVELS = ['Entry level', 'Mid level', 'Senior', 'Leadership'] as const
@@ -6,6 +6,18 @@ export type ExperienceLevelLabel = (typeof EXPERIENCE_LEVELS)[number]
 
 export const NOTICE_PERIODS = ['Immediate', '15 days', '1 month', '2 months', '3+ months'] as const
 export type NoticePeriodLabel = (typeof NOTICE_PERIODS)[number]
+
+export const GENDERS = ['Male', 'Female', 'Other', 'Prefer not to say'] as const
+export type GenderLabel = (typeof GENDERS)[number]
+
+export const MARITAL_STATUSES = [
+  'Single',
+  'Married',
+  'Divorced',
+  'Widowed',
+  'Prefer not to say',
+] as const
+export type MaritalStatusLabel = (typeof MARITAL_STATUSES)[number]
 
 export const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
 export type WorkModeLabel = (typeof WORK_MODES)[number]
@@ -39,6 +51,34 @@ const BACKEND_TO_NOTICE_PERIOD: Record<BackendNoticePeriod, NoticePeriodLabel> =
   MONTH_1: '1 month',
   MONTH_2: '2 months',
   MONTHS_3_PLUS: '3+ months',
+}
+
+const GENDER_TO_BACKEND: Record<GenderLabel, BackendGender> = {
+  Male: 'MALE',
+  Female: 'FEMALE',
+  Other: 'OTHER',
+  'Prefer not to say': 'PREFER_NOT_TO_SAY',
+}
+const BACKEND_TO_GENDER: Record<BackendGender, GenderLabel> = {
+  MALE: 'Male',
+  FEMALE: 'Female',
+  OTHER: 'Other',
+  PREFER_NOT_TO_SAY: 'Prefer not to say',
+}
+
+const MARITAL_STATUS_TO_BACKEND: Record<MaritalStatusLabel, BackendMaritalStatus> = {
+  Single: 'SINGLE',
+  Married: 'MARRIED',
+  Divorced: 'DIVORCED',
+  Widowed: 'WIDOWED',
+  'Prefer not to say': 'PREFER_NOT_TO_SAY',
+}
+const BACKEND_TO_MARITAL_STATUS: Record<BackendMaritalStatus, MaritalStatusLabel> = {
+  SINGLE: 'Single',
+  MARRIED: 'Married',
+  DIVORCED: 'Divorced',
+  WIDOWED: 'Widowed',
+  PREFER_NOT_TO_SAY: 'Prefer not to say',
 }
 
 const WORK_MODE_TO_BACKEND: Record<WorkModeLabel, BackendWorkMode> = {
@@ -76,6 +116,18 @@ export function noticePeriodToBackend(label: NoticePeriodLabel): BackendNoticePe
 }
 export function noticePeriodFromBackend(value: BackendNoticePeriod): NoticePeriodLabel {
   return BACKEND_TO_NOTICE_PERIOD[value]
+}
+export function genderToBackend(label: GenderLabel): BackendGender {
+  return GENDER_TO_BACKEND[label]
+}
+export function genderFromBackend(value: BackendGender): GenderLabel {
+  return BACKEND_TO_GENDER[value]
+}
+export function maritalStatusToBackend(label: MaritalStatusLabel): BackendMaritalStatus {
+  return MARITAL_STATUS_TO_BACKEND[label]
+}
+export function maritalStatusFromBackend(value: BackendMaritalStatus): MaritalStatusLabel {
+  return BACKEND_TO_MARITAL_STATUS[value]
 }
 export function workModeToBackend(label: WorkModeLabel): BackendWorkMode {
   return WORK_MODE_TO_BACKEND[label]

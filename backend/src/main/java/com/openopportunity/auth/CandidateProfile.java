@@ -11,6 +11,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -74,6 +75,29 @@ public class CandidateProfile {
 
     @Column(length = 255)
     private String industry;
+
+    // All five below are shown only on the candidate's own profile and the "add missing
+    // details" checklist — deliberately NOT surfaced on CandidateProfileForCompany/
+    // CandidateSearchSummary (what a company sees). Gender/marital status/date of birth are
+    // classic vectors for hiring bias, so unlike the rest of the profile they're kept out of a
+    // company's view entirely rather than gated behind a "reveal" action.
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private Gender gender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "marital_status", length = 20)
+    private MaritalStatus maritalStatus;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(columnDefinition = "text")
+    private String address;
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "text[]")
+    private List<String> languages = List.of();
 
     @Column(name = "life_goals", columnDefinition = "text")
     private String lifeGoals;
@@ -160,12 +184,26 @@ public class CandidateProfile {
     }
 
     public void updatePersonalDetails(
-            String location, String title, String mobile, ExperienceLevel experienceLevel, String industry) {
+            String location,
+            String title,
+            String mobile,
+            ExperienceLevel experienceLevel,
+            String industry,
+            Gender gender,
+            MaritalStatus maritalStatus,
+            LocalDate dateOfBirth,
+            String address,
+            List<String> languages) {
         this.location = location;
         this.title = title;
         this.mobile = mobile;
         this.experienceLevel = experienceLevel;
         this.industry = industry;
+        this.gender = gender;
+        this.maritalStatus = maritalStatus;
+        this.dateOfBirth = dateOfBirth;
+        this.address = address;
+        this.languages = languages;
     }
 
     public void updateSkills(List<String> skills) {
@@ -269,6 +307,26 @@ public class CandidateProfile {
 
     public String getIndustry() {
         return industry;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public MaritalStatus getMaritalStatus() {
+        return maritalStatus;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public List<String> getLanguages() {
+        return languages;
     }
 
     public String getLifeGoals() {

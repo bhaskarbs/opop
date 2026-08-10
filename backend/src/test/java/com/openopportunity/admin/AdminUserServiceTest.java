@@ -107,7 +107,17 @@ class AdminUserServiceTest {
     void getCandidateDetailCombinesUserAndProfileFields() {
         User user = new User("candidate@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE);
         CandidateProfile profile = new CandidateProfile(user.getId(), "9876543210", List.of("Java", "SQL"), null);
-        profile.updatePersonalDetails("Bengaluru", "Backend Engineer", "9876543210", ExperienceLevel.SENIOR, "Tech");
+        profile.updatePersonalDetails(
+                "Bengaluru",
+                "Backend Engineer",
+                "9876543210",
+                ExperienceLevel.SENIOR,
+                "Tech",
+                null,
+                null,
+                null,
+                null,
+                List.of());
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(candidateProfileRepository.findByUserId(user.getId())).thenReturn(Optional.of(profile));
 
