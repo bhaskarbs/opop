@@ -82,6 +82,13 @@ public class SecurityConfig {
                         // (that candidate's own authenticated profile) below.
                         .requestMatchers(HttpMethod.GET, "/api/candidates/*/photo")
                         .permitAll()
+                        // Same reasoning, for a certification logo (see
+                        // CandidateCertificationLogoController) — three path segments still
+                        // matches this wildcard pattern fine, since each `*` matches exactly one
+                        // segment and Spring's pattern here has three `*`/literal segments after
+                        // "/api/candidates/".
+                        .requestMatchers(HttpMethod.GET, "/api/candidates/*/certifications/*/logo")
+                        .permitAll()
                         // Same reasoning as candidate photos above, for a company's logo (see
                         // CompanyLogoController) — plural "/api/companies/**", distinct from the
                         // singular "/api/company/**" (that company's own authenticated profile)

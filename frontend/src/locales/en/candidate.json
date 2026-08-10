@@ -60,6 +60,7 @@
       "resume": "Resume",
       "skills": "Skills",
       "background": "Experience & education",
+      "accomplishments": "Accomplishments",
       "lifeGoals": "Life goals & values",
       "workPreferences": "Work preferences",
       "accountSettings": "Account settings"
@@ -119,7 +120,8 @@
       "goals": "Life goals & values",
       "mobile": "Mobile number verification",
       "prefs": "Work preferences",
-      "background": "Experience & education"
+      "background": "Experience & education",
+      "accomplishments": "Accomplishments"
     },
     "complete": "Complete",
     "missing": "Missing",
@@ -140,6 +142,37 @@
     },
     "profileComplete": "Your profile is complete!",
     "backToDashboard": "Back to dashboard"
+  },
+  "accomplishments": {
+    "body": "Show off portfolio work, research, and certifications to employers.",
+    "close": "Close",
+    "save": "Add",
+    "urlField": "URL",
+    "descriptionField": "Description",
+    "remove": "Remove {{title}}",
+    "limitReached": "You've reached the maximum of {{limit}}. Delete an existing one to add another.",
+    "workSamples": {
+      "heading": "Work samples",
+      "add": "Add work sample",
+      "titleField": "Work title",
+      "empty": "No work samples added yet."
+    },
+    "researchPapers": {
+      "heading": "White papers & research",
+      "add": "Add white paper / research",
+      "titleField": "Title",
+      "empty": "No white papers or research added yet."
+    },
+    "certifications": {
+      "heading": "Certifications",
+      "add": "Add certification",
+      "nameField": "Certification name",
+      "idField": "Certification ID",
+      "logoField": "Certification logo",
+      "chooseLogo": "Choose file",
+      "idPrefix": "ID: {{id}}",
+      "empty": "No certifications added yet."
+    }
   },
   "applications": {
     "type": {

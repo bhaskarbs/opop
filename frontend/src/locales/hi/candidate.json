@@ -60,6 +60,7 @@
       "resume": "रिज़्यूमे",
       "skills": "हुनर",
       "background": "अनुभव और शिक्षा",
+      "accomplishments": "उपलब्धियां",
       "lifeGoals": "जीवन के लक्ष्य और मूल्य",
       "workPreferences": "कार्य वरीयताएं",
       "accountSettings": "खाता सेटिंग्स"
@@ -119,7 +120,8 @@
       "goals": "जीवन के लक्ष्य और मूल्य",
       "mobile": "मोबाइल नंबर सत्यापन",
       "prefs": "काम की प्राथमिकताएं",
-      "background": "अनुभव और शिक्षा"
+      "background": "अनुभव और शिक्षा",
+      "accomplishments": "उपलब्धियां"
     },
     "complete": "पूरा",
     "missing": "छूटा हुआ",
@@ -140,6 +142,37 @@
     },
     "profileComplete": "आपकी प्रोफ़ाइल पूरी हो गई है!",
     "backToDashboard": "डैशबोर्ड पर वापस जाएं"
+  },
+  "accomplishments": {
+    "body": "नियोक्ताओं को पोर्टफोलियो कार्य, रिसर्च और सर्टिफिकेशन दिखाएं।",
+    "close": "बंद करें",
+    "save": "जोड़ें",
+    "urlField": "URL",
+    "descriptionField": "विवरण",
+    "remove": "{{title}} हटाएं",
+    "limitReached": "आप अधिकतम {{limit}} तक पहुंच गए हैं। दूसरा जोड़ने के लिए एक मौजूदा को हटाएं।",
+    "workSamples": {
+      "heading": "वर्क सैंपल",
+      "add": "वर्क सैंपल जोड़ें",
+      "titleField": "कार्य शीर्षक",
+      "empty": "अभी तक कोई वर्क सैंपल नहीं जोड़ा गया।"
+    },
+    "researchPapers": {
+      "heading": "व्हाइट पेपर और रिसर्च",
+      "add": "व्हाइट पेपर / रिसर्च जोड़ें",
+      "titleField": "शीर्षक",
+      "empty": "अभी तक कोई व्हाइट पेपर या रिसर्च नहीं जोड़ा गया।"
+    },
+    "certifications": {
+      "heading": "सर्टिफिकेशन",
+      "add": "सर्टिफिकेशन जोड़ें",
+      "nameField": "सर्टिफिकेशन नाम",
+      "idField": "सर्टिफिकेशन ID",
+      "logoField": "सर्टिफिकेशन लोगो",
+      "chooseLogo": "फ़ाइल चुनें",
+      "idPrefix": "ID: {{id}}",
+      "empty": "अभी तक कोई सर्टिफिकेशन नहीं जोड़ा गया।"
+    }
   },
   "applications": {
     "type": {

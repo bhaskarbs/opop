@@ -1,6 +1,9 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { CertificationsSection } from '../../components/candidate/CertificationsSection'
+import { ResearchPapersSection } from '../../components/candidate/ResearchPapersSection'
+import { WorkSamplesSection } from '../../components/candidate/WorkSamplesSection'
 import { Button, LoadingState, SkillsTagInput } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
@@ -66,23 +69,32 @@ function SectionCard({
 }: {
   title: string
   description: string
-  done: boolean
+  // Omitted for sections that don't factor into profile completion at all (e.g. the optional
+  // accomplishments section below) — renders a neutral card with no Complete/Missing badge,
+  // rather than lying about a done state that doesn't apply.
+  done?: boolean
   children: ReactNode
 }) {
   const { t } = useTranslation('candidate')
   return (
     <div
       className={`relative mb-[18px] rounded-card p-[26px] ${
-        done ? 'border border-border bg-surface opacity-60' : 'border-2 border-[#FCE3B8] bg-surface'
+        done === undefined
+          ? 'border border-border bg-surface'
+          : done
+            ? 'border border-border bg-surface opacity-60'
+            : 'border-2 border-[#FCE3B8] bg-surface'
       }`}
     >
-      <span
-        className={`absolute top-5 right-[26px] rounded-full px-2.5 py-[3px] text-[11.5px] font-bold ${
-          done ? 'bg-teal-tint text-teal' : 'bg-amber-tint text-amber'
-        }`}
-      >
-        {done ? t('addDetails.complete') : t('addDetails.missing')}
-      </span>
+      {done !== undefined && (
+        <span
+          className={`absolute top-5 right-[26px] rounded-full px-2.5 py-[3px] text-[11.5px] font-bold ${
+            done ? 'bg-teal-tint text-teal' : 'bg-amber-tint text-amber'
+          }`}
+        >
+          {done ? t('addDetails.complete') : t('addDetails.missing')}
+        </span>
+      )}
       <h2 className="mb-1.5 text-base font-bold text-ink">{title}</h2>
       <p className="mb-3.5 text-[13px] text-fog">{description}</p>
       {children}
@@ -588,6 +600,30 @@ export default function AddMissingDetailsPage() {
             <Button type="button" onClick={saveBackground} loading={savingBackground}>
               {t('addDetails.save')}
             </Button>
+          </SectionCard>
+
+          <SectionCard
+            title={t('addDetails.checklist.accomplishments')}
+            description={t('accomplishments.body')}
+          >
+            <h3 className="mb-2 text-[14px] font-bold text-ink">
+              {t('accomplishments.workSamples.heading')}
+            </h3>
+            <div className="mb-5">
+              <WorkSamplesSection />
+            </div>
+
+            <h3 className="mb-2 text-[14px] font-bold text-ink">
+              {t('accomplishments.researchPapers.heading')}
+            </h3>
+            <div className="mb-5">
+              <ResearchPapersSection />
+            </div>
+
+            <h3 className="mb-2 text-[14px] font-bold text-ink">
+              {t('accomplishments.certifications.heading')}
+            </h3>
+            <CertificationsSection />
           </SectionCard>
 
           <SectionCard
