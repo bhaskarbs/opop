@@ -108,6 +108,46 @@ class CandidateSearchServiceTest {
     }
 
     @Test
+    void searchIncrementsEachReturnedCandidatesSearchAppearanceCount() {
+        CandidateSearchService service = service();
+        User candidate = new User("candidate@example.com", "hash", "Candidate", UserRole.CANDIDATE);
+        CandidateProfile profile = new CandidateProfile(candidate.getId(), "9000000000", List.of(), null);
+
+        when(candidateProfileRepository.findAll(any(Specification.class))).thenReturn(List.of(profile));
+        when(userRepository.findAllById(any())).thenReturn(List.of(candidate));
+        UUID companyId = UUID.randomUUID();
+        when(candidateContactRevealRepository.findByCompanyId(companyId)).thenReturn(List.of());
+        when(candidateSubscriptionRepository.findByPlanNotAndCurrentPeriodEndAfter(eq(SubscriptionPlan.FREE), any()))
+                .thenReturn(List.of());
+
+        service.search(companyId, null, null, "relevant");
+        service.search(companyId, null, null, "relevant");
+
+        assertThat(profile.getSearchAppearanceCount()).isEqualTo(2);
+        verify(candidateProfileRepository, org.mockito.Mockito.times(2)).saveAll(List.of(profile));
+    }
+
+    @Test
+    void getIncrementsTheCandidatesProfileViewCount() {
+        CandidateSearchService service = service();
+        UUID companyId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
+        CandidateProfile profile = new CandidateProfile(candidateId, "9876543210", List.of(), null);
+        User candidate = new User("candidate@example.com", "hash", "Candidate", UserRole.CANDIDATE);
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(eligibleCompanyProfile(companyId)));
+        when(companyBillingService.getPlanPeriod(companyId))
+                .thenReturn(new CompanyBillingService.PlanPeriod(CompanySubscriptionPlan.GROWTH, null, null));
+        when(candidateProfileRepository.findByUserId(candidateId)).thenReturn(Optional.of(profile));
+        when(userRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
+
+        service.get(companyId, candidateId);
+        service.get(companyId, candidateId);
+
+        assertThat(profile.getProfileViewCount()).isEqualTo(2);
+        verify(candidateProfileRepository, org.mockito.Mockito.times(2)).save(profile);
+    }
+
+    @Test
     void recentLoginSortPutsMostRecentlyLoggedInFirstAndNeverLoggedInLast() throws Exception {
         CandidateSearchService service = service();
 

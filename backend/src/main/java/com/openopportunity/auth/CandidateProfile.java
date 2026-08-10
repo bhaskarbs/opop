@@ -122,6 +122,18 @@ public class CandidateProfile {
     @Column(name = "featured_at")
     private Instant featuredAt;
 
+    // Backs the candidate dashboard's "search appearances" / "recruiter views" stats.
+    // searchAppearanceCount is incremented once per candidate for every CandidateSearchService
+    // .search() call that returns them in the results list (regardless of the searching
+    // company's plan/eligibility, since the list itself is freely browsable); profileViewCount
+    // is incremented once per CandidateSearchService.get() call, which — unlike search — is
+    // already gated behind an eligible, paying company (see requireEligibleToContactCandidates).
+    @Column(name = "search_appearance_count", nullable = false)
+    private int searchAppearanceCount;
+
+    @Column(name = "profile_view_count", nullable = false)
+    private int profileViewCount;
+
     // Self-reported, distinct from experienceLevel's coarse 4-bucket enum — allows a specific
     // figure like "2.5" rather than forcing a candidate into ENTRY_LEVEL/MID_LEVEL/etc.
     @Column(name = "years_of_experience", precision = 4, scale = 1)
@@ -253,6 +265,14 @@ public class CandidateProfile {
         this.featuredAt = null;
     }
 
+    public void recordSearchAppearance() {
+        this.searchAppearanceCount++;
+    }
+
+    public void recordProfileView() {
+        this.profileViewCount++;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -351,6 +371,14 @@ public class CandidateProfile {
 
     public Instant getFeaturedAt() {
         return featuredAt;
+    }
+
+    public int getSearchAppearanceCount() {
+        return searchAppearanceCount;
+    }
+
+    public int getProfileViewCount() {
+        return profileViewCount;
     }
 
     public BigDecimal getYearsOfExperience() {

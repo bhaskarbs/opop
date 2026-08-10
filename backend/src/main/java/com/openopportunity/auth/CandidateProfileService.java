@@ -221,6 +221,8 @@ public class CandidateProfileService {
                 profile.getEducationDegree(),
                 profile.getEducationInstitution(),
                 profile.getEducationGraduationYear(),
+                profile.getSearchAppearanceCount(),
+                profile.getProfileViewCount(),
                 user.getCreatedAt());
     }
 

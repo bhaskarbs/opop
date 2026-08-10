@@ -33,6 +33,11 @@
     },
     "profileStrength": "प्रोफ़ाइल स्ट्रेंथ",
     "addMissingDetails": "छूटी हुई जानकारी जोड़ें",
+    "visibility": {
+      "heading": "प्रोफ़ाइल विज़िबिलिटी",
+      "searchAppearances": "सर्च में दिखी",
+      "recruiterViews": "रिक्रूटर व्यूज़"
+    },
     "mockInterviews": "मॉक इंटरव्यू",
     "mockInterviewsBody": "कैमरे पर अभ्यास करें और अपने रिकॉर्ड किए गए सेशन कभी भी देखें।",
     "startMockInterview": "मॉक इंटरव्यू शुरू करें",

@@ -44,4 +44,8 @@ public record CandidateProfileResponse(
         String educationDegree,
         String educationInstitution,
         Integer educationGraduationYear,
+        // Dashboard visibility stats — see CandidateSearchService.search()/get() for where these
+        // actually increment.
+        int searchAppearanceCount,
+        int profileViewCount,
         Instant createdAt) {}

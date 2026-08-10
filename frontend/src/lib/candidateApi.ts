@@ -40,6 +40,9 @@ export interface CandidateProfileResponse {
   educationDegree: string | null
   educationInstitution: string | null
   educationGraduationYear: number | null
+  // Dashboard visibility stats — see CandidateDashboardPage.
+  searchAppearanceCount: number
+  profileViewCount: number
   createdAt: string
 }
 
