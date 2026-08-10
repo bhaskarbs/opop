@@ -84,7 +84,17 @@ class CandidateSearchControllerTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdatePersonalDetailsRequest(
-                                fullName, location, title, "9876500000", ExperienceLevel.SENIOR, "Technology"))))
+                                fullName,
+                                location,
+                                title,
+                                "9876500000",
+                                ExperienceLevel.SENIOR,
+                                "Technology",
+                                null,
+                                null,
+                                null,
+                                null,
+                                List.of()))))
                 .andExpect(status().isOk());
     }
 

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.openopportunity.auth.dto.CandidateProfileResponse;
 import com.openopportunity.auth.dto.PhotoUploadResponse;
 import com.openopportunity.auth.dto.UpdateBackgroundRequest;
+import com.openopportunity.auth.dto.UpdatePersonalDetailsRequest;
 import com.openopportunity.auth.exception.InvalidProfilePhotoException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.storage.FileStorageService;
@@ -18,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -122,5 +124,49 @@ class CandidateProfileServiceTest {
         assertThat(response.educationInstitution()).isEqualTo("IIT Delhi");
         assertThat(response.educationGraduationYear()).isEqualTo(2018);
         assertThat(profile.getYearsOfExperience()).isEqualByComparingTo("2.5");
+    }
+
+    @Test
+    void updatePersonalDetailsPersistsGenderMaritalStatusDobAddressAndLanguages() {
+        UUID userId = UUID.randomUUID();
+        User user = new User("candidate@example.com", "hash", "Candidate", UserRole.CANDIDATE);
+        CandidateProfile profile = new CandidateProfile(userId, "9876543210", List.of(), null);
+        when(candidateProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        UpdatePersonalDetailsRequest request = new UpdatePersonalDetailsRequest(
+                "Candidate",
+                "Bengaluru",
+                "Backend Engineer",
+                "9876543210",
+                null,
+                null,
+                Gender.FEMALE,
+                MaritalStatus.SINGLE,
+                LocalDate.of(1995, 6, 15),
+                "123 MG Road, Bengaluru",
+                List.of("English", "Hindi"));
+
+        CandidateProfileResponse response = candidateProfileService.updatePersonalDetails(userId, request);
+
+        assertThat(response.gender()).isEqualTo(Gender.FEMALE);
+        assertThat(response.maritalStatus()).isEqualTo(MaritalStatus.SINGLE);
+        assertThat(response.dateOfBirth()).isEqualTo(LocalDate.of(1995, 6, 15));
+        assertThat(response.address()).isEqualTo("123 MG Road, Bengaluru");
+        assertThat(response.languages()).containsExactly("English", "Hindi");
+    }
+
+    @Test
+    void updatePersonalDetailsTreatsNullLanguagesAsEmptyRatherThanNull() {
+        UUID userId = UUID.randomUUID();
+        User user = new User("candidate@example.com", "hash", "Candidate", UserRole.CANDIDATE);
+        CandidateProfile profile = new CandidateProfile(userId, "9876543210", List.of(), null);
+        when(candidateProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        UpdatePersonalDetailsRequest request = new UpdatePersonalDetailsRequest(
+                "Candidate", "Bengaluru", "Backend Engineer", "9876543210", null, null, null, null, null, null, null);
+
+        CandidateProfileResponse response = candidateProfileService.updatePersonalDetails(userId, request);
+
+        assertThat(response.languages()).isEmpty();
     }
 }

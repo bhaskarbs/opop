@@ -59,7 +59,16 @@ public class CandidateProfileService {
 
         CandidateProfile profile = findProfile(userId);
         profile.updatePersonalDetails(
-                request.location(), request.title(), request.mobile(), request.experienceLevel(), request.industry());
+                request.location(),
+                request.title(),
+                request.mobile(),
+                request.experienceLevel(),
+                request.industry(),
+                request.gender(),
+                request.maritalStatus(),
+                request.dateOfBirth(),
+                request.address(),
+                request.languages() == null ? List.of() : request.languages());
         candidateProfileRepository.save(profile);
         return toResponse(user, profile);
     }
@@ -192,6 +201,11 @@ public class CandidateProfileService {
                 profile.getTitle(),
                 profile.getExperienceLevel(),
                 profile.getIndustry(),
+                profile.getGender(),
+                profile.getMaritalStatus(),
+                profile.getDateOfBirth(),
+                profile.getAddress(),
+                profile.getLanguages(),
                 profile.getSkills(),
                 profile.getResumeFileName(),
                 profile.getResumeUploadedAt(),

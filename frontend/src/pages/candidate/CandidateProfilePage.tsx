@@ -12,11 +12,20 @@ import {
   experienceLevelFromBackend,
   experienceLevelToBackend,
   type ExperienceLevelLabel,
+  GENDERS,
+  genderFromBackend,
+  genderToBackend,
+  type GenderLabel,
+  MARITAL_STATUSES,
+  maritalStatusFromBackend,
+  maritalStatusToBackend,
+  type MaritalStatusLabel,
   NOTICE_PERIODS,
   noticePeriodFromBackend,
   noticePeriodToBackend,
   type NoticePeriodLabel,
 } from '../../lib/jobEnums'
+import { LANGUAGE_SUGGESTIONS } from '../../mocks/languages'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { useAuthStore } from '../../stores/authStore'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
@@ -59,6 +68,11 @@ export default function CandidateProfilePage() {
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevelLabel | ''>('')
   const [industry, setIndustry] = useState('')
   const [mobile, setMobile] = useState('')
+  const [gender, setGender] = useState<GenderLabel | ''>('')
+  const [maritalStatus, setMaritalStatus] = useState<MaritalStatusLabel | ''>('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [address, setAddress] = useState('')
+  const [languages, setLanguages] = useState<string[]>([])
   const [savingPersonal, setSavingPersonal] = useState(false)
   const [personalError, setPersonalError] = useState<string | null>(null)
   const [savedPersonal, setSavedPersonal] = useState(false)
@@ -120,6 +134,11 @@ export default function CandidateProfilePage() {
         )
         setIndustry(data.industry ?? '')
         setMobile(data.mobile)
+        setGender(data.gender ? genderFromBackend(data.gender) : '')
+        setMaritalStatus(data.maritalStatus ? maritalStatusFromBackend(data.maritalStatus) : '')
+        setDateOfBirth(data.dateOfBirth ?? '')
+        setAddress(data.address ?? '')
+        setLanguages(data.languages)
         setResumeFileName(data.resumeFileName)
         setResumeUploadedAt(data.resumeUploadedAt)
         setResumeSizeBytes(data.resumeSizeBytes)
@@ -162,6 +181,11 @@ export default function CandidateProfilePage() {
         mobile,
         experienceLevel: experienceLevel ? experienceLevelToBackend(experienceLevel) : null,
         industry,
+        gender: gender ? genderToBackend(gender) : null,
+        maritalStatus: maritalStatus ? maritalStatusToBackend(maritalStatus) : null,
+        dateOfBirth: dateOfBirth || null,
+        address: address || null,
+        languages,
       })
       setProfile(updated)
       useCandidateProfileStore.getState().setProfile(updated)
@@ -478,6 +502,81 @@ export default function CandidateProfilePage() {
                   onChange={(event) => setIndustry(event.target.value)}
                   placeholder={t('profile.fields.industryPlaceholder')}
                   className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="gender" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.gender')}
+                </label>
+                <select
+                  id="gender"
+                  value={gender}
+                  onChange={(event) => setGender(event.target.value as GenderLabel | '')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                >
+                  <option value="">{t('profile.fields.genderPlaceholder')}</option>
+                  {GENDERS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="maritalStatus" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.maritalStatus')}
+                </label>
+                <select
+                  id="maritalStatus"
+                  value={maritalStatus}
+                  onChange={(event) =>
+                    setMaritalStatus(event.target.value as MaritalStatusLabel | '')
+                  }
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                >
+                  <option value="">{t('profile.fields.maritalStatusPlaceholder')}</option>
+                  {MARITAL_STATUSES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="dateOfBirth" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.dateOfBirth')}
+                </label>
+                <input
+                  id="dateOfBirth"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(event) => setDateOfBirth(event.target.value)}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <label htmlFor="address" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.address')}
+                </label>
+                <textarea
+                  id="address"
+                  rows={2}
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                  placeholder={t('profile.fields.addressPlaceholder')}
+                  className="resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <span className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.languages')}
+                </span>
+                <SkillsTagInput
+                  value={languages}
+                  onChange={setLanguages}
+                  suggestions={LANGUAGE_SUGGESTIONS}
+                  placeholder={t('profile.fields.languagesPlaceholder')}
+                  removeSkillLabel={(language) => t('profile.removeLanguage', { language })}
                 />
               </div>
             </div>

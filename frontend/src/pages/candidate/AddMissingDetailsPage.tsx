@@ -10,12 +10,21 @@ import {
   profileCompletionPercent,
 } from '../../lib/candidateProfileCompletion'
 import {
+  GENDERS,
+  genderFromBackend,
+  genderToBackend,
+  type GenderLabel,
+  MARITAL_STATUSES,
+  maritalStatusFromBackend,
+  maritalStatusToBackend,
+  type MaritalStatusLabel,
   NOTICE_PERIODS,
   noticePeriodFromBackend,
   noticePeriodToBackend,
   type NoticePeriodLabel,
 } from '../../lib/jobEnums'
 import { PROFILE_CHECKLIST, type ChecklistKey } from '../../mocks/candidateProfile'
+import { LANGUAGE_SUGGESTIONS } from '../../mocks/languages'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ROUTES } from '../../routes/paths'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
@@ -91,6 +100,11 @@ export default function AddMissingDetailsPage() {
 
   const [location, setLocation] = useState('')
   const [title, setTitle] = useState('')
+  const [gender, setGender] = useState<GenderLabel | ''>('')
+  const [maritalStatus, setMaritalStatus] = useState<MaritalStatusLabel | ''>('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [address, setAddress] = useState('')
+  const [languages, setLanguages] = useState<string[]>([])
   const [savingPersonal, setSavingPersonal] = useState(false)
   const [personalError, setPersonalError] = useState<string | null>(null)
 
@@ -130,6 +144,11 @@ export default function AddMissingDetailsPage() {
         setProfile(data)
         setLocation(data.location ?? '')
         setTitle(data.title ?? '')
+        setGender(data.gender ? genderFromBackend(data.gender) : '')
+        setMaritalStatus(data.maritalStatus ? maritalStatusFromBackend(data.maritalStatus) : '')
+        setDateOfBirth(data.dateOfBirth ?? '')
+        setAddress(data.address ?? '')
+        setLanguages(data.languages)
         setSkills(data.skills)
         setLifeGoals(data.lifeGoals ?? '')
         setWorkCulture(data.workCulture ?? '')
@@ -170,6 +189,11 @@ export default function AddMissingDetailsPage() {
         mobile: profile.mobile,
         experienceLevel: profile.experienceLevel,
         industry: profile.industry ?? '',
+        gender: gender ? genderToBackend(gender) : null,
+        maritalStatus: maritalStatus ? maritalStatusToBackend(maritalStatus) : null,
+        dateOfBirth: dateOfBirth || null,
+        address: address || null,
+        languages,
       })
       setProfile(updated)
       useCandidateProfileStore.getState().setProfile(updated)
@@ -353,6 +377,90 @@ export default function AddMissingDetailsPage() {
                   onChange={(event) => setTitle(event.target.value)}
                   placeholder={t('profile.fields.titlePlaceholder')}
                   className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-gender"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.gender')}
+                </label>
+                <select
+                  id="add-details-gender"
+                  value={gender}
+                  onChange={(event) => setGender(event.target.value as GenderLabel | '')}
+                  className="rounded-control border border-border bg-surface px-3 py-2.5 text-sm text-ink"
+                >
+                  <option value="">{t('profile.fields.genderPlaceholder')}</option>
+                  {GENDERS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="add-details-marital-status"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.maritalStatus')}
+                </label>
+                <select
+                  id="add-details-marital-status"
+                  value={maritalStatus}
+                  onChange={(event) =>
+                    setMaritalStatus(event.target.value as MaritalStatusLabel | '')
+                  }
+                  className="rounded-control border border-border bg-surface px-3 py-2.5 text-sm text-ink"
+                >
+                  <option value="">{t('profile.fields.maritalStatusPlaceholder')}</option>
+                  {MARITAL_STATUSES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="add-details-dob" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.dateOfBirth')}
+                </label>
+                <input
+                  id="add-details-dob"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(event) => setDateOfBirth(event.target.value)}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <label
+                  htmlFor="add-details-address"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.address')}
+                </label>
+                <textarea
+                  id="add-details-address"
+                  rows={2}
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                  placeholder={t('profile.fields.addressPlaceholder')}
+                  className="resize-y rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <span className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.languages')}
+                </span>
+                <SkillsTagInput
+                  value={languages}
+                  onChange={setLanguages}
+                  suggestions={LANGUAGE_SUGGESTIONS}
+                  placeholder={t('profile.fields.languagesPlaceholder')}
+                  removeSkillLabel={(language) => t('profile.removeLanguage', { language })}
                 />
               </div>
             </div>

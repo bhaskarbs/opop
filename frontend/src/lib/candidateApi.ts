@@ -3,6 +3,9 @@ import { request, uploadRequest } from './apiClient'
 import type { BackendExperienceLevel } from './jobsApi'
 
 export type BackendNoticePeriod = 'IMMEDIATE' | 'DAYS_15' | 'MONTH_1' | 'MONTH_2' | 'MONTHS_3_PLUS'
+export type BackendGender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY'
+export type BackendMaritalStatus =
+  'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'PREFER_NOT_TO_SAY'
 
 export interface CandidateProfileResponse {
   fullName: string
@@ -13,6 +16,14 @@ export interface CandidateProfileResponse {
   title: string | null
   experienceLevel: BackendExperienceLevel | null
   industry: string | null
+  // Shown only on the candidate's own profile — deliberately absent from a company's view of a
+  // candidate (CandidateProfileForCompany) or the search results list (CandidateSearchSummary),
+  // since gender/marital status/date of birth are classic vectors for hiring bias.
+  gender: BackendGender | null
+  maritalStatus: BackendMaritalStatus | null
+  dateOfBirth: string | null
+  address: string | null
+  languages: string[]
   skills: string[]
   resumeFileName: string | null
   resumeUploadedAt: string | null
@@ -49,6 +60,11 @@ export interface UpdatePersonalDetailsPayload {
   mobile: string
   experienceLevel: BackendExperienceLevel | null
   industry: string
+  gender: BackendGender | null
+  maritalStatus: BackendMaritalStatus | null
+  dateOfBirth: string | null
+  address: string | null
+  languages: string[]
 }
 
 export interface UpdateGoalsPayload {
