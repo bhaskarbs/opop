@@ -69,6 +69,9 @@ class JobServiceTest {
     private NotificationService notificationService;
 
     @Mock
+    private NewJobMatchEmailService newJobMatchEmailService;
+
+    @Mock
     private JobSearchProvider jobSearchProvider;
 
     private JobService jobService;
@@ -83,6 +86,7 @@ class JobServiceTest {
                 applicationRepository,
                 savedJobRepository,
                 notificationService,
+                newJobMatchEmailService,
                 jobSearchProvider,
                 Optional.empty());
     }
