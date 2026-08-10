@@ -5,7 +5,7 @@ import { BackButton, LoadingState, Spinner } from '../../components/ui'
 import { useContactEligibility } from '../../hooks/useContactEligibility'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
 import { companyApi, type CandidateProfileForCompany } from '../../lib/companyApi'
-import { experienceLevelFromBackend } from '../../lib/jobEnums'
+import { experienceLevelFromBackend, noticePeriodFromBackend } from '../../lib/jobEnums'
 
 const EXPERIENCE_LEVEL_KEYS: Record<string, string> = {
   'Entry level': 'public:filters.experienceLevel.entry',
@@ -287,6 +287,45 @@ export default function CandidateProfileViewPage() {
               </div>
               <div className="mt-0.5 text-[13.5px] text-ink">
                 {[profile.workModePreference, profile.openToPreference].filter(Boolean).join(' · ')}
+              </div>
+            </div>
+          )}
+          {profile.yearsOfExperience != null && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateProfile.yearsOfExperience')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">{profile.yearsOfExperience}</div>
+            </div>
+          )}
+          {profile.currentSalaryLakhs != null && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateProfile.currentSalary')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">
+                {t('candidateProfile.lakhsPerYear', { amount: profile.currentSalaryLakhs })}
+              </div>
+            </div>
+          )}
+          {profile.noticePeriod && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateProfile.noticePeriod')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">
+                {noticePeriodFromBackend(profile.noticePeriod)}
+              </div>
+            </div>
+          )}
+          {(profile.educationDegree || profile.educationInstitution) && (
+            <div>
+              <div className="text-[12px] font-bold text-fog uppercase">
+                {t('candidateProfile.education')}
+              </div>
+              <div className="mt-0.5 text-[13.5px] text-ink">
+                {[profile.educationDegree, profile.educationInstitution].filter(Boolean).join(', ')}
+                {profile.educationGraduationYear ? ` (${profile.educationGraduationYear})` : ''}
               </div>
             </div>
           )}

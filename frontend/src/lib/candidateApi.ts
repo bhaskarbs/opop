@@ -2,6 +2,8 @@ import { useAuthStore } from '../stores/authStore'
 import { request, uploadRequest } from './apiClient'
 import type { BackendExperienceLevel } from './jobsApi'
 
+export type BackendNoticePeriod = 'IMMEDIATE' | 'DAYS_15' | 'MONTH_1' | 'MONTH_2' | 'MONTHS_3_PLUS'
+
 export interface CandidateProfileResponse {
   fullName: string
   email: string
@@ -21,6 +23,12 @@ export interface CandidateProfileResponse {
   workCulture: string | null
   workModePreference: string | null
   openToPreference: string | null
+  yearsOfExperience: number | null
+  currentSalaryLakhs: number | null
+  noticePeriod: BackendNoticePeriod | null
+  educationDegree: string | null
+  educationInstitution: string | null
+  educationGraduationYear: number | null
   createdAt: string
 }
 
@@ -51,6 +59,15 @@ export interface UpdateGoalsPayload {
 export interface UpdatePreferencesPayload {
   workMode: string
   openTo: string
+}
+
+export interface UpdateBackgroundPayload {
+  yearsOfExperience: number | null
+  currentSalaryLakhs: number | null
+  noticePeriod: BackendNoticePeriod | null
+  educationDegree: string | null
+  educationInstitution: string | null
+  educationGraduationYear: number | null
 }
 
 function authHeaders(): Record<string, string> {
@@ -87,6 +104,12 @@ export const candidateApi = {
     }),
   updatePreferences: (payload: UpdatePreferencesPayload) =>
     request<CandidateProfileResponse>('/api/candidate/profile/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  updateBackground: (payload: UpdateBackgroundPayload) =>
+    request<CandidateProfileResponse>('/api/candidate/profile/background', {
       method: 'PATCH',
       body: JSON.stringify(payload),
       headers: authHeaders(),

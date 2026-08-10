@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -97,6 +98,29 @@ public class CandidateProfile {
     @Column(name = "featured_at")
     private Instant featuredAt;
 
+    // Self-reported, distinct from experienceLevel's coarse 4-bucket enum — allows a specific
+    // figure like "2.5" rather than forcing a candidate into ENTRY_LEVEL/MID_LEVEL/etc.
+    @Column(name = "years_of_experience", precision = 4, scale = 1)
+    private BigDecimal yearsOfExperience;
+
+    // In lakhs, same unit as Job.salaryMinLakhs/salaryMaxLakhs (V4) so it's directly comparable
+    // to a job's advertised range.
+    @Column(name = "current_salary_lakhs", precision = 6, scale = 2)
+    private BigDecimal currentSalaryLakhs;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "notice_period", length = 20)
+    private NoticePeriod noticePeriod;
+
+    @Column(name = "education_degree", length = 255)
+    private String educationDegree;
+
+    @Column(name = "education_institution", length = 255)
+    private String educationInstitution;
+
+    @Column(name = "education_graduation_year")
+    private Integer educationGraduationYear;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -166,6 +190,21 @@ public class CandidateProfile {
     public void updatePhoto(String photoStorageKey, String photoContentType) {
         this.photoStorageKey = photoStorageKey;
         this.photoContentType = photoContentType;
+    }
+
+    public void updateBackground(
+            BigDecimal yearsOfExperience,
+            BigDecimal currentSalaryLakhs,
+            NoticePeriod noticePeriod,
+            String educationDegree,
+            String educationInstitution,
+            Integer educationGraduationYear) {
+        this.yearsOfExperience = yearsOfExperience;
+        this.currentSalaryLakhs = currentSalaryLakhs;
+        this.noticePeriod = noticePeriod;
+        this.educationDegree = educationDegree;
+        this.educationInstitution = educationInstitution;
+        this.educationGraduationYear = educationGraduationYear;
     }
 
     public void feature() {
@@ -254,6 +293,30 @@ public class CandidateProfile {
 
     public Instant getFeaturedAt() {
         return featuredAt;
+    }
+
+    public BigDecimal getYearsOfExperience() {
+        return yearsOfExperience;
+    }
+
+    public BigDecimal getCurrentSalaryLakhs() {
+        return currentSalaryLakhs;
+    }
+
+    public NoticePeriod getNoticePeriod() {
+        return noticePeriod;
+    }
+
+    public String getEducationDegree() {
+        return educationDegree;
+    }
+
+    public String getEducationInstitution() {
+        return educationInstitution;
+    }
+
+    public Integer getEducationGraduationYear() {
+        return educationGraduationYear;
     }
 
     public Instant getCreatedAt() {

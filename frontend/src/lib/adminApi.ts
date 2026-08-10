@@ -2,6 +2,7 @@ import { useAuthStore } from '../stores/authStore'
 import { blobRequest, request } from './apiClient'
 import type { AdminLevel } from './apiClient'
 import type { BackendSubscriptionPlan, BillingTransactionStatus } from './billingApi'
+import type { BackendNoticePeriod } from './candidateApi'
 import type { CompanyCertificateSummary } from './companyApi'
 import type { BackendCompanySubscriptionPlan } from './companyBillingApi'
 import type { IdeaDetail } from './ideasApi'
@@ -134,6 +135,12 @@ export interface AdminCandidateProfileSummary {
   workCulture: string | null
   workModePreference: string | null
   openToPreference: string | null
+  yearsOfExperience: number | null
+  currentSalaryLakhs: number | null
+  noticePeriod: BackendNoticePeriod | null
+  educationDegree: string | null
+  educationInstitution: string | null
+  educationGraduationYear: number | null
   featuredAt: string | null
   createdAt: string
 }

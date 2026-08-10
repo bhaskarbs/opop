@@ -8,13 +8,16 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.auth.dto.CandidateProfileResponse;
 import com.openopportunity.auth.dto.PhotoUploadResponse;
+import com.openopportunity.auth.dto.UpdateBackgroundRequest;
 import com.openopportunity.auth.exception.InvalidProfilePhotoException;
 import com.openopportunity.auth.exception.InvalidResumeFileException;
 import com.openopportunity.storage.FileStorageService;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -93,5 +96,31 @@ class CandidateProfileServiceTest {
 
         assertThatThrownBy(() -> candidateProfileService.uploadResume(userId, file))
                 .isInstanceOf(InvalidResumeFileException.class);
+    }
+
+    @Test
+    void updateBackgroundPersistsAndReturnsAllSixFields() {
+        UUID userId = UUID.randomUUID();
+        User user = new User("candidate@example.com", "hash", "Candidate", UserRole.CANDIDATE);
+        CandidateProfile profile = new CandidateProfile(userId, "9876543210", List.of(), null);
+        when(candidateProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        UpdateBackgroundRequest request = new UpdateBackgroundRequest(
+                new BigDecimal("2.5"),
+                new BigDecimal("12.50"),
+                NoticePeriod.MONTH_1,
+                "B.Tech Computer Science",
+                "IIT Delhi",
+                2018);
+
+        CandidateProfileResponse response = candidateProfileService.updateBackground(userId, request);
+
+        assertThat(response.yearsOfExperience()).isEqualByComparingTo("2.5");
+        assertThat(response.currentSalaryLakhs()).isEqualByComparingTo("12.50");
+        assertThat(response.noticePeriod()).isEqualTo(NoticePeriod.MONTH_1);
+        assertThat(response.educationDegree()).isEqualTo("B.Tech Computer Science");
+        assertThat(response.educationInstitution()).isEqualTo("IIT Delhi");
+        assertThat(response.educationGraduationYear()).isEqualTo(2018);
+        assertThat(profile.getYearsOfExperience()).isEqualByComparingTo("2.5");
     }
 }

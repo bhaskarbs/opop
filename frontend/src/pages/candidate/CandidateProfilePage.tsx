@@ -12,6 +12,10 @@ import {
   experienceLevelFromBackend,
   experienceLevelToBackend,
   type ExperienceLevelLabel,
+  NOTICE_PERIODS,
+  noticePeriodFromBackend,
+  noticePeriodToBackend,
+  type NoticePeriodLabel,
 } from '../../lib/jobEnums'
 import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { useAuthStore } from '../../stores/authStore'
@@ -21,6 +25,7 @@ const NAV_SECTIONS = [
   { labelKey: 'profile.nav.personalDetails', href: '#personal' },
   { labelKey: 'profile.nav.resume', href: '#resume' },
   { labelKey: 'profile.nav.skills', href: '#skills' },
+  { labelKey: 'profile.nav.background', href: '#background' },
   { labelKey: 'profile.nav.lifeGoals', href: '#goals' },
   { labelKey: 'profile.nav.workPreferences', href: '#preferences' },
   { labelKey: 'profile.nav.accountSettings', href: '#account' },
@@ -30,6 +35,15 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+// Numeric fields are kept as plain strings in component state (matching how every other field
+// on this page is a plain useState string, not React Hook Form) and only parsed to a number —
+// or null, for "left blank" — right before hitting the API.
+function parseOptionalNumber(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number.parseFloat(value)
+  return Number.isNaN(parsed) ? null : parsed
 }
 
 export default function CandidateProfilePage() {
@@ -80,6 +94,16 @@ export default function CandidateProfilePage() {
   const [prefsError, setPrefsError] = useState<string | null>(null)
   const [savedPrefs, setSavedPrefs] = useState(false)
 
+  const [yearsOfExperience, setYearsOfExperience] = useState('')
+  const [currentSalary, setCurrentSalary] = useState('')
+  const [noticePeriod, setNoticePeriod] = useState<NoticePeriodLabel | ''>('')
+  const [educationDegree, setEducationDegree] = useState('')
+  const [educationInstitution, setEducationInstitution] = useState('')
+  const [educationGraduationYear, setEducationGraduationYear] = useState('')
+  const [savingBackground, setSavingBackground] = useState(false)
+  const [backgroundError, setBackgroundError] = useState<string | null>(null)
+  const [savedBackground, setSavedBackground] = useState(false)
+
   useEffect(() => {
     let cancelled = false
     useCandidateProfileStore
@@ -105,6 +129,14 @@ export default function CandidateProfilePage() {
         setWorkCulture(data.workCulture ?? '')
         setWorkMode(data.workModePreference ?? 'Remote')
         setOpenTo(data.openToPreference ?? 'Jobs only')
+        setYearsOfExperience(data.yearsOfExperience != null ? String(data.yearsOfExperience) : '')
+        setCurrentSalary(data.currentSalaryLakhs != null ? String(data.currentSalaryLakhs) : '')
+        setNoticePeriod(data.noticePeriod ? noticePeriodFromBackend(data.noticePeriod) : '')
+        setEducationDegree(data.educationDegree ?? '')
+        setEducationInstitution(data.educationInstitution ?? '')
+        setEducationGraduationYear(
+          data.educationGraduationYear != null ? String(data.educationGraduationYear) : '',
+        )
       })
       .catch((error) => {
         if (!cancelled) {
@@ -229,6 +261,29 @@ export default function CandidateProfilePage() {
       setPrefsError(error instanceof ApiError ? error.message : t('profile.saveError'))
     } finally {
       setSavingPrefs(false)
+    }
+  }
+
+  async function handleSaveBackground() {
+    setBackgroundError(null)
+    setSavingBackground(true)
+    try {
+      const updated = await candidateApi.updateBackground({
+        yearsOfExperience: parseOptionalNumber(yearsOfExperience),
+        currentSalaryLakhs: parseOptionalNumber(currentSalary),
+        noticePeriod: noticePeriod ? noticePeriodToBackend(noticePeriod) : null,
+        educationDegree: educationDegree || null,
+        educationInstitution: educationInstitution || null,
+        educationGraduationYear: parseOptionalNumber(educationGraduationYear),
+      })
+      setProfile(updated)
+      useCandidateProfileStore.getState().setProfile(updated)
+      setSavedBackground(true)
+      setTimeout(() => setSavedBackground(false), 2000)
+    } catch (error) {
+      setBackgroundError(error instanceof ApiError ? error.message : t('profile.saveError'))
+    } finally {
+      setSavingBackground(false)
     }
   }
 
@@ -501,6 +556,120 @@ export default function CandidateProfilePage() {
               error={skillsError ?? undefined}
               removeSkillLabel={(skill) => t('profile.removeSkill', { skill })}
             />
+          </Card>
+
+          <Card id="background" className="mb-[18px] p-[26px]">
+            <h2 className="mb-1.5 text-base font-bold text-ink">{t('profile.nav.background')}</h2>
+            <p className="mb-3.5 text-[13px] text-fog">{t('profile.backgroundBody')}</p>
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div className="flex flex-col">
+                <label
+                  htmlFor="yearsOfExperience"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.yearsOfExperience')}
+                </label>
+                <input
+                  id="yearsOfExperience"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={yearsOfExperience}
+                  onChange={(event) => setYearsOfExperience(event.target.value)}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="currentSalary" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.currentSalary')}
+                </label>
+                <input
+                  id="currentSalary"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={currentSalary}
+                  onChange={(event) => setCurrentSalary(event.target.value)}
+                  placeholder={t('profile.fields.currentSalaryPlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="noticePeriod" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.noticePeriod')}
+                </label>
+                <select
+                  id="noticePeriod"
+                  value={noticePeriod}
+                  onChange={(event) =>
+                    setNoticePeriod(event.target.value as NoticePeriodLabel | '')
+                  }
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                >
+                  <option value="">{t('profile.fields.noticePeriodPlaceholder')}</option>
+                  {NOTICE_PERIODS.map((period) => (
+                    <option key={period} value={period}>
+                      {period}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="educationDegree" className="mb-1.5 text-[13px] font-bold text-ink">
+                  {t('profile.fields.educationDegree')}
+                </label>
+                <input
+                  id="educationDegree"
+                  value={educationDegree}
+                  onChange={(event) => setEducationDegree(event.target.value)}
+                  placeholder={t('profile.fields.educationDegreePlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="educationInstitution"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.educationInstitution')}
+                </label>
+                <input
+                  id="educationInstitution"
+                  value={educationInstitution}
+                  onChange={(event) => setEducationInstitution(event.target.value)}
+                  placeholder={t('profile.fields.educationInstitutionPlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="educationGraduationYear"
+                  className="mb-1.5 text-[13px] font-bold text-ink"
+                >
+                  {t('profile.fields.educationGraduationYear')}
+                </label>
+                <input
+                  id="educationGraduationYear"
+                  type="number"
+                  min={1950}
+                  max={2100}
+                  step={1}
+                  value={educationGraduationYear}
+                  onChange={(event) => setEducationGraduationYear(event.target.value)}
+                  placeholder={t('profile.fields.educationGraduationYearPlaceholder')}
+                  className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+            </div>
+            {backgroundError && <p className="mt-3.5 text-[13px] text-danger">{backgroundError}</p>}
+            <div className="mt-[18px] flex items-center gap-3">
+              <Button type="button" onClick={handleSaveBackground} loading={savingBackground}>
+                {t('profile.saveChanges')}
+              </Button>
+              {savedBackground && (
+                <span className="text-sm font-semibold text-teal">{t('profile.saved')}</span>
+              )}
+            </div>
           </Card>
 
           <Card id="goals" className="mb-[18px] p-[26px]">

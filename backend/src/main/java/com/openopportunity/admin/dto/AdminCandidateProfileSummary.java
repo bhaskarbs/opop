@@ -1,7 +1,9 @@
 package com.openopportunity.admin.dto;
 
 import com.openopportunity.auth.AccountStatus;
+import com.openopportunity.auth.NoticePeriod;
 import com.openopportunity.job.ExperienceLevel;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -30,5 +32,11 @@ public record AdminCandidateProfileSummary(
         String workCulture,
         String workModePreference,
         String openToPreference,
+        BigDecimal yearsOfExperience,
+        BigDecimal currentSalaryLakhs,
+        NoticePeriod noticePeriod,
+        String educationDegree,
+        String educationInstitution,
+        Integer educationGraduationYear,
         Instant featuredAt,
         Instant createdAt) {}
