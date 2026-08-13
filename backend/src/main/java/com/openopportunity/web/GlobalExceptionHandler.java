@@ -67,6 +67,9 @@ import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReac
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
 import com.openopportunity.notification.exception.NotificationNotFoundException;
+import com.openopportunity.sharedvideo.exception.AdminSharedVideoNotFoundException;
+import com.openopportunity.sharedvideo.exception.InvalidSharedVideoException;
+import com.openopportunity.sharedvideo.exception.SharedVideoLinkNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -412,6 +415,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotificationNotFoundException.class)
     public ResponseEntity<ApiError> handleNotificationNotFound(NotificationNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(AdminSharedVideoNotFoundException.class)
+    public ResponseEntity<ApiError> handleAdminSharedVideoNotFound(AdminSharedVideoNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidSharedVideoException.class)
+    public ResponseEntity<ApiError> handleInvalidSharedVideo(InvalidSharedVideoException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(SharedVideoLinkNotFoundException.class)
+    public ResponseEntity<ApiError> handleSharedVideoLinkNotFound(SharedVideoLinkNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 

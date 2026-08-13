@@ -126,7 +126,15 @@ export default function AdminDashboardPage() {
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
-      <h1 className="mb-5 text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2.5">
+        <h1 className="text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
+        <Link
+          to={localize(ROUTES.adminVideos)}
+          className="text-[13px] font-bold text-primary no-underline"
+        >
+          {t('dashboard.manageVideos')}
+        </Link>
+      </div>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
         {kpis.map((kpi) => (

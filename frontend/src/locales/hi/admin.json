@@ -15,6 +15,7 @@
   },
   "dashboard": {
     "title": "प्लेटफ़ॉर्म का अवलोकन",
+    "manageVideos": "वीडियो प्रबंधित करें →",
     "kpis": {
       "totalCandidates": "कुल उम्मीदवार",
       "registeredCompanies": "पंजीकृत कंपनियां",
@@ -359,5 +360,34 @@
     "previousPage": "← पिछला",
     "nextPage": "अगला →",
     "pageLabel": "पृष्ठ {{page}} / {{total}}"
+  },
+  "videos": {
+    "title": "वीडियो",
+    "subtitle": "एक वीडियो अपलोड करें और किसी के भी साथ एक यूनिक, ट्रैक करने योग्य लिंक साझा करें।",
+    "loading": "वीडियो लोड हो रहे हैं…",
+    "loadError": "वीडियो लोड नहीं हो सके।",
+    "uploadError": "यह वीडियो अपलोड नहीं हो सका।",
+    "shareError": "यह शेयर लिंक नहीं बनाया जा सका।",
+    "uploadHeading": "वीडियो अपलोड करें",
+    "chooseFile": "वीडियो फ़ाइल चुनें",
+    "titleField": "शीर्षक",
+    "upload": "अपलोड करें",
+    "empty": "अभी तक कोई वीडियो अपलोड नहीं किया गया।",
+    "sharedCount": "{{count}} लोगों के साथ साझा किया गया",
+    "viewShares": "शेयर देखें",
+    "hideShares": "शेयर छिपाएं",
+    "share": "शेयर करें",
+    "delete": "हटाएं",
+    "noShares": "अभी तक किसी के साथ साझा नहीं किया गया।",
+    "watchedPercent": "{{percent}}% देखा गया",
+    "watchedSeconds": "{{seconds}} सेकंड देखा गया",
+    "viewCount": "{{count}} बार खोला गया",
+    "close": "बंद करें",
+    "shareSuccess": "लिंक बना दिया गया है और प्राप्तकर्ता को ईमेल कर दिया गया है।",
+    "shareUrlField": "शेयर करने योग्य लिंक",
+    "done": "हो गया",
+    "recipientNameField": "प्राप्तकर्ता का नाम",
+    "recipientEmailField": "प्राप्तकर्ता का ईमेल",
+    "generateAndSend": "लिंक बनाएं और ईमेल करें"
   }
 }

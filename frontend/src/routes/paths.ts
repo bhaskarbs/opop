@@ -6,6 +6,9 @@ export const ROUTES = {
   home: '/',
   jobs: '/jobs',
   jobDetail: (jobId: string) => `/jobs/${jobId}`,
+  // Public — a share-token URL emailed to an external recipient, not linked from any nav (see
+  // AdminVideosPage/WatchSharedVideoPage). No auth: the token itself is the access control.
+  watchSharedVideo: (token: string) => `/watch/${token}`,
   partnerships: '/partnerships',
   // Public — reachable by anyone, but deliberately not linked from any nav (see IdeasBrowsePage).
   ideasBrowse: '/partnerships/ideas',
@@ -62,6 +65,7 @@ export const ROUTES = {
   adminBilling: '/admin/billing',
   adminJobs: '/admin/jobs',
   adminIdeas: '/admin/ideas',
+  adminVideos: '/admin/videos',
 } as const
 
 /** MyIdeasPage/IdeaSubmitPage are mounted twice — once under /candidate, once under /company

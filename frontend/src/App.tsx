@@ -82,6 +82,8 @@ const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'))
 const AdminBillingPage = lazy(() => import('./pages/admin/AdminBillingPage'))
 const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'))
 const AdminIdeasPage = lazy(() => import('./pages/admin/AdminIdeasPage'))
+const AdminVideosPage = lazy(() => import('./pages/admin/AdminVideosPage'))
+const WatchSharedVideoPage = lazy(() => import('./pages/WatchSharedVideoPage'))
 
 /** Every route lives under a `/:lang` prefix (see docs/DEVELOPMENT_ROADMAP.md Step 23). An
  * unrecognized or missing lang segment is treated as a path with no locale at all — e.g.
@@ -232,9 +234,14 @@ function App() {
                   <Route path="admin/billing" element={<AdminBillingPage />} />
                   <Route path="admin/jobs" element={<AdminJobsPage />} />
                   <Route path="admin/ideas" element={<AdminIdeasPage />} />
+                  <Route path="admin/videos" element={<AdminVideosPage />} />
                 </Route>
               </Route>
             </Route>
+
+            {/* Deliberately outside PublicLayout — no site nav/footer for an external recipient
+                who opened an emailed link, just the video (see WatchSharedVideoPage). */}
+            <Route path="watch/:token" element={<WatchSharedVideoPage />} />
 
             <Route path="dev/style-guide" element={<StyleGuidePage />} />
             <Route path="*" element={<NotFoundPage />} />
