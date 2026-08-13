@@ -77,6 +77,12 @@ public class SecurityConfig {
                                 // Security. See RazorpayWebhookController.
                                 "/api/webhooks/razorpay")
                         .permitAll()
+                        // The whole shared-video watch experience is unauthenticated by design —
+                        // an external recipient (SharedVideoController) has only the share token
+                        // itself, never a login. Covers metadata/video/progress, GET and POST
+                        // alike, unlike the narrower single-path GET rules below.
+                        .requestMatchers("/api/shared-videos/**")
+                        .permitAll()
                         // Public so a plain <img src> can load it with no bearer token — see
                         // CandidatePhotoController. Distinct from the singular "/api/candidate/**"
                         // (that candidate's own authenticated profile) below.

@@ -51,6 +51,12 @@ http {
   server {
     listen 80;
 
+    # Matches AdminVideoService.MAX_VIDEO_SIZE_BYTES (150MB) — without this nginx's default 1MB
+    # limit rejects any real video upload with a raw HTML 413 page before it ever reaches Spring
+    # Boot, which the frontend then can't parse as JSON (surfaces as the generic upload-failed
+    # fallback message instead of a real validation error).
+    client_max_body_size 150m;
+
     location / {
       proxy_pass http://backend;
       proxy_set_header Host $host;

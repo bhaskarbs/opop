@@ -15,6 +15,7 @@
   },
   "dashboard": {
     "title": "Platform overview",
+    "manageVideos": "Manage videos →",
     "kpis": {
       "totalCandidates": "Total candidates",
       "registeredCompanies": "Registered companies",
@@ -359,5 +360,34 @@
     "previousPage": "← Previous",
     "nextPage": "Next →",
     "pageLabel": "Page {{page}} of {{total}}"
+  },
+  "videos": {
+    "title": "Videos",
+    "subtitle": "Upload a video and share a unique, trackable link with anyone.",
+    "loading": "Loading videos…",
+    "loadError": "Could not load videos.",
+    "uploadError": "Could not upload this video.",
+    "shareError": "Could not create this share link.",
+    "uploadHeading": "Upload a video",
+    "chooseFile": "Choose video file",
+    "titleField": "Title",
+    "upload": "Upload",
+    "empty": "No videos uploaded yet.",
+    "sharedCount": "shared with {{count}} people",
+    "viewShares": "View shares",
+    "hideShares": "Hide shares",
+    "share": "Share",
+    "delete": "Delete",
+    "noShares": "Not shared with anyone yet.",
+    "watchedPercent": "{{percent}}% watched",
+    "watchedSeconds": "{{seconds}}s watched",
+    "viewCount": "opened {{count}} times",
+    "close": "Close",
+    "shareSuccess": "Link created and emailed to the recipient.",
+    "shareUrlField": "Shareable link",
+    "done": "Done",
+    "recipientNameField": "Recipient name",
+    "recipientEmailField": "Recipient email",
+    "generateAndSend": "Generate link & email it"
   }
 }

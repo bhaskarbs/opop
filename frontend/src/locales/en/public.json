@@ -232,5 +232,9 @@
         "error": "Couldn't send your request. Please try again."
       }
     }
+  },
+  "watchVideo": {
+    "loading": "Loading video…",
+    "loadError": "This link is invalid or has expired."
   }
 }
