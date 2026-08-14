@@ -59,4 +59,9 @@ export const adminVideoApi = {
     request<AdminVideoShareSummary[]>(`/api/admin/videos/${videoId}/shares`, {
       headers: authHeaders(),
     }),
+  deleteShare: (videoId: string, shareId: string) =>
+    request<void>(`/api/admin/videos/${videoId}/shares/${shareId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }),
 }

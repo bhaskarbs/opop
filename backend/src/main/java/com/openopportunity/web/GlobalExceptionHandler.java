@@ -68,6 +68,7 @@ import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundE
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
 import com.openopportunity.notification.exception.NotificationNotFoundException;
 import com.openopportunity.sharedvideo.exception.AdminSharedVideoNotFoundException;
+import com.openopportunity.sharedvideo.exception.AdminVideoShareNotFoundException;
 import com.openopportunity.sharedvideo.exception.InvalidSharedVideoException;
 import com.openopportunity.sharedvideo.exception.SharedVideoLinkNotFoundException;
 import java.time.Instant;
@@ -420,6 +421,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AdminSharedVideoNotFoundException.class)
     public ResponseEntity<ApiError> handleAdminSharedVideoNotFound(AdminSharedVideoNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(AdminVideoShareNotFoundException.class)
+    public ResponseEntity<ApiError> handleAdminVideoShareNotFound(AdminVideoShareNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 

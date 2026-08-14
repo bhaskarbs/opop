@@ -16,6 +16,7 @@ import com.openopportunity.sharedvideo.dto.AdminSharedVideoSummary;
 import com.openopportunity.sharedvideo.dto.AdminVideoShareSummary;
 import com.openopportunity.sharedvideo.dto.CreateVideoShareRequest;
 import com.openopportunity.sharedvideo.exception.AdminSharedVideoNotFoundException;
+import com.openopportunity.sharedvideo.exception.AdminVideoShareNotFoundException;
 import com.openopportunity.sharedvideo.exception.InvalidSharedVideoException;
 import com.openopportunity.storage.FileStorageService;
 import java.util.List;
@@ -148,6 +149,41 @@ class AdminVideoServiceTest {
 
         assertThatThrownBy(() -> service.createShare(videoId, new CreateVideoShareRequest("A", "a@example.com")))
                 .isInstanceOf(AdminSharedVideoNotFoundException.class);
+    }
+
+    @Test
+    void deleteShareRemovesTheShareRow() {
+        AdminVideoService service = service();
+        UUID videoId = UUID.randomUUID();
+        AdminVideoShare share = new AdminVideoShare(videoId, "Rohan", "rohan@example.com", "tok-1");
+        when(shareRepository.findById(share.getId())).thenReturn(Optional.of(share));
+
+        service.deleteShare(videoId, share.getId());
+
+        verify(shareRepository).delete(share);
+    }
+
+    @Test
+    void deleteShareRejectsAnUnknownShare() {
+        AdminVideoService service = service();
+        UUID videoId = UUID.randomUUID();
+        UUID shareId = UUID.randomUUID();
+        when(shareRepository.findById(shareId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.deleteShare(videoId, shareId))
+                .isInstanceOf(AdminVideoShareNotFoundException.class);
+    }
+
+    @Test
+    void deleteShareRejectsAShareThatBelongsToADifferentVideo() {
+        AdminVideoService service = service();
+        UUID otherVideoId = UUID.randomUUID();
+        AdminVideoShare share = new AdminVideoShare(otherVideoId, "Rohan", "rohan@example.com", "tok-1");
+        when(shareRepository.findById(share.getId())).thenReturn(Optional.of(share));
+
+        assertThatThrownBy(() -> service.deleteShare(UUID.randomUUID(), share.getId()))
+                .isInstanceOf(AdminVideoShareNotFoundException.class);
+        verify(shareRepository, never()).delete(any());
     }
 
     @Test

@@ -378,6 +378,7 @@
     "hideShares": "शेयर छिपाएं",
     "share": "शेयर करें",
     "delete": "हटाएं",
+    "deleteShare": "लिंक हटाएं",
     "noShares": "अभी तक किसी के साथ साझा नहीं किया गया।",
     "watchedPercent": "{{percent}}% देखा गया",
     "watchedSeconds": "{{seconds}} सेकंड देखा गया",
