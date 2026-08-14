@@ -235,6 +235,10 @@
       "yearToDate": "Year to date"
     },
     "exportCsv": "Export CSV",
+    "export": {
+      "metric": "Metric",
+      "value": "Value"
+    },
     "candidates": {
       "totalRegistered": "Total registered",
       "resumesUploaded": "Resumes uploaded",

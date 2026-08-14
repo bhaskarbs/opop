@@ -1,5 +1,7 @@
 package com.openopportunity.admin;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,6 +20,7 @@ import com.openopportunity.idea.IdeaInterestRepository;
 import com.openopportunity.idea.IdeaRepository;
 import com.openopportunity.job.JobRepository;
 import com.openopportunity.mockinterview.MockInterviewSessionRepository;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -135,13 +138,39 @@ class AdminReportsServiceCachingTest {
         when(mockInterviewSessionRepository.count()).thenReturn(340L);
 
         AdminReportsService service = context.getBean(AdminReportsService.class);
-        service.getCandidateStats();
-        service.getCandidateStats();
-        service.getCandidateStats();
+        service.getCandidateStats(null);
+        service.getCandidateStats(null);
+        service.getCandidateStats(null);
 
         verify(userRepository, times(1)).countByRole(UserRole.CANDIDATE);
         verify(candidateProfileRepository, times(1)).countByResumeStorageKeyIsNotNull();
         verify(mockInterviewSessionRepository, times(1)).count();
+    }
+
+    @Test
+    void getCandidateStatsCachesEachDaysValueSeparately() {
+        context = new AnnotationConfigApplicationContext(TestConfig.class);
+        UserRepository userRepository = context.getBean(UserRepository.class);
+        CandidateProfileRepository candidateProfileRepository =
+                context.getBean(CandidateProfileRepository.class);
+        MockInterviewSessionRepository mockInterviewSessionRepository =
+                context.getBean(MockInterviewSessionRepository.class);
+        when(userRepository.countByRoleAndCreatedAtAfter(eq(UserRole.CANDIDATE), any(Instant.class)))
+                .thenReturn(12L);
+        when(candidateProfileRepository.countByResumeStorageKeyIsNotNullAndResumeUploadedAtAfter(
+                        any(Instant.class)))
+                .thenReturn(9L);
+        when(mockInterviewSessionRepository.countByRecordedAtAfter(any(Instant.class))).thenReturn(34L);
+
+        AdminReportsService service = context.getBean(AdminReportsService.class);
+        service.getCandidateStats(30);
+        service.getCandidateStats(30);
+        service.getCandidateStats(90);
+
+        verify(userRepository, times(2)).countByRoleAndCreatedAtAfter(eq(UserRole.CANDIDATE), any(Instant.class));
+        verify(candidateProfileRepository, times(2))
+                .countByResumeStorageKeyIsNotNullAndResumeUploadedAtAfter(any(Instant.class));
+        verify(mockInterviewSessionRepository, times(2)).countByRecordedAtAfter(any(Instant.class));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.openopportunity.auth;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmailAndRole(String email, UserRole role);
 
     long countByRole(UserRole role);
+
+    long countByRoleAndCreatedAtAfter(UserRole role, Instant since);
 
     /** Exactly one admin exists in practice (see AdminSeeder — no self-registration flow), but
      * NotificationService.notifyAdmins fans out to every match rather than assuming that. */

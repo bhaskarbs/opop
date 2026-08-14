@@ -23,6 +23,8 @@ import com.openopportunity.job.Job;
 import com.openopportunity.job.JobRepository;
 import com.openopportunity.job.JobStatus;
 import com.openopportunity.mockinterview.MockInterviewSessionRepository;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -75,13 +77,27 @@ public class AdminReportsService {
         this.jobRepository = jobRepository;
     }
 
-    @Cacheable("adminCandidateStats")
+    /** days == null means all-time (the original, unfiltered behavior) — the reports page's
+     * date-range dropdown always sends a value in practice, but this stays callable without one
+     * so "all time" doesn't need a magic sentinel like Integer.MAX_VALUE. Keyed by days so each
+     * distinct range gets its own 60s-TTL cache entry rather than colliding on one. */
+    // Spring's default key generation rejects a literal null key outright ("Null key returned
+    // for cache operation") — the ternary keeps "all time" (days == null) as its own valid,
+    // stable cache entry instead of a magic sentinel int.
+    @Cacheable(value = "adminCandidateStats", key = "#days == null ? 'all' : #days")
     @Transactional(readOnly = true)
-    public AdminCandidateReportStats getCandidateStats() {
+    public AdminCandidateReportStats getCandidateStats(Integer days) {
+        if (days == null) {
+            return new AdminCandidateReportStats(
+                    userRepository.countByRole(UserRole.CANDIDATE),
+                    candidateProfileRepository.countByResumeStorageKeyIsNotNull(),
+                    mockInterviewSessionRepository.count());
+        }
+        Instant since = Instant.now().minus(days, ChronoUnit.DAYS);
         return new AdminCandidateReportStats(
-                userRepository.countByRole(UserRole.CANDIDATE),
-                candidateProfileRepository.countByResumeStorageKeyIsNotNull(),
-                mockInterviewSessionRepository.count());
+                userRepository.countByRoleAndCreatedAtAfter(UserRole.CANDIDATE, since),
+                candidateProfileRepository.countByResumeStorageKeyIsNotNullAndResumeUploadedAtAfter(since),
+                mockInterviewSessionRepository.countByRecordedAtAfter(since));
     }
 
     /** "Seminars held" and "Avg. partnership duration" are deliberately not here — there's no

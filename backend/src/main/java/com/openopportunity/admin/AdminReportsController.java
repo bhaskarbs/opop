@@ -8,6 +8,7 @@ import com.openopportunity.admin.dto.AdminPartnershipReportStats;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -21,8 +22,8 @@ public class AdminReportsController {
     }
 
     @GetMapping("/candidates")
-    public AdminCandidateReportStats candidates() {
-        return adminReportsService.getCandidateStats();
+    public AdminCandidateReportStats candidates(@RequestParam(required = false) Integer days) {
+        return adminReportsService.getCandidateStats(days);
     }
 
     @GetMapping("/employers")

@@ -1,5 +1,6 @@
 package com.openopportunity.auth;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -15,4 +16,6 @@ public interface CandidateProfileRepository
     List<CandidateProfile> findByUserIdIn(Collection<UUID> userIds);
 
     long countByResumeStorageKeyIsNotNull();
+
+    long countByResumeStorageKeyIsNotNullAndResumeUploadedAtAfter(Instant since);
 }
