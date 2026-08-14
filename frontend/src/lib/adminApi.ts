@@ -265,8 +265,11 @@ function buildMockInterviewQuestionQuery(params: MockInterviewQuestionListParams
 export const adminApi = {
   getDashboardStats: () =>
     request<AdminDashboardStats>('/api/admin/dashboard/stats', { headers: authHeaders() }),
-  getCandidateReportStats: () =>
-    request<AdminCandidateReportStats>('/api/admin/reports/candidates', { headers: authHeaders() }),
+  getCandidateReportStats: (days?: number) =>
+    request<AdminCandidateReportStats>(
+      `/api/admin/reports/candidates${days != null ? `?days=${days}` : ''}`,
+      { headers: authHeaders() },
+    ),
   getEmployerReportStats: () =>
     request<AdminEmployerReportStats>('/api/admin/reports/employers', { headers: authHeaders() }),
   getPartnershipReportStats: () =>

@@ -235,6 +235,10 @@
       "yearToDate": "वर्ष की शुरुआत से अब तक"
     },
     "exportCsv": "CSV एक्सपोर्ट करें",
+    "export": {
+      "metric": "मेट्रिक",
+      "value": "मान"
+    },
     "candidates": {
       "totalRegistered": "कुल पंजीकृत",
       "resumesUploaded": "अपलोड किए गए रिज़्यूमे",

@@ -2,6 +2,7 @@ package com.openopportunity.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.admin.dto.AdminCandidateReportStats;
@@ -31,6 +32,7 @@ import com.openopportunity.job.JobRepository;
 import com.openopportunity.job.JobStatus;
 import com.openopportunity.job.WorkMode;
 import com.openopportunity.mockinterview.MockInterviewSessionRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,16 +92,31 @@ class AdminReportsServiceTest {
     }
 
     @Test
-    void getCandidateStatsCombinesRegisteredResumesAndMockInterviewCounts() {
+    void getCandidateStatsCombinesRegisteredResumesAndMockInterviewCountsWhenDaysIsNull() {
         when(userRepository.countByRole(UserRole.CANDIDATE)).thenReturn(120L);
         when(candidateProfileRepository.countByResumeStorageKeyIsNotNull()).thenReturn(95L);
         when(mockInterviewSessionRepository.count()).thenReturn(340L);
 
-        AdminCandidateReportStats stats = adminReportsService.getCandidateStats();
+        AdminCandidateReportStats stats = adminReportsService.getCandidateStats(null);
 
         assertThat(stats.totalRegistered()).isEqualTo(120L);
         assertThat(stats.resumesUploaded()).isEqualTo(95L);
         assertThat(stats.mockInterviewsTaken()).isEqualTo(340L);
+    }
+
+    @Test
+    void getCandidateStatsUsesDateBoundedCountsWhenDaysIsGiven() {
+        when(userRepository.countByRoleAndCreatedAtAfter(eq(UserRole.CANDIDATE), any(Instant.class)))
+                .thenReturn(12L);
+        when(candidateProfileRepository.countByResumeStorageKeyIsNotNullAndResumeUploadedAtAfter(any(Instant.class)))
+                .thenReturn(9L);
+        when(mockInterviewSessionRepository.countByRecordedAtAfter(any(Instant.class))).thenReturn(34L);
+
+        AdminCandidateReportStats stats = adminReportsService.getCandidateStats(30);
+
+        assertThat(stats.totalRegistered()).isEqualTo(12L);
+        assertThat(stats.resumesUploaded()).isEqualTo(9L);
+        assertThat(stats.mockInterviewsTaken()).isEqualTo(34L);
     }
 
     @Test

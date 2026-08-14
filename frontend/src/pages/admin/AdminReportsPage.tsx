@@ -104,6 +104,41 @@ function formatSubmittedDate(locale: string, submittedAt: string): string {
   })
 }
 
+// Fixed lookback windows the backend can filter by ("N days ago" is all
+// AdminReportsService.getCandidateStats needs) — "year to date" is computed here rather than
+// passed as a distinct backend concept, since "days since Jan 1" already expresses it exactly.
+function yearToDateDays(): number {
+  const now = new Date()
+  const startOfYear = new Date(now.getFullYear(), 0, 1)
+  return Math.max(1, Math.ceil((now.getTime() - startOfYear.getTime()) / 86_400_000))
+}
+
+const DATE_RANGE_OPTIONS: Array<{ labelKey: string; days: number }> = [
+  { labelKey: 'reports.dateRange.last30Days', days: 30 },
+  { labelKey: 'reports.dateRange.last90Days', days: 90 },
+  { labelKey: 'reports.dateRange.last6Months', days: 182 },
+  { labelKey: 'reports.dateRange.yearToDate', days: yearToDateDays() },
+]
+
+function csvEscape(value: string | number): string {
+  const str = String(value)
+  return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+}
+
+function toCsv(rows: (string | number)[][]): string {
+  return rows.map((row) => row.map(csvEscape).join(',')).join('\r\n')
+}
+
+function downloadCsv(filename: string, rows: (string | number)[][]) {
+  const blob = new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 function financialKpis(stats: AdminFinancialReportStats | null): Kpi[] {
   return [
     {
@@ -162,6 +197,7 @@ function KpiRow({ t, kpis }: { t: TFunction<'admin'>; kpis: Kpi[] }) {
 export default function AdminReportsPage() {
   const { t, i18n } = useTranslation('admin')
   const [tab, setTab] = useState<Tab>('candidates')
+  const [days, setDays] = useState<number>(DATE_RANGE_OPTIONS[0].days)
   const [candidateStats, setCandidateStats] = useState<AdminCandidateReportStats | null>(null)
   const [employerStats, setEmployerStats] = useState<AdminEmployerReportStats | null>(null)
   const [partnershipStats, setPartnershipStats] = useState<AdminPartnershipReportStats | null>(null)
@@ -170,14 +206,17 @@ export default function AdminReportsPage() {
   >(null)
   const [financialStats, setFinancialStats] = useState<AdminFinancialReportStats | null>(null)
 
+  // Only the candidates tab's backend query is actually date-bounded today (see
+  // AdminReportsService.getCandidateStats) — the other tabs' report methods don't take a days
+  // param, so the dropdown doesn't affect them yet.
   useEffect(() => {
     adminApi
-      .getCandidateReportStats()
+      .getCandidateReportStats(days)
       .then(setCandidateStats)
       .catch(() => {
         // Best-effort — the KPI cards just stay blank if this fails.
       })
-  }, [])
+  }, [days])
 
   useEffect(() => {
     adminApi
@@ -215,6 +254,81 @@ export default function AdminReportsPage() {
       })
   }, [])
 
+  function buildExportRows(): (string | number)[][] {
+    switch (tab) {
+      case 'candidates':
+        return [
+          [t('reports.export.metric'), t('reports.export.value')],
+          ...candidateKpis(candidateStats).map((kpi) => [t(kpi.labelKey), kpi.value]),
+        ]
+      case 'employers':
+        return [
+          [t('reports.export.metric'), t('reports.export.value')],
+          ...employerKpis(employerStats).map((kpi) => [t(kpi.labelKey), kpi.value]),
+          [],
+          [
+            t('reports.employers.table.sector'),
+            t('reports.employers.table.openJobs'),
+            t('reports.employers.table.applications'),
+          ],
+          ...(employerStats?.topHiringSectors ?? []).map((sector) => [
+            sector.sector,
+            sector.openJobs,
+            sector.applications,
+          ]),
+        ]
+      case 'partnerships':
+        return [
+          [t('reports.export.metric'), t('reports.export.value')],
+          ...partnershipKpis(partnershipStats).map((kpi) => [t(kpi.labelKey), kpi.value]),
+          [],
+          [t('reports.export.metric'), t('reports.export.value')],
+          ...(partnershipStats ? partnershipTracks(partnershipStats) : []).map((track) => [
+            t(track.labelKey),
+            track.value,
+          ]),
+        ]
+      case 'community':
+        return [
+          [
+            t('reports.community.table.name'),
+            t('reports.community.table.company'),
+            t('reports.community.table.email'),
+            t('reports.community.table.phone'),
+            t('reports.community.table.submitted'),
+          ],
+          ...(communitySubmissions ?? []).map((submission) => [
+            submission.name,
+            submission.companyName ?? t('reports.community.notProvided'),
+            submission.email,
+            submission.phone ?? t('reports.community.notProvided'),
+            formatSubmittedDate(i18n.language, submission.submittedAt),
+          ]),
+        ]
+      case 'financial':
+        return [
+          [t('reports.export.metric'), t('reports.export.value')],
+          ...financialKpis(financialStats).map((kpi) => [t(kpi.labelKey), kpi.value]),
+          [],
+          [
+            t('reports.financial.table.source'),
+            t('reports.financial.table.amount'),
+            t('reports.financial.table.share'),
+          ],
+          ...(financialStats ? financialRevenueRows(financialStats) : []).map((row) => [
+            t(row.labelKey),
+            row.amount,
+            `${row.share}%`,
+          ]),
+        ]
+    }
+  }
+
+  function handleExportCsv() {
+    const dateStamp = new Date().toISOString().slice(0, 10)
+    downloadCsv(`openopportunity-${tab}-report-${dateStamp}.csv`, buildExportRows())
+  }
+
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -223,14 +337,20 @@ export default function AdminReportsPage() {
           <p className="text-sm text-slate">{t('reports.subtitle')}</p>
         </div>
         <div className="flex flex-wrap gap-2.5">
-          <select className="rounded-lg border border-border bg-surface px-3 py-2.5 text-[13.5px] text-ink">
-            <option>{t('reports.dateRange.last30Days')}</option>
-            <option>{t('reports.dateRange.last90Days')}</option>
-            <option>{t('reports.dateRange.last6Months')}</option>
-            <option>{t('reports.dateRange.yearToDate')}</option>
+          <select
+            value={days}
+            onChange={(event) => setDays(Number(event.target.value))}
+            className="rounded-lg border border-border bg-surface px-3 py-2.5 text-[13.5px] text-ink"
+          >
+            {DATE_RANGE_OPTIONS.map((option) => (
+              <option key={option.labelKey} value={option.days}>
+                {t(option.labelKey)}
+              </option>
+            ))}
           </select>
           <button
             type="button"
+            onClick={handleExportCsv}
             className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-[18px] py-2.5 text-[13.5px] font-bold text-ink"
           >
             <svg

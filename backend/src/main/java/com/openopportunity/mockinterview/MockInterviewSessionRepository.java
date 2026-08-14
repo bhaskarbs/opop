@@ -1,5 +1,6 @@
 package com.openopportunity.mockinterview;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,8 @@ public interface MockInterviewSessionRepository extends JpaRepository<MockInterv
     List<MockInterviewSession> findByCandidateIdAndVisibleToCompaniesTrueOrderByRecordedAtDesc(UUID candidateId);
 
     long countByCandidateId(UUID candidateId);
+
+    long countByRecordedAtAfter(Instant since);
 
     // Used only by admin hard-delete (AdminAccountDeletionService#deleteCandidate) — the caller
     // must delete each session's video/thumbnail files (via FileStorageService) before calling
