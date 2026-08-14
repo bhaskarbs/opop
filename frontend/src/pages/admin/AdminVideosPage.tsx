@@ -335,7 +335,9 @@ export default function AdminVideosPage() {
                               <div>
                                 {share.watchedPercent != null
                                   ? t('videos.watchedPercent', { percent: share.watchedPercent })
-                                  : t('videos.watchedSeconds', { seconds: share.maxWatchedSeconds })}
+                                  : t('videos.watchedSeconds', {
+                                      seconds: share.maxWatchedSeconds,
+                                    })}
                               </div>
                               <div className="text-fog">
                                 {t('videos.viewCount', { count: share.viewCount })}
