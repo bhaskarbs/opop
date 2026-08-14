@@ -208,7 +208,7 @@ class AdminReportsServiceTest {
         when(jobRepository.findByStatus(JobStatus.ACTIVE)).thenReturn(List.of(techJob1, techJob2, fintechJob));
         when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of(techProfile, fintechProfile));
 
-        AdminEmployerReportStats stats = adminReportsService.getEmployerStats();
+        AdminEmployerReportStats stats = adminReportsService.getEmployerStats(null);
 
         assertThat(stats.registeredCompanies()).isEqualTo(2L);
         assertThat(stats.verifiedCompanies()).isEqualTo(2L);
@@ -232,8 +232,34 @@ class AdminReportsServiceTest {
         when(jobRepository.findByStatus(JobStatus.ACTIVE)).thenReturn(List.of(orphanedJob));
         when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of(blankProfile));
 
-        AdminEmployerReportStats stats = adminReportsService.getEmployerStats();
+        AdminEmployerReportStats stats = adminReportsService.getEmployerStats(null);
 
         assertThat(stats.topHiringSectors()).containsExactly(new SectorHiringStats("Unspecified", 1, 2));
+    }
+
+    @Test
+    void getEmployerStatsUsesDateBoundedCountsAndSectorsWhenDaysIsGiven() {
+        UUID techCompanyId = UUID.randomUUID();
+        CompanyProfile techProfile = new CompanyProfile(
+                techCompanyId, "Private Limited", "CIN1", "GSTIN1", "PAN1", "Tech", "Address", "Signatory",
+                "9876543210", null);
+        Job techJob = activeJob(techCompanyId, 4);
+
+        when(companyProfileRepository.countByCreatedAtAfter(any(Instant.class))).thenReturn(5L);
+        when(companyProfileRepository.countByVerificationStatusAndCreatedAtAfter(
+                        eq(VerificationStatus.VERIFIED), any(Instant.class)))
+                .thenReturn(3L);
+        when(jobRepository.countByStatusAndCreatedAtAfter(eq(JobStatus.ACTIVE), any(Instant.class)))
+                .thenReturn(1L);
+        when(jobRepository.findByStatusAndCreatedAtAfter(eq(JobStatus.ACTIVE), any(Instant.class)))
+                .thenReturn(List.of(techJob));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of(techProfile));
+
+        AdminEmployerReportStats stats = adminReportsService.getEmployerStats(30);
+
+        assertThat(stats.registeredCompanies()).isEqualTo(5L);
+        assertThat(stats.verifiedCompanies()).isEqualTo(3L);
+        assertThat(stats.liveJobPostings()).isEqualTo(1L);
+        assertThat(stats.topHiringSectors()).containsExactly(new SectorHiringStats("Tech", 1, 4));
     }
 }

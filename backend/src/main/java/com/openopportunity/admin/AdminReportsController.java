@@ -27,8 +27,8 @@ public class AdminReportsController {
     }
 
     @GetMapping("/employers")
-    public AdminEmployerReportStats employers() {
-        return adminReportsService.getEmployerStats();
+    public AdminEmployerReportStats employers(@RequestParam(required = false) Integer days) {
+        return adminReportsService.getEmployerStats(days);
     }
 
     @GetMapping("/partnerships")

@@ -206,9 +206,9 @@ export default function AdminReportsPage() {
   >(null)
   const [financialStats, setFinancialStats] = useState<AdminFinancialReportStats | null>(null)
 
-  // Only the candidates tab's backend query is actually date-bounded today (see
-  // AdminReportsService.getCandidateStats) — the other tabs' report methods don't take a days
-  // param, so the dropdown doesn't affect them yet.
+  // Candidates and Employers & Jobs are date-bounded (see AdminReportsService.getCandidateStats/
+  // getEmployerStats) — Partnerships/Community/Financial don't take a days param yet, so the
+  // dropdown doesn't affect those tabs.
   useEffect(() => {
     adminApi
       .getCandidateReportStats(days)
@@ -220,12 +220,12 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     adminApi
-      .getEmployerReportStats()
+      .getEmployerReportStats(days)
       .then(setEmployerStats)
       .catch(() => {
         // Best-effort — the KPI cards/table just stay blank if this fails.
       })
-  }, [])
+  }, [days])
 
   useEffect(() => {
     adminApi

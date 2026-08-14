@@ -1,5 +1,6 @@
 package com.openopportunity.job;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,8 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
     long countByStatus(JobStatus status);
 
     List<Job> findByStatus(JobStatus status);
+
+    long countByStatusAndCreatedAtAfter(JobStatus status, Instant since);
+
+    List<Job> findByStatusAndCreatedAtAfter(JobStatus status, Instant since);
 }

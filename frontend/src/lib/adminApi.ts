@@ -252,6 +252,10 @@ function buildUserListQuery(params: AdminUserListParams): string {
   return query ? `?${query}` : ''
 }
 
+function daysQuery(days?: number): string {
+  return days != null ? `?days=${days}` : ''
+}
+
 function buildMockInterviewQuestionQuery(params: MockInterviewQuestionListParams): string {
   const search = new URLSearchParams()
   if (params.skill) search.set('skill', params.skill)
@@ -266,12 +270,13 @@ export const adminApi = {
   getDashboardStats: () =>
     request<AdminDashboardStats>('/api/admin/dashboard/stats', { headers: authHeaders() }),
   getCandidateReportStats: (days?: number) =>
-    request<AdminCandidateReportStats>(
-      `/api/admin/reports/candidates${days != null ? `?days=${days}` : ''}`,
-      { headers: authHeaders() },
-    ),
-  getEmployerReportStats: () =>
-    request<AdminEmployerReportStats>('/api/admin/reports/employers', { headers: authHeaders() }),
+    request<AdminCandidateReportStats>(`/api/admin/reports/candidates${daysQuery(days)}`, {
+      headers: authHeaders(),
+    }),
+  getEmployerReportStats: (days?: number) =>
+    request<AdminEmployerReportStats>(`/api/admin/reports/employers${daysQuery(days)}`, {
+      headers: authHeaders(),
+    }),
   getPartnershipReportStats: () =>
     request<AdminPartnershipReportStats>('/api/admin/reports/partnerships', {
       headers: authHeaders(),

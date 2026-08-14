@@ -1,5 +1,6 @@
 package com.openopportunity.auth;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -15,4 +16,8 @@ public interface CompanyProfileRepository extends JpaRepository<CompanyProfile, 
     List<CompanyProfile> findByUserIdIn(Collection<UUID> userIds);
 
     long countByVerificationStatus(VerificationStatus status);
+
+    long countByCreatedAtAfter(Instant since);
+
+    long countByVerificationStatusAndCreatedAtAfter(VerificationStatus status, Instant since);
 }

@@ -144,19 +144,39 @@ public class AdminReportsService {
 
     /** "Avg. time to fill" and a fill-rate column are deliberately not here — JobStatus has no
      * FILLED state (only DRAFT/PENDING_APPROVAL/ACTIVE/REJECTED/CLOSED), so there's no way to
-     * tell a CLOSED job was actually filled rather than cancelled or expired. */
-    @Cacheable("adminEmployerStats")
+     * tell a CLOSED job was actually filled rather than cancelled or expired.
+     *
+     * <p>days == null means all-time, same convention as getCandidateStats. When a range is
+     * given: registeredCompanies/verifiedCompanies are both bounded by CompanyProfile.createdAt
+     * — deliberately not User.createdAt, since a re-provisioned profile (see
+     * AuthService#loginWithGoogleAsCompany) gets a fresh CompanyProfile.createdAt independent of
+     * the original registration date, and mixing the two bases let verifiedCompanies read higher
+     * than registeredCompanies for the same window, which makes no sense to an admin reading the
+     * report. VerificationStatus has no separate "verified at" timestamp, so "verified companies
+     * in this window" reads as "of the companies whose profile dates into this window, how many
+     * are (now) verified" rather than "verified during this window". liveJobPostings/
+     * topHiringSectors are bounded by Job.createdAt (jobs that went live in this window and are
+     * still ACTIVE now, not a snapshot of every ACTIVE job regardless of age). */
+    @Cacheable(value = "adminEmployerStats", key = "#days == null ? 'all' : #days")
     @Transactional(readOnly = true)
-    public AdminEmployerReportStats getEmployerStats() {
+    public AdminEmployerReportStats getEmployerStats(Integer days) {
+        if (days == null) {
+            return new AdminEmployerReportStats(
+                    userRepository.countByRole(UserRole.COMPANY),
+                    companyProfileRepository.countByVerificationStatus(VerificationStatus.VERIFIED),
+                    jobRepository.countByStatus(JobStatus.ACTIVE),
+                    topHiringSectors(jobRepository.findByStatus(JobStatus.ACTIVE)));
+        }
+        Instant since = Instant.now().minus(days, ChronoUnit.DAYS);
         return new AdminEmployerReportStats(
-                userRepository.countByRole(UserRole.COMPANY),
-                companyProfileRepository.countByVerificationStatus(VerificationStatus.VERIFIED),
-                jobRepository.countByStatus(JobStatus.ACTIVE),
-                topHiringSectors());
+                companyProfileRepository.countByCreatedAtAfter(since),
+                companyProfileRepository.countByVerificationStatusAndCreatedAtAfter(
+                        VerificationStatus.VERIFIED, since),
+                jobRepository.countByStatusAndCreatedAtAfter(JobStatus.ACTIVE, since),
+                topHiringSectors(jobRepository.findByStatusAndCreatedAtAfter(JobStatus.ACTIVE, since)));
     }
 
-    private List<SectorHiringStats> topHiringSectors() {
-        List<Job> activeJobs = jobRepository.findByStatus(JobStatus.ACTIVE);
+    private List<SectorHiringStats> topHiringSectors(List<Job> activeJobs) {
         List<UUID> companyIds = activeJobs.stream().map(Job::getCompanyId).distinct().toList();
         Map<UUID, CompanyProfile> profilesByCompanyId = companyProfileRepository.findByUserIdIn(companyIds).stream()
                 .collect(Collectors.toMap(CompanyProfile::getUserId, profile -> profile));
