@@ -73,6 +73,7 @@ export default function AdminVideosPage() {
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null)
   const [shares, setShares] = useState<AdminVideoShareSummary[]>([])
   const [sharesLoading, setSharesLoading] = useState(false)
+  const [deletingShareId, setDeletingShareId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -165,6 +166,23 @@ export default function AdminVideosPage() {
       setShareError(error instanceof ApiError ? error.message : t('videos.shareError'))
     } finally {
       setSharingVideo(false)
+    }
+  }
+
+  async function handleDeleteShare(videoId: string, shareId: string) {
+    setDeletingShareId(shareId)
+    try {
+      await adminVideoApi.deleteShare(videoId, shareId)
+      setShares((previous) => previous.filter((share) => share.id !== shareId))
+      setVideos((previous) =>
+        previous.map((video) =>
+          video.id === videoId ? { ...video, shareCount: video.shareCount - 1 } : video,
+        ),
+      )
+    } catch {
+      // Best-effort — the row just stays put if the delete failed, and the button re-enables.
+    } finally {
+      setDeletingShareId(null)
     }
   }
 
@@ -312,15 +330,29 @@ export default function AdminVideosPage() {
                             </div>
                             <div className="text-[12px] text-fog">{share.recipientEmail}</div>
                           </div>
-                          <div className="text-right text-[12px] text-slate">
-                            <div>
-                              {share.watchedPercent != null
-                                ? t('videos.watchedPercent', { percent: share.watchedPercent })
-                                : t('videos.watchedSeconds', { seconds: share.maxWatchedSeconds })}
+                          <div className="flex items-center gap-3">
+                            <div className="text-right text-[12px] text-slate">
+                              <div>
+                                {share.watchedPercent != null
+                                  ? t('videos.watchedPercent', { percent: share.watchedPercent })
+                                  : t('videos.watchedSeconds', { seconds: share.maxWatchedSeconds })}
+                              </div>
+                              <div className="text-fog">
+                                {t('videos.viewCount', { count: share.viewCount })}
+                              </div>
                             </div>
-                            <div className="text-fog">
-                              {t('videos.viewCount', { count: share.viewCount })}
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteShare(video.id, share.id)}
+                              disabled={deletingShareId === share.id}
+                              className="rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                            >
+                              {deletingShareId === share.id ? (
+                                <Spinner className="h-3 w-3" />
+                              ) : (
+                                t('videos.deleteShare')
+                              )}
+                            </button>
                           </div>
                         </li>
                       ))}

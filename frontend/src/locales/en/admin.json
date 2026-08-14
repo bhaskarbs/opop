@@ -378,6 +378,7 @@
     "hideShares": "Hide shares",
     "share": "Share",
     "delete": "Delete",
+    "deleteShare": "Delete link",
     "noShares": "Not shared with anyone yet.",
     "watchedPercent": "{{percent}}% watched",
     "watchedSeconds": "{{seconds}}s watched",

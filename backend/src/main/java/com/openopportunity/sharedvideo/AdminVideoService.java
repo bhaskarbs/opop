@@ -6,6 +6,7 @@ import com.openopportunity.sharedvideo.dto.AdminSharedVideoSummary;
 import com.openopportunity.sharedvideo.dto.AdminVideoShareSummary;
 import com.openopportunity.sharedvideo.dto.CreateVideoShareRequest;
 import com.openopportunity.sharedvideo.exception.AdminSharedVideoNotFoundException;
+import com.openopportunity.sharedvideo.exception.AdminVideoShareNotFoundException;
 import com.openopportunity.sharedvideo.exception.InvalidSharedVideoException;
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
@@ -109,6 +110,16 @@ public class AdminVideoService {
                 new EmailButton("Watch video", shareUrl),
                 () -> {});
         return toSummary(share, video.getDurationSeconds());
+    }
+
+    @Transactional
+    public void deleteShare(UUID videoId, UUID shareId) {
+        AdminVideoShare share =
+                shareRepository.findById(shareId).orElseThrow(() -> new AdminVideoShareNotFoundException(shareId));
+        if (!share.getVideoId().equals(videoId)) {
+            throw new AdminVideoShareNotFoundException(shareId);
+        }
+        shareRepository.delete(share);
     }
 
     @Transactional(readOnly = true)

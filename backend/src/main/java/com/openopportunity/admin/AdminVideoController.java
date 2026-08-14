@@ -59,6 +59,12 @@ public class AdminVideoController {
         return ResponseEntity.ok(adminVideoService.listShares(id));
     }
 
+    @DeleteMapping("/{id}/shares/{shareId}")
+    public ResponseEntity<Void> deleteShare(@PathVariable UUID id, @PathVariable UUID shareId) {
+        adminVideoService.deleteShare(id, shareId);
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID currentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
