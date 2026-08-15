@@ -83,6 +83,7 @@ const AdminBillingPage = lazy(() => import('./pages/admin/AdminBillingPage'))
 const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'))
 const AdminIdeasPage = lazy(() => import('./pages/admin/AdminIdeasPage'))
 const AdminVideosPage = lazy(() => import('./pages/admin/AdminVideosPage'))
+const AdminBroadcastEmailPage = lazy(() => import('./pages/admin/AdminBroadcastEmailPage'))
 const WatchSharedVideoPage = lazy(() => import('./pages/WatchSharedVideoPage'))
 
 /** Every route lives under a `/:lang` prefix (see docs/DEVELOPMENT_ROADMAP.md Step 23). An
@@ -235,6 +236,7 @@ function App() {
                   <Route path="admin/jobs" element={<AdminJobsPage />} />
                   <Route path="admin/ideas" element={<AdminIdeasPage />} />
                   <Route path="admin/videos" element={<AdminVideosPage />} />
+                  <Route path="admin/broadcast-email" element={<AdminBroadcastEmailPage />} />
                 </Route>
               </Route>
             </Route>

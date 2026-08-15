@@ -66,6 +66,7 @@ export const ROUTES = {
   adminJobs: '/admin/jobs',
   adminIdeas: '/admin/ideas',
   adminVideos: '/admin/videos',
+  adminBroadcastEmail: '/admin/broadcast-email',
 } as const
 
 /** MyIdeasPage/IdeaSubmitPage are mounted twice — once under /candidate, once under /company

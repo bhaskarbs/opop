@@ -74,6 +74,16 @@ export interface AdminFinancialReportStats {
   companySubscriptionRevenueRupees: number
 }
 
+export interface SendBroadcastEmailPayload {
+  subject: string
+  recipients: string[]
+  message: string
+}
+
+export interface BroadcastEmailResult {
+  recipientCount: number
+}
+
 export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
@@ -460,4 +470,11 @@ export const adminApi = {
     request<AdminBillingStats>('/api/admin/billing/stats', { headers: authHeaders() }),
   invoiceHistory: () =>
     request<AdminInvoiceSummary[]>('/api/admin/billing/invoices', { headers: authHeaders() }),
+
+  sendBroadcastEmail: (payload: SendBroadcastEmailPayload) =>
+    request<BroadcastEmailResult>('/api/admin/broadcast-email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
 }

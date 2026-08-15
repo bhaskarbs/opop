@@ -6,6 +6,7 @@ import com.openopportunity.admin.exception.CompanyProfileIncompleteException;
 import com.openopportunity.admin.exception.CompanyProfileNotFoundException;
 import com.openopportunity.admin.exception.DuplicateAdminEmailException;
 import com.openopportunity.admin.exception.InvalidAdminLevelException;
+import com.openopportunity.admin.exception.InvalidBroadcastEmailException;
 import com.openopportunity.application.exception.ApplicationAccessDeniedException;
 import com.openopportunity.application.exception.ApplicationNotFoundException;
 import com.openopportunity.application.exception.DuplicateApplicationException;
@@ -284,6 +285,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidAdminLevelException.class)
     public ResponseEntity<ApiError> handleInvalidAdminLevel(InvalidAdminLevelException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidBroadcastEmailException.class)
+    public ResponseEntity<ApiError> handleInvalidBroadcastEmail(InvalidBroadcastEmailException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 
