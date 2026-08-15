@@ -21,6 +21,46 @@ so it's unaffected by which `frontend_mode` is active. `force_destroy` is left a
 (`false`) — unlike the frontend build bucket, this holds real user documents, not something
 `terraform destroy` should be able to wipe by accident.
 
+## Outbound mail (Resend) — always on, not a toggle
+
+`mail.tf` + `run.tf` point the backend's `com.openopportunity.mail.EmailService` (password resets,
+job-match/job-alert notifications, community interest requests — every outgoing email in the app)
+at [Resend](https://resend.com)'s SMTP relay, unconditionally, same "always on" reasoning as
+Uploads above — there's no local-first stand-in for a real mail relay (see
+`application.properties`' comment on `spring.mail.*`), so this isn't a scale-up toggle like
+Redis/Elasticsearch.
+
+One-time setup, outside Terraform:
+1. Sign up at [resend.com](https://resend.com).
+2. Dashboard → Domains → Add Domain → `openopportunity.in`. Resend gives you DNS records (a
+   verification TXT, DKIM CNAMEs, optionally a DMARC TXT) — add them in whichever DNS provider
+   manages `openopportunity.in` (Cloudflare, if you followed the custom-domain setup elsewhere in
+   this project). Wait for Resend to show the domain as verified.
+3. Dashboard → API Keys → Create API Key.
+4. Set it for Terraform (never commit this):
+   ```bash
+   export TF_VAR_resend_api_key="<the key from step 3>"
+   ```
+   Do this in your own terminal, same reasoning as `elastic_cloud_api_key` above.
+
+Then `terraform apply` — `MAIL_HOST`/`MAIL_USERNAME` are Resend's own fixed SMTP relay values
+(`smtp.resend.com` / literal `resend`, not an email address), `MAIL_PASSWORD` is the API key held
+in Secret Manager, and `APP_MAIL_FROM` is hardcoded to `customersupport@openopportunity.in` —
+change that value directly in `run.tf` if the sending address ever needs to move.
+
+`app.community.contact-email` (`APP_COMMUNITY_CONTACT_EMAIL`) is left unset here — no separate
+inbox for community interest requests yet, same "blank means disabled" convention as everywhere
+else in this app.
+
+Local dev needs the matching env vars set directly (`bootRun` doesn't read Terraform state):
+```bash
+export MAIL_HOST=smtp.resend.com
+export MAIL_PORT=587
+export MAIL_USERNAME=resend
+export MAIL_PASSWORD="<the same API key>"
+export APP_MAIL_FROM=customersupport@openopportunity.in
+```
+
 ## Observability: the monitoring dashboard
 
 `dashboard.tf` creates one Cloud Monitoring dashboard, always on (free — dashboards cost nothing;

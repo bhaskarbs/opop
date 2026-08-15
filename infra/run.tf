@@ -120,6 +120,37 @@ resource "google_cloud_run_v2_service" "backend" {
         value = local.cors_allowed_origins
       }
 
+      # See mail.tf — Resend's SMTP relay. "resend" is Resend's own literal SMTP username (not
+      # an email address); the real credential is the API key, held in Secret Manager like every
+      # other sensitive value here. app.community.contact-email (APP_COMMUNITY_CONTACT_EMAIL) is
+      # left unset deliberately — no separate inbox for that yet, same "blank means disabled"
+      # convention as everywhere else in this app.
+      env {
+        name  = "MAIL_HOST"
+        value = "smtp.resend.com"
+      }
+      env {
+        name  = "MAIL_PORT"
+        value = "587"
+      }
+      env {
+        name  = "MAIL_USERNAME"
+        value = "resend"
+      }
+      env {
+        name = "MAIL_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.resend_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name  = "APP_MAIL_FROM"
+        value = "customersupport@openopportunity.in"
+      }
+
       # See uploads.tf — unlike Redis/Elasticsearch/the read replica, this isn't behind a
       # toggle: without it the backend silently falls back to app.storage.provider=local
       # (Cloud Run's ephemeral per-instance disk), which loses uploads on every
@@ -287,6 +318,7 @@ resource "google_cloud_run_v2_service" "backend" {
     google_project_iam_member.backend_cloudsql_client,
     google_secret_manager_secret_iam_member.backend_secret_access,
     google_secret_manager_secret_iam_member.backend_elasticsearch_password_access,
+    google_secret_manager_secret_iam_member.backend_resend_api_key_access,
     google_storage_bucket_iam_member.uploads_backend_access,
   ]
 }
