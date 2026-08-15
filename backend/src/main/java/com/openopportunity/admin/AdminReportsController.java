@@ -32,8 +32,8 @@ public class AdminReportsController {
     }
 
     @GetMapping("/partnerships")
-    public AdminPartnershipReportStats partnerships() {
-        return adminReportsService.getPartnershipStats();
+    public AdminPartnershipReportStats partnerships(@RequestParam(required = false) Integer days) {
+        return adminReportsService.getPartnershipStats(days);
     }
 
     @GetMapping("/community")

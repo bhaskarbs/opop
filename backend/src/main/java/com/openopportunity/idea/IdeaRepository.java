@@ -1,5 +1,6 @@
 package com.openopportunity.idea;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +18,8 @@ public interface IdeaRepository extends JpaRepository<Idea, UUID>, JpaSpecificat
     long countByStatusAndFundingIsNotNull(IdeaStatus status);
 
     long countByStatusAndFundingIsNull(IdeaStatus status);
+
+    long countByStatusAndFundingIsNotNullAndCreatedAtAfter(IdeaStatus status, Instant since);
+
+    long countByStatusAndFundingIsNullAndCreatedAtAfter(IdeaStatus status, Instant since);
 }

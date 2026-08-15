@@ -102,14 +102,32 @@ public class AdminReportsService {
 
     /** "Seminars held" and "Avg. partnership duration" are deliberately not here — there's no
      * seminar/event entity, and Idea.timeline is free text (not a structured duration), so
-     * neither can be computed from real data. */
-    @Cacheable("adminPartnershipStats")
+     * neither can be computed from real data.
+     *
+     * <p>days == null means all-time, same convention as getCandidateStats. When a range is
+     * given: totalPartnershipMatches is bounded by IdeaInterest.createdAt (interest expressed in
+     * this window), and fundedListings/listingsWithoutFunding/startupsOffering are bounded by
+     * Idea.createdAt (listings submitted in this window that are currently APPROVED — not a
+     * snapshot of every APPROVED listing regardless of age). */
+    @Cacheable(value = "adminPartnershipStats", key = "#days == null ? 'all' : #days")
     @Transactional(readOnly = true)
-    public AdminPartnershipReportStats getPartnershipStats() {
-        long fundedListings = ideaRepository.countByStatusAndFundingIsNotNull(IdeaStatus.APPROVED);
-        long listingsWithoutFunding = ideaRepository.countByStatusAndFundingIsNull(IdeaStatus.APPROVED);
+    public AdminPartnershipReportStats getPartnershipStats(Integer days) {
+        if (days == null) {
+            long fundedListings = ideaRepository.countByStatusAndFundingIsNotNull(IdeaStatus.APPROVED);
+            long listingsWithoutFunding = ideaRepository.countByStatusAndFundingIsNull(IdeaStatus.APPROVED);
+            return new AdminPartnershipReportStats(
+                    ideaInterestRepository.count(),
+                    fundedListings + listingsWithoutFunding,
+                    fundedListings,
+                    listingsWithoutFunding);
+        }
+        Instant since = Instant.now().minus(days, ChronoUnit.DAYS);
+        long fundedListings =
+                ideaRepository.countByStatusAndFundingIsNotNullAndCreatedAtAfter(IdeaStatus.APPROVED, since);
+        long listingsWithoutFunding =
+                ideaRepository.countByStatusAndFundingIsNullAndCreatedAtAfter(IdeaStatus.APPROVED, since);
         return new AdminPartnershipReportStats(
-                ideaInterestRepository.count(),
+                ideaInterestRepository.countByCreatedAtAfter(since),
                 fundedListings + listingsWithoutFunding,
                 fundedListings,
                 listingsWithoutFunding);

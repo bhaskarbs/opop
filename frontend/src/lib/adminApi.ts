@@ -277,8 +277,8 @@ export const adminApi = {
     request<AdminEmployerReportStats>(`/api/admin/reports/employers${daysQuery(days)}`, {
       headers: authHeaders(),
     }),
-  getPartnershipReportStats: () =>
-    request<AdminPartnershipReportStats>('/api/admin/reports/partnerships', {
+  getPartnershipReportStats: (days?: number) =>
+    request<AdminPartnershipReportStats>(`/api/admin/reports/partnerships${daysQuery(days)}`, {
       headers: authHeaders(),
     }),
   getCommunityInterestSubmissions: () =>

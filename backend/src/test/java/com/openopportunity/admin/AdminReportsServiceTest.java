@@ -120,17 +120,35 @@ class AdminReportsServiceTest {
     }
 
     @Test
-    void getPartnershipStatsCombinesInterestCountAndFundingSplitOfApprovedIdeas() {
+    void getPartnershipStatsCombinesInterestCountAndFundingSplitOfApprovedIdeasWhenDaysIsNull() {
         when(ideaInterestRepository.count()).thenReturn(3880L);
         when(ideaRepository.countByStatusAndFundingIsNotNull(IdeaStatus.APPROVED)).thenReturn(520L);
         when(ideaRepository.countByStatusAndFundingIsNull(IdeaStatus.APPROVED)).thenReturn(340L);
 
-        AdminPartnershipReportStats stats = adminReportsService.getPartnershipStats();
+        AdminPartnershipReportStats stats = adminReportsService.getPartnershipStats(null);
 
         assertThat(stats.totalPartnershipMatches()).isEqualTo(3880L);
         assertThat(stats.startupsOffering()).isEqualTo(860L);
         assertThat(stats.fundedListings()).isEqualTo(520L);
         assertThat(stats.listingsWithoutFunding()).isEqualTo(340L);
+    }
+
+    @Test
+    void getPartnershipStatsUsesDateBoundedCountsWhenDaysIsGiven() {
+        when(ideaInterestRepository.countByCreatedAtAfter(any(Instant.class))).thenReturn(42L);
+        when(ideaRepository.countByStatusAndFundingIsNotNullAndCreatedAtAfter(
+                        eq(IdeaStatus.APPROVED), any(Instant.class)))
+                .thenReturn(7L);
+        when(ideaRepository.countByStatusAndFundingIsNullAndCreatedAtAfter(
+                        eq(IdeaStatus.APPROVED), any(Instant.class)))
+                .thenReturn(5L);
+
+        AdminPartnershipReportStats stats = adminReportsService.getPartnershipStats(30);
+
+        assertThat(stats.totalPartnershipMatches()).isEqualTo(42L);
+        assertThat(stats.startupsOffering()).isEqualTo(12L);
+        assertThat(stats.fundedListings()).isEqualTo(7L);
+        assertThat(stats.listingsWithoutFunding()).isEqualTo(5L);
     }
 
     @Test
