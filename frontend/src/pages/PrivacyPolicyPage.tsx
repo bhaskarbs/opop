@@ -212,8 +212,8 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         Questions about this Privacy Policy or your personal information can be sent to{' '}
-        <a href="mailto:privacy@openopportunity.com" className="font-semibold text-primary">
-          privacy@openopportunity.com
+        <a href="mailto:customersupport@openopportunity.in" className="font-semibold text-primary">
+          customersupport@openopportunity.in
         </a>
         .
       </p>

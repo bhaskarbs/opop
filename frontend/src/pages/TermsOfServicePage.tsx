@@ -247,8 +247,8 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         Questions about these Terms can be sent to{' '}
-        <a href="mailto:legal@openopportunity.com" className="font-semibold text-primary">
-          legal@openopportunity.com
+        <a href="mailto:customersupport@openopportunity.in" className="font-semibold text-primary">
+          customersupport@openopportunity.in
         </a>
         .
       </p>
