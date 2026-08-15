@@ -181,13 +181,15 @@ export interface AdminUserListParams {
 }
 
 export type MockInterviewQuestionSource = 'AI' | 'ADMIN'
+export type BackendQuestionDifficulty = 'EASY' | 'NORMAL' | 'DIFFICULT' | 'VERY_DIFFICULT'
 
 export interface AdminMockInterviewQuestionSummary {
   id: string
   text: string
   skills: string[]
   industry: string | null
-  experienceLevel: BackendExperienceLevel | null
+  experienceLevels: BackendExperienceLevel[]
+  difficulty: BackendQuestionDifficulty | null
   important: boolean
   source: MockInterviewQuestionSource
   createdAt: string
@@ -196,7 +198,7 @@ export interface AdminMockInterviewQuestionSummary {
 export interface MockInterviewQuestionListParams {
   skill?: string
   industry?: string
-  experienceLevel?: BackendExperienceLevel
+  experienceLevels?: BackendExperienceLevel[]
   q?: string
 }
 
@@ -204,7 +206,8 @@ export interface CreateMockInterviewQuestionPayload {
   text: string
   skills: string[]
   industry: string | null
-  experienceLevel: BackendExperienceLevel | null
+  experienceLevels: BackendExperienceLevel[]
+  difficulty: BackendQuestionDifficulty | null
 }
 
 export interface AdminCandidateSubscriptionSummary {
@@ -270,7 +273,10 @@ function buildMockInterviewQuestionQuery(params: MockInterviewQuestionListParams
   const search = new URLSearchParams()
   if (params.skill) search.set('skill', params.skill)
   if (params.industry) search.set('industry', params.industry)
-  if (params.experienceLevel) search.set('experienceLevel', params.experienceLevel)
+  // Repeated key, not comma-joined — matches Spring's @RequestParam List<ExperienceLevel>
+  // binding (?experienceLevels=X&experienceLevels=Y), same convention as JobSearchParams' level
+  // array elsewhere in this file.
+  params.experienceLevels?.forEach((level) => search.append('experienceLevels', level))
   if (params.q) search.set('q', params.q)
   const query = search.toString()
   return query ? `?${query}` : ''

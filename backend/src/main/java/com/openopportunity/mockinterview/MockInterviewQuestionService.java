@@ -14,14 +14,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 /** Supplies mock-interview session questions, in priority order: (1) the question bank in
  * Postgres, once it holds enough relevant questions to skip the AI call entirely; (2) the Claude
  * API otherwise, persisting whatever it returns into the bank for next time. If the AI call also
- * fails, this throws QuestionGenerationUnavailableException and MockInterviewController lets that
- * surface as a 502 — the frontend then falls back to its own local template generator, so a
+ * fails — or app.mock-interview.ai-generation-enabled is false, which disables the call
+ * altogether — this throws QuestionGenerationUnavailableException and MockInterviewController lets
+ * that surface as a 502 — the frontend then falls back to its own local template generator, so a
  * candidate can always start a session regardless of which layer is down.
  *
  * <p>Deliberately not @Transactional: each repository call below (find/exists/save) is
@@ -44,11 +46,15 @@ public class MockInterviewQuestionService {
     private final AnthropicClient client;
     private final MockInterviewQuestionRepository questionRepository;
     private final MockInterviewQuestionRateLimiter rateLimiter;
+    private final boolean aiGenerationEnabled;
 
     public MockInterviewQuestionService(
-            MockInterviewQuestionRepository questionRepository, MockInterviewQuestionRateLimiter rateLimiter) {
+            MockInterviewQuestionRepository questionRepository,
+            MockInterviewQuestionRateLimiter rateLimiter,
+            @Value("${app.mock-interview.ai-generation-enabled:false}") boolean aiGenerationEnabled) {
         this.questionRepository = questionRepository;
         this.rateLimiter = rateLimiter;
+        this.aiGenerationEnabled = aiGenerationEnabled;
         AnthropicClient created;
         try {
             created = AnthropicOkHttpClient.fromEnv();
@@ -75,14 +81,18 @@ public class MockInterviewQuestionService {
 
     private List<MockInterviewQuestion> matchingQuestions(
             List<String> skills, ExperienceLevel experienceLevel, String industry) {
-        List<MockInterviewQuestion> matches = questionRepository.findByOptionalFilters(industry, experienceLevel);
-        if (skills.isEmpty()) {
-            return matches;
-        }
-        // A question with no skills tagged (e.g. a soft-skills question) is a match for anyone;
-        // otherwise at least one of its tagged skills has to overlap the candidate's selection.
+        List<MockInterviewQuestion> matches = questionRepository.findByOptionalFilters(industry);
         return matches.stream()
-                .filter(question -> question.getSkills().isEmpty()
+                // A question tagged with no experience levels applies to anyone; otherwise the
+                // candidate's own level has to be one of the ones tagged on the question.
+                .filter(question -> question.getExperienceLevels().isEmpty()
+                        || experienceLevel == null
+                        || question.getExperienceLevels().contains(experienceLevel))
+                // A question with no skills tagged (e.g. a soft-skills question) is a match for
+                // anyone; otherwise at least one of its tagged skills has to overlap the
+                // candidate's selection.
+                .filter(question -> skills.isEmpty()
+                        || question.getSkills().isEmpty()
                         || question.getSkills().stream().anyMatch(skills::contains))
                 .toList();
     }
@@ -106,10 +116,12 @@ public class MockInterviewQuestionService {
 
     private void persistGenerated(
             List<String> questions, List<String> skills, String industry, ExperienceLevel experienceLevel) {
+        List<ExperienceLevel> experienceLevels = experienceLevel == null ? List.of() : List.of(experienceLevel);
         for (String text : questions) {
             if (questionRepository.existsByTextIgnoreCase(text)) continue;
             try {
-                questionRepository.save(new MockInterviewQuestion(text, skills, industry, experienceLevel, QuestionSource.AI));
+                questionRepository.save(new MockInterviewQuestion(
+                        text, skills, industry, experienceLevels, null, QuestionSource.AI));
             } catch (DataIntegrityViolationException ex) {
                 // Lost a race against a concurrent insert of the same text (unique index on
                 // lower(text), see V24) — someone else already banked it, nothing to do here.
@@ -119,7 +131,7 @@ public class MockInterviewQuestionService {
 
     private List<String> generateWithAi(
             List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
-        if (client == null) {
+        if (!aiGenerationEnabled || client == null) {
             throw new QuestionGenerationUnavailableException();
         }
         try {

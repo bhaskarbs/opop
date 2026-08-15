@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingState, Spinner } from '../../components/ui'
+import { AutocompleteInput, LoadingState, SkillsTagInput, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   adminApi,
   type AdminMockInterviewQuestionSummary,
+  type BackendQuestionDifficulty,
   type MockInterviewQuestionSource,
 } from '../../lib/adminApi'
 import {
@@ -13,10 +14,21 @@ import {
   experienceLevelToBackend,
 } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
+import { INDUSTRY_SUGGESTIONS } from '../../mocks/industries'
+import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 
 const SOURCE_LABEL_KEYS: Record<MockInterviewQuestionSource, string> = {
   AI: 'mockInterviewQuestions.sourceAi',
   ADMIN: 'mockInterviewQuestions.sourceAdmin',
+}
+
+const DIFFICULTIES: BackendQuestionDifficulty[] = ['EASY', 'NORMAL', 'DIFFICULT', 'VERY_DIFFICULT']
+
+const DIFFICULTY_LABEL_KEYS: Record<BackendQuestionDifficulty, string> = {
+  EASY: 'mockInterviewQuestions.difficulty.easy',
+  NORMAL: 'mockInterviewQuestions.difficulty.normal',
+  DIFFICULT: 'mockInterviewQuestions.difficulty.difficult',
+  VERY_DIFFICULT: 'mockInterviewQuestions.difficulty.veryDifficult',
 }
 
 const PAGE_SIZE = 10
@@ -33,7 +45,7 @@ export default function AdminMockInterviewQuestionsPage() {
   const [submittedSkill, setSubmittedSkill] = useState('')
   const [submittedIndustry, setSubmittedIndustry] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
-  const [filterExperienceLevel, setFilterExperienceLevel] = useState('')
+  const [filterExperienceLevels, setFilterExperienceLevels] = useState<BackendExperienceLevel[]>([])
 
   const [questions, setQuestions] = useState<AdminMockInterviewQuestionSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,18 +55,18 @@ export default function AdminMockInterviewQuestionsPage() {
 
   const [formText, setFormText] = useState('')
   const [formSkills, setFormSkills] = useState<string[]>([])
-  const [formNewSkill, setFormNewSkill] = useState('')
   const [formIndustry, setFormIndustry] = useState('')
-  const [formExperienceLevel, setFormExperienceLevel] = useState('')
+  const [formExperienceLevels, setFormExperienceLevels] = useState<BackendExperienceLevel[]>([])
+  const [formDifficulty, setFormDifficulty] = useState<BackendQuestionDifficulty | ''>('')
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     // submittedSkill/submittedIndustry/submittedQuery only change on Enter (see
-    // handleFilterKeyDown), so this isn't debouncing keystrokes — the setTimeout wrapper just
-    // keeps the setState calls out of the effect body proper, same as the other admin list
-    // pages.
+    // handleFilterKeyDown); filterExperienceLevels changes immediately on checkbox toggle
+    // instead — the setTimeout wrapper just keeps the setState calls out of the effect body
+    // proper, same as the other admin list pages.
     const timeoutId = setTimeout(() => {
       setLoading(true)
       setLoadError(null)
@@ -63,8 +75,7 @@ export default function AdminMockInterviewQuestionsPage() {
         .mockInterviewQuestions({
           skill: submittedSkill.trim() || undefined,
           industry: submittedIndustry.trim() || undefined,
-          experienceLevel: (filterExperienceLevel || undefined) as
-            BackendExperienceLevel | undefined,
+          experienceLevels: filterExperienceLevels.length > 0 ? filterExperienceLevels : undefined,
           q: submittedQuery.trim() || undefined,
         })
         .then((result) => {
@@ -85,7 +96,7 @@ export default function AdminMockInterviewQuestionsPage() {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [submittedSkill, submittedIndustry, filterExperienceLevel, submittedQuery, t])
+  }, [submittedSkill, submittedIndustry, filterExperienceLevels, submittedQuery, t])
 
   function handleFilterKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter') return
@@ -94,18 +105,16 @@ export default function AdminMockInterviewQuestionsPage() {
     setSubmittedQuery(queryInput)
   }
 
-  function addFormSkill(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== 'Enter') return
-    event.preventDefault()
-    const trimmed = formNewSkill.trim()
-    if (trimmed && !formSkills.includes(trimmed)) {
-      setFormSkills((prev) => [...prev, trimmed])
-    }
-    setFormNewSkill('')
+  function toggleFilterExperienceLevel(level: BackendExperienceLevel) {
+    setFilterExperienceLevels((prev) =>
+      prev.includes(level) ? prev.filter((existing) => existing !== level) : [...prev, level],
+    )
   }
 
-  function removeFormSkill(skill: string) {
-    setFormSkills((prev) => prev.filter((s) => s !== skill))
+  function toggleFormExperienceLevel(level: BackendExperienceLevel) {
+    setFormExperienceLevels((prev) =>
+      prev.includes(level) ? prev.filter((existing) => existing !== level) : [...prev, level],
+    )
   }
 
   async function handleCreate(event: FormEvent) {
@@ -118,14 +127,15 @@ export default function AdminMockInterviewQuestionsPage() {
         text: formText.trim(),
         skills: formSkills,
         industry: formIndustry.trim() || null,
-        experienceLevel: (formExperienceLevel || null) as BackendExperienceLevel | null,
+        experienceLevels: formExperienceLevels,
+        difficulty: formDifficulty || null,
       })
       setQuestions((prev) => [created, ...prev])
       setFormText('')
       setFormSkills([])
-      setFormNewSkill('')
       setFormIndustry('')
-      setFormExperienceLevel('')
+      setFormExperienceLevels([])
+      setFormDifficulty('')
     } catch (caught) {
       setFormError(
         caught instanceof ApiError ? caught.message : t('mockInterviewQuestions.saveError'),
@@ -193,51 +203,61 @@ export default function AdminMockInterviewQuestionsPage() {
           required
           className="mb-3 w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:outline-none"
         />
+        <div className="mb-3">
+          <span className="mb-1.5 block text-[13px] font-bold text-ink">
+            {t('mockInterviewQuestions.experienceLevelsField')}
+          </span>
+          <div className="flex flex-wrap gap-4">
+            {EXPERIENCE_LEVELS.map((label) => {
+              const backendValue = experienceLevelToBackend(label)
+              return (
+                <label
+                  key={label}
+                  className="flex cursor-pointer items-center gap-1.5 text-[13.5px] text-ink"
+                >
+                  <input
+                    type="checkbox"
+                    checked={formExperienceLevels.includes(backendValue)}
+                    onChange={() => toggleFormExperienceLevel(backendValue)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                  />
+                  {label}
+                </label>
+              )
+            })}
+          </div>
+        </div>
         <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <AutocompleteInput
+            value={formIndustry}
+            onChange={setFormIndustry}
+            suggestions={INDUSTRY_SUGGESTIONS}
+            placeholder={t('mockInterviewQuestions.industryPlaceholder')}
+          />
           <select
-            value={formExperienceLevel}
-            onChange={(event) => setFormExperienceLevel(event.target.value)}
+            value={formDifficulty}
+            onChange={(event) =>
+              setFormDifficulty(event.target.value as BackendQuestionDifficulty | '')
+            }
             className="rounded-control border border-border bg-surface px-3 py-2.5 text-sm text-ink"
           >
-            <option value="">{t('mockInterviewQuestions.anyExperienceLevel')}</option>
-            {EXPERIENCE_LEVELS.map((label) => (
-              <option key={label} value={experienceLevelToBackend(label)}>
-                {label}
+            <option value="">{t('mockInterviewQuestions.anyDifficulty')}</option>
+            {DIFFICULTIES.map((difficulty) => (
+              <option key={difficulty} value={difficulty}>
+                {t(DIFFICULTY_LABEL_KEYS[difficulty])}
               </option>
             ))}
           </select>
-          <input
-            value={formIndustry}
-            onChange={(event) => setFormIndustry(event.target.value)}
-            placeholder={t('mockInterviewQuestions.industryPlaceholder')}
-            className="rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog"
+        </div>
+        <div className="mb-3">
+          <SkillsTagInput
+            value={formSkills}
+            onChange={setFormSkills}
+            suggestions={SKILL_SUGGESTIONS}
+            placeholder={t('mockInterviewQuestions.addSkillPlaceholder')}
+            removeSkillLabel={(skill) => t('mockInterviewQuestions.removeSkill', { skill })}
           />
         </div>
-        <div className="mb-3 flex flex-wrap gap-2">
-          {formSkills.map((skill) => (
-            <span
-              key={skill}
-              className="flex items-center gap-1.5 rounded-full bg-neutral-tint px-3.5 py-1.5 text-sm font-semibold text-[#3A414D]"
-            >
-              {skill}
-              <button
-                type="button"
-                onClick={() => removeFormSkill(skill)}
-                aria-label={t('mockInterviewQuestions.removeSkill', { skill })}
-                className="cursor-pointer text-fog"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-        <input
-          value={formNewSkill}
-          onChange={(event) => setFormNewSkill(event.target.value)}
-          onKeyDown={addFormSkill}
-          placeholder={t('mockInterviewQuestions.addSkillPlaceholder')}
-          className="mb-3 w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog"
-        />
         <button
           type="submit"
           disabled={submitting}
@@ -250,19 +270,24 @@ export default function AdminMockInterviewQuestionsPage() {
         </button>
       </form>
 
-      <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
-        <select
-          value={filterExperienceLevel}
-          onChange={(event) => setFilterExperienceLevel(event.target.value)}
-          className="rounded-control border border-border bg-surface px-3 py-2 text-[13.5px] text-ink"
-        >
-          <option value="">{t('mockInterviewQuestions.anyExperienceLevel')}</option>
-          {EXPERIENCE_LEVELS.map((label) => (
-            <option key={label} value={experienceLevelToBackend(label)}>
+      <div className="mb-4 flex flex-wrap items-center gap-4 rounded-card border border-border bg-surface p-4">
+        {EXPERIENCE_LEVELS.map((label) => {
+          const backendValue = experienceLevelToBackend(label)
+          return (
+            <label
+              key={label}
+              className="flex cursor-pointer items-center gap-1.5 text-[13.5px] text-ink"
+            >
+              <input
+                type="checkbox"
+                checked={filterExperienceLevels.includes(backendValue)}
+                onChange={() => toggleFilterExperienceLevel(backendValue)}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary focus:ring-offset-1"
+              />
               {label}
-            </option>
-          ))}
-        </select>
+            </label>
+          )
+        })}
         <input
           value={skillInput}
           onChange={(event) => setSkillInput(event.target.value)}
@@ -357,9 +382,17 @@ export default function AdminMockInterviewQuestionsPage() {
                     {question.industry}
                   </span>
                 )}
-                {question.experienceLevel && (
-                  <span className="rounded-full bg-neutral-tint px-2.5 py-[3px] font-semibold text-[#3A414D]">
-                    {experienceLevelFromBackend(question.experienceLevel)}
+                {question.experienceLevels.map((level) => (
+                  <span
+                    key={level}
+                    className="rounded-full bg-neutral-tint px-2.5 py-[3px] font-semibold text-[#3A414D]"
+                  >
+                    {experienceLevelFromBackend(level)}
+                  </span>
+                ))}
+                {question.difficulty && (
+                  <span className="rounded-full bg-amber-tint px-2.5 py-[3px] font-semibold text-amber">
+                    {t(DIFFICULTY_LABEL_KEYS[question.difficulty])}
                   </span>
                 )}
                 <span className="rounded-full bg-primary-tint px-2.5 py-[3px] font-bold text-primary">

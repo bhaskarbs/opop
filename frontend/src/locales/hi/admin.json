@@ -197,7 +197,14 @@
     "addTitle": "एक प्रश्न जोड़ें",
     "textPlaceholder": "इंटरव्यू प्रश्न टाइप करें…",
     "industryPlaceholder": "इंडस्ट्री (वैकल्पिक)",
-    "anyExperienceLevel": "कोई भी अनुभव स्तर",
+    "experienceLevelsField": "अनुभव स्तर",
+    "anyDifficulty": "कोई भी कठिनाई स्तर",
+    "difficulty": {
+      "easy": "आसान",
+      "normal": "सामान्य",
+      "difficult": "कठिन",
+      "veryDifficult": "बहुत कठिन"
+    },
     "addSkillPlaceholder": "एक हुनर टैग करें और एंटर दबाएं",
     "removeSkill": "{{skill}} हटाएं",
     "addQuestion": "प्रश्न जोड़ें",

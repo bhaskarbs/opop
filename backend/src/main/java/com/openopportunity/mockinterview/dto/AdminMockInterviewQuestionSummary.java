@@ -1,6 +1,7 @@
 package com.openopportunity.mockinterview.dto;
 
 import com.openopportunity.job.ExperienceLevel;
+import com.openopportunity.mockinterview.QuestionDifficulty;
 import com.openopportunity.mockinterview.QuestionSource;
 import java.time.Instant;
 import java.util.List;
@@ -11,7 +12,8 @@ public record AdminMockInterviewQuestionSummary(
         String text,
         List<String> skills,
         String industry,
-        ExperienceLevel experienceLevel,
+        List<ExperienceLevel> experienceLevels,
+        QuestionDifficulty difficulty,
         boolean important,
         QuestionSource source,
         Instant createdAt) {}
