@@ -281,12 +281,12 @@ export const adminApi = {
     request<AdminPartnershipReportStats>(`/api/admin/reports/partnerships${daysQuery(days)}`, {
       headers: authHeaders(),
     }),
-  getCommunityInterestSubmissions: () =>
-    request<AdminCommunityInterestSummary[]>('/api/admin/reports/community', {
+  getCommunityInterestSubmissions: (days?: number) =>
+    request<AdminCommunityInterestSummary[]>(`/api/admin/reports/community${daysQuery(days)}`, {
       headers: authHeaders(),
     }),
-  getFinancialReportStats: () =>
-    request<AdminFinancialReportStats>('/api/admin/reports/financial', {
+  getFinancialReportStats: (days?: number) =>
+    request<AdminFinancialReportStats>(`/api/admin/reports/financial${daysQuery(days)}`, {
       headers: authHeaders(),
     }),
   pendingJobs: (q?: string) =>

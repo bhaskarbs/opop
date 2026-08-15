@@ -15,6 +15,7 @@ import com.openopportunity.auth.VerificationStatus;
 import com.openopportunity.billing.BillingTransactionRepository;
 import com.openopportunity.billing.CompanyBillingTransactionRepository;
 import com.openopportunity.billing.TransactionStatus;
+import com.openopportunity.community.CommunityInterestSubmission;
 import com.openopportunity.community.CommunityInterestSubmissionRepository;
 import com.openopportunity.idea.IdeaInterestRepository;
 import com.openopportunity.idea.IdeaRepository;
@@ -133,10 +134,16 @@ public class AdminReportsService {
                 listingsWithoutFunding);
     }
 
-    @Cacheable("adminCommunityInterestSubmissions")
+    // days == null means all-time, same convention as getCandidateStats — bounded by
+    // CommunityInterestSubmission.createdAt (submissions made within the window) when given.
+    @Cacheable(value = "adminCommunityInterestSubmissions", key = "#days == null ? 'all' : #days")
     @Transactional(readOnly = true)
-    public List<AdminCommunityInterestSummary> getCommunityInterestSubmissions() {
-        return communityInterestSubmissionRepository.findAllByOrderByCreatedAtDesc().stream()
+    public List<AdminCommunityInterestSummary> getCommunityInterestSubmissions(Integer days) {
+        List<CommunityInterestSubmission> submissions = days == null
+                ? communityInterestSubmissionRepository.findAllByOrderByCreatedAtDesc()
+                : communityInterestSubmissionRepository.findAllByCreatedAtAfterOrderByCreatedAtDesc(
+                        Instant.now().minus(days, ChronoUnit.DAYS));
+        return submissions.stream()
                 .map(submission -> new AdminCommunityInterestSummary(
                         submission.getId(),
                         submission.getName(),
@@ -149,13 +156,26 @@ public class AdminReportsService {
 
     /** "Job posting fees" and "Featured listings" are deliberately not here — there's no
      * payment gate on job postings or featured listings anywhere in the schema, so those
-     * aren't real revenue sources. */
-    @Cacheable("adminFinancialStats")
+     * aren't real revenue sources.
+     *
+     * <p>days == null means all-time, same convention as getCandidateStats — bounded by each
+     * transaction's createdAt (when it was recorded PAID) when given, i.e. revenue collected in
+     * this window rather than the running total. */
+    @Cacheable(value = "adminFinancialStats", key = "#days == null ? 'all' : #days")
     @Transactional(readOnly = true)
-    public AdminFinancialReportStats getFinancialStats() {
-        long candidateRevenue = billingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID);
-        long companyRevenue =
-                companyBillingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID);
+    public AdminFinancialReportStats getFinancialStats(Integer days) {
+        long candidateRevenue;
+        long companyRevenue;
+        if (days == null) {
+            candidateRevenue = billingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID);
+            companyRevenue = companyBillingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID);
+        } else {
+            Instant since = Instant.now().minus(days, ChronoUnit.DAYS);
+            candidateRevenue = billingTransactionRepository.sumAmountRupeesByStatusAndCreatedAtAfter(
+                    TransactionStatus.PAID, since);
+            companyRevenue = companyBillingTransactionRepository.sumAmountRupeesByStatusAndCreatedAtAfter(
+                    TransactionStatus.PAID, since);
+        }
         return new AdminFinancialReportStats(
                 candidateRevenue + companyRevenue, candidateRevenue, companyRevenue);
     }

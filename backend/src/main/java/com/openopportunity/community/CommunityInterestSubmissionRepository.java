@@ -14,4 +14,6 @@ public interface CommunityInterestSubmissionRepository
 
     /** Newest first — for the admin reports Community tab (see AdminReportsService). */
     List<CommunityInterestSubmission> findAllByOrderByCreatedAtDesc();
+
+    List<CommunityInterestSubmission> findAllByCreatedAtAfterOrderByCreatedAtDesc(Instant since);
 }

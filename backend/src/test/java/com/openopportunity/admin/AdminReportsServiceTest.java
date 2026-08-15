@@ -152,13 +152,13 @@ class AdminReportsServiceTest {
     }
 
     @Test
-    void getCommunityInterestSubmissionsMapsEachSubmissionToItsContactDetails() {
+    void getCommunityInterestSubmissionsMapsEachSubmissionToItsContactDetailsWhenDaysIsNull() {
         CommunityInterestSubmission submission =
                 new CommunityInterestSubmission("Asha Rao", "Acme Co", "asha@example.com", "9876543210");
         when(communityInterestSubmissionRepository.findAllByOrderByCreatedAtDesc())
                 .thenReturn(List.of(submission));
 
-        List<AdminCommunityInterestSummary> summaries = adminReportsService.getCommunityInterestSubmissions();
+        List<AdminCommunityInterestSummary> summaries = adminReportsService.getCommunityInterestSubmissions(null);
 
         assertThat(summaries).containsExactly(new AdminCommunityInterestSummary(
                 submission.getId(),
@@ -170,16 +170,45 @@ class AdminReportsServiceTest {
     }
 
     @Test
-    void getFinancialStatsSumsPaidCandidateAndCompanyRevenue() {
+    void getCommunityInterestSubmissionsUsesDateBoundedQueryWhenDaysIsGiven() {
+        CommunityInterestSubmission submission =
+                new CommunityInterestSubmission("Rohan Mehta", null, "rohan@example.com", null);
+        when(communityInterestSubmissionRepository.findAllByCreatedAtAfterOrderByCreatedAtDesc(any(Instant.class)))
+                .thenReturn(List.of(submission));
+
+        List<AdminCommunityInterestSummary> summaries = adminReportsService.getCommunityInterestSubmissions(30);
+
+        assertThat(summaries).containsExactly(new AdminCommunityInterestSummary(
+                submission.getId(), "Rohan Mehta", null, "rohan@example.com", null, submission.getCreatedAt()));
+    }
+
+    @Test
+    void getFinancialStatsSumsPaidCandidateAndCompanyRevenueWhenDaysIsNull() {
         when(billingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID)).thenReturn(23_400L);
         when(companyBillingTransactionRepository.sumAmountRupeesByStatus(TransactionStatus.PAID))
                 .thenReturn(48_600L);
 
-        AdminFinancialReportStats stats = adminReportsService.getFinancialStats();
+        AdminFinancialReportStats stats = adminReportsService.getFinancialStats(null);
 
         assertThat(stats.totalRevenueRupees()).isEqualTo(72_000L);
         assertThat(stats.candidateSubscriptionRevenueRupees()).isEqualTo(23_400L);
         assertThat(stats.companySubscriptionRevenueRupees()).isEqualTo(48_600L);
+    }
+
+    @Test
+    void getFinancialStatsUsesDateBoundedSumsWhenDaysIsGiven() {
+        when(billingTransactionRepository.sumAmountRupeesByStatusAndCreatedAtAfter(
+                        eq(TransactionStatus.PAID), any(Instant.class)))
+                .thenReturn(1_000L);
+        when(companyBillingTransactionRepository.sumAmountRupeesByStatusAndCreatedAtAfter(
+                        eq(TransactionStatus.PAID), any(Instant.class)))
+                .thenReturn(2_000L);
+
+        AdminFinancialReportStats stats = adminReportsService.getFinancialStats(30);
+
+        assertThat(stats.totalRevenueRupees()).isEqualTo(3_000L);
+        assertThat(stats.candidateSubscriptionRevenueRupees()).isEqualTo(1_000L);
+        assertThat(stats.companySubscriptionRevenueRupees()).isEqualTo(2_000L);
     }
 
     private Job activeJob(UUID companyId, int applicants) {

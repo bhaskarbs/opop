@@ -206,9 +206,9 @@ export default function AdminReportsPage() {
   >(null)
   const [financialStats, setFinancialStats] = useState<AdminFinancialReportStats | null>(null)
 
-  // Candidates, Employers & Jobs, and Partnerships are date-bounded (see
-  // AdminReportsService.getCandidateStats/getEmployerStats/getPartnershipStats) — Community/
-  // Financial don't take a days param yet, so the dropdown doesn't affect those two tabs.
+  // Every tab is date-bounded by the days dropdown — see AdminReportsService's
+  // getCandidateStats/getEmployerStats/getPartnershipStats/getCommunityInterestSubmissions/
+  // getFinancialStats.
   useEffect(() => {
     adminApi
       .getCandidateReportStats(days)
@@ -238,21 +238,21 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     adminApi
-      .getCommunityInterestSubmissions()
+      .getCommunityInterestSubmissions(days)
       .then(setCommunitySubmissions)
       .catch(() => {
         // Best-effort — the list just stays blank if this fails.
       })
-  }, [])
+  }, [days])
 
   useEffect(() => {
     adminApi
-      .getFinancialReportStats()
+      .getFinancialReportStats(days)
       .then(setFinancialStats)
       .catch(() => {
         // Best-effort — the KPI cards/revenue table just stay blank if this fails.
       })
-  }, [])
+  }, [days])
 
   function buildExportRows(): (string | number)[][] {
     switch (tab) {

@@ -19,6 +19,14 @@ public interface CompanyBillingTransactionRepository extends JpaRepository<Compa
     @Query("select coalesce(sum(t.amountRupees), 0) from CompanyBillingTransaction t where t.status = :status")
     long sumAmountRupeesByStatus(@Param("status") TransactionStatus status);
 
+    /** Date-bounded counterpart of sumAmountRupeesByStatus, for AdminReportsService's
+     * date-range dropdown — revenue recorded (paid) within the window, not all-time. */
+    @Query(
+            "select coalesce(sum(t.amountRupees), 0) from CompanyBillingTransaction t "
+                    + "where t.status = :status and t.createdAt > :since")
+    long sumAmountRupeesByStatusAndCreatedAtAfter(
+            @Param("status") TransactionStatus status, @Param("since") Instant since);
+
     /** Every FREE-plan transaction represents a downgrade event (self-service, admin comp, or
      * the daily expiry sweep) — there's no "joined on Free" transaction since rows are only
      * created on an actual plan change (see AdminBillingService's "churned this month"). */
