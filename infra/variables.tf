@@ -128,6 +128,18 @@ variable "elastic_cloud_api_key" {
   sensitive   = true
 }
 
+# Outbound mail (see mail.tf) is unconditional, not a toggle like Redis/Elasticsearch above —
+# there's no local-first stand-in for a real mail relay (see application.properties' comment on
+# spring.mail.*), so this is expected to be configured for any real deployment rather than an
+# opt-in scale-up. Leaving it blank just means outbound mail fails with an auth error, same as
+# blank MAIL_USERNAME/MAIL_PASSWORD locally — it doesn't block an unrelated `terraform apply`.
+variable "resend_api_key" {
+  description = "Resend API key (https://resend.com -> API Keys), used as the SMTP password for smtp.resend.com. Set via TF_VAR_resend_api_key or terraform.tfvars (gitignored) — never commit this. Requires openopportunity.in to be verified as a Resend domain first (Resend dashboard -> Domains -> Add Domain -> add the DNS records it gives you)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "elastic_deployment_template_id" {
   description = <<-EOT
     Elastic Cloud hardware profile for GCP (only used when enable_elasticsearch=true).
