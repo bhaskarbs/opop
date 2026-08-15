@@ -37,12 +37,12 @@ public class AdminReportsController {
     }
 
     @GetMapping("/community")
-    public List<AdminCommunityInterestSummary> community() {
-        return adminReportsService.getCommunityInterestSubmissions();
+    public List<AdminCommunityInterestSummary> community(@RequestParam(required = false) Integer days) {
+        return adminReportsService.getCommunityInterestSubmissions(days);
     }
 
     @GetMapping("/financial")
-    public AdminFinancialReportStats financial() {
-        return adminReportsService.getFinancialStats();
+    public AdminFinancialReportStats financial(@RequestParam(required = false) Integer days) {
+        return adminReportsService.getFinancialStats(days);
     }
 }

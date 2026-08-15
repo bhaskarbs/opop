@@ -185,8 +185,8 @@ class AdminReportsServiceCachingTest {
                 .thenReturn(2_000L);
 
         AdminReportsService service = context.getBean(AdminReportsService.class);
-        service.getFinancialStats();
-        service.getFinancialStats();
+        service.getFinancialStats(null);
+        service.getFinancialStats(null);
 
         verify(billingTransactionRepository, times(1)).sumAmountRupeesByStatus(TransactionStatus.PAID);
         verify(companyBillingTransactionRepository, times(1)).sumAmountRupeesByStatus(TransactionStatus.PAID);
@@ -200,8 +200,8 @@ class AdminReportsServiceCachingTest {
         when(communityInterestSubmissionRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of());
 
         AdminReportsService service = context.getBean(AdminReportsService.class);
-        service.getCommunityInterestSubmissions();
-        service.getCommunityInterestSubmissions();
+        service.getCommunityInterestSubmissions(null);
+        service.getCommunityInterestSubmissions(null);
 
         verify(communityInterestSubmissionRepository, times(1)).findAllByOrderByCreatedAtDesc();
     }
