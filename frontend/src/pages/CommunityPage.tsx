@@ -7,6 +7,10 @@ import { useAuthStore } from '../stores/authStore'
 import { useCandidateProfileStore } from '../stores/candidateProfileStore'
 import { useCompanyProfileStore } from '../stores/companyProfileStore'
 
+// Flip to true to bring the "Know more about income types" button (and its request-a-guide
+// modal below) back — hidden for now, but the feature itself is untouched.
+const SHOW_READ_GUIDE_BUTTON = false
+
 const INCOME_TYPES = [
   {
     titleKey: 'community.incomeTypes.active.title',
@@ -404,28 +408,30 @@ export default function CommunityPage() {
             </div>
           ))}
         </div>
-        <div className="flex flex-col items-center">
-          {guideSent ? (
-            <p className="text-sm font-semibold text-teal">
-              {t('community.incomeTypes.guideSent')}
-            </p>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled={guideSending}
-                onClick={handleReadGuideClick}
-                className="flex items-center gap-2 rounded-[9px] border border-teal px-[22px] py-3 text-sm font-bold text-teal disabled:opacity-60"
-              >
-                {guideSending && <Spinner className="h-4 w-4" />}
-                {t('community.incomeTypes.readGuide')}
-              </button>
-              {guideError && !guideModalOpen && (
-                <p className="mt-2.5 text-[12.5px] font-semibold text-danger">{guideError}</p>
-              )}
-            </>
-          )}
-        </div>
+        {SHOW_READ_GUIDE_BUTTON && (
+          <div className="flex flex-col items-center">
+            {guideSent ? (
+              <p className="text-sm font-semibold text-teal">
+                {t('community.incomeTypes.guideSent')}
+              </p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={guideSending}
+                  onClick={handleReadGuideClick}
+                  className="flex items-center gap-2 rounded-[9px] border border-teal px-[22px] py-3 text-sm font-bold text-teal disabled:opacity-60"
+                >
+                  {guideSending && <Spinner className="h-4 w-4" />}
+                  {t('community.incomeTypes.readGuide')}
+                </button>
+                {guideError && !guideModalOpen && (
+                  <p className="mt-2.5 text-[12.5px] font-semibold text-danger">{guideError}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </main>
   )
