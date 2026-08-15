@@ -137,10 +137,10 @@ export function Footer() {
         <div>
           <FooterHeading>{t('footer.contact.heading')}</FooterHeading>
           <a
-            href="mailto:hello@openopportunity.com"
+            href="mailto:customersupport@openopportunity.in"
             className="mb-3 block text-sm text-[#B4BAC6] no-underline"
           >
-            hello@openopportunity.com
+            customersupport@openopportunity.in
           </a>
           <a href="tel:+918088076264" className="mb-3 block text-sm text-[#B4BAC6] no-underline">
             +91 80880 76264
