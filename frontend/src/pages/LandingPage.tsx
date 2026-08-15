@@ -313,7 +313,7 @@ export default function LandingPage() {
 
       {/* Community income banner */}
       <section className="mx-auto mb-16 max-w-[1120px] px-6">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-center gap-8 rounded-[20px] bg-[#0B3B34] p-11">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] items-center gap-8 rounded-[20px] bg-[#0B3B34] p-11">
           <div>
             <span className="mb-3.5 inline-block rounded-full bg-[rgba(127,224,196,0.12)] px-3 py-[5px] text-[12.5px] font-bold text-[#7FE0C4]">
               {t('landing.community.badge')}
