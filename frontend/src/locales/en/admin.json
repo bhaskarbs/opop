@@ -16,6 +16,7 @@
   "dashboard": {
     "title": "Platform overview",
     "manageVideos": "Manage videos →",
+    "broadcastEmail": "Send broadcast email →",
     "kpis": {
       "totalCandidates": "Total candidates",
       "registeredCompanies": "Registered companies",
@@ -394,5 +395,19 @@
     "recipientNameField": "Recipient name",
     "recipientEmailField": "Recipient email",
     "generateAndSend": "Generate link & email it"
+  },
+  "broadcastEmail": {
+    "title": "Broadcast email",
+    "subtitle": "Send an email to a list of addresses using the app's standard email template.",
+    "subjectField": "Subject",
+    "recipientsField": "Recipients",
+    "recipientsPlaceholder": "One email per line, or comma-separated",
+    "recipientCount": "{{count}} recipients",
+    "messageField": "Message",
+    "messagePlaceholder": "Write your message. Leave a blank line between paragraphs.",
+    "templateNote": "Sent using the same branded template as every other email from this app.",
+    "send": "Send email",
+    "success": "Sent to {{count}} recipients.",
+    "error": "Could not send this email."
   }
 }

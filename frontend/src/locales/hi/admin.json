@@ -16,6 +16,7 @@
   "dashboard": {
     "title": "प्लेटफ़ॉर्म का अवलोकन",
     "manageVideos": "वीडियो प्रबंधित करें →",
+    "broadcastEmail": "ब्रॉडकास्ट ईमेल भेजें →",
     "kpis": {
       "totalCandidates": "कुल उम्मीदवार",
       "registeredCompanies": "पंजीकृत कंपनियां",
@@ -394,5 +395,19 @@
     "recipientNameField": "प्राप्तकर्ता का नाम",
     "recipientEmailField": "प्राप्तकर्ता का ईमेल",
     "generateAndSend": "लिंक बनाएं और ईमेल करें"
+  },
+  "broadcastEmail": {
+    "title": "ब्रॉडकास्ट ईमेल",
+    "subtitle": "ऐप के मानक ईमेल टेम्पलेट का उपयोग करके पतों की सूची में ईमेल भेजें।",
+    "subjectField": "विषय",
+    "recipientsField": "प्राप्तकर्ता",
+    "recipientsPlaceholder": "प्रति पंक्ति एक ईमेल, या कॉमा से अलग करें",
+    "recipientCount": "{{count}} प्राप्तकर्ता",
+    "messageField": "संदेश",
+    "messagePlaceholder": "अपना संदेश लिखें। पैराग्राफ के बीच एक खाली लाइन छोड़ें।",
+    "templateNote": "इस ऐप के हर अन्य ईमेल की तरह उसी ब्रांडेड टेम्पलेट का उपयोग करके भेजा गया।",
+    "send": "ईमेल भेजें",
+    "success": "{{count}} प्राप्तकर्ताओं को भेजा गया।",
+    "error": "यह ईमेल नहीं भेजा जा सका।"
   }
 }
