@@ -206,9 +206,9 @@ export default function AdminReportsPage() {
   >(null)
   const [financialStats, setFinancialStats] = useState<AdminFinancialReportStats | null>(null)
 
-  // Candidates and Employers & Jobs are date-bounded (see AdminReportsService.getCandidateStats/
-  // getEmployerStats) — Partnerships/Community/Financial don't take a days param yet, so the
-  // dropdown doesn't affect those tabs.
+  // Candidates, Employers & Jobs, and Partnerships are date-bounded (see
+  // AdminReportsService.getCandidateStats/getEmployerStats/getPartnershipStats) — Community/
+  // Financial don't take a days param yet, so the dropdown doesn't affect those two tabs.
   useEffect(() => {
     adminApi
       .getCandidateReportStats(days)
@@ -229,12 +229,12 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     adminApi
-      .getPartnershipReportStats()
+      .getPartnershipReportStats(days)
       .then(setPartnershipStats)
       .catch(() => {
         // Best-effort — the KPI cards/track breakdown just stay blank if this fails.
       })
-  }, [])
+  }, [days])
 
   useEffect(() => {
     adminApi

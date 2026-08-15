@@ -29,6 +29,8 @@ public interface IdeaInterestRepository extends JpaRepository<IdeaInterest, UUID
      * partnershipMatches above. */
     long countByCreatedAtBetween(Instant start, Instant end);
 
+    long countByCreatedAtAfter(Instant since);
+
     // Used by IdeaService#delete/adminDelete and AdminAccountDeletionService — idea_interests
     // has no DB-level FK to ideas/users, so this cleanup is entirely application-managed.
     void deleteByIdeaId(UUID ideaId);
