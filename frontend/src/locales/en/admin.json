@@ -197,7 +197,14 @@
     "addTitle": "Add a question",
     "textPlaceholder": "Type the interview question…",
     "industryPlaceholder": "Industry (optional)",
-    "anyExperienceLevel": "Any experience level",
+    "experienceLevelsField": "Experience levels",
+    "anyDifficulty": "Any difficulty",
+    "difficulty": {
+      "easy": "Easy",
+      "normal": "Normal",
+      "difficult": "Difficult",
+      "veryDifficult": "Very difficult"
+    },
     "addSkillPlaceholder": "Tag a skill and press enter",
     "removeSkill": "Remove {{skill}}",
     "addQuestion": "Add question",

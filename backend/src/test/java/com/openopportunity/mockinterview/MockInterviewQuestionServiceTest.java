@@ -20,7 +20,7 @@ class MockInterviewQuestionServiceTest {
     private final MockInterviewQuestionRepository questionRepository = mock(MockInterviewQuestionRepository.class);
     private final MockInterviewQuestionRateLimiter rateLimiter = mock(MockInterviewQuestionRateLimiter.class);
     private final MockInterviewQuestionService service =
-            new MockInterviewQuestionService(questionRepository, rateLimiter);
+            new MockInterviewQuestionService(questionRepository, rateLimiter, false);
 
     @Test
     void refusesToServeQuestionsWhenTheCandidateIsRateLimited() {
@@ -31,7 +31,7 @@ class MockInterviewQuestionServiceTest {
                         service.getSessionQuestions(candidateId, List.of("React"), ExperienceLevel.SENIOR, "Tech", 5))
                 .isInstanceOf(MockInterviewQuestionRateLimitedException.class);
 
-        verify(questionRepository, never()).findByOptionalFilters(any(), any());
+        verify(questionRepository, never()).findByOptionalFilters(any());
     }
 
     @Test
@@ -41,9 +41,14 @@ class MockInterviewQuestionServiceTest {
         List<MockInterviewQuestion> bank = new ArrayList<>();
         for (int i = 0; i < 101; i++) {
             bank.add(new MockInterviewQuestion(
-                    "Question " + i, List.of(), "Tech", ExperienceLevel.SENIOR, QuestionSource.ADMIN));
+                    "Question " + i,
+                    List.of(),
+                    "Tech",
+                    List.of(ExperienceLevel.SENIOR),
+                    null,
+                    QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters("Tech", ExperienceLevel.SENIOR)).thenReturn(bank);
+        when(questionRepository.findByOptionalFilters("Tech")).thenReturn(bank);
 
         List<String> questions =
                 service.getSessionQuestions(candidateId, List.of(), ExperienceLevel.SENIOR, "Tech", 5);

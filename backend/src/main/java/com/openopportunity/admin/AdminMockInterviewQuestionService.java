@@ -8,6 +8,7 @@ import com.openopportunity.mockinterview.dto.AdminMockInterviewQuestionSummary;
 import com.openopportunity.mockinterview.dto.CreateMockInterviewQuestionRequest;
 import com.openopportunity.mockinterview.exception.DuplicateMockInterviewQuestionException;
 import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFoundException;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -26,11 +27,17 @@ public class AdminMockInterviewQuestionService {
 
     @Transactional(readOnly = true)
     public List<AdminMockInterviewQuestionSummary> list(
-            String skill, String industry, ExperienceLevel experienceLevel, String query) {
+            String skill, String industry, List<ExperienceLevel> experienceLevels, String query) {
         String normalizedSkill = skill == null ? null : skill.trim().toLowerCase();
         String normalizedQuery = query == null ? null : query.trim().toLowerCase();
         return questionRepository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(question -> experienceLevel == null || question.getExperienceLevel() == experienceLevel)
+                // A question tagged with no levels applies to anyone, so it always matches; when
+                // both sides carry levels, matching is "any overlap" (OR), not "all selected
+                // filter levels must be present".
+                .filter(question -> experienceLevels == null
+                        || experienceLevels.isEmpty()
+                        || question.getExperienceLevels().isEmpty()
+                        || !Collections.disjoint(question.getExperienceLevels(), experienceLevels))
                 .filter(question ->
                         industry == null || industry.isBlank() || industry.equalsIgnoreCase(question.getIndustry()))
                 .filter(question -> normalizedSkill == null
@@ -51,7 +58,12 @@ public class AdminMockInterviewQuestionService {
             throw new DuplicateMockInterviewQuestionException();
         }
         MockInterviewQuestion question = new MockInterviewQuestion(
-                request.text(), request.skills(), request.industry(), request.experienceLevel(), QuestionSource.ADMIN);
+                request.text(),
+                request.skills(),
+                request.industry(),
+                request.experienceLevels(),
+                request.difficulty(),
+                QuestionSource.ADMIN);
         return toSummary(questionRepository.save(question));
     }
 
@@ -77,7 +89,8 @@ public class AdminMockInterviewQuestionService {
                 question.getText(),
                 question.getSkills(),
                 question.getIndustry(),
-                question.getExperienceLevel(),
+                question.getExperienceLevels(),
+                question.getDifficulty(),
                 question.isImportant(),
                 question.getSource(),
                 question.getCreatedAt());
