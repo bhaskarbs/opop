@@ -14,6 +14,17 @@ type PlanKey = 'free' | 'plus' | 'pro'
 // in candidate.json's billing.plans.pro so it's a one-line change to bring back.
 const PLAN_KEYS: PlanKey[] = ['free', 'plus' /* , 'pro' */]
 
+// Razorpay live checkout isn't approved yet (business category under review) — paid plans are
+// activated manually by support in the meantime (see the contact banner below). Flip back to
+// true to re-enable self-serve upgrade/renew once live checkout is back, same idiom as Footer's
+// SHOW_SOCIAL_LINKS.
+const ENABLE_PLAN_UPGRADE = false
+
+const WHATSAPP_NUMBER = '918088076264'
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  'Hi, I want to activate the Plus plan on OpenOpportunity.',
+)}`
+
 const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js'
 
 // Billing history accrues one row per renewal, so it can grow long for an old account — show a
@@ -251,7 +262,11 @@ export default function CandidateBillingPage() {
               </div>
               <button
                 type="button"
-                disabled={(isCurrent && key === 'free') || changingPlan !== null}
+                disabled={
+                  (isCurrent && key === 'free') ||
+                  (key !== 'free' && !ENABLE_PLAN_UPGRADE) ||
+                  changingPlan !== null
+                }
                 onClick={() => (key === 'free' ? handleDowngradeToFree() : handleUpgrade(key))}
                 className={`flex items-center justify-center gap-2 rounded-[9px] border py-2.5 text-[13.5px] font-bold disabled:cursor-not-allowed ${
                   isCurrent && key === 'free'
@@ -274,6 +289,38 @@ export default function CandidateBillingPage() {
           )
         })}
       </div>
+
+      {!ENABLE_PLAN_UPGRADE && (
+        <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-3.5 rounded-xl border border-border bg-neutral-tint px-7 py-7 text-[25px] text-slate">
+          <span>{t('billing.contactToActivate.prefix')}</span>
+          <a
+            href="mailto:customersupport@openopportunity.in"
+            className="font-semibold text-primary"
+          >
+            customersupport@openopportunity.in
+          </a>
+          <span>{t('billing.contactToActivate.orCall')}</span>
+          <a href="tel:+918088076264" className="font-semibold text-primary">
+            +91 80880 76264
+          </a>
+          <span>{t('billing.contactToActivate.orWhatsapp')}</span>
+          <a
+            href={WHATSAPP_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 font-semibold text-primary"
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="12" fill="#25D366" />
+              <path
+                d="M12.04 5.5c-3.6 0-6.52 2.92-6.52 6.52 0 1.15.3 2.27.88 3.26L5.5 18.5l3.33-.87a6.5 6.5 0 0 0 3.21.85h.003c3.6 0 6.52-2.92 6.52-6.52 0-1.74-.68-3.38-1.91-4.61a6.48 6.48 0 0 0-4.6-1.91Zm3.83 9.32c-.16.46-.93.88-1.28.93-.33.05-.74.07-1.19-.08a10.9 10.9 0 0 1-1.06-.39c-1.87-.81-3.09-2.7-3.18-2.82-.09-.13-.76-1.01-.76-1.93 0-.92.48-1.37.65-1.56.17-.19.37-.23.5-.23l.36.01c.11 0 .27-.04.42.32.16.37.53 1.29.58 1.38.05.09.08.2.02.33-.06.13-.09.2-.19.31l-.28.33c-.09.09-.19.2-.08.38.11.19.48.8 1.04 1.29.71.63 1.31.83 1.5.92.19.09.3.08.41-.05.11-.12.47-.55.59-.74.13-.19.25-.16.42-.09.17.06 1.09.51 1.28.6.19.1.31.14.36.22.05.08.05.45-.11.9Z"
+                fill="#fff"
+              />
+            </svg>
+            {t('billing.contactToActivate.whatsapp')}
+          </a>
+        </div>
+      )}
 
       <h2 className="mb-3.5 text-[16.5px] font-bold text-ink">{t('billing.billingHistory')}</h2>
       {history.length === 0 ? (
