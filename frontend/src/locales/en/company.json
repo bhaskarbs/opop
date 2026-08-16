@@ -308,6 +308,12 @@
     "downgrade": "Downgrade",
     "upgrade": "Upgrade",
     "renew": "Renew",
+    "contactToActivate": {
+      "prefix": "To activate a paid plan, contact us at",
+      "orCall": "or call",
+      "orWhatsapp": "or",
+      "whatsapp": "WhatsApp us"
+    },
     "validUntil": "Valid until {{date}}.",
     "validUntilNote": "This plan doesn't renew automatically — come back before then to keep your benefits.",
     "billingHistory": "Billing history",
