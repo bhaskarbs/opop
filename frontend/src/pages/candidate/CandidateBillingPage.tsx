@@ -360,7 +360,7 @@ export default function CandidateBillingPage() {
                       ? t('billing.statusFailed')
                       : t('billing.statusPending')}
                 </span>
-                {entry.status === 'PAID' && (
+                {entry.status === 'PAID' && entry.invoiceAvailable && (
                   <button
                     type="button"
                     disabled={downloadingInvoiceId === entry.id}

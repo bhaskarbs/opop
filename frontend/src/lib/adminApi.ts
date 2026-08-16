@@ -216,11 +216,23 @@ export interface AdminCandidateSubscriptionSummary {
   email: string
   plan: BackendSubscriptionPlan
   validUntil: string | null
+  // When this plan was last set (grant, renewal, or downgrade) — null only for a candidate
+  // who's never had a subscription row at all (always Free, untouched). See
+  // CandidateSubscription.updatedAt.
+  upgradedAt: string | null
 }
 
 // The backend only lets an admin comp Free or Plus directly (see
 // PlanNotAdminAssignableException) — Pro always has to go through a real Razorpay checkout.
 export type AdminAssignableSubscriptionPlan = 'FREE' | 'PLUS'
+
+// months/generateInvoice are only meaningful (and required by the backend) for plan=PLUS — see
+// AdminGrantCandidatePlanRequest/CandidateBillingService.adminSetPlan.
+export interface AdminGrantCandidatePlanPayload {
+  plan: AdminAssignableSubscriptionPlan
+  months?: number
+  generateInvoice?: boolean
+}
 
 export interface AdminCompanySubscriptionSummary {
   companyId: string
@@ -228,6 +240,8 @@ export interface AdminCompanySubscriptionSummary {
   email: string
   plan: BackendCompanySubscriptionPlan
   validUntil: string | null
+  // See AdminCandidateSubscriptionSummary.upgradedAt.
+  upgradedAt: string | null
 }
 
 // The backend only lets an admin comp Free or Growth directly (see
@@ -454,10 +468,10 @@ export const adminApi = {
     request<AdminCandidateSubscriptionSummary[]>('/api/admin/candidate-billing', {
       headers: authHeaders(),
     }),
-  setCandidatePlan: (candidateId: string, plan: AdminAssignableSubscriptionPlan) =>
+  setCandidatePlan: (candidateId: string, payload: AdminGrantCandidatePlanPayload) =>
     request<AdminCandidateSubscriptionSummary>(`/api/admin/candidate-billing/${candidateId}/plan`, {
       method: 'POST',
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify(payload),
       headers: authHeaders(),
     }),
 

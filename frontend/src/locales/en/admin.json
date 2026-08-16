@@ -313,7 +313,8 @@
     "statusFailed": "Failed",
     "statusPending": "Pending",
     "noInvoices": "No invoices yet.",
-    "since": "Since {{date}}",
+    "upgradedOn": "Upgraded on {{date}}",
+    "validUntilShort": "Last date: {{date}}",
     "searchPlaceholder": "Search by name or email (press Enter)",
     "previousPage": "← Previous",
     "nextPage": "Next →",
@@ -324,7 +325,19 @@
       "none": "No candidate subscriptions yet.",
       "downgradeToFree": "Downgrade to Free",
       "upgradeToPlus": "Upgrade to Plus",
-      "confirmDowngrade": "Downgrade this candidate to the Free plan?"
+      "confirmDowngrade": "Downgrade this candidate to the Free plan?",
+      "grantModal": {
+        "title": "Activate Plus plan",
+        "subtitle": "Grant {{name}} the Plus plan. They'll be moved back to Free automatically once it expires.",
+        "monthsLabel": "Number of months",
+        "invoiceLabel": "Generate an invoice?",
+        "invoiceYes": "Yes",
+        "invoiceNo": "No",
+        "cancel": "Cancel",
+        "confirm": "Activate Plus",
+        "close": "Close",
+        "error": "Couldn't activate the Plus plan. Please try again."
+      }
     },
     "companyPlans": {
       "loading": "Loading company subscriptions…",

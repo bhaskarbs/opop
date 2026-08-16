@@ -88,8 +88,9 @@ public class CompanyBillingService {
                     CompanySubscriptionPlan plan =
                             subscription == null ? CompanySubscriptionPlan.FREE : subscription.getPlan();
                     Instant validUntil = subscription == null ? null : subscription.getCurrentPeriodEnd();
+                    Instant upgradedAt = subscription == null ? null : subscription.getUpdatedAt();
                     return new AdminCompanySubscriptionSummary(
-                            user.getId(), user.getFullName(), user.getEmail(), plan, validUntil);
+                            user.getId(), user.getFullName(), user.getEmail(), plan, validUntil, upgradedAt);
                 })
                 .toList();
     }
@@ -120,8 +121,10 @@ public class CompanyBillingService {
         subscriptionRepository.save(subscription);
         transactionRepository.save(CompanyBillingTransaction.adminGrant(companyId, plan));
 
+        // now rather than subscription.getUpdatedAt() — see CandidateBillingService.adminSetPlan's
+        // comment on why the getter can be stale here.
         return new AdminCompanySubscriptionSummary(
-                company.getId(), company.getFullName(), company.getEmail(), plan, currentPeriodEnd);
+                company.getId(), company.getFullName(), company.getEmail(), plan, currentPeriodEnd, now);
     }
 
     /** For CandidateSearchService's contact-reveal quota gate — cheaper than getBilling() when

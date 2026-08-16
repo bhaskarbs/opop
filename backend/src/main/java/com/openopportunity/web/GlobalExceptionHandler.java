@@ -41,6 +41,7 @@ import com.openopportunity.billing.exception.CandidateNotFoundException;
 import com.openopportunity.billing.exception.CompanyNotFoundException;
 import com.openopportunity.billing.exception.CompanyPaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.CompanyPlanNotAdminAssignableException;
+import com.openopportunity.billing.exception.InvalidGrantMonthsException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
@@ -407,6 +408,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PlanNotAdminAssignableException.class)
     public ResponseEntity<ApiError> handlePlanNotAdminAssignable(PlanNotAdminAssignableException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidGrantMonthsException.class)
+    public ResponseEntity<ApiError> handleInvalidGrantMonths(InvalidGrantMonthsException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 

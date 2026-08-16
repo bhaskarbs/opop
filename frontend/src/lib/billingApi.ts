@@ -9,6 +9,10 @@ export interface BillingTransactionSummary {
   plan: BackendSubscriptionPlan
   amountRupees: number
   status: BillingTransactionStatus
+  // False for an admin comp grant made with "generate invoice" turned off — see
+  // CandidateBillingService.adminSetPlan. Always true for a real Razorpay payment or a Free
+  // downgrade.
+  invoiceAvailable: boolean
   createdAt: string
 }
 
