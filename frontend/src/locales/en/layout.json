@@ -64,7 +64,8 @@
     },
     "legal": {
       "privacyPolicy": "Privacy Policy",
-      "termsOfService": "Terms of Service"
+      "termsOfService": "Terms of Service",
+      "refundPolicy": "Refund & Cancellation Policy"
     },
     "copyright": "© {{year}} OpenOpportunity.in All rights reserved."
   }

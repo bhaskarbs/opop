@@ -36,6 +36,7 @@ const PartnershipsPage = lazy(() => import('./pages/PartnershipsPage'))
 const CommunityPage = lazy(() => import('./pages/CommunityPage'))
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
+const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'))
 const IdeasBrowsePage = lazy(() => import('./pages/IdeasBrowsePage'))
 const IdeaDetailPage = lazy(() => import('./pages/IdeaDetailPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
@@ -161,6 +162,7 @@ function App() {
               <Route path="community" element={<CommunityPage />} />
               <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="refund-policy" element={<RefundPolicyPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
               <Route path="forgot-password" element={<ForgotPasswordPage />} />

@@ -16,6 +16,7 @@ export const ROUTES = {
   community: '/community',
   privacyPolicy: '/privacy-policy',
   termsOfService: '/terms-of-service',
+  refundPolicy: '/refund-policy',
   login: '/login',
   register: '/register',
   forgotPassword: '/forgot-password',

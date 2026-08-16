@@ -29,6 +29,7 @@ const EMPLOYER_LINKS: FooterLink[] = [
 const LEGAL_LINKS: FooterLink[] = [
   { label: 'footer.legal.privacyPolicy', to: ROUTES.privacyPolicy },
   { label: 'footer.legal.termsOfService', to: ROUTES.termsOfService },
+  { label: 'footer.legal.refundPolicy', to: ROUTES.refundPolicy },
 ]
 
 // Temporarily hidden on request — flip back to true to bring the social icons back. Not
