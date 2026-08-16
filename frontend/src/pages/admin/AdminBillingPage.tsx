@@ -1,6 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingState, Spinner } from '../../components/ui'
+import { Button, Input, LoadingState, Modal, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import {
   adminApi,
@@ -9,6 +9,10 @@ import {
   type AdminCompanySubscriptionSummary,
   type AdminInvoiceSummary,
 } from '../../lib/adminApi'
+
+const MIN_GRANT_MONTHS = 1
+const MAX_GRANT_MONTHS = 24
+const DEFAULT_GRANT_MONTHS = 1
 
 type SubTab = 'candidates' | 'companies' | 'candidateInvoices' | 'companyInvoices'
 
@@ -46,7 +50,7 @@ const INVOICE_STATUS_LABEL_KEYS: Record<AdminInvoiceSummary['status'], string> =
   PENDING: 'billing.statusPending',
 }
 
-function formatValidUntil(locale: string, validUntil: string | null): string | null {
+function formatAdminDate(locale: string, validUntil: string | null): string | null {
   if (!validUntil) return null
   return new Date(validUntil).toLocaleDateString(locale, {
     month: 'short',
@@ -70,7 +74,7 @@ function InvoiceRow({
         {invoice.name ?? t('billing.unknownUser')}
       </div>
       <div className="text-[13px] text-fog">{invoice.plan}</div>
-      <div className="text-[13px] text-fog">{formatValidUntil(locale, invoice.createdAt)}</div>
+      <div className="text-[13px] text-fog">{formatAdminDate(locale, invoice.createdAt)}</div>
       <div className="text-[13.5px] font-bold text-ink">
         ₹{invoice.amountRupees.toLocaleString()}
       </div>
@@ -104,6 +108,16 @@ export default function AdminBillingPage() {
   const [companiesLoading, setCompaniesLoading] = useState(true)
   const [companiesError, setCompaniesError] = useState<string | null>(null)
   const [actioningCompanyId, setActioningCompanyId] = useState<string | null>(null)
+
+  // Plus grants need the admin to choose a period and whether to generate an invoice (see
+  // CandidateBillingService.adminSetPlan) — unlike every other row action here, that can't
+  // happen from a single button click, so it opens this modal instead.
+  const [grantModalCandidate, setGrantModalCandidate] =
+    useState<AdminCandidateSubscriptionSummary | null>(null)
+  const [grantMonths, setGrantMonths] = useState(DEFAULT_GRANT_MONTHS)
+  const [grantInvoice, setGrantInvoice] = useState(true)
+  const [granting, setGranting] = useState(false)
+  const [grantError, setGrantError] = useState<string | null>(null)
 
   const [invoices, setInvoices] = useState<AdminInvoiceSummary[] | null>(null)
 
@@ -182,11 +196,11 @@ export default function AdminBillingPage() {
     setPage(1)
   }
 
-  async function handleSetCandidatePlan(candidateId: string, plan: 'FREE' | 'PLUS') {
-    if (plan === 'FREE' && !window.confirm(t('billing.candidatePlans.confirmDowngrade'))) return
+  async function handleDowngradeCandidateToFree(candidateId: string) {
+    if (!window.confirm(t('billing.candidatePlans.confirmDowngrade'))) return
     setActioningCandidateId(candidateId)
     try {
-      const updated = await adminApi.setCandidatePlan(candidateId, plan)
+      const updated = await adminApi.setCandidatePlan(candidateId, { plan: 'FREE' })
       setCandidates((prev) =>
         prev.map((existing) => (existing.candidateId === candidateId ? updated : existing)),
       )
@@ -194,6 +208,38 @@ export default function AdminBillingPage() {
       // Best-effort — the row simply keeps its current plan if the call fails.
     } finally {
       setActioningCandidateId(null)
+    }
+  }
+
+  function openGrantPlusModal(candidate: AdminCandidateSubscriptionSummary) {
+    setGrantModalCandidate(candidate)
+    setGrantMonths(DEFAULT_GRANT_MONTHS)
+    setGrantInvoice(true)
+    setGrantError(null)
+  }
+
+  async function handleGrantPlus() {
+    if (!grantModalCandidate) return
+    setGranting(true)
+    setGrantError(null)
+    try {
+      const updated = await adminApi.setCandidatePlan(grantModalCandidate.candidateId, {
+        plan: 'PLUS',
+        months: grantMonths,
+        generateInvoice: grantInvoice,
+      })
+      setCandidates((prev) =>
+        prev.map((existing) =>
+          existing.candidateId === grantModalCandidate.candidateId ? updated : existing,
+        ),
+      )
+      setGrantModalCandidate(null)
+    } catch (caught) {
+      setGrantError(
+        caught instanceof ApiError ? caught.message : t('billing.candidatePlans.grantModal.error'),
+      )
+    } finally {
+      setGranting(false)
     }
   }
 
@@ -377,7 +423,8 @@ export default function AdminBillingPage() {
           !companiesError &&
           visibleCompanies.map((company) => {
             const planLabel = COMPANY_PLAN_LABELS[company.plan]
-            const validUntil = formatValidUntil(i18n.language, company.validUntil)
+            const upgradedAt = formatAdminDate(i18n.language, company.upgradedAt)
+            const validUntil = formatAdminDate(i18n.language, company.validUntil)
             const isActioning = actioningCompanyId === company.companyId
             return (
               <div
@@ -393,8 +440,9 @@ export default function AdminBillingPage() {
                 >
                   {planLabel}
                 </span>
-                <div className="text-[13px] text-fog">
-                  {validUntil ? t('billing.since', { date: validUntil }) : ''}
+                <div className="text-right text-[13px] text-fog">
+                  {upgradedAt && <div>{t('billing.upgradedOn', { date: upgradedAt })}</div>}
+                  {validUntil && <div>{t('billing.validUntilShort', { date: validUntil })}</div>}
                 </div>
                 <div className="flex gap-2">
                   {company.plan !== 'FREE' && (
@@ -450,7 +498,8 @@ export default function AdminBillingPage() {
           !candidatesError &&
           visibleCandidates.map((candidate) => {
             const planLabel = PLAN_LABELS[candidate.plan]
-            const validUntil = formatValidUntil(i18n.language, candidate.validUntil)
+            const upgradedAt = formatAdminDate(i18n.language, candidate.upgradedAt)
+            const validUntil = formatAdminDate(i18n.language, candidate.validUntil)
             const isActioning = actioningCandidateId === candidate.candidateId
             return (
               <div
@@ -466,15 +515,16 @@ export default function AdminBillingPage() {
                 >
                   {planLabel}
                 </span>
-                <div className="text-[13px] text-fog">
-                  {validUntil ? t('billing.since', { date: validUntil }) : ''}
+                <div className="text-right text-[13px] text-fog">
+                  {upgradedAt && <div>{t('billing.upgradedOn', { date: upgradedAt })}</div>}
+                  {validUntil && <div>{t('billing.validUntilShort', { date: validUntil })}</div>}
                 </div>
                 <div className="flex gap-2">
                   {candidate.plan !== 'FREE' && (
                     <button
                       type="button"
                       disabled={isActioning}
-                      onClick={() => handleSetCandidatePlan(candidate.candidateId, 'FREE')}
+                      onClick={() => handleDowngradeCandidateToFree(candidate.candidateId)}
                       className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
                     >
                       {isActioning && <Spinner className="h-3.5 w-3.5" />}
@@ -485,10 +535,9 @@ export default function AdminBillingPage() {
                     <button
                       type="button"
                       disabled={isActioning}
-                      onClick={() => handleSetCandidatePlan(candidate.candidateId, 'PLUS')}
+                      onClick={() => openGrantPlusModal(candidate)}
                       className="flex items-center gap-1.5 rounded-md border border-border bg-primary-tint px-3.5 py-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
                     >
-                      {isActioning && <Spinner className="h-3.5 w-3.5" />}
                       {t('billing.candidatePlans.upgradeToPlus')}
                     </button>
                   )}
@@ -556,6 +605,86 @@ export default function AdminBillingPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={grantModalCandidate !== null}
+        onClose={() => setGrantModalCandidate(null)}
+        closeLabel={t('billing.candidatePlans.grantModal.close')}
+        title={t('billing.candidatePlans.grantModal.title')}
+      >
+        {grantModalCandidate && (
+          <div className="flex flex-col gap-4">
+            <p className="text-[13.5px] text-slate">
+              {t('billing.candidatePlans.grantModal.subtitle', {
+                name: grantModalCandidate.fullName,
+              })}
+            </p>
+
+            <Input
+              type="number"
+              label={t('billing.candidatePlans.grantModal.monthsLabel')}
+              min={MIN_GRANT_MONTHS}
+              max={MAX_GRANT_MONTHS}
+              value={grantMonths}
+              onChange={(event) => {
+                const parsed = Number(event.target.value)
+                setGrantMonths(Number.isFinite(parsed) ? parsed : DEFAULT_GRANT_MONTHS)
+              }}
+            />
+
+            <div>
+              <span className="mb-1.5 block text-[13px] font-bold text-ink">
+                {t('billing.candidatePlans.grantModal.invoiceLabel')}
+              </span>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 text-[13.5px] text-ink">
+                  <input
+                    type="radio"
+                    name="grantInvoice"
+                    checked={grantInvoice}
+                    onChange={() => setGrantInvoice(true)}
+                  />
+                  {t('billing.candidatePlans.grantModal.invoiceYes')}
+                </label>
+                <label className="flex items-center gap-1.5 text-[13.5px] text-ink">
+                  <input
+                    type="radio"
+                    name="grantInvoice"
+                    checked={!grantInvoice}
+                    onChange={() => setGrantInvoice(false)}
+                  />
+                  {t('billing.candidatePlans.grantModal.invoiceNo')}
+                </label>
+              </div>
+            </div>
+
+            {grantError && (
+              <div className="rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+                {grantError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setGrantModalCandidate(null)}
+                disabled={granting}
+              >
+                {t('billing.candidatePlans.grantModal.cancel')}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleGrantPlus}
+                loading={granting}
+                disabled={grantMonths < MIN_GRANT_MONTHS || grantMonths > MAX_GRANT_MONTHS}
+              >
+                {t('billing.candidatePlans.grantModal.confirm')}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </main>
   )
 }

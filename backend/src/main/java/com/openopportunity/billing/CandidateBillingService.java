@@ -9,6 +9,7 @@ import com.openopportunity.billing.dto.CandidateBillingSummary;
 import com.openopportunity.billing.dto.CheckoutSummary;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
 import com.openopportunity.billing.exception.CandidateNotFoundException;
+import com.openopportunity.billing.exception.InvalidGrantMonthsException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
@@ -119,36 +120,54 @@ public class CandidateBillingService {
                             subscriptionRepository.findByCandidateId(user.getId()).orElse(null);
                     SubscriptionPlan plan = subscription == null ? SubscriptionPlan.FREE : subscription.getPlan();
                     Instant validUntil = subscription == null ? null : subscription.getCurrentPeriodEnd();
+                    Instant upgradedAt = subscription == null ? null : subscription.getUpdatedAt();
                     return new AdminCandidateSubscriptionSummary(
-                            user.getId(), user.getFullName(), user.getEmail(), plan, validUntil);
+                            user.getId(), user.getFullName(), user.getEmail(), plan, validUntil, upgradedAt);
                 })
                 .toList();
     }
 
     /** Admin-only direct plan change (comps / support fixes) — deliberately bypasses the paid
-     * Razorpay checkout the public path requires. Free and Plus only; granting Plus gets a fresh
-     * PAID_PLAN_PERIOD so the daily expiry sweep treats it exactly like a purchased period, and a
-     * ₹0 comp transaction is recorded for the audit trail. */
+     * Razorpay checkout the public path requires. Free and Plus only. Granting Plus requires
+     * months (1-24, validated here rather than by @NotNull since it only applies for this one
+     * plan) — the period is `months` calendar months of PAID_PLAN_PERIOD-style 30-day blocks from
+     * now, so the daily expiry sweep (expireOverdueSubscriptions) auto-downgrades the candidate
+     * back to Free once it lapses, same as any other expired paid period. generateInvoice controls
+     * whether the resulting ₹0 comp transaction gets an invoice link on the candidate's billing
+     * page (see BillingTransaction.invoiceAvailable) — some comps (e.g. a goodwill grant) shouldn't
+     * produce a document that looks like a real purchase. */
     @Transactional
-    public AdminCandidateSubscriptionSummary adminSetPlan(UUID candidateId, SubscriptionPlan plan) {
+    public AdminCandidateSubscriptionSummary adminSetPlan(
+            UUID candidateId, SubscriptionPlan plan, Integer months, boolean generateInvoice) {
         if (plan != SubscriptionPlan.FREE && plan != SubscriptionPlan.PLUS) {
             throw new PlanNotAdminAssignableException(plan);
+        }
+        if (plan == SubscriptionPlan.PLUS && (months == null || months < 1)) {
+            throw new InvalidGrantMonthsException();
         }
         User candidate = userRepository
                 .findById(candidateId)
                 .filter(user -> user.getRole() == UserRole.CANDIDATE)
                 .orElseThrow(() -> new CandidateNotFoundException(candidateId));
 
-        Instant currentPeriodEnd = plan == SubscriptionPlan.FREE ? null : Instant.now().plus(PAID_PLAN_PERIOD);
+        Instant now = Instant.now();
+        Instant currentPeriodEnd = plan == SubscriptionPlan.FREE ? null : now.plus(PAID_PLAN_PERIOD.multipliedBy(months));
         CandidateSubscription subscription = subscriptionRepository
                 .findByCandidateId(candidateId)
                 .orElseGet(() -> new CandidateSubscription(candidateId, plan));
         subscription.changePlan(plan, currentPeriodEnd);
         subscriptionRepository.save(subscription);
-        transactionRepository.save(BillingTransaction.adminGrant(candidateId, plan));
+        // A Free downgrade always keeps its invoice link (matches the self-serve downgrade path
+        // above) — only a Plus grant's invoice is admin-controlled.
+        boolean invoiceAvailable = plan == SubscriptionPlan.FREE || generateInvoice;
+        transactionRepository.save(BillingTransaction.adminGrant(candidateId, plan, invoiceAvailable));
 
+        // `now` rather than subscription.getUpdatedAt(): @PreUpdate only actually stamps the
+        // entity when Hibernate flushes, which for an already-persisted row may not happen until
+        // this transaction commits (after this method returns) — reading the getter here could
+        // return the stale pre-update value.
         return new AdminCandidateSubscriptionSummary(
-                candidate.getId(), candidate.getFullName(), candidate.getEmail(), plan, currentPeriodEnd);
+                candidate.getId(), candidate.getFullName(), candidate.getEmail(), plan, currentPeriodEnd, now);
     }
 
     /** Deliberately allows checkout for a plan the candidate already holds — that's a renewal
@@ -220,15 +239,17 @@ public class CandidateBillingService {
         return summaryFor(candidateId);
     }
 
-    /** Only PAID transactions have a real invoice — same 404-for-not-found-and-not-owned pattern
-     * as verifyCheckout also covers "exists but never completed payment" by reusing the same
-     * not-found exception, since the frontend only ever links this for PAID history rows. */
+    /** Only PAID transactions with an invoice actually available have a real invoice — same
+     * 404-for-not-found-and-not-owned pattern as verifyCheckout also covers "exists but never
+     * completed payment" (or "admin granted this without an invoice") by reusing the same
+     * not-found exception, since the frontend only ever links this when both are true. */
     @Transactional(readOnly = true)
     public byte[] generateInvoice(UUID candidateId, UUID transactionId) {
         BillingTransaction transaction = transactionRepository
                 .findById(transactionId)
                 .filter(existing -> existing.getCandidateId().equals(candidateId))
                 .filter(existing -> existing.getStatus() == TransactionStatus.PAID)
+                .filter(BillingTransaction::isInvoiceAvailable)
                 .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
         User candidate = userRepository
                 .findById(candidateId)
@@ -350,6 +371,7 @@ public class CandidateBillingService {
                 transaction.getPlan(),
                 transaction.getAmountRupees(),
                 transaction.getStatus(),
+                transaction.isInvoiceAvailable(),
                 transaction.getCreatedAt());
     }
 }

@@ -43,6 +43,13 @@ public class BillingTransaction {
     @Column(name = "razorpay_payment_id", length = 64)
     private String razorpayPaymentId;
 
+    // Separate from status==PAID (which already gates the "Download invoice" button on
+    // CandidateBillingPage.tsx) — lets an admin comp grant (see
+    // CandidateBillingService.adminSetPlan) skip generating an invoice entirely, while a real
+    // Razorpay payment or a Free downgrade always keeps one.
+    @Column(name = "invoice_available", nullable = false)
+    private boolean invoiceAvailable = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -57,11 +64,14 @@ public class BillingTransaction {
     }
 
     /** Admin comp grant — no money changes hands, so it's recorded as a settled ₹0 transaction
-     * (rather than the plan's real price) purely for the audit trail / billing history. */
-    public static BillingTransaction adminGrant(UUID candidateId, SubscriptionPlan plan) {
+     * (rather than the plan's real price) purely for the audit trail / billing history.
+     * generateInvoice lets the admin skip the invoice link for this period entirely (see
+     * invoiceAvailable). */
+    public static BillingTransaction adminGrant(UUID candidateId, SubscriptionPlan plan, boolean generateInvoice) {
         BillingTransaction transaction = new BillingTransaction(candidateId, plan, null);
         transaction.amountRupees = 0;
         transaction.status = TransactionStatus.PAID;
+        transaction.invoiceAvailable = generateInvoice;
         return transaction;
     }
 
@@ -115,6 +125,10 @@ public class BillingTransaction {
 
     public String getRazorpayPaymentId() {
         return razorpayPaymentId;
+    }
+
+    public boolean isInvoiceAvailable() {
+        return invoiceAvailable;
     }
 
     public Instant getCreatedAt() {

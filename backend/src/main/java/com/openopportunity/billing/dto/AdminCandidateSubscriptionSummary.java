@@ -5,6 +5,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 /** A candidate's current plan as shown on the admin billing page. validUntil is null for Free
- * (or a candidate who has never subscribed) and the ~30-day period end for a paid plan. */
+ * (or a candidate who has never subscribed) and the ~30-day period end for a paid plan.
+ * upgradedAt is when this plan was last set (CandidateSubscription.updatedAt) — null only for a
+ * candidate who has never had a subscription row at all (always Free, never touched). */
 public record AdminCandidateSubscriptionSummary(
-        UUID candidateId, String fullName, String email, SubscriptionPlan plan, Instant validUntil) {}
+        UUID candidateId,
+        String fullName,
+        String email,
+        SubscriptionPlan plan,
+        Instant validUntil,
+        Instant upgradedAt) {}

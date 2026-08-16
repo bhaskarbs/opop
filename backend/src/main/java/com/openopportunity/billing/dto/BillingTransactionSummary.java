@@ -6,4 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record BillingTransactionSummary(
-        UUID id, SubscriptionPlan plan, int amountRupees, TransactionStatus status, Instant createdAt) {}
+        UUID id,
+        SubscriptionPlan plan,
+        int amountRupees,
+        TransactionStatus status,
+        boolean invoiceAvailable,
+        Instant createdAt) {}
