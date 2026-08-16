@@ -2,7 +2,7 @@ package com.openopportunity.admin;
 
 import com.openopportunity.billing.CompanyBillingService;
 import com.openopportunity.billing.dto.AdminCompanySubscriptionSummary;
-import com.openopportunity.billing.dto.CompanyChangePlanRequest;
+import com.openopportunity.billing.dto.AdminGrantCompanyPlanRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -33,7 +33,8 @@ public class AdminCompanyBillingController {
 
     @PostMapping("/{companyId}/plan")
     public AdminCompanySubscriptionSummary setPlan(
-            @PathVariable UUID companyId, @Valid @RequestBody CompanyChangePlanRequest request) {
-        return companyBillingService.adminSetPlan(companyId, request.plan());
+            @PathVariable UUID companyId, @Valid @RequestBody AdminGrantCompanyPlanRequest request) {
+        return companyBillingService.adminSetPlan(
+                companyId, request.plan(), request.months(), request.generateInvoice());
     }
 }

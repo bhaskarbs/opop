@@ -9,6 +9,8 @@ export interface CompanyBillingTransactionSummary {
   plan: BackendCompanySubscriptionPlan
   amountRupees: number
   status: CompanyBillingTransactionStatus
+  // See candidate billingApi.ts's BillingTransactionSummary.invoiceAvailable.
+  invoiceAvailable: boolean
   createdAt: string
 }
 

@@ -244,10 +244,17 @@ export interface AdminCompanySubscriptionSummary {
   upgradedAt: string | null
 }
 
-// The backend only lets an admin comp Free or Growth directly (see
-// CompanyPlanNotAdminAssignableException) — Enterprise always has to go through a real
-// Razorpay checkout.
-export type AdminAssignableCompanySubscriptionPlan = 'FREE' | 'GROWTH'
+// Unlike candidates (Pro stays checkout-only), the backend lets an admin comp all three company
+// plans, including Enterprise — see CompanyBillingService.adminSetPlan.
+export type AdminAssignableCompanySubscriptionPlan = 'FREE' | 'GROWTH' | 'ENTERPRISE'
+
+// See AdminGrantCandidatePlanPayload — months/generateInvoice are only meaningful (and required
+// by the backend) for a paid plan (GROWTH/ENTERPRISE).
+export interface AdminGrantCompanyPlanPayload {
+  plan: AdminAssignableCompanySubscriptionPlan
+  months?: number
+  generateInvoice?: boolean
+}
 
 export interface AdminBillingStats {
   monthlyRecurringRevenueRupees: number
@@ -479,10 +486,10 @@ export const adminApi = {
     request<AdminCompanySubscriptionSummary[]>('/api/admin/company-billing', {
       headers: authHeaders(),
     }),
-  setCompanyPlan: (companyId: string, plan: AdminAssignableCompanySubscriptionPlan) =>
+  setCompanyPlan: (companyId: string, payload: AdminGrantCompanyPlanPayload) =>
     request<AdminCompanySubscriptionSummary>(`/api/admin/company-billing/${companyId}/plan`, {
       method: 'POST',
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify(payload),
       headers: authHeaders(),
     }),
 

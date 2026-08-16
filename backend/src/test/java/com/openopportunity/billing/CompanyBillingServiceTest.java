@@ -11,7 +11,7 @@ import com.openopportunity.auth.UserRepository;
 import com.openopportunity.auth.UserRole;
 import com.openopportunity.billing.dto.AdminCompanySubscriptionSummary;
 import com.openopportunity.billing.exception.CompanyNotFoundException;
-import com.openopportunity.billing.exception.CompanyPlanNotAdminAssignableException;
+import com.openopportunity.billing.exception.InvalidGrantMonthsException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -71,7 +71,7 @@ class CompanyBillingServiceTest {
         when(subscriptionRepository.findByCompanyId(company.getId())).thenReturn(Optional.empty());
 
         AdminCompanySubscriptionSummary summary =
-                billingService.adminSetPlan(company.getId(), CompanySubscriptionPlan.GROWTH);
+                billingService.adminSetPlan(company.getId(), CompanySubscriptionPlan.GROWTH, 1, true);
 
         assertThat(summary.plan()).isEqualTo(CompanySubscriptionPlan.GROWTH);
         assertThat(summary.validUntil()).isAfter(Instant.now().plus(Duration.ofDays(29)));
@@ -83,18 +83,36 @@ class CompanyBillingServiceTest {
     }
 
     @Test
-    void adminSetPlanRejectsEnterprise() {
+    void adminSetPlanGrantsEnterpriseAsASettledZeroRupeeTransaction() {
+        User company = companyUser();
+        when(userRepository.findById(company.getId())).thenReturn(Optional.of(company));
+        when(subscriptionRepository.findByCompanyId(company.getId())).thenReturn(Optional.empty());
+
+        AdminCompanySubscriptionSummary summary =
+                billingService.adminSetPlan(company.getId(), CompanySubscriptionPlan.ENTERPRISE, 1, true);
+
+        assertThat(summary.plan()).isEqualTo(CompanySubscriptionPlan.ENTERPRISE);
+        assertThat(summary.validUntil()).isAfter(Instant.now().plus(Duration.ofDays(29)));
+        ArgumentCaptor<CompanyBillingTransaction> transactionCaptor =
+                ArgumentCaptor.forClass(CompanyBillingTransaction.class);
+        verify(transactionRepository).save(transactionCaptor.capture());
+        assertThat(transactionCaptor.getValue().getAmountRupees()).isZero();
+        assertThat(transactionCaptor.getValue().getStatus()).isEqualTo(TransactionStatus.PAID);
+    }
+
+    @Test
+    void adminSetPlanRejectsMissingMonthsForPaidPlan() {
         UUID companyId = UUID.randomUUID();
 
-        assertThatThrownBy(() -> billingService.adminSetPlan(companyId, CompanySubscriptionPlan.ENTERPRISE))
-                .isInstanceOf(CompanyPlanNotAdminAssignableException.class);
+        assertThatThrownBy(() -> billingService.adminSetPlan(companyId, CompanySubscriptionPlan.GROWTH, null, true))
+                .isInstanceOf(InvalidGrantMonthsException.class);
     }
 
     @Test
     void adminSetPlanRejectsMissingCompany() {
         when(userRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> billingService.adminSetPlan(UUID.randomUUID(), CompanySubscriptionPlan.FREE))
+        assertThatThrownBy(() -> billingService.adminSetPlan(UUID.randomUUID(), CompanySubscriptionPlan.FREE, null, true))
                 .isInstanceOf(CompanyNotFoundException.class);
     }
 }

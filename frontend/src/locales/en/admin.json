@@ -344,8 +344,21 @@
       "loadError": "Couldn't load company subscriptions.",
       "none": "No company subscriptions yet.",
       "downgradeToFree": "Downgrade to Free",
-      "upgradeToGrowth": "Upgrade to Growth",
-      "confirmDowngrade": "Downgrade this company to the Free plan?"
+      "changePlan": "Change plan",
+      "confirmDowngrade": "Downgrade this company to the Free plan?",
+      "grantModal": {
+        "title": "Activate a paid plan",
+        "subtitle": "Grant {{name}} a paid plan. They'll be moved back to Free automatically once it expires.",
+        "monthsLabel": "Number of months",
+        "invoiceLabel": "Generate an invoice?",
+        "invoiceYes": "Yes",
+        "invoiceNo": "No",
+        "cancel": "Cancel",
+        "confirmGrowth": "Activate Growth",
+        "confirmEnterprise": "Activate Enterprise",
+        "close": "Close",
+        "error": "Couldn't activate the plan. Please try again."
+      }
     }
   },
   "jobs": {
