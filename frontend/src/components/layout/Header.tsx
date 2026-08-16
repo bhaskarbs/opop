@@ -361,7 +361,10 @@ export function Header({
                         <button
                           key={item.label}
                           type="button"
-                          onClick={handleLogout}
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            handleLogout()
+                          }}
                           className="block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium text-ink"
                         >
                           {t(item.label)}
@@ -370,6 +373,7 @@ export function Header({
                         <RouteLink
                           key={item.label}
                           to={item.to}
+                          onClick={() => setUserMenuOpen(false)}
                           className="block rounded-md px-3 py-2.5 text-sm font-medium text-ink no-underline"
                         >
                           {t(item.label)}
