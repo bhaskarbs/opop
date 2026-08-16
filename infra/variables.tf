@@ -140,6 +140,31 @@ variable "resend_api_key" {
   sensitive   = true
 }
 
+# Live Razorpay checkout (see razorpay.tf) — same "unconditional, no local-first stand-in"
+# reasoning as resend_api_key above. Leaving these blank means CandidateBillingService/
+# CompanyBillingService's razorpayClient stays null (paid-plan checkout fails gracefully with a
+# 502; Free downgrade still works), same as blank RAZORPAY_KEY_ID/SECRET locally.
+variable "razorpay_key_id" {
+  description = "Razorpay live Key ID (Razorpay dashboard -> Settings -> API Keys -> Generate Live Key, after the account is activated for live payments). This is the publishable key the frontend receives as-is (see CandidateBillingController/CompanyBillingController) — not genuinely secret, but still marked sensitive here to keep it out of plan/apply console output. Set via TF_VAR_razorpay_key_id or terraform.tfvars (gitignored)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "razorpay_key_secret" {
+  description = "Razorpay live Key Secret — shown once when you generate the live key, never leaves the backend. Set via TF_VAR_razorpay_key_secret or terraform.tfvars (gitignored) — never commit this."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "razorpay_webhook_secret" {
+  description = "Webhook secret you choose yourself when creating the live webhook (Razorpay dashboard -> Settings -> Webhooks), pointed at <backend_url>/api/webhooks/razorpay, subscribed to payment.captured/order.paid/payment.failed (the only events RazorpayWebhookController/CandidateBillingService/CompanyBillingService actually handle). Set via TF_VAR_razorpay_webhook_secret or terraform.tfvars (gitignored) — never commit this."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "elastic_deployment_template_id" {
   description = <<-EOT
     Elastic Cloud hardware profile for GCP (only used when enable_elasticsearch=true).

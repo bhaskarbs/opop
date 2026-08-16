@@ -151,6 +151,43 @@ resource "google_cloud_run_v2_service" "backend" {
         value = "customersupport@openopportunity.in"
       }
 
+      # See razorpay.tf — live checkout credentials. key-id is the publishable key (safe to hand
+      # to the frontend as-is, see CandidateBillingController/CompanyBillingController), so it's
+      # a plain value, always present (blank is a valid "not configured yet" state — see
+      # application.properties' comment on razorpayClient staying null). KEY_SECRET/
+      # WEBHOOK_SECRET are dynamic — see razorpay.tf's count gating: referencing
+      # secret_key_ref {version = "latest"} on a secret with zero versions fails the whole Cloud
+      # Run deploy outright (confirmed, not assumed), so these env vars must not exist at all
+      # until a real value has actually been supplied once.
+      env {
+        name  = "RAZORPAY_KEY_ID"
+        value = var.razorpay_key_id
+      }
+      dynamic "env" {
+        for_each = var.razorpay_key_secret != "" ? [1] : []
+        content {
+          name = "RAZORPAY_KEY_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.razorpay_key_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = var.razorpay_webhook_secret != "" ? [1] : []
+        content {
+          name = "RAZORPAY_WEBHOOK_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.razorpay_webhook_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
       # See uploads.tf — unlike Redis/Elasticsearch/the read replica, this isn't behind a
       # toggle: without it the backend silently falls back to app.storage.provider=local
       # (Cloud Run's ephemeral per-instance disk), which loses uploads on every
@@ -319,6 +356,8 @@ resource "google_cloud_run_v2_service" "backend" {
     google_secret_manager_secret_iam_member.backend_secret_access,
     google_secret_manager_secret_iam_member.backend_elasticsearch_password_access,
     google_secret_manager_secret_iam_member.backend_resend_api_key_access,
+    google_secret_manager_secret_iam_member.backend_razorpay_key_secret_access,
+    google_secret_manager_secret_iam_member.backend_razorpay_webhook_secret_access,
     google_storage_bucket_iam_member.uploads_backend_access,
   ]
 }
