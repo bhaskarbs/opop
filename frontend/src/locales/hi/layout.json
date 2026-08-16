@@ -64,7 +64,8 @@
     },
     "legal": {
       "privacyPolicy": "गोपनीयता नीति",
-      "termsOfService": "सेवा की शर्तें"
+      "termsOfService": "सेवा की शर्तें",
+      "refundPolicy": "धनवापसी और रद्दीकरण नीति"
     },
     "copyright": "© {{year}} OpenOpportunity.in सर्वाधिकार सुरक्षित।"
   }
