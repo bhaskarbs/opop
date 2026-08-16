@@ -119,6 +119,19 @@ export default function AdminBillingPage() {
   const [granting, setGranting] = useState(false)
   const [grantError, setGrantError] = useState<string | null>(null)
 
+  // Company counterpart of the candidate grant-modal state above — mirrors it exactly for the
+  // Growth plan.
+  const [grantModalCompany, setGrantModalCompany] =
+    useState<AdminCompanySubscriptionSummary | null>(null)
+  const [companyGrantMonths, setCompanyGrantMonths] = useState(DEFAULT_GRANT_MONTHS)
+  const [companyGrantInvoice, setCompanyGrantInvoice] = useState(true)
+  // Which plan button was clicked (both Growth/Enterprise share the same months/invoice
+  // fields, so only the clicked button's own spinner should show, not both).
+  const [companyGrantingPlan, setCompanyGrantingPlan] = useState<'GROWTH' | 'ENTERPRISE' | null>(
+    null,
+  )
+  const [companyGrantError, setCompanyGrantError] = useState<string | null>(null)
+
   const [invoices, setInvoices] = useState<AdminInvoiceSummary[] | null>(null)
 
   useEffect(() => {
@@ -243,11 +256,11 @@ export default function AdminBillingPage() {
     }
   }
 
-  async function handleSetCompanyPlan(companyId: string, plan: 'FREE' | 'GROWTH') {
-    if (plan === 'FREE' && !window.confirm(t('billing.companyPlans.confirmDowngrade'))) return
+  async function handleDowngradeCompanyToFree(companyId: string) {
+    if (!window.confirm(t('billing.companyPlans.confirmDowngrade'))) return
     setActioningCompanyId(companyId)
     try {
-      const updated = await adminApi.setCompanyPlan(companyId, plan)
+      const updated = await adminApi.setCompanyPlan(companyId, { plan: 'FREE' })
       setCompanies((prev) =>
         prev.map((existing) => (existing.companyId === companyId ? updated : existing)),
       )
@@ -255,6 +268,38 @@ export default function AdminBillingPage() {
       // Best-effort — the row simply keeps its current plan if the call fails.
     } finally {
       setActioningCompanyId(null)
+    }
+  }
+
+  function openGrantCompanyModal(company: AdminCompanySubscriptionSummary) {
+    setGrantModalCompany(company)
+    setCompanyGrantMonths(DEFAULT_GRANT_MONTHS)
+    setCompanyGrantInvoice(true)
+    setCompanyGrantError(null)
+  }
+
+  async function handleGrantCompanyPlan(plan: 'GROWTH' | 'ENTERPRISE') {
+    if (!grantModalCompany) return
+    setCompanyGrantingPlan(plan)
+    setCompanyGrantError(null)
+    try {
+      const updated = await adminApi.setCompanyPlan(grantModalCompany.companyId, {
+        plan,
+        months: companyGrantMonths,
+        generateInvoice: companyGrantInvoice,
+      })
+      setCompanies((prev) =>
+        prev.map((existing) =>
+          existing.companyId === grantModalCompany.companyId ? updated : existing,
+        ),
+      )
+      setGrantModalCompany(null)
+    } catch (caught) {
+      setCompanyGrantError(
+        caught instanceof ApiError ? caught.message : t('billing.companyPlans.grantModal.error'),
+      )
+    } finally {
+      setCompanyGrantingPlan(null)
     }
   }
 
@@ -449,22 +494,21 @@ export default function AdminBillingPage() {
                     <button
                       type="button"
                       disabled={isActioning}
-                      onClick={() => handleSetCompanyPlan(company.companyId, 'FREE')}
+                      onClick={() => handleDowngradeCompanyToFree(company.companyId)}
                       className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
                     >
                       {isActioning && <Spinner className="h-3.5 w-3.5" />}
                       {t('billing.companyPlans.downgradeToFree')}
                     </button>
                   )}
-                  {company.plan !== 'GROWTH' && (
+                  {company.plan !== 'ENTERPRISE' && (
                     <button
                       type="button"
                       disabled={isActioning}
-                      onClick={() => handleSetCompanyPlan(company.companyId, 'GROWTH')}
+                      onClick={() => openGrantCompanyModal(company)}
                       className="flex items-center gap-1.5 rounded-md border border-border bg-primary-tint px-3.5 py-1.5 text-[12.5px] font-bold text-primary disabled:opacity-60"
                     >
-                      {isActioning && <Spinner className="h-3.5 w-3.5" />}
-                      {t('billing.companyPlans.upgradeToGrowth')}
+                      {t('billing.companyPlans.changePlan')}
                     </button>
                   )}
                 </div>
@@ -680,6 +724,102 @@ export default function AdminBillingPage() {
                 disabled={grantMonths < MIN_GRANT_MONTHS || grantMonths > MAX_GRANT_MONTHS}
               >
                 {t('billing.candidatePlans.grantModal.confirm')}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={grantModalCompany !== null}
+        onClose={() => setGrantModalCompany(null)}
+        closeLabel={t('billing.companyPlans.grantModal.close')}
+        title={t('billing.companyPlans.grantModal.title')}
+      >
+        {grantModalCompany && (
+          <div className="flex flex-col gap-4">
+            <p className="text-[13.5px] text-slate">
+              {t('billing.companyPlans.grantModal.subtitle', {
+                name: grantModalCompany.companyName,
+              })}
+            </p>
+
+            <Input
+              type="number"
+              label={t('billing.companyPlans.grantModal.monthsLabel')}
+              min={MIN_GRANT_MONTHS}
+              max={MAX_GRANT_MONTHS}
+              value={companyGrantMonths}
+              onChange={(event) => {
+                const parsed = Number(event.target.value)
+                setCompanyGrantMonths(Number.isFinite(parsed) ? parsed : DEFAULT_GRANT_MONTHS)
+              }}
+            />
+
+            <div>
+              <span className="mb-1.5 block text-[13px] font-bold text-ink">
+                {t('billing.companyPlans.grantModal.invoiceLabel')}
+              </span>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 text-[13.5px] text-ink">
+                  <input
+                    type="radio"
+                    name="companyGrantInvoice"
+                    checked={companyGrantInvoice}
+                    onChange={() => setCompanyGrantInvoice(true)}
+                  />
+                  {t('billing.companyPlans.grantModal.invoiceYes')}
+                </label>
+                <label className="flex items-center gap-1.5 text-[13.5px] text-ink">
+                  <input
+                    type="radio"
+                    name="companyGrantInvoice"
+                    checked={!companyGrantInvoice}
+                    onChange={() => setCompanyGrantInvoice(false)}
+                  />
+                  {t('billing.companyPlans.grantModal.invoiceNo')}
+                </label>
+              </div>
+            </div>
+
+            {companyGrantError && (
+              <div className="rounded-lg bg-[#FDECEC] px-4 py-3 text-[13px] text-danger">
+                {companyGrantError}
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-end gap-2.5">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setGrantModalCompany(null)}
+                disabled={companyGrantingPlan !== null}
+              >
+                {t('billing.companyPlans.grantModal.cancel')}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleGrantCompanyPlan('GROWTH')}
+                loading={companyGrantingPlan === 'GROWTH'}
+                disabled={
+                  (companyGrantingPlan !== null && companyGrantingPlan !== 'GROWTH') ||
+                  companyGrantMonths < MIN_GRANT_MONTHS ||
+                  companyGrantMonths > MAX_GRANT_MONTHS
+                }
+              >
+                {t('billing.companyPlans.grantModal.confirmGrowth')}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleGrantCompanyPlan('ENTERPRISE')}
+                loading={companyGrantingPlan === 'ENTERPRISE'}
+                disabled={
+                  (companyGrantingPlan !== null && companyGrantingPlan !== 'ENTERPRISE') ||
+                  companyGrantMonths < MIN_GRANT_MONTHS ||
+                  companyGrantMonths > MAX_GRANT_MONTHS
+                }
+              >
+                {t('billing.companyPlans.grantModal.confirmEnterprise')}
               </Button>
             </div>
           </div>

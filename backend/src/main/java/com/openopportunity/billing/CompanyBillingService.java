@@ -10,7 +10,7 @@ import com.openopportunity.billing.dto.CompanyCheckoutSummary;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
 import com.openopportunity.billing.exception.CompanyNotFoundException;
 import com.openopportunity.billing.exception.CompanyPaidPlanRequiresCheckoutException;
-import com.openopportunity.billing.exception.CompanyPlanNotAdminAssignableException;
+import com.openopportunity.billing.exception.InvalidGrantMonthsException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
 import com.openopportunity.billing.exception.PaymentVerificationFailedException;
 import com.openopportunity.billing.exception.SamePlanException;
@@ -96,15 +96,18 @@ public class CompanyBillingService {
     }
 
     /** Admin-only direct plan change (comps / support fixes) — deliberately bypasses the paid
-     * Razorpay checkout the public path requires. Free and Growth only (mirrors
-     * CandidateBillingService.adminSetPlan's Free/Plus-only policy — Enterprise stays
-     * checkout-only); granting Growth gets a fresh PAID_PLAN_PERIOD so the daily expiry sweep
-     * treats it exactly like a purchased period, and a ₹0 comp transaction is recorded for the
-     * audit trail. */
+     * Razorpay checkout the public path requires. Unlike CandidateBillingService.adminSetPlan
+     * (Free/Plus only — Pro stays checkout-only), a company admin grant covers all three plans
+     * including Enterprise, since support routinely comps Enterprise trials. Granting a paid plan
+     * requires months (1-24, see InvalidGrantMonthsException) so the period is `months` calendar
+     * months of PAID_PLAN_PERIOD-style 30-day blocks from now, and generateInvoice controls
+     * whether the resulting ₹0 comp transaction gets an invoice link on the company's billing
+     * page (see CompanyBillingTransaction.invoiceAvailable). */
     @Transactional
-    public AdminCompanySubscriptionSummary adminSetPlan(UUID companyId, CompanySubscriptionPlan plan) {
-        if (plan != CompanySubscriptionPlan.FREE && plan != CompanySubscriptionPlan.GROWTH) {
-            throw new CompanyPlanNotAdminAssignableException(plan);
+    public AdminCompanySubscriptionSummary adminSetPlan(
+            UUID companyId, CompanySubscriptionPlan plan, Integer months, boolean generateInvoice) {
+        if (plan != CompanySubscriptionPlan.FREE && (months == null || months < 1)) {
+            throw new InvalidGrantMonthsException();
         }
         User company = userRepository
                 .findById(companyId)
@@ -112,14 +115,18 @@ public class CompanyBillingService {
                 .orElseThrow(() -> new CompanyNotFoundException(companyId));
 
         Instant now = Instant.now();
-        Instant currentPeriodEnd = plan == CompanySubscriptionPlan.FREE ? null : now.plus(PAID_PLAN_PERIOD);
+        Instant currentPeriodEnd =
+                plan == CompanySubscriptionPlan.FREE ? null : now.plus(PAID_PLAN_PERIOD.multipliedBy(months));
         Instant currentPeriodStart = plan == CompanySubscriptionPlan.FREE ? null : now;
         CompanySubscription subscription = subscriptionRepository
                 .findByCompanyId(companyId)
                 .orElseGet(() -> new CompanySubscription(companyId, plan));
         subscription.changePlan(plan, currentPeriodStart, currentPeriodEnd);
         subscriptionRepository.save(subscription);
-        transactionRepository.save(CompanyBillingTransaction.adminGrant(companyId, plan));
+        // A Free downgrade always keeps its invoice link (matches the self-serve downgrade path
+        // above) — only a Growth grant's invoice is admin-controlled.
+        boolean invoiceAvailable = plan == CompanySubscriptionPlan.FREE || generateInvoice;
+        transactionRepository.save(CompanyBillingTransaction.adminGrant(companyId, plan, invoiceAvailable));
 
         // now rather than subscription.getUpdatedAt() — see CandidateBillingService.adminSetPlan's
         // comment on why the getter can be stale here.
@@ -231,14 +238,15 @@ public class CompanyBillingService {
         return summaryFor(companyId);
     }
 
-    /** Only PAID transactions have a real invoice — same 404-for-not-found-and-not-owned pattern
-     * as verifyCheckout. */
+    /** Only PAID transactions with an invoice actually available have a real invoice — same
+     * 404-for-not-found-and-not-owned pattern as verifyCheckout. */
     @Transactional(readOnly = true)
     public byte[] generateInvoice(UUID companyId, UUID transactionId) {
         CompanyBillingTransaction transaction = transactionRepository
                 .findById(transactionId)
                 .filter(existing -> existing.getCompanyId().equals(companyId))
                 .filter(existing -> existing.getStatus() == TransactionStatus.PAID)
+                .filter(CompanyBillingTransaction::isInvoiceAvailable)
                 .orElseThrow(() -> new BillingTransactionNotFoundException(transactionId));
         User company = userRepository
                 .findById(companyId)
@@ -363,6 +371,7 @@ public class CompanyBillingService {
                 transaction.getPlan(),
                 transaction.getAmountRupees(),
                 transaction.getStatus(),
+                transaction.isInvoiceAvailable(),
                 transaction.getCreatedAt());
     }
 }

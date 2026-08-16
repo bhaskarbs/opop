@@ -40,7 +40,6 @@ import com.openopportunity.billing.exception.BillingTransactionNotFoundException
 import com.openopportunity.billing.exception.CandidateNotFoundException;
 import com.openopportunity.billing.exception.CompanyNotFoundException;
 import com.openopportunity.billing.exception.CompanyPaidPlanRequiresCheckoutException;
-import com.openopportunity.billing.exception.CompanyPlanNotAdminAssignableException;
 import com.openopportunity.billing.exception.InvalidGrantMonthsException;
 import com.openopportunity.billing.exception.PaidPlanRequiresCheckoutException;
 import com.openopportunity.billing.exception.PaymentGatewayUnavailableException;
@@ -419,11 +418,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CompanyNotFoundException.class)
     public ResponseEntity<ApiError> handleCompanyNotFound(CompanyNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
-    }
-
-    @ExceptionHandler(CompanyPlanNotAdminAssignableException.class)
-    public ResponseEntity<ApiError> handleCompanyPlanNotAdminAssignable(CompanyPlanNotAdminAssignableException ex) {
-        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(NotificationNotFoundException.class)

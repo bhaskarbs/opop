@@ -42,6 +42,10 @@ public class CompanyBillingTransaction {
     @Column(name = "razorpay_payment_id", length = 64)
     private String razorpayPaymentId;
 
+    // See BillingTransaction (candidate)'s invoiceAvailable — same purpose, mirrored here.
+    @Column(name = "invoice_available", nullable = false)
+    private boolean invoiceAvailable = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -56,11 +60,15 @@ public class CompanyBillingTransaction {
     }
 
     /** Admin comp grant — no money changes hands, so it's recorded as a settled ₹0 transaction
-     * (rather than the plan's real price) purely for the audit trail / billing history. */
-    public static CompanyBillingTransaction adminGrant(UUID companyId, CompanySubscriptionPlan plan) {
+     * (rather than the plan's real price) purely for the audit trail / billing history.
+     * generateInvoice lets the admin skip the invoice link for this period entirely (see
+     * invoiceAvailable). */
+    public static CompanyBillingTransaction adminGrant(
+            UUID companyId, CompanySubscriptionPlan plan, boolean generateInvoice) {
         CompanyBillingTransaction transaction = new CompanyBillingTransaction(companyId, plan, null);
         transaction.amountRupees = 0;
         transaction.status = TransactionStatus.PAID;
+        transaction.invoiceAvailable = generateInvoice;
         return transaction;
     }
 
@@ -114,6 +122,10 @@ public class CompanyBillingTransaction {
 
     public String getRazorpayPaymentId() {
         return razorpayPaymentId;
+    }
+
+    public boolean isInvoiceAvailable() {
+        return invoiceAvailable;
     }
 
     public Instant getCreatedAt() {

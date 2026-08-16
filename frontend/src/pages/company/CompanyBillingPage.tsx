@@ -356,7 +356,7 @@ export default function CompanyBillingPage() {
                       ? t('billing.statusFailed')
                       : t('billing.statusPending')}
                 </span>
-                {entry.status === 'PAID' && (
+                {entry.status === 'PAID' && entry.invoiceAvailable && (
                   <button
                     type="button"
                     disabled={downloadingInvoiceId === entry.id}
