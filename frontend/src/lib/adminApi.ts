@@ -449,6 +449,12 @@ export const adminApi = {
       body: JSON.stringify(payload),
       headers: authHeaders(),
     }),
+  updateMockInterviewQuestion: (id: string, payload: CreateMockInterviewQuestionPayload) =>
+    request<AdminMockInterviewQuestionSummary>(`/api/admin/mock-interview-questions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
   deleteMockInterviewQuestion: (id: string) =>
     request<void>(`/api/admin/mock-interview-questions/${id}`, {
       method: 'DELETE',

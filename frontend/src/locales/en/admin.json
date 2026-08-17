@@ -194,7 +194,13 @@
   "mockInterviewQuestions": {
     "title": "Mock interview questions",
     "subtitle": "Manage the question bank candidates draw from, and highlight the ones that matter most.",
+    "stats": {
+      "total": "Total questions",
+      "bySkill": "Questions by skill",
+      "noSkills": "No skill-tagged questions yet."
+    },
     "addTitle": "Add a question",
+    "editTitle": "Edit question",
     "textPlaceholder": "Type the interview question…",
     "industryPlaceholder": "Industry (optional)",
     "experienceLevelsField": "Experience levels",
@@ -208,6 +214,8 @@
     "addSkillPlaceholder": "Tag a skill and press enter",
     "removeSkill": "Remove {{skill}}",
     "addQuestion": "Add question",
+    "saveChanges": "Save changes",
+    "cancelEdit": "Cancel",
     "saving": "Saving…",
     "saveError": "Couldn't save this question. Try again.",
     "filterSkillPlaceholder": "Filter by skill (press Enter)",
@@ -218,6 +226,7 @@
     "none": "No questions match these filters.",
     "highlight": "Highlight as important",
     "unhighlight": "Remove highlight",
+    "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Delete this question? This can't be undone.",
     "sourceAi": "AI-generated",

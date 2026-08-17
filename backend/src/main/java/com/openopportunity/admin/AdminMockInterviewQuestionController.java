@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +41,12 @@ public class AdminMockInterviewQuestionController {
     public ResponseEntity<AdminMockInterviewQuestionSummary> create(
             @Valid @RequestBody CreateMockInterviewQuestionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminMockInterviewQuestionService.create(request));
+    }
+
+    @PutMapping("/{id}")
+    public AdminMockInterviewQuestionSummary update(
+            @PathVariable UUID id, @Valid @RequestBody CreateMockInterviewQuestionRequest request) {
+        return adminMockInterviewQuestionService.update(id, request);
     }
 
     @DeleteMapping("/{id}")

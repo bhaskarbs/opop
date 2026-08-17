@@ -91,6 +91,23 @@ public class MockInterviewQuestion {
         this.important = important;
     }
 
+    /** Admin edit (see AdminMockInterviewQuestionService.update) — source/important/createdAt
+     * are deliberately untouched: editing an AI-generated question's text doesn't retroactively
+     * make it admin-authored, and editing shouldn't reset its highlight state. */
+    public void update(
+            String text,
+            List<String> skills,
+            String industry,
+            List<ExperienceLevel> experienceLevels,
+            QuestionDifficulty difficulty) {
+        this.text = text;
+        this.skills = skills;
+        this.industry = industry;
+        this.experienceLevels =
+                experienceLevels.stream().map(ExperienceLevel::name).toList();
+        this.difficulty = difficulty;
+    }
+
     public UUID getId() {
         return id;
     }

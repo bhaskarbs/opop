@@ -14,7 +14,10 @@ import com.openopportunity.mockinterview.QuestionSource;
 import com.openopportunity.mockinterview.dto.AdminMockInterviewQuestionSummary;
 import com.openopportunity.mockinterview.dto.CreateMockInterviewQuestionRequest;
 import com.openopportunity.mockinterview.exception.DuplicateMockInterviewQuestionException;
+import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFoundException;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class AdminMockInterviewQuestionServiceTest {
@@ -89,5 +92,49 @@ class AdminMockInterviewQuestionServiceTest {
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(DuplicateMockInterviewQuestionException.class);
+    }
+
+    @Test
+    void updateReplacesFieldsAndKeepsSourceAndImportantUntouched() {
+        MockInterviewQuestion existing = question("Old text", List.of(ExperienceLevel.ENTRY_LEVEL), null);
+        existing.setImportant(true);
+        when(questionRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+        when(questionRepository.existsByTextIgnoreCaseAndIdNot("New text", existing.getId())).thenReturn(false);
+        when(questionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        CreateMockInterviewQuestionRequest request = new CreateMockInterviewQuestionRequest(
+                "New text", List.of("SQL"), "Finance", List.of(ExperienceLevel.SENIOR), QuestionDifficulty.EASY);
+
+        AdminMockInterviewQuestionSummary summary = service.update(existing.getId(), request);
+
+        assertThat(summary.text()).isEqualTo("New text");
+        assertThat(summary.skills()).containsExactly("SQL");
+        assertThat(summary.industry()).isEqualTo("Finance");
+        assertThat(summary.experienceLevels()).containsExactly(ExperienceLevel.SENIOR);
+        assertThat(summary.difficulty()).isEqualTo(QuestionDifficulty.EASY);
+        assertThat(summary.important()).isTrue();
+        assertThat(summary.source()).isEqualTo(QuestionSource.ADMIN);
+    }
+
+    @Test
+    void updateRejectsADuplicateTextFromAnotherQuestion() {
+        MockInterviewQuestion existing = question("Old text", List.of(), null);
+        when(questionRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+        when(questionRepository.existsByTextIgnoreCaseAndIdNot("Duplicate?", existing.getId())).thenReturn(true);
+        CreateMockInterviewQuestionRequest request =
+                new CreateMockInterviewQuestionRequest("Duplicate?", List.of(), null, List.of(), null);
+
+        assertThatThrownBy(() -> service.update(existing.getId(), request))
+                .isInstanceOf(DuplicateMockInterviewQuestionException.class);
+    }
+
+    @Test
+    void updateRejectsAMissingQuestion() {
+        UUID id = UUID.randomUUID();
+        when(questionRepository.findById(id)).thenReturn(Optional.empty());
+        CreateMockInterviewQuestionRequest request =
+                new CreateMockInterviewQuestionRequest("Text", List.of(), null, List.of(), null);
+
+        assertThatThrownBy(() -> service.update(id, request))
+                .isInstanceOf(MockInterviewQuestionNotFoundException.class);
     }
 }
