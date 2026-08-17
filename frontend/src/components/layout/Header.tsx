@@ -413,6 +413,7 @@ export function Header({
             <RouteLink
               key={item.label}
               to={item.to}
+              onClick={() => setMobileNavOpen(false)}
               className="block border-b border-[#F0F1F3] px-1.5 py-[11px] text-[15px] font-semibold text-ink no-underline"
             >
               {t(item.label)}
@@ -424,12 +425,14 @@ export function Header({
               <div className="mt-3.5 flex gap-2.5">
                 <Link
                   to={localize(ROUTES.login)}
+                  onClick={() => setMobileNavOpen(false)}
                   className="flex-1 rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink no-underline"
                 >
                   {t('nav.login')}
                 </Link>
                 <Link
                   to={localize(ROUTES.register)}
+                  onClick={() => setMobileNavOpen(false)}
                   className="flex-1 rounded-lg bg-primary px-2.5 py-2.5 text-center text-[14.5px] font-bold text-white no-underline"
                 >
                   {t('nav.register')}
@@ -439,7 +442,10 @@ export function Header({
           ) : (
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => {
+                setMobileNavOpen(false)
+                handleLogout()
+              }}
               className="mt-3.5 w-full rounded-lg border border-border px-2.5 py-2.5 text-center text-[14.5px] font-semibold text-ink"
             >
               {t('nav.logout')}

@@ -395,7 +395,7 @@ export default function CandidateDashboardPage() {
           </div>
         </div>
 
-        <aside className="header:order-none order-first">
+        <aside>
           <Card className="mb-4 p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-[14.5px] font-bold text-ink">{t('dashboard.profileStrength')}</h3>
