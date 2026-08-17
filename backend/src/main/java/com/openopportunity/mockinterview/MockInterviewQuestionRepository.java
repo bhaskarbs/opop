@@ -19,5 +19,10 @@ public interface MockInterviewQuestionRepository extends JpaRepository<MockInter
 
     boolean existsByTextIgnoreCase(String text);
 
+    /** Same duplicate check as existsByTextIgnoreCase, but excluding the question being edited
+     * itself — otherwise saving a question's other fields without changing its text would trip
+     * over its own existing row (see AdminMockInterviewQuestionService.update). */
+    boolean existsByTextIgnoreCaseAndIdNot(String text, UUID id);
+
     List<MockInterviewQuestion> findAllByOrderByCreatedAtDesc();
 }

@@ -53,6 +53,27 @@ export default function AdminMockInterviewQuestionsPage() {
   const [actioningId, setActioningId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
+  // Unfiltered — fetched once, independent of the filtered `questions` above, so the totals
+  // below reflect the whole bank regardless of whatever filters are currently applied. Every
+  // mutation (create/update/delete/highlight) is mirrored onto this list too, right alongside
+  // the same mutation on `questions`, so the stats stay accurate without a re-fetch.
+  const [allQuestions, setAllQuestions] = useState<AdminMockInterviewQuestionSummary[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    adminApi
+      .mockInterviewQuestions()
+      .then((result) => {
+        if (!cancelled) setAllQuestions(result)
+      })
+      .catch(() => {
+        // Best-effort — the stats just stay blank if this fails.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const [formText, setFormText] = useState('')
   const [formSkills, setFormSkills] = useState<string[]>([])
   const [formIndustry, setFormIndustry] = useState('')
@@ -60,6 +81,9 @@ export default function AdminMockInterviewQuestionsPage() {
   const [formDifficulty, setFormDifficulty] = useState<BackendQuestionDifficulty | ''>('')
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  // Non-null while editing an existing question — the same form above doubles as the edit form,
+  // switched into edit mode by handleEdit populating it from that question's current values.
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -117,25 +141,53 @@ export default function AdminMockInterviewQuestionsPage() {
     )
   }
 
-  async function handleCreate(event: FormEvent) {
+  function resetForm() {
+    setFormText('')
+    setFormSkills([])
+    setFormIndustry('')
+    setFormExperienceLevels([])
+    setFormDifficulty('')
+    setEditingId(null)
+    setFormError(null)
+  }
+
+  function handleEdit(question: AdminMockInterviewQuestionSummary) {
+    setFormText(question.text)
+    setFormSkills(question.skills)
+    setFormIndustry(question.industry ?? '')
+    setFormExperienceLevels(question.experienceLevels)
+    setFormDifficulty(question.difficulty ?? '')
+    setFormError(null)
+    setEditingId(question.id)
+  }
+
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!formText.trim()) return
     setFormError(null)
     setSubmitting(true)
     try {
-      const created = await adminApi.createMockInterviewQuestion({
+      const payload = {
         text: formText.trim(),
         skills: formSkills,
         industry: formIndustry.trim() || null,
         experienceLevels: formExperienceLevels,
         difficulty: formDifficulty || null,
-      })
-      setQuestions((prev) => [created, ...prev])
-      setFormText('')
-      setFormSkills([])
-      setFormIndustry('')
-      setFormExperienceLevels([])
-      setFormDifficulty('')
+      }
+      if (editingId) {
+        const updated = await adminApi.updateMockInterviewQuestion(editingId, payload)
+        setQuestions((prev) =>
+          prev.map((existing) => (existing.id === editingId ? updated : existing)),
+        )
+        setAllQuestions((prev) =>
+          prev.map((existing) => (existing.id === editingId ? updated : existing)),
+        )
+      } else {
+        const created = await adminApi.createMockInterviewQuestion(payload)
+        setQuestions((prev) => [created, ...prev])
+        setAllQuestions((prev) => [created, ...prev])
+      }
+      resetForm()
     } catch (caught) {
       setFormError(
         caught instanceof ApiError ? caught.message : t('mockInterviewQuestions.saveError'),
@@ -151,6 +203,8 @@ export default function AdminMockInterviewQuestionsPage() {
     try {
       await adminApi.deleteMockInterviewQuestion(id)
       setQuestions((prev) => prev.filter((question) => question.id !== id))
+      setAllQuestions((prev) => prev.filter((question) => question.id !== id))
+      if (editingId === id) resetForm()
     } catch {
       // Best-effort — the question simply stays in the list if the call fails.
     } finally {
@@ -167,6 +221,9 @@ export default function AdminMockInterviewQuestionsPage() {
       setQuestions((prev) =>
         prev.map((existing) => (existing.id === question.id ? updated : existing)),
       )
+      setAllQuestions((prev) =>
+        prev.map((existing) => (existing.id === question.id ? updated : existing)),
+      )
     } catch {
       // Best-effort — the question keeps its current highlight state if the call fails.
     } finally {
@@ -178,6 +235,17 @@ export default function AdminMockInterviewQuestionsPage() {
   const currentPage = Math.min(page, pageCount)
   const visibleQuestions = questions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
+  // Highest count first, alphabetical among ties — a stable, skimmable order for spotting which
+  // skills are under-covered in the bank.
+  const skillCounts = Object.entries(
+    allQuestions.reduce<Record<string, number>>((counts, question) => {
+      for (const skill of question.skills) {
+        counts[skill] = (counts[skill] ?? 0) + 1
+      }
+      return counts
+    }, {}),
+  ).sort(([skillA, countA], [skillB, countB]) => countB - countA || skillA.localeCompare(skillB))
+
   return (
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
       <div className="mb-5">
@@ -187,12 +255,40 @@ export default function AdminMockInterviewQuestionsPage() {
         <p className="text-sm text-slate">{t('mockInterviewQuestions.subtitle')}</p>
       </div>
 
+      <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-[220px_1fr]">
+        <div className="rounded-card border border-border bg-surface px-5 py-[18px]">
+          <div className="mb-1.5 text-xs tracking-[0.03em] text-fog uppercase">
+            {t('mockInterviewQuestions.stats.total')}
+          </div>
+          <div className="text-[22px] font-extrabold text-ink">{allQuestions.length}</div>
+        </div>
+        <div className="rounded-card border border-border bg-surface px-5 py-[18px]">
+          <div className="mb-2 text-xs tracking-[0.03em] text-fog uppercase">
+            {t('mockInterviewQuestions.stats.bySkill')}
+          </div>
+          {skillCounts.length === 0 ? (
+            <p className="text-[13px] text-slate">{t('mockInterviewQuestions.stats.noSkills')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {skillCounts.map(([skill, count]) => (
+                <span
+                  key={skill}
+                  className="rounded-full bg-neutral-tint px-2.5 py-[3px] text-[12px] font-semibold text-[#3A414D]"
+                >
+                  {skill} · {count}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       <form
-        onSubmit={handleCreate}
+        onSubmit={handleSubmit}
         className="mb-6 rounded-card border border-border bg-surface p-5"
       >
         <h2 className="mb-3 text-base font-bold text-ink">
-          {t('mockInterviewQuestions.addTitle')}
+          {editingId ? t('mockInterviewQuestions.editTitle') : t('mockInterviewQuestions.addTitle')}
         </h2>
         {formError && <p className="mb-3 text-[13px] font-semibold text-danger">{formError}</p>}
         <textarea
@@ -258,16 +354,30 @@ export default function AdminMockInterviewQuestionsPage() {
             removeSkillLabel={(skill) => t('mockInterviewQuestions.removeSkill', { skill })}
           />
         </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex items-center gap-2 rounded-[9px] bg-ink px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"
-        >
-          {submitting && <Spinner className="h-4 w-4" />}
-          {submitting
-            ? t('mockInterviewQuestions.saving')
-            : t('mockInterviewQuestions.addQuestion')}
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex items-center gap-2 rounded-[9px] bg-ink px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+          >
+            {submitting && <Spinner className="h-4 w-4" />}
+            {submitting
+              ? t('mockInterviewQuestions.saving')
+              : editingId
+                ? t('mockInterviewQuestions.saveChanges')
+                : t('mockInterviewQuestions.addQuestion')}
+          </button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              disabled={submitting}
+              className="rounded-[9px] border border-border px-5 py-2.5 text-sm font-bold text-ink disabled:opacity-60"
+            >
+              {t('mockInterviewQuestions.cancelEdit')}
+            </button>
+          )}
+        </div>
       </form>
 
       <div className="mb-4 flex flex-wrap items-center gap-4 rounded-card border border-border bg-surface p-4">
@@ -356,6 +466,14 @@ export default function AdminMockInterviewQuestionsPage() {
                     }`}
                   >
                     {actioningId === question.id ? <Spinner className="h-3 w-3" /> : '★'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actioningId === question.id}
+                    onClick={() => handleEdit(question)}
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] font-bold text-ink disabled:opacity-50"
+                  >
+                    {t('mockInterviewQuestions.edit')}
                   </button>
                   <button
                     type="button"

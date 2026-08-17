@@ -67,6 +67,21 @@ public class AdminMockInterviewQuestionService {
         return toSummary(questionRepository.save(question));
     }
 
+    /** Same pre-checked-duplicate reasoning as create — excludes the question's own row (see
+     * existsByTextIgnoreCaseAndIdNot) so re-saving without changing the text doesn't 409 against
+     * itself. */
+    @Transactional
+    public AdminMockInterviewQuestionSummary update(UUID id, CreateMockInterviewQuestionRequest request) {
+        MockInterviewQuestion question =
+                questionRepository.findById(id).orElseThrow(() -> new MockInterviewQuestionNotFoundException(id));
+        if (questionRepository.existsByTextIgnoreCaseAndIdNot(request.text(), id)) {
+            throw new DuplicateMockInterviewQuestionException();
+        }
+        question.update(
+                request.text(), request.skills(), request.industry(), request.experienceLevels(), request.difficulty());
+        return toSummary(questionRepository.save(question));
+    }
+
     @Transactional
     public void delete(UUID id) {
         if (!questionRepository.existsById(id)) {
