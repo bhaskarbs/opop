@@ -98,6 +98,16 @@ function buildQuery(params: JobSearchParams): string {
   return query ? `?${query}` : ''
 }
 
+/** Full public link for a job — same-origin (window.location.origin), hardcoding the "en"
+ * locale segment same as mockInterviewShareUrl (see that function's comment for why: a link's
+ * locale shouldn't vary by whatever language the sharer happened to be browsing in). Only ever
+ * meaningful for a job whose status is ACTIVE — that's the only status a non-owner can view (see
+ * JobService#get) — callers on a company/admin management view that lists every status must gate
+ * this to ACTIVE rows themselves. */
+export function jobShareUrl(jobId: string): string {
+  return `${window.location.origin}/en/jobs/${jobId}`
+}
+
 export const jobsApi = {
   search: (params: JobSearchParams = {}) =>
     request<JobSearchResult>(`/api/jobs${buildQuery(params)}`),

@@ -145,6 +145,8 @@
     "empty": "You haven't posted any jobs yet.",
     "manage": "Manage →",
     "viewApplicants": "View applicants",
+    "share": "Share",
+    "linkCopied": "Copied!",
     "pendingReviewNotice": "This job is awaiting admin review — you can't edit it until that's done."
   },
   "postJob": {

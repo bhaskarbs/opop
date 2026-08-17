@@ -110,6 +110,8 @@
     "viewDetails": "View details",
     "save": "Save job",
     "unsave": "Remove from saved jobs",
+    "share": "Copy job link",
+    "linkCopied": "Link copied!",
     "featuredBadge": "Featured",
     "promotedBadge": "Promoted"
   },
@@ -131,6 +133,8 @@
     "applied": "Applied",
     "save": "Save",
     "saved": "Saved",
+    "share": "Copy link",
+    "linkCopied": "Link copied!",
     "applyError": "Something went wrong. Try again.",
     "postedPrefix": "Posted {{label}}",
     "applicantsCount": "{{count}} applicants",

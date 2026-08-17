@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Link } from 'react-router-dom'
-import { LoadingState } from '../../components/ui'
+import { LoadingState, ShareButton } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { jobsApi, type JobSummary } from '../../lib/jobsApi'
+import { jobShareUrl, jobsApi, type JobSummary } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
 
 const STATUS_LABEL_KEYS: Record<JobSummary['status'], string> = {
@@ -122,6 +122,14 @@ export default function MyJobPostingsPage() {
                 >
                   {t('myJobPostings.viewApplicants')}
                 </Link>
+                {posting.status === 'ACTIVE' && (
+                  <ShareButton
+                    url={jobShareUrl(posting.id)}
+                    label={t('myJobPostings.share')}
+                    copiedLabel={t('myJobPostings.linkCopied')}
+                    className="text-[13px] font-bold text-primary"
+                  />
+                )}
                 {posting.status === 'PENDING_APPROVAL' ? (
                   <span
                     title={t('myJobPostings.pendingReviewNotice')}
