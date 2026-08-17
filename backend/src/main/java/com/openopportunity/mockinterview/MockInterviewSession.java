@@ -52,6 +52,14 @@ public class MockInterviewSession {
     @Column(name = "visible_to_companies", nullable = false)
     private boolean visibleToCompanies;
 
+    // Opaque, unguessable — this alone (not a login) is what gates access to the public watch
+    // page (see MockInterviewShareController), so it needs real entropy (see
+    // MockInterviewService#generateShareToken). Unlike visibleToCompanies, sharing this link
+    // isn't a toggle the candidate can turn off — updatable = false like every other field here
+    // except visibleToCompanies.
+    @Column(name = "share_token", nullable = false, updatable = false, unique = true, length = 64)
+    private String shareToken;
+
     protected MockInterviewSession() {
         // JPA
     }
@@ -64,7 +72,8 @@ public class MockInterviewSession {
             String videoContentType,
             long videoSizeBytes,
             String thumbnailStorageKey,
-            String thumbnailContentType) {
+            String thumbnailContentType,
+            String shareToken) {
         this.id = UUID.randomUUID();
         this.candidateId = candidateId;
         this.questionCount = questionCount;
@@ -74,6 +83,7 @@ public class MockInterviewSession {
         this.videoSizeBytes = videoSizeBytes;
         this.thumbnailStorageKey = thumbnailStorageKey;
         this.thumbnailContentType = thumbnailContentType;
+        this.shareToken = shareToken;
     }
 
     @PrePersist
@@ -127,5 +137,9 @@ public class MockInterviewSession {
 
     public boolean isVisibleToCompanies() {
         return visibleToCompanies;
+    }
+
+    public String getShareToken() {
+        return shareToken;
     }
 }

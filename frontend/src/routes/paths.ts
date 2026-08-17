@@ -9,6 +9,10 @@ export const ROUTES = {
   // Public — a share-token URL emailed to an external recipient, not linked from any nav (see
   // AdminVideosPage/WatchSharedVideoPage). No auth: the token itself is the access control.
   watchSharedVideo: (token: string) => `/watch/${token}`,
+  // Public — a candidate's own mock interview recording, copy/shareable with anyone (see
+  // MockInterviewPage's "Copy link" button / mockInterviewApi.mockInterviewShareUrl). No auth:
+  // the token itself is the access control, same as watchSharedVideo above.
+  watchMockInterview: (token: string) => `/watch-interview/${token}`,
   partnerships: '/partnerships',
   // Public — reachable by anyone, but deliberately not linked from any nav (see IdeasBrowsePage).
   ideasBrowse: '/partnerships/ideas',

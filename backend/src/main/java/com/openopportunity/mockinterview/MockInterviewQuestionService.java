@@ -21,15 +21,18 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 /** Supplies mock-interview session questions, in priority order: (1) the question bank in
- * Postgres, once it holds enough relevant questions to skip the AI call entirely; (2) the Claude
- * API otherwise, persisting whatever it returns into the bank for next time. Either way, the
- * final list returned to the candidate is sorted easy to very difficult (see sortByDifficulty)
- * and each question carries the skill(s) it tests, so MockInterviewPage can highlight them. If
- * the AI call also fails — or app.mock-interview.ai-generation-enabled is false, which disables
- * the call altogether — this throws QuestionGenerationUnavailableException and
- * MockInterviewController lets that surface as a 502 — the frontend then falls back to its own
- * local template generator, so a candidate can always start a session regardless of which layer
- * is down.
+ * Postgres, once it holds enough relevant questions to skip the AI call entirely — widening the
+ * experience-level match up the ladder (entry -> mid -> senior -> leadership, see
+ * matchingQuestions/EXPERIENCE_LEVEL_LADDER) if the candidate's own level is too thin on its own,
+ * so an entry-level candidate is never left short just because the bank happens to skew toward
+ * more senior questions; (2) the Claude API otherwise, persisting whatever it returns into the
+ * bank for next time. Either way, the final list returned to the candidate is sorted easy to very
+ * difficult (see sortByDifficulty) and each question carries the skill(s) it tests, so
+ * MockInterviewPage can highlight them. If the AI call also fails — or
+ * app.mock-interview.ai-generation-enabled is false, which disables the call altogether — this
+ * throws QuestionGenerationUnavailableException and MockInterviewController lets that surface as
+ * a 502 — the frontend then falls back to its own local template generator, so a candidate can
+ * always start a session regardless of which layer is down.
  *
  * <p>Deliberately not @Transactional: each repository call below (find/exists/save) is
  * independently transactional via Spring Data's default per-method behavior. That matters for
@@ -42,6 +45,13 @@ public class MockInterviewQuestionService {
     /** Once the bank has more than this many questions matching a session's industry,
      * experience level, and (loosely) skills, serve from the bank instead of calling the AI. */
     private static final int BANK_THRESHOLD = 100;
+
+    /** Ascending order — used by matchingQuestions to widen an experience-level match upward
+     * (entry -> mid -> senior -> leadership) when the candidate's own level doesn't have enough
+     * bank coverage on its own. Never narrows downward: a senior candidate never gets
+     * entry-level-only questions padded in just because the senior-specific pool is thin. */
+    private static final List<ExperienceLevel> EXPERIENCE_LEVEL_LADDER = List.of(
+            ExperienceLevel.ENTRY_LEVEL, ExperienceLevel.MID_LEVEL, ExperienceLevel.SENIOR, ExperienceLevel.LEADERSHIP);
 
     record GeneratedQuestion(
             @JsonPropertyDescription(
@@ -82,7 +92,7 @@ public class MockInterviewQuestionService {
         if (!rateLimiter.tryAcquire(candidateId)) {
             throw new MockInterviewQuestionRateLimitedException();
         }
-        List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, industry);
+        List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, industry, count);
         List<MockInterviewSessionQuestion> questions;
         if (bankMatches.size() > BANK_THRESHOLD) {
             questions = pickFromBank(bankMatches, count, skills);
@@ -109,15 +119,16 @@ public class MockInterviewQuestionService {
         return sorted;
     }
 
+    /** Skill-filtered first (same for every level), then experience-level-filtered with widening:
+     * starts at the candidate's own level and, only if that doesn't yield at least `count`
+     * matches, keeps adding the next level up the ladder until it does (or every level has been
+     * tried) — see EXPERIENCE_LEVEL_LADDER. This is what guarantees an entry-level candidate
+     * always gets a full session even on a bank that's thin on entry-level-tagged questions:
+     * mid/senior questions get pulled in rather than leaving the session short. */
     private List<MockInterviewQuestion> matchingQuestions(
-            List<String> skills, ExperienceLevel experienceLevel, String industry) {
+            List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
         List<MockInterviewQuestion> matches = questionRepository.findByOptionalFilters(industry);
-        return matches.stream()
-                // A question tagged with no experience levels applies to anyone; otherwise the
-                // candidate's own level has to be one of the ones tagged on the question.
-                .filter(question -> question.getExperienceLevels().isEmpty()
-                        || experienceLevel == null
-                        || question.getExperienceLevels().contains(experienceLevel))
+        List<MockInterviewQuestion> skillFiltered = matches.stream()
                 // A question with no skills tagged (e.g. a soft-skills question) is a match for
                 // anyone; otherwise at least one of its tagged skills has to overlap the
                 // candidate's selection.
@@ -125,6 +136,26 @@ public class MockInterviewQuestionService {
                         || question.getSkills().isEmpty()
                         || question.getSkills().stream().anyMatch(skills::contains))
                 .toList();
+        if (experienceLevel == null) {
+            return skillFiltered;
+        }
+
+        int startIndex = Math.max(0, EXPERIENCE_LEVEL_LADDER.indexOf(experienceLevel));
+        List<ExperienceLevel> allowedLevels = new ArrayList<>();
+        List<MockInterviewQuestion> byLevel = List.of();
+        for (int i = startIndex; i < EXPERIENCE_LEVEL_LADDER.size(); i++) {
+            allowedLevels.add(EXPERIENCE_LEVEL_LADDER.get(i));
+            byLevel = skillFiltered.stream()
+                    // A question tagged with no experience levels applies to anyone; otherwise at
+                    // least one of its tagged levels has to be in the allowed set built up so far.
+                    .filter(question -> question.getExperienceLevels().isEmpty()
+                            || question.getExperienceLevels().stream().anyMatch(allowedLevels::contains))
+                    .toList();
+            if (byLevel.size() >= count) {
+                return byLevel;
+            }
+        }
+        return byLevel;
     }
 
     private List<MockInterviewSessionQuestion> pickFromBank(

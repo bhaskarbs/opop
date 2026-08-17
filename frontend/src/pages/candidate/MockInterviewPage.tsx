@@ -6,6 +6,7 @@ import { experienceLevelFromBackend } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
 import {
   mockInterviewApi,
+  mockInterviewShareUrl,
   type MockInterviewQuestionDifficulty,
   type MockInterviewSessionQuestion,
   type MockInterviewSessionSummary,
@@ -284,6 +285,7 @@ export default function MockInterviewPage() {
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [visibilityUpdatingId, setVisibilityUpdatingId] = useState<string | null>(null)
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null)
   const [skills, setSkills] = useState<string[]>([])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [experienceLevel, setExperienceLevel] = useState<BackendExperienceLevel | null>(null)
@@ -574,6 +576,20 @@ export default function MockInterviewPage() {
   function closePlayback() {
     if (playback) URL.revokeObjectURL(playback.url)
     setPlayback(null)
+  }
+
+  async function handleCopyShareLink(session: MockInterviewSessionSummary) {
+    try {
+      await navigator.clipboard.writeText(mockInterviewShareUrl(session.shareToken))
+      setCopiedSessionId(session.id)
+      window.setTimeout(() => {
+        setCopiedSessionId((prev) => (prev === session.id ? null : prev))
+      }, 2000)
+    } catch {
+      // Best-effort — clipboard access can fail (permissions, insecure context); there's no
+      // fallback UI here for manually selecting the link text, so the candidate just doesn't
+      // get the "Copied!" confirmation.
+    }
   }
 
   async function handleToggleVisibility(session: MockInterviewSessionSummary) {
@@ -922,6 +938,15 @@ export default function MockInterviewPage() {
                   {session.visibleToCompanies
                     ? t('mockInterview.visibleToCompanies')
                     : t('mockInterview.hiddenFromCompanies')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCopyShareLink(session)}
+                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[12px] font-bold text-ink"
+                >
+                  {copiedSessionId === session.id
+                    ? t('mockInterview.linkCopied')
+                    : t('mockInterview.copyLink')}
                 </button>
               </div>
             </div>

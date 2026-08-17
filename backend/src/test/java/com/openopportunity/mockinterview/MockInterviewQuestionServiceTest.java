@@ -59,6 +59,36 @@ class MockInterviewQuestionServiceTest {
     }
 
     @Test
+    void widensToMidAndSeniorQuestionsWhenEntryLevelBankCoverageIsThin() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        List<MockInterviewQuestion> bank = new ArrayList<>();
+        // Only 5 entry-level-tagged questions — on its own this is far below BANK_THRESHOLD
+        // (100), so without widening this would fall through to the AI (disabled in this test's
+        // service instance, see setUp) and throw QuestionGenerationUnavailableException instead
+        // of returning a full session.
+        for (int i = 0; i < 5; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Entry " + i,
+                    List.of(),
+                    "Tech",
+                    List.of(ExperienceLevel.ENTRY_LEVEL),
+                    null,
+                    QuestionSource.ADMIN));
+        }
+        for (int i = 0; i < 96; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Senior " + i, List.of(), "Tech", List.of(ExperienceLevel.SENIOR), null, QuestionSource.ADMIN));
+        }
+        when(questionRepository.findByOptionalFilters("Tech")).thenReturn(bank);
+
+        List<MockInterviewSessionQuestion> questions =
+                service.getSessionQuestions(candidateId, List.of(), ExperienceLevel.ENTRY_LEVEL, "Tech", 8);
+
+        assertThat(questions).hasSize(8);
+    }
+
+    @Test
     void sortsBankQuestionsEasyToVeryDifficultWithNullsLast() {
         UUID candidateId = UUID.randomUUID();
         when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);

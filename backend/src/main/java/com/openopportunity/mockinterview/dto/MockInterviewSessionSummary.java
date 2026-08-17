@@ -12,4 +12,8 @@ public record MockInterviewSessionSummary(
         // Reused as-is for the company-facing embedded list on CandidateProfileForCompany (see
         // CandidateSearchService#get) — always true there, since only visible sessions are ever
         // returned to a company in the first place.
-        boolean visibleToCompanies) {}
+        boolean visibleToCompanies,
+        // The raw token, not a full URL — see MockInterviewPage, which builds the shareable link
+        // client-side from this plus ROUTES.watchMockInterview. Public on its own (see
+        // MockInterviewShareController's permitAll route), so exposing it here isn't a new leak.
+        String shareToken) {}
