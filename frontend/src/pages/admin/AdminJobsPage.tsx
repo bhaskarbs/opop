@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingState, Spinner } from '../../components/ui'
+import { LoadingState, ShareButton, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
-import { jobsApi, type JobSummary } from '../../lib/jobsApi'
+import { jobShareUrl, jobsApi, type JobSummary } from '../../lib/jobsApi'
 import { workModeFromBackend } from '../../lib/jobEnums'
 
 const PAGE_SIZE = 10
@@ -154,6 +154,12 @@ export default function AdminJobsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <ShareButton
+                  url={jobShareUrl(job.id)}
+                  label={t('jobs.share')}
+                  copiedLabel={t('jobs.linkCopied')}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
+                />
                 <button
                   type="button"
                   disabled={featuringId === job.id}

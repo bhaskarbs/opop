@@ -383,6 +383,8 @@
     "promoted": "Promoted",
     "feature": "Feature",
     "unfeature": "Unfeature",
+    "share": "Share",
+    "linkCopied": "Copied!",
     "delete": "Delete",
     "confirmDelete": "Permanently delete \"{{title}}\"? This also removes its applications and saved-job bookmarks — it can't be undone.",
     "previousPage": "← Previous",

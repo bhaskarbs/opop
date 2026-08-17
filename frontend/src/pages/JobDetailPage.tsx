@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BackButton, Card, LoadingState } from '../components/ui'
+import { BackButton, Card, LoadingState, ShareButton } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
-import { jobsApi, jobQueryKeys, type JobDetail, type JobSummary } from '../lib/jobsApi'
+import { jobShareUrl, jobsApi, jobQueryKeys, type JobDetail, type JobSummary } from '../lib/jobsApi'
 import { workModeFromBackend } from '../lib/jobEnums'
 import { savedJobsApi } from '../lib/savedJobsApi'
 import { ROUTES } from '../routes/paths'
@@ -289,6 +289,12 @@ export default function JobDetailPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-start gap-2.5">
+                <ShareButton
+                  url={jobShareUrl(job.id)}
+                  label={t('jobDetail.share')}
+                  copiedLabel={t('jobDetail.linkCopied')}
+                  className="rounded-control border border-border bg-surface px-6 py-2.5 text-sm font-bold text-ink"
+                />
                 <SaveButton saved={saved} onToggle={handleToggleSave} t={t} />
                 <ApplyButton
                   applied={applicationId != null}

@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Card } from '../../components/ui'
+import { Card, ShareButton } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL } from '../../lib/apiClient'
+import { jobShareUrl } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
 import type { DisplayJob } from './jobDisplay'
 
@@ -24,27 +25,35 @@ export function ResultCard({
 
   return (
     <Card className={`relative ${applied ? 'border-2 border-teal bg-teal-tint p-5' : 'p-5'}`}>
-      {onToggleSave && (
-        <button
-          type="button"
-          onClick={onToggleSave}
-          aria-label={t(saved ? 'resultCard.unsave' : 'resultCard.save')}
-          aria-pressed={saved}
-          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-fog hover:bg-neutral-tint hover:text-ink"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill={saved ? 'currentColor' : 'none'}
-            stroke="currentColor"
-            strokeWidth={2}
-            className={saved ? 'text-primary' : undefined}
+      <div className="absolute top-4 right-4 flex items-center gap-1">
+        <ShareButton
+          url={jobShareUrl(job.id)}
+          label={t('resultCard.share')}
+          copiedLabel={t('resultCard.linkCopied')}
+          variant="icon"
+        />
+        {onToggleSave && (
+          <button
+            type="button"
+            onClick={onToggleSave}
+            aria-label={t(saved ? 'resultCard.unsave' : 'resultCard.save')}
+            aria-pressed={saved}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-fog hover:bg-neutral-tint hover:text-ink"
           >
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-          </svg>
-        </button>
-      )}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill={saved ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              strokeWidth={2}
+              className={saved ? 'text-primary' : undefined}
+            >
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
+        )}
+      </div>
       <div className="flex gap-4">
         {job.companyLogoUrl ? (
           <img

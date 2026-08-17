@@ -110,6 +110,8 @@
     "viewDetails": "विवरण देखें",
     "save": "नौकरी सहेजें",
     "unsave": "सहेजी गई नौकरियों से हटाएं",
+    "share": "नौकरी का लिंक कॉपी करें",
+    "linkCopied": "लिंक कॉपी हो गया!",
     "featuredBadge": "फ़ीचर्ड",
     "promotedBadge": "प्रमोटेड"
   },
@@ -131,6 +133,8 @@
     "applied": "आवेदन किया",
     "save": "सहेजें",
     "saved": "सहेजा गया",
+    "share": "लिंक कॉपी करें",
+    "linkCopied": "लिंक कॉपी हो गया!",
     "applyError": "कुछ गड़बड़ हो गई। फिर से कोशिश करें।",
     "postedPrefix": "पोस्ट किया गया: {{label}}",
     "applicantsCount": "{{count}} आवेदक",
