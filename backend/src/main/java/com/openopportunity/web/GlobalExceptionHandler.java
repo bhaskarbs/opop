@@ -66,6 +66,7 @@ import com.openopportunity.mockinterview.exception.MockInterviewQuestionNotFound
 import com.openopportunity.mockinterview.exception.MockInterviewQuestionRateLimitedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundException;
+import com.openopportunity.mockinterview.exception.MockInterviewShareLinkNotFoundException;
 import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException;
 import com.openopportunity.notification.exception.NotificationNotFoundException;
 import com.openopportunity.sharedvideo.exception.AdminSharedVideoNotFoundException;
@@ -335,6 +336,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MockInterviewSessionNotFoundException.class)
     public ResponseEntity<ApiError> handleMockInterviewSessionNotFound(MockInterviewSessionNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(MockInterviewShareLinkNotFoundException.class)
+    public ResponseEntity<ApiError> handleMockInterviewShareLinkNotFound(MockInterviewShareLinkNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 

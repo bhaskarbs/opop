@@ -168,7 +168,7 @@ class AdminAccountDeletionServiceTest {
         when(candidateProfileRepository.findByUserId(candidateId)).thenReturn(Optional.of(profile));
 
         MockInterviewSession session = new MockInterviewSession(
-                candidateId, 5, 300, "video-key-1", "video/webm", 1024L, "thumb-key-1", "image/png");
+                candidateId, 5, 300, "video-key-1", "video/webm", 1024L, "thumb-key-1", "image/png", "test-share-token");
         when(mockInterviewSessionRepository.findByCandidateIdOrderByRecordedAtDesc(candidateId))
                 .thenReturn(List.of(session));
 

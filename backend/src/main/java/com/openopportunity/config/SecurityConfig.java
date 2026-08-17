@@ -83,6 +83,11 @@ public class SecurityConfig {
                         // alike, unlike the narrower single-path GET rules below.
                         .requestMatchers("/api/shared-videos/**")
                         .permitAll()
+                        // Same reasoning as shared-videos above, for a candidate's own mock
+                        // interview share link (MockInterviewShareController) — the share token
+                        // alone is the access control, no login involved.
+                        .requestMatchers("/api/mock-interview-shares/**")
+                        .permitAll()
                         // Public so a plain <img src> can load it with no bearer token — see
                         // CandidatePhotoController. Distinct from the singular "/api/candidate/**"
                         // (that candidate's own authenticated profile) below.

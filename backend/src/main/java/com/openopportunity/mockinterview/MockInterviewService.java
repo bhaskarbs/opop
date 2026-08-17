@@ -7,6 +7,8 @@ import com.openopportunity.mockinterview.exception.MockInterviewSessionNotFoundE
 import com.openopportunity.storage.FileStorageService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
@@ -28,6 +30,7 @@ public class MockInterviewService {
 
     private final MockInterviewSessionRepository mockInterviewSessionRepository;
     private final FileStorageService fileStorageService;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public MockInterviewService(
             MockInterviewSessionRepository mockInterviewSessionRepository, FileStorageService fileStorageService) {
@@ -61,7 +64,8 @@ public class MockInterviewService {
                 video.getContentType() != null ? video.getContentType() : "video/webm",
                 video.getSize(),
                 thumbnailStorageKey,
-                thumbnailStorageKey != null ? thumbnail.getContentType() : null);
+                thumbnailStorageKey != null ? thumbnail.getContentType() : null,
+                generateShareToken());
         session = mockInterviewSessionRepository.save(session);
         return toSummary(session);
     }
@@ -201,7 +205,16 @@ public class MockInterviewService {
                 session.getDurationSeconds(),
                 session.getThumbnailStorageKey() != null,
                 session.getRecordedAt(),
-                session.isVisibleToCompanies());
+                session.isVisibleToCompanies(),
+                session.getShareToken());
+    }
+
+    // Same scheme as AdminVideoService#generateToken — 256 bits from SecureRandom, URL-safe
+    // Base64 so it drops straight into a path segment with no escaping.
+    private String generateShareToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     public record LoadedFile(Resource resource, String contentType) {}

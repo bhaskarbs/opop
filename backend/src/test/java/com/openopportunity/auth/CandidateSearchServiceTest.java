@@ -254,7 +254,7 @@ class CandidateSearchServiceTest {
         when(candidateProfileRepository.findByUserId(candidateId)).thenReturn(Optional.of(profile));
         when(userRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
         MockInterviewSessionSummary session = new MockInterviewSessionSummary(
-                UUID.randomUUID(), 5, 300, true, Instant.now(), true);
+                UUID.randomUUID(), 5, 300, true, Instant.now(), true, "test-share-token");
         when(mockInterviewService.getVisibleForCompany(candidateId)).thenReturn(List.of(session));
 
         CandidateProfileForCompany result = service.get(companyId, candidateId);

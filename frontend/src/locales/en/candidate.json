@@ -346,6 +346,8 @@
     "watch": "Watch recording",
     "visibleToCompanies": "Visible to companies",
     "hiddenFromCompanies": "Hidden from companies",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied!",
     "visibilityError": "Couldn't update visibility. Please try again.",
     "delete": "Delete",
     "deleteConfirm": "Delete this recording? This can't be undone.",

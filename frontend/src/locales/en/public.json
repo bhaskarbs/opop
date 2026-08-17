@@ -236,5 +236,9 @@
   "watchVideo": {
     "loading": "Loading video…",
     "loadError": "This link is invalid or has expired."
+  },
+  "watchMockInterview": {
+    "title": "Mock Interview Recording",
+    "loadError": "This link is invalid or has expired."
   }
 }

@@ -57,7 +57,8 @@ class MockInterviewServiceTest {
                 "video/webm",
                 3,
                 "mock-interviews/x.jpg",
-                "image/jpeg");
+                "image/jpeg",
+                "test-share-token");
     }
 
     @Test
@@ -179,8 +180,8 @@ class MockInterviewServiceTest {
     @Test
     void getThumbnailRejectsWhenNoneWasStored() {
         UUID ownerId = UUID.randomUUID();
-        MockInterviewSession session =
-                new MockInterviewSession(ownerId, 1, 10, "mock-interviews/x.webm", "video/webm", 3, null, null);
+        MockInterviewSession session = new MockInterviewSession(
+                ownerId, 1, 10, "mock-interviews/x.webm", "video/webm", 3, null, null, "test-share-token");
         when(mockInterviewSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> mockInterviewService.getThumbnail(session.getId(), ownerId))

@@ -1,5 +1,5 @@
 import { useAuthStore } from '../stores/authStore'
-import { blobRequest, request, uploadRequest } from './apiClient'
+import { API_BASE_URL, blobRequest, request, uploadRequest } from './apiClient'
 import type { BackendExperienceLevel } from './jobsApi'
 
 export type MockInterviewQuestionDifficulty = 'EASY' | 'NORMAL' | 'DIFFICULT' | 'VERY_DIFFICULT'
@@ -23,6 +23,25 @@ export interface MockInterviewSessionSummary {
   // mockInterviewApi.updateVisibility). Shown on the candidate's own "Recorded logs" list as a
   // toggle; also embedded (always true) on a company's view of the candidate's profile.
   visibleToCompanies: boolean
+  // Raw token, not a full URL — see mockInterviewShareUrl. Public on its own (the backend's
+  // /api/mock-interview-shares/{token}/video route needs no auth), so this alone is what a
+  // candidate copies to share the recording with anyone.
+  shareToken: string
+}
+
+/** Full public link for a session's shareToken — same-origin (window.location.origin), not
+ * API_BASE_URL, since /watch-interview is a frontend route, not a backend one (see App.tsx /
+ * ROUTES.watchMockInterview). Hardcodes the "en" locale segment rather than the candidate's own
+ * current locale, same choice AdminVideoService#shareUrl makes server-side — a link's locale
+ * shouldn't vary by whatever language the sharer happened to be browsing in when they copied it. */
+export function mockInterviewShareUrl(shareToken: string): string {
+  return `${window.location.origin}/en/watch-interview/${shareToken}`
+}
+
+// Fully public — no auth headers, matches the backend's permitAll route (see
+// MockInterviewShareController). Used as a plain <video src> on WatchMockInterviewPage.
+export function mockInterviewShareVideoSrc(shareToken: string): string {
+  return `${API_BASE_URL}/api/mock-interview-shares/${shareToken}/video`
 }
 
 export interface GenerateQuestionsPayload {
