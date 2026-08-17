@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingState, Spinner } from '../../components/ui'
+import { LoadingState, SkillsTagInput, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
@@ -11,6 +11,7 @@ import {
   type MockInterviewSessionQuestion,
   type MockInterviewSessionSummary,
 } from '../../lib/mockInterviewApi'
+import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 // Questions are generated per-session by the backend via the Claude API (see
@@ -789,7 +790,7 @@ export default function MockInterviewPage() {
               </button>
             )}
           </div>
-          {skills.length > 0 && (
+          {skills.length > 0 ? (
             <div className="mb-2.5 rounded-[9px] border border-border bg-surface p-3">
               <div className="mb-2 text-[12px] font-bold text-fog uppercase">
                 {t('mockInterview.skillsForSession')}
@@ -815,6 +816,24 @@ export default function MockInterviewPage() {
                   )
                 })}
               </div>
+            </div>
+          ) : (
+            // No skills on the candidate's profile yet — rather than silently falling back to
+            // generic, unpersonalized questions, let them tag skills for this session right
+            // here. Session-only (not written back to CandidateProfile): selectedSkills already
+            // drives fetchSessionQuestions regardless of where it came from.
+            <div className="mb-2.5 rounded-[9px] border border-border bg-surface p-3">
+              <div className="mb-2 text-[12px] font-bold text-fog uppercase">
+                {t('mockInterview.skillsForSession')}
+              </div>
+              <p className="mb-2.5 text-[12px] text-fog">{t('mockInterview.noProfileSkills')}</p>
+              <SkillsTagInput
+                value={selectedSkills}
+                onChange={setSelectedSkills}
+                suggestions={SKILL_SUGGESTIONS}
+                placeholder={t('mockInterview.addSkillPlaceholder')}
+                removeSkillLabel={(skill) => t('mockInterview.removeSkill', { skill })}
+              />
             </div>
           )}
           {autoStopped && !uploadError && (
