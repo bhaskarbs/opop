@@ -4,23 +4,39 @@ import { LoadingState, Spinner } from '../../components/ui'
 import { ApiError } from '../../lib/apiClient'
 import { experienceLevelFromBackend } from '../../lib/jobEnums'
 import type { BackendExperienceLevel } from '../../lib/jobsApi'
-import { mockInterviewApi, type MockInterviewSessionSummary } from '../../lib/mockInterviewApi'
+import {
+  mockInterviewApi,
+  type MockInterviewQuestionDifficulty,
+  type MockInterviewSessionQuestion,
+  type MockInterviewSessionSummary,
+} from '../../lib/mockInterviewApi'
 import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 // Questions are generated per-session by the backend via the Claude API (see
 // mockInterviewApi.generateQuestions), tailored to the candidate's selected skills, experience
-// level, and industry. QUESTION_TEMPLATES/FALLBACK_QUESTIONS below are the local fallback used
-// only when that call fails (no API key configured, network error, rate limit, etc.) — see
-// fetchSessionQuestions — so a candidate can always start a session.
-const FALLBACK_QUESTIONS: string[] = [
-  'Tell me about yourself.',
-  'Tell me about a time you had to debug a difficult production issue. What was your process?',
-  'Describe a situation where you disagreed with a teammate’s decision. How did you handle it?',
-  'Walk me through a project you’re proud of, end to end.',
-  'How do you prioritize when you have multiple deadlines at once?',
-  'What’s a piece of feedback that changed how you work?',
-  'Describe a time you had to learn something new under time pressure.',
-  'Where do you see yourself in three years?',
+// level, and industry, already ordered easy to very difficult with skills attached per question.
+// QUESTION_TEMPLATES/FALLBACK_QUESTIONS below are the local fallback used only when that call
+// fails (no API key configured, network error, rate limit, etc.) — see fetchSessionQuestions —
+// so a candidate can always start a session; they mirror the same easy-to-very-difficult
+// ordering and per-question skill tagging the backend provides.
+const FALLBACK_QUESTIONS: Array<{ text: string; difficulty: MockInterviewQuestionDifficulty }> = [
+  { text: 'Tell me about yourself.', difficulty: 'EASY' },
+  { text: 'Where do you see yourself in three years?', difficulty: 'EASY' },
+  { text: 'How do you prioritize when you have multiple deadlines at once?', difficulty: 'NORMAL' },
+  { text: 'What’s a piece of feedback that changed how you work?', difficulty: 'NORMAL' },
+  {
+    text: 'Describe a situation where you disagreed with a teammate’s decision. How did you handle it?',
+    difficulty: 'DIFFICULT',
+  },
+  { text: 'Walk me through a project you’re proud of, end to end.', difficulty: 'DIFFICULT' },
+  {
+    text: 'Tell me about a time you had to debug a difficult production issue. What was your process?',
+    difficulty: 'VERY_DIFFICULT',
+  },
+  {
+    text: 'Describe a time you had to learn something new under time pressure.',
+    difficulty: 'VERY_DIFFICULT',
+  },
 ]
 
 const QUESTIONS_PER_SESSION = 8
@@ -38,47 +54,72 @@ interface QuestionTemplate {
   // more specific questions surface once the candidate has filled in experience/industry,
   // without ever blocking on skill alone (see QUESTION_TEMPLATES below).
   requires: TemplateInput[]
+  difficulty: MockInterviewQuestionDifficulty
 }
 
 const QUESTION_TEMPLATES: QuestionTemplate[] = [
   {
     text: 'Tell me about a time you used {{skill}} to solve a challenging problem.',
     requires: ['skill'],
+    difficulty: 'EASY',
   },
   {
     text: 'How would you explain {{skill}} to someone with no technical background?',
     requires: ['skill'],
+    difficulty: 'EASY',
   },
-  { text: 'Describe a project where {{skill}} was critical to the outcome.', requires: ['skill'] },
+  {
+    text: 'How do you stay current with {{skill}}?',
+    requires: ['skill'],
+    difficulty: 'EASY',
+  },
+  {
+    text: 'Describe a project where {{skill}} was critical to the outcome.',
+    requires: ['skill'],
+    difficulty: 'NORMAL',
+  },
   {
     text: 'What’s a mistake you made while working with {{skill}}, and what did you learn from it?',
     requires: ['skill'],
-  },
-  { text: 'How do you stay current with {{skill}}?', requires: ['skill'] },
-  {
-    text: 'What’s the hardest part of working with {{skill}}, in your experience?',
-    requires: ['skill'],
-  },
-  {
-    text: 'As a {{experienceLevel}} professional, how would you approach a {{skill}} challenge?',
-    requires: ['skill', 'experienceLevel'],
-  },
-  {
-    text: 'How has your approach to {{skill}} evolved as you’ve grown into a {{experienceLevel}} role?',
-    requires: ['skill', 'experienceLevel'],
+    difficulty: 'NORMAL',
   },
   {
     text: 'How is {{skill}} typically applied in the {{industry}} industry?',
     requires: ['skill', 'industry'],
+    difficulty: 'NORMAL',
+  },
+  {
+    text: 'What’s the hardest part of working with {{skill}}, in your experience?',
+    requires: ['skill'],
+    difficulty: 'DIFFICULT',
+  },
+  {
+    text: 'As a {{experienceLevel}} professional, how would you approach a {{skill}} challenge?',
+    requires: ['skill', 'experienceLevel'],
+    difficulty: 'DIFFICULT',
   },
   {
     text: 'What unique challenges does the {{industry}} industry present when applying {{skill}}?',
     requires: ['skill', 'industry'],
+    difficulty: 'DIFFICULT',
+  },
+  {
+    text: 'How has your approach to {{skill}} evolved as you’ve grown into a {{experienceLevel}} role?',
+    requires: ['skill', 'experienceLevel'],
+    difficulty: 'VERY_DIFFICULT',
   },
   {
     text: 'As a {{experienceLevel}} candidate working in {{industry}}, how have you used {{skill}} to deliver results?',
     requires: ['skill', 'experienceLevel', 'industry'],
+    difficulty: 'VERY_DIFFICULT',
   },
+]
+
+const DIFFICULTY_TIERS: MockInterviewQuestionDifficulty[] = [
+  'EASY',
+  'NORMAL',
+  'DIFFICULT',
+  'VERY_DIFFICULT',
 ]
 
 // MediaRecorder picks whichever mimeType the browser actually supports; Chrome/Firefox/Edge
@@ -89,46 +130,94 @@ function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
 }
 
-/** Random and skill-based whenever the candidate has selected at least one skill for this
- * session — enriched with experience level and/or industry once those are filled in on the
- * candidate's profile (see QUESTION_TEMPLATES' `requires`). Falls back to a flat canned question
- * pool when no skills are selected. Avoids repeating the immediately-previous question where it
- * reasonably can. */
-function generateQuestion(
+/** Spreads `count` questions evenly across the four difficulty tiers in ascending order, e.g.
+ * for 8 questions: [EASY, EASY, NORMAL, NORMAL, DIFFICULT, DIFFICULT, VERY_DIFFICULT,
+ * VERY_DIFFICULT] — mirrors what the backend prompt asks Claude for (see
+ * MockInterviewQuestionService.buildPrompt). */
+function difficultyProgression(count: number): MockInterviewQuestionDifficulty[] {
+  return Array.from(
+    { length: count },
+    (_, index) =>
+      DIFFICULTY_TIERS[
+        Math.min(DIFFICULTY_TIERS.length - 1, Math.floor((index / count) * DIFFICULTY_TIERS.length))
+      ]!,
+  )
+}
+
+function fillTemplate(
+  template: QuestionTemplate,
+  skill: string,
+  experienceLevel: string | null,
+  industry: string | null,
+): MockInterviewSessionQuestion {
+  return {
+    text: template.text
+      .replace('{{skill}}', skill)
+      .replace('{{experienceLevel}}', (experienceLevel ?? '').toLowerCase())
+      .replace('{{industry}}', industry ?? ''),
+    skills: [skill],
+    difficulty: template.difficulty,
+  }
+}
+
+/** One question for a given difficulty tier — skill-based (and tagged with the skill it used,
+ * for MockInterviewPage to highlight) whenever the candidate has selected at least one skill,
+ * enriched with experience level and/or industry once those are filled in on the candidate's
+ * profile (see QUESTION_TEMPLATES' `requires`). Falls back to a flat canned question pool tagged
+ * with no skill when no skills are selected, or when no template of this tier is eligible.
+ * Avoids repeating a question already used earlier in the same session where it reasonably can. */
+function pickQuestionForTier(
+  tier: MockInterviewQuestionDifficulty,
   skills: string[],
   experienceLevel: string | null,
   industry: string | null,
-  previous: string,
-): string {
-  if (skills.length === 0) {
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const candidate = pickRandom(FALLBACK_QUESTIONS)
-      if (candidate !== previous) return candidate
-    }
-    return FALLBACK_QUESTIONS[0]!
-  }
-
+  usedTexts: Set<string>,
+): MockInterviewSessionQuestion {
   const available: Record<TemplateInput, boolean> = {
-    skill: true,
+    skill: skills.length > 0,
     experienceLevel: !!experienceLevel,
     industry: !!industry,
   }
-  const eligibleTemplates = QUESTION_TEMPLATES.filter((template) =>
-    template.requires.every((input) => available[input]),
+  const eligibleTemplates = QUESTION_TEMPLATES.filter(
+    (template) =>
+      template.difficulty === tier && template.requires.every((input) => available[input]),
   )
 
-  function fill(template: QuestionTemplate, skill: string): string {
-    return template.text
-      .replace('{{skill}}', skill)
-      .replace('{{experienceLevel}}', (experienceLevel ?? '').toLowerCase())
-      .replace('{{industry}}', industry ?? '')
+  if (eligibleTemplates.length > 0) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = fillTemplate(
+        pickRandom(eligibleTemplates),
+        pickRandom(skills),
+        experienceLevel,
+        industry,
+      )
+      if (!usedTexts.has(candidate.text)) return candidate
+    }
+    return fillTemplate(eligibleTemplates[0]!, skills[0]!, experienceLevel, industry)
   }
 
+  const eligibleFallbacks = FALLBACK_QUESTIONS.filter((question) => question.difficulty === tier)
+  const pool = eligibleFallbacks.length > 0 ? eligibleFallbacks : FALLBACK_QUESTIONS
   for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = fill(pickRandom(eligibleTemplates), pickRandom(skills))
-    if (candidate !== previous) return candidate
+    const candidate = pickRandom(pool)
+    if (!usedTexts.has(candidate.text))
+      return { text: candidate.text, skills: [], difficulty: candidate.difficulty }
   }
-  return fill(eligibleTemplates[0]!, skills[0]!)
+  return { text: pool[0]!.text, skills: [], difficulty: pool[0]!.difficulty }
+}
+
+/** The full local-fallback session, already in easy-to-very-difficult order. */
+function generateLocalSessionQuestions(
+  skills: string[],
+  experienceLevel: string | null,
+  industry: string | null,
+): MockInterviewSessionQuestion[] {
+  const usedTexts = new Set<string>()
+  return difficultyProgression(QUESTIONS_PER_SESSION).map((tier) => {
+    const question = pickQuestionForTier(tier, skills, experienceLevel, industry, usedTexts)
+    usedTexts.add(question.text)
+    return question
+  })
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -199,9 +288,10 @@ export default function MockInterviewPage() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [experienceLevel, setExperienceLevel] = useState<BackendExperienceLevel | null>(null)
   const [industry, setIndustry] = useState<string | null>(null)
-  const [lastQuestionSet, setLastQuestionSet] = useState<string[]>([])
+  const [lastQuestionSet, setLastQuestionSet] = useState<MockInterviewSessionQuestion[]>([])
 
   const [currentQuestion, setCurrentQuestion] = useState('')
+  const [currentQuestionSkills, setCurrentQuestionSkills] = useState<string[]>([])
   const [questionsAsked, setQuestionsAsked] = useState(0)
   const [avatarSpeaking, setAvatarSpeaking] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -226,8 +316,8 @@ export default function MockInterviewPage() {
   const questionsAskedRef = useRef(0)
   const autoStopTimeoutRef = useRef<number | null>(null)
   const countdownIntervalRef = useRef<number | null>(null)
-  const sessionQuestionsRef = useRef<string[]>([])
-  const preparedQuestionsRef = useRef<string[]>([])
+  const sessionQuestionsRef = useRef<MockInterviewSessionQuestion[]>([])
+  const preparedQuestionsRef = useRef<MockInterviewSessionQuestion[]>([])
 
   function loadThumbnail(session: MockInterviewSessionSummary) {
     if (!session.hasThumbnail) return
@@ -311,7 +401,7 @@ export default function MockInterviewPage() {
    * template generator — silently, per product decision — if that call fails for any reason
    * (no API key configured server-side, network error, rate limit), so a candidate can always
    * start a session. */
-  async function fetchSessionQuestions(): Promise<string[]> {
+  async function fetchSessionQuestions(): Promise<MockInterviewSessionQuestion[]> {
     try {
       const result = await mockInterviewApi.generateQuestions({
         skills: selectedSkills,
@@ -326,27 +416,24 @@ export default function MockInterviewPage() {
     const resolvedExperienceLevel = experienceLevel
       ? experienceLevelFromBackend(experienceLevel)
       : null
-    const questions: string[] = []
-    let previous = ''
-    for (let i = 0; i < QUESTIONS_PER_SESSION; i++) {
-      previous = generateQuestion(selectedSkills, resolvedExperienceLevel, industry, previous)
-      questions.push(previous)
-    }
-    return questions
+    return generateLocalSessionQuestions(selectedSkills, resolvedExperienceLevel, industry)
   }
 
   function askQuestion() {
     const index = questionsAskedRef.current
-    const question =
-      preparedQuestionsRef.current[index] ??
-      preparedQuestionsRef.current[preparedQuestionsRef.current.length - 1] ??
-      ''
-    setCurrentQuestion(question)
+    const question = preparedQuestionsRef.current[index] ??
+      preparedQuestionsRef.current[preparedQuestionsRef.current.length - 1] ?? {
+        text: '',
+        skills: [],
+        difficulty: null,
+      }
+    setCurrentQuestion(question.text)
+    setCurrentQuestionSkills(question.skills)
     sessionQuestionsRef.current.push(question)
     questionsAskedRef.current += 1
     setQuestionsAsked(questionsAskedRef.current)
     speakQuestion(
-      question,
+      question.text,
       () => setAvatarSpeaking(true),
       () => setAvatarSpeaking(false),
     )
@@ -655,6 +742,18 @@ export default function MockInterviewPage() {
                   <div className="text-[15px] leading-normal font-bold text-ink">
                     {currentQuestion}
                   </div>
+                  {currentQuestionSkills.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {currentQuestionSkills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-full bg-primary-tint px-2 py-0.5 text-[11px] font-bold text-primary"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
