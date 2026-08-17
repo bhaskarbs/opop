@@ -9,8 +9,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.openopportunity.job.ExperienceLevel;
+import com.openopportunity.mockinterview.dto.MockInterviewSessionQuestion;
 import com.openopportunity.mockinterview.exception.MockInterviewQuestionRateLimitedException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -50,9 +52,63 @@ class MockInterviewQuestionServiceTest {
         }
         when(questionRepository.findByOptionalFilters("Tech")).thenReturn(bank);
 
-        List<String> questions =
+        List<MockInterviewSessionQuestion> questions =
                 service.getSessionQuestions(candidateId, List.of(), ExperienceLevel.SENIOR, "Tech", 5);
 
         assertThat(questions).hasSize(5);
+    }
+
+    @Test
+    void sortsBankQuestionsEasyToVeryDifficultWithNullsLast() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        List<MockInterviewQuestion> bank = new ArrayList<>();
+        bank.add(new MockInterviewQuestion(
+                "Very difficult one",
+                List.of(),
+                null,
+                List.of(),
+                QuestionDifficulty.VERY_DIFFICULT,
+                QuestionSource.ADMIN));
+        bank.add(new MockInterviewQuestion(
+                "No difficulty set", List.of(), null, List.of(), null, QuestionSource.ADMIN));
+        bank.add(new MockInterviewQuestion(
+                "Easy one", List.of(), null, List.of(), QuestionDifficulty.EASY, QuestionSource.ADMIN));
+        bank.add(new MockInterviewQuestion(
+                "Normal one", List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
+        for (int i = 0; i < 100; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Filler " + i, List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
+        }
+        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+
+        List<MockInterviewSessionQuestion> questions =
+                service.getSessionQuestions(candidateId, List.of(), null, null, 4);
+
+        assertThat(questions)
+                .extracting(MockInterviewSessionQuestion::difficulty)
+                .isSortedAccordingTo(Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    @Test
+    void narrowsAQuestionsSkillsDownToTheCandidatesSelectedOnes() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        List<MockInterviewQuestion> bank = new ArrayList<>();
+        for (int i = 0; i < 101; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Question " + i,
+                    List.of("React", "Node.js"),
+                    null,
+                    List.of(),
+                    null,
+                    QuestionSource.ADMIN));
+        }
+        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+
+        List<MockInterviewSessionQuestion> questions =
+                service.getSessionQuestions(candidateId, List.of("React"), null, null, 5);
+
+        assertThat(questions).allSatisfy(question -> assertThat(question.skills()).containsExactly("React"));
     }
 }
