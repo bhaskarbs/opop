@@ -1,8 +1,15 @@
 import posthog from 'posthog-js'
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined
+// `||`, not `??` — a blank VITE_POSTHOG_HOST (the normal case: unset locally, and unset as a
+// GitHub Actions repo variable in CI) comes through as an empty string, not undefined, so `??`
+// never actually falls back and posthog.init() got api_host: "" — every request then resolved
+// relative to the current page's own origin (openopportunity.in/array/.../config.js) instead of
+// PostHog's servers, which the SPA's catch-all route serves index.html for, producing a
+// "SyntaxError: Unexpected token '<'" console error and silently no-op analytics. Confirmed live,
+// not assumed.
 const POSTHOG_HOST =
-  (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? 'https://us.i.posthog.com'
+  (import.meta.env.VITE_POSTHOG_HOST as string | undefined) || 'https://us.i.posthog.com'
 
 /** Only set when VITE_POSTHOG_KEY is configured — undefined in any environment that hasn't set
  * up a PostHog project, so main.tsx can render the app without a <PostHogProvider> at all rather
