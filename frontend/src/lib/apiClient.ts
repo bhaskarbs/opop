@@ -39,6 +39,18 @@ export class ApiError extends Error {
   }
 }
 
+/** A bean-validation failure (see GlobalExceptionHandler#handleValidation) always carries a
+ * generic top-level message ("Validation failed") with the actual per-field reasons in
+ * `details` — a caller that only ever shows `error.message` leaves the user with no idea what
+ * to fix (this bit admin job posting: a "Save as draft" that skipped a required field like
+ * location/aboutRole silently failed with just "Validation failed"). Prefer this over reading
+ * `error.message` directly in any form's catch block. */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof ApiError)) return fallback
+  if (error.details.length > 0) return `${error.message}: ${error.details.join('; ')}`
+  return error.message
+}
+
 // Exported so pages can build a full URL for a plain <img src> (relative paths like
 // CandidateProfileResponse.photoUrl won't resolve on their own — the frontend dev server and
 // backend run on different origins/ports).

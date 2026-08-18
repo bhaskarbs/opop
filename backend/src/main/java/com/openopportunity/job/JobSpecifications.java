@@ -17,6 +17,13 @@ final class JobSpecifications {
         return (root, query, cb) -> cb.equal(root.get("status"), status);
     }
 
+    /** Unlike hasStatus above, an absent/empty filter is a genuine no-op (every status matches)
+     * — see JobService#adminSearch's "All statuses" option (AdminJobsPage's status filter). */
+    static Specification<Job> hasStatusIn(List<JobStatus> statuses) {
+        if (statuses == null || statuses.isEmpty()) return null;
+        return (root, query, cb) -> root.get("status").in(statuses);
+    }
+
     /** Matches a job if ANY of the given keywords hits its title, company name, or skills —
      * candidates can now tag multiple skills/roles in the search bar rather than one keyword.
      * Built via Specification.anyOf (the same idiom as the top-level Specification.allOf in

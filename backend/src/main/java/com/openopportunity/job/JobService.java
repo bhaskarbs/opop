@@ -5,16 +5,23 @@ import com.openopportunity.auth.CompanyProfile;
 import com.openopportunity.auth.CompanyProfileRepository;
 import com.openopportunity.auth.User;
 import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
 import com.openopportunity.billing.CompanySubscription;
 import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.CompanySubscriptionRepository;
+import com.openopportunity.billing.exception.CompanyNotFoundException;
+import com.openopportunity.job.dto.AdminJobBrandingRequest;
+import com.openopportunity.job.dto.AdminJobSearchResult;
+import com.openopportunity.job.dto.AdminJobSummary;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSearchResult;
 import com.openopportunity.job.dto.JobSummary;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
+import com.openopportunity.job.exception.InvalidJobLogoException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
+import com.openopportunity.job.exception.JobLogoNotFoundException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.jobalert.JobAlertMatchEmailService;
@@ -23,6 +30,11 @@ import com.openopportunity.notification.NotificationType;
 import com.openopportunity.savedjob.SavedJobRepository;
 import com.openopportunity.search.JobIndexingService;
 import com.openopportunity.search.JobSearchProvider;
+import com.openopportunity.storage.AvatarImageResizer;
+import com.openopportunity.storage.FileStorageService;
+import com.openopportunity.storage.ImageContentValidator;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
@@ -34,10 +46,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class JobService {
@@ -58,6 +72,7 @@ public class JobService {
     private final JobAlertMatchEmailService jobAlertMatchEmailService;
     private final JobSearchProvider jobSearchProvider;
     private final Optional<JobIndexingService> jobIndexingService;
+    private final FileStorageService fileStorageService;
 
     public JobService(
             JobRepository jobRepository,
@@ -70,7 +85,8 @@ public class JobService {
             NewJobMatchEmailService newJobMatchEmailService,
             JobAlertMatchEmailService jobAlertMatchEmailService,
             JobSearchProvider jobSearchProvider,
-            Optional<JobIndexingService> jobIndexingService) {
+            Optional<JobIndexingService> jobIndexingService,
+            FileStorageService fileStorageService) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
@@ -85,6 +101,7 @@ public class JobService {
         // exists as a bean once app.search.provider=elasticsearch (see its
         // @ConditionalOnProperty), so there's nothing to keep in sync in the default case.
         this.jobIndexingService = jobIndexingService;
+        this.fileStorageService = fileStorageService;
     }
 
     // A client-suppliable page size that's too large would defeat pagination's whole point
@@ -158,6 +175,102 @@ public class JobService {
                 job,
                 companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
                 isPromoted(job.getCompanyId()));
+    }
+
+    /** Admin read of any job's full detail regardless of status or owner — see
+     * JobController#adminGet. Distinct from get(id, callerId) above, which 404s a non-owner on
+     * anything but an ACTIVE job; AdminJobsPage's edit form needs to load a
+     * DRAFT/PENDING_APPROVAL/REJECTED/CLOSED job too. */
+    @Transactional(readOnly = true)
+    public JobDetail adminGet(UUID id) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        return toDetail(
+                job,
+                companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
+                isPromoted(job.getCompanyId()));
+    }
+
+    // Only ever displayed as a small avatar (job cards/detail), same size budget as
+    // CompanyProfileService's own logo cap — see AvatarImageResizer.
+    private static final long MAX_JOB_LOGO_SIZE_BYTES = 5L * 1024 * 1024;
+
+    /** Sets or clears (blank/null) the display name shown for this job instead of the owning
+     * company's real name — see AdminPostJobPage's "Company display name" field. Does not touch
+     * companyId/companyName: ownership, notifications, and posting limits still key off the real
+     * company account. */
+    @Transactional
+    public JobDetail adminUpdateBranding(UUID id, AdminJobBrandingRequest request) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        String displayCompanyName = request.displayCompanyName();
+        job.updateDisplayCompanyName(
+                displayCompanyName == null || displayCompanyName.isBlank() ? null : displayCompanyName.trim());
+        save(job);
+        return adminGet(id);
+    }
+
+    /** Uploads a custom logo shown for this job instead of the owning company's own logo — see
+     * AdminPostJobPage's logo picker. Mirrors CompanyProfileService#uploadLogo (same size cap,
+     * same signature-based content validation, same resize-before-store step) but keyed by job
+     * id rather than company id, since this is a per-posting override, not a profile-wide one. */
+    @Transactional
+    public JobDetail adminUploadLogo(UUID id, MultipartFile file) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to read job logo upload", ex);
+        }
+        String contentType = validateJobLogo(file, bytes);
+
+        String storageKey;
+        try {
+            byte[] resized = AvatarImageResizer.resize(bytes);
+            storageKey = fileStorageService.store(resized, file.getOriginalFilename(), "job-logos/" + id);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to store job logo", ex);
+        }
+        job.updateLogo(storageKey, contentType);
+        save(job);
+        return adminGet(id);
+    }
+
+    /** Reverts this job back to showing the owning company's own logo. */
+    @Transactional
+    public JobDetail adminRemoveLogo(UUID id) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        job.clearLogo();
+        save(job);
+        return adminGet(id);
+    }
+
+    /** Public (unauthenticated) lookup — see JobController, which serves this straight to an
+     * &lt;img&gt; tag with no bearer token attached, same as CompanyProfileService#getLogo. */
+    @Transactional(readOnly = true)
+    public JobLogoContent getLogo(UUID id) {
+        Job job = jobRepository
+                .findById(id)
+                .filter(existing -> existing.getLogoStorageKey() != null)
+                .orElseThrow(() -> new JobLogoNotFoundException(id));
+        try {
+            Resource resource = fileStorageService.load(job.getLogoStorageKey());
+            return new JobLogoContent(resource, job.getLogoContentType());
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to load job logo", ex);
+        }
+    }
+
+    public record JobLogoContent(Resource resource, String contentType) {}
+
+    private String validateJobLogo(MultipartFile file, byte[] bytes) {
+        if (file.isEmpty()) {
+            throw new InvalidJobLogoException("Logo file is empty");
+        }
+        if (file.getSize() > MAX_JOB_LOGO_SIZE_BYTES) {
+            throw new InvalidJobLogoException("Logo must be 5MB or smaller");
+        }
+        return ImageContentValidator.detectContentType(bytes)
+                .orElseThrow(() -> new InvalidJobLogoException("Logo must be a JPEG, PNG, or WEBP image"));
     }
 
     @Transactional(readOnly = true)
@@ -278,6 +391,101 @@ public class JobService {
                 job, companyProfileRepository.findByUserId(companyId).orElse(null), isPromoted(companyId));
     }
 
+    /** Admin-authored job posting (AdminJobsPage) — on behalf of a company the admin chooses,
+     * rather than the caller themselves (see create() above, where companyId is always the
+     * authenticated caller's own id). Deliberately skips requireEligibleToPostJobs (an admin
+     * acting directly is the override for "company profile isn't complete/verified yet", not
+     * something that check should block) and requireClientSettableStatus (an admin can publish
+     * straight to ACTIVE without a separate approve() call — they *are* the approver). Still
+     * enforces MAX_JOB_POSTINGS_PER_COMPANY, same as any other creation path, so this can't be
+     * used to bypass that cap either. */
+    @Transactional
+    public JobDetail adminCreate(UUID companyId, JobRequest request) {
+        User company = requireCompany(companyId);
+        if (jobRepository.countByCompanyId(companyId) >= MAX_JOB_POSTINGS_PER_COMPANY) {
+            throw new JobPostingLimitReachedException();
+        }
+        Job job = new Job(
+                companyId,
+                company.getFullName(),
+                request.title(),
+                request.employmentType(),
+                request.experienceLevel(),
+                request.workMode(),
+                request.location(),
+                request.salaryMinLakhs(),
+                request.salaryMaxLakhs(),
+                request.applicationDeadline(),
+                request.aboutRole(),
+                nonNull(request.responsibilities()),
+                nonNull(request.requirements()),
+                nonNull(request.skills()),
+                request.status());
+        save(job);
+        if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
+            notifyAdminsJobPending(job, company.getFullName());
+        } else if (job.getStatus() == JobStatus.ACTIVE) {
+            notifyJobIsLive(job);
+        }
+        return toDetail(
+                job, companyProfileRepository.findByUserId(companyId).orElse(null), isPromoted(companyId));
+    }
+
+    /** Admin edit of any job's content (AdminJobsPage) — mirrors update() above but skips
+     * requireOwner (an admin can edit a job regardless of which company posted it) and
+     * requireClientSettableStatus (same reasoning as adminCreate — an admin can move a job
+     * straight to ACTIVE/REJECTED/CLOSED directly, not just DRAFT/PENDING_APPROVAL). The job
+     * keeps its existing owning company; this only edits content, never reassigns ownership. */
+    @Transactional
+    public JobDetail adminUpdate(UUID id, JobRequest request) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        UUID companyId = job.getCompanyId();
+        JobStatus previousStatus = job.getStatus();
+        job.update(
+                request.title(),
+                request.employmentType(),
+                request.experienceLevel(),
+                request.workMode(),
+                request.location(),
+                request.salaryMinLakhs(),
+                request.salaryMaxLakhs(),
+                request.applicationDeadline(),
+                request.aboutRole(),
+                nonNull(request.responsibilities()),
+                nonNull(request.requirements()),
+                nonNull(request.skills()),
+                request.status());
+        save(job);
+        if (previousStatus != JobStatus.PENDING_APPROVAL && job.getStatus() == JobStatus.PENDING_APPROVAL) {
+            User company = userRepository.findById(companyId).orElseThrow();
+            notifyAdminsJobPending(job, company.getFullName());
+        } else if (previousStatus != JobStatus.ACTIVE && job.getStatus() == JobStatus.ACTIVE) {
+            notifyJobIsLive(job);
+        }
+        return toDetail(
+                job, companyProfileRepository.findByUserId(companyId).orElse(null), isPromoted(companyId));
+    }
+
+    /** Same "job just went live" side effects as approve() — reused here so an admin publishing
+     * straight to ACTIVE via adminCreate/adminUpdate notifies the company and matching
+     * candidates identically to going through the approval queue. */
+    private void notifyJobIsLive(Job job) {
+        notificationService.notify(
+                job.getCompanyId(),
+                NotificationType.JOB_APPROVED,
+                "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
+                "/company/dashboard");
+        newJobMatchEmailService.notifyMatchingCandidates(job);
+        jobAlertMatchEmailService.notifyMatchingAlerts(job);
+    }
+
+    private User requireCompany(UUID companyId) {
+        return userRepository
+                .findById(companyId)
+                .filter(user -> user.getRole() == UserRole.COMPANY)
+                .orElseThrow(() -> new CompanyNotFoundException(companyId));
+    }
+
     @Transactional
     public void delete(UUID id, UUID companyId) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
@@ -314,18 +522,45 @@ public class JobService {
                 .toList();
     }
 
+    /** General-purpose admin browsing across every status (AdminJobsPage's status filter) —
+     * distinct from search() above, which only ever surfaces ACTIVE jobs (the public listing)
+     * and from getPending(), which is hardcoded to the PENDING_APPROVAL review queue. Without
+     * this, a job an admin creates or edits into DRAFT/CLOSED/REJECTED has no page it shows up
+     * on at all — the admin would have to already know its id. No promoted/featured ranking
+     * here (unlike search()) — plain recency ordering is more useful for an admin scanning
+     * every status than customer-facing relevance sorting. */
+    @Transactional(readOnly = true)
+    public AdminJobSearchResult adminSearch(List<JobStatus> statuses, String q, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_SEARCH_PAGE_SIZE);
+
+        Specification<Job> spec = Specification.allOf(
+                JobSpecifications.hasStatusIn(statuses), JobSpecifications.matchesAdminReviewQuery(q));
+        List<Job> jobs = jobRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        int totalCount = jobs.size();
+        int totalPages = totalCount == 0 ? 0 : (totalCount + safeSize - 1) / safeSize;
+        List<Job> pageJobs = jobs.stream().skip((long) safePage * safeSize).limit(safeSize).toList();
+
+        Map<UUID, CompanyProfile> profilesByCompanyId = companyProfilesFor(pageJobs);
+        Set<UUID> promotedCompanyIds = promotedCompanyIdsFor(pageJobs);
+        List<AdminJobSummary> summaries = pageJobs.stream()
+                .map(job -> new AdminJobSummary(
+                        toSummary(
+                                job,
+                                profilesByCompanyId.get(job.getCompanyId()),
+                                promotedCompanyIds.contains(job.getCompanyId())),
+                        job.getCompanyName()))
+                .toList();
+        return new AdminJobSearchResult(summaries, safePage, safeSize, totalCount, totalPages);
+    }
+
     @Transactional
     public JobDetail approve(UUID id) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
         job.approve();
         save(job);
-        notificationService.notify(
-                job.getCompanyId(),
-                NotificationType.JOB_APPROVED,
-                "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
-                "/company/dashboard");
-        newJobMatchEmailService.notifyMatchingCandidates(job);
-        jobAlertMatchEmailService.notifyMatchingAlerts(job);
+        notifyJobIsLive(job);
         return toDetail(
                 job,
                 companyProfileRepository.findByUserId(job.getCompanyId()).orElse(null),
@@ -470,18 +705,29 @@ public class JobService {
                 .isPresent();
     }
 
-    private String companyLogoUrl(CompanyProfile companyProfile) {
+    // A job's own logo override (see Job#updateLogo/AdminPostJobPage) always wins over the
+    // owning company's profile logo when both exist — that's the whole point of the override.
+    private String companyLogoUrl(Job job, CompanyProfile companyProfile) {
+        if (job.getLogoStorageKey() != null) {
+            return "/api/jobs/" + job.getId() + "/logo";
+        }
         if (companyProfile == null || companyProfile.getLogoStorageKey() == null) {
             return null;
         }
         return "/api/companies/" + companyProfile.getUserId() + "/logo";
     }
 
+    // Same override precedence as companyLogoUrl above — an admin-set display name always wins
+    // over the real company account's name.
+    private String displayCompanyName(Job job) {
+        return job.getDisplayCompanyName() != null ? job.getDisplayCompanyName() : job.getCompanyName();
+    }
+
     private JobSummary toSummary(Job job, CompanyProfile companyProfile, boolean isPromoted) {
         return new JobSummary(
                 job.getId(),
                 job.getTitle(),
-                job.getCompanyName(),
+                displayCompanyName(job),
                 job.getLocation(),
                 job.getWorkMode(),
                 job.getExperienceLevel(),
@@ -492,7 +738,7 @@ public class JobService {
                 job.getStatus(),
                 job.getApplicantCount(),
                 job.getCreatedAt(),
-                companyLogoUrl(companyProfile),
+                companyLogoUrl(job, companyProfile),
                 isPromoted,
                 job.getFeaturedAt() != null);
     }
@@ -501,7 +747,7 @@ public class JobService {
         return new JobDetail(
                 job.getId(),
                 job.getTitle(),
-                job.getCompanyName(),
+                displayCompanyName(job),
                 job.getLocation(),
                 job.getWorkMode(),
                 job.getExperienceLevel(),
@@ -516,7 +762,7 @@ public class JobService {
                 job.getStatus(),
                 job.getApplicantCount(),
                 job.getCreatedAt(),
-                companyLogoUrl(companyProfile),
+                companyLogoUrl(job, companyProfile),
                 isPromoted,
                 job.getFeaturedAt() != null);
     }

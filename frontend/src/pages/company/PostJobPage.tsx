@@ -20,7 +20,7 @@ import {
   type ExperienceLevelLabel,
   type WorkModeLabel,
 } from '../../lib/jobEnums'
-import { ApiError } from '../../lib/apiClient'
+import { apiErrorMessage } from '../../lib/apiClient'
 import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
 import { useCompanyProfileStore } from '../../stores/companyProfileStore'
@@ -178,7 +178,7 @@ export default function PostJobPage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
+          setFormError(apiErrorMessage(error, t('postJob.errorGeneric')))
         }
       })
       .finally(() => {
@@ -208,15 +208,27 @@ export default function PostJobPage() {
         navigate(localize(ROUTES.companyDashboard))
       }
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
+      setFormError(apiErrorMessage(error, t('postJob.errorGeneric')))
     }
   }
 
   async function onSaveDraft() {
     setFormError(null)
     const values = getValues()
+    // Mirrors JobRequest's actual @NotBlank fields on the backend (title/location/aboutRole —
+    // see JobRequest.java) — a draft still has to satisfy these, so checking only the title
+    // here let a save-as-draft 400 with a generic "Validation failed" that was easy to miss,
+    // leaving the company thinking their draft saved when it was never actually persisted.
     if (!values.title.trim()) {
       setFormError(t('postJob.errorTitleRequired'))
+      return
+    }
+    if (!values.location.trim()) {
+      setFormError(t('postJob.errorLocationRequired'))
+      return
+    }
+    if (!values.aboutRole.trim()) {
+      setFormError(t('postJob.errorAboutRoleRequired'))
       return
     }
     try {
@@ -228,7 +240,7 @@ export default function PostJobPage() {
         navigate(localize(ROUTES.companyDashboard))
       }
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : t('postJob.errorGeneric'))
+      setFormError(apiErrorMessage(error, t('postJob.errorGeneric')))
     }
   }
 

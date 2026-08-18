@@ -114,6 +114,12 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers(HttpMethod.GET, "/api/jobs/pending")
                         .hasRole("ADMIN")
+                        // Admin browsing across every status (AdminJobsPage's status filter) —
+                        // same declaration-order reasoning as /mine and /pending above; this
+                        // single-segment literal path would otherwise also match the broader
+                        // permitAll "/api/jobs/*" pattern below.
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/jobs/*/approve", "/api/jobs/*/reject")
                         .hasRole("ADMIN")
                         // Job-featuring lives on the new admin Jobs page (ADMIN/SUPER_ADMIN
@@ -126,6 +132,36 @@ public class SecurityConfig {
                         // conflict with it either way.
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/*/admin")
                         .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        // Admin create/edit (AdminJobsPage) — same tier as feature/unfeature/
+                        // adminDelete above. Structurally distinct patterns from the
+                        // owner-scoped POST /api/jobs and PUT /api/jobs/* below (an Ant `*`
+                        // matches exactly one path segment, and these have either zero or two),
+                        // so — same as the DELETE pair above — there's no declaration-order
+                        // conflict with them either way.
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/jobs/*/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        // Admin detail read (AdminJobsPage's edit form) — same tier and same
+                        // no-conflict reasoning as the admin create/edit/delete rules above;
+                        // "/api/jobs/*/admin" is a distinct two-segment pattern from the
+                        // permitAll "/api/jobs/*" single-segment one below.
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/*/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        // Admin display-branding override (AdminPostJobPage's company name/logo
+                        // fields) — same tier as the admin create/edit/delete rules above.
+                        // Three-segment patterns, structurally distinct from every shorter one
+                        // here, so no declaration-order conflict either way.
+                        .requestMatchers(HttpMethod.PUT, "/api/jobs/*/admin/branding")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/*/admin/logo")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/jobs/*/admin/logo")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        // Public — mirrors GET /api/companies/*/logo above; a job's own logo
+                        // override is shown to anyone browsing jobs, not just admins.
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/*/logo")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/*")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/jobs")

@@ -158,6 +158,8 @@
     },
     "errorGeneric": "Something went wrong. Try again.",
     "errorTitleRequired": "Enter a job title before saving a draft.",
+    "errorLocationRequired": "Enter a location before saving a draft.",
+    "errorAboutRoleRequired": "Describe the role before saving a draft.",
     "checkingEligibility": "Checking your company's verification status…",
     "loadingExisting": "Loading this job posting…",
     "notEligibleTitle": "You can't post a job yet",

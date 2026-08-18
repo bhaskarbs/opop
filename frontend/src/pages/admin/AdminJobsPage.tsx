@@ -1,17 +1,54 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { LoadingState, ShareButton, Spinner } from '../../components/ui'
-import { ApiError } from '../../lib/apiClient'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
+import { apiErrorMessage } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
-import { jobShareUrl, jobsApi, type JobSummary } from '../../lib/jobsApi'
+import {
+  jobShareUrl,
+  jobsApi,
+  type AdminJobSummary,
+  type BackendJobStatus,
+} from '../../lib/jobsApi'
 import { workModeFromBackend } from '../../lib/jobEnums'
+import { ROUTES } from '../../routes/paths'
 
 const PAGE_SIZE = 10
 
+// "" means "every status" (see jobsApi.adminSearch) — the default, since this page is now also
+// where an admin-created DRAFT/CLOSED/REJECTED job has to be findable again (see
+// AdminPostJobPage), not just the live-jobs-to-feature list it used to be.
+const STATUS_FILTERS: Array<BackendJobStatus | ''> = [
+  '',
+  'ACTIVE',
+  'DRAFT',
+  'PENDING_APPROVAL',
+  'REJECTED',
+  'CLOSED',
+]
+const STATUS_FILTER_KEYS: Record<BackendJobStatus | '', string> = {
+  '': 'jobs.statusFilter.all',
+  DRAFT: 'jobs.status.draft',
+  PENDING_APPROVAL: 'jobs.status.pendingApproval',
+  ACTIVE: 'jobs.status.active',
+  REJECTED: 'jobs.status.rejected',
+  CLOSED: 'jobs.status.closed',
+}
+const STATUS_BADGE_KEYS: Record<BackendJobStatus, string> = {
+  DRAFT: 'jobs.status.draft',
+  PENDING_APPROVAL: 'jobs.status.pendingApproval',
+  ACTIVE: 'jobs.status.active',
+  REJECTED: 'jobs.status.rejected',
+  CLOSED: 'jobs.status.closed',
+}
+
 export default function AdminJobsPage() {
   const { t } = useTranslation('admin')
+  const localize = useLocalizedPath()
   const [query, setQuery] = useState('')
-  const [jobs, setJobs] = useState<JobSummary[]>([])
+  const [statusFilter, setStatusFilter] = useState<BackendJobStatus | ''>('')
+  const [jobs, setJobs] = useState<AdminJobSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [featuringId, setFeaturingId] = useState<string | null>(null)
@@ -19,13 +56,15 @@ export default function AdminJobsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  // Resets to page 1 whenever the search query itself changes — adjusted during render (see
-  // JobSearchPage for the same pattern) rather than inside the fetch effect below, since that
-  // effect also depends on `page` (a Previous/Next click needs to refetch, unlike the old
-  // client-side-only pagination this replaced) and resetting page there too would fight it.
+  // Resets to page 1 whenever the search query or status filter changes — adjusted during
+  // render (see JobSearchPage for the same pattern) rather than inside the fetch effect below,
+  // since that effect also depends on `page` (a Previous/Next click needs to refetch, unlike the
+  // old client-side-only pagination this replaced) and resetting page there too would fight it.
   const [prevQuery, setPrevQuery] = useState(query)
-  if (query !== prevQuery) {
+  const [prevStatusFilter, setPrevStatusFilter] = useState(statusFilter)
+  if (query !== prevQuery || statusFilter !== prevStatusFilter) {
     setPrevQuery(query)
+    setPrevStatusFilter(statusFilter)
     setPage(1)
   }
 
@@ -35,7 +74,12 @@ export default function AdminJobsPage() {
       setLoading(true)
       setError(null)
       jobsApi
-        .search({ ...(query.trim() ? { q: [query.trim()] } : {}), page: page - 1, size: PAGE_SIZE })
+        .adminSearch({
+          status: statusFilter ? [statusFilter] : undefined,
+          q: query.trim() || undefined,
+          page: page - 1,
+          size: PAGE_SIZE,
+        })
         .then((result) => {
           if (!cancelled) {
             setJobs(result.jobs)
@@ -44,7 +88,7 @@ export default function AdminJobsPage() {
         })
         .catch((caught) => {
           if (!cancelled) {
-            setError(caught instanceof ApiError ? caught.message : t('jobs.loadError'))
+            setError(apiErrorMessage(caught, t('jobs.loadError')))
           }
         })
         .finally(() => {
@@ -55,15 +99,23 @@ export default function AdminJobsPage() {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [query, page, t])
+  }, [query, statusFilter, page, t])
 
-  async function handleToggleFeatured(job: JobSummary) {
+  async function handleToggleFeatured(job: AdminJobSummary) {
     setFeaturingId(job.id)
     try {
       const updated = job.isFeatured
         ? await adminApi.unfeatureJob(job.id)
         : await adminApi.featureJob(job.id)
-      setJobs((prev) => prev.map((existing) => (existing.id === job.id ? updated : existing)))
+      // feature()/unfeature() return a plain JobDetail (no realCompanyName — that's only ever
+      // computed by adminSearch) — carry the existing value over rather than losing it.
+      setJobs((prev) =>
+        prev.map((existing) =>
+          existing.id === job.id
+            ? { ...updated, realCompanyName: existing.realCompanyName }
+            : existing,
+        ),
+      )
     } catch {
       // Best-effort — the row simply keeps its current featured state if the call fails.
     } finally {
@@ -71,14 +123,14 @@ export default function AdminJobsPage() {
     }
   }
 
-  async function handleDelete(job: JobSummary) {
+  async function handleDelete(job: AdminJobSummary) {
     if (!window.confirm(t('jobs.confirmDelete', { title: job.title }))) return
     setDeletingId(job.id)
     try {
       await adminApi.deleteJob(job.id)
       setJobs((prev) => prev.filter((existing) => existing.id !== job.id))
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : t('jobs.deleteError'))
+      setError(apiErrorMessage(caught, t('jobs.deleteError')))
     } finally {
       setDeletingId(null)
     }
@@ -86,9 +138,17 @@ export default function AdminJobsPage() {
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
-      <div className="mb-5">
-        <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('jobs.title')}</h1>
-        <p className="text-sm text-slate">{t('jobs.subtitle')}</p>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('jobs.title')}</h1>
+          <p className="text-sm text-slate">{t('jobs.subtitle')}</p>
+        </div>
+        <Link
+          to={localize(ROUTES.adminPostJob)}
+          className="inline-block rounded-lg bg-primary px-4 py-2.5 text-[13px] font-bold text-white no-underline"
+        >
+          {t('jobs.postJob')}
+        </Link>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
@@ -112,6 +172,18 @@ export default function AdminJobsPage() {
             className="w-full text-[13.5px] text-ink outline-none"
           />
         </div>
+        <select
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value as BackendJobStatus | '')}
+          aria-label={t('jobs.statusFilter.label')}
+          className="rounded-lg border border-border bg-surface px-3 py-2.5 text-[13.5px] text-ink"
+        >
+          {STATUS_FILTERS.map((status) => (
+            <option key={status || 'ALL'} value={status}>
+              {t(STATUS_FILTER_KEYS[status])}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && (
@@ -134,6 +206,11 @@ export default function AdminJobsPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[14.5px] font-bold text-ink">{job.title}</span>
+                  {job.status !== 'ACTIVE' && (
+                    <span className="rounded-full bg-neutral-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-[#3A414D]">
+                      {t(STATUS_BADGE_KEYS[job.status])}
+                    </span>
+                  )}
                   {job.isFeatured && (
                     <span className="rounded-full bg-primary-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-primary">
                       {t('jobs.featured')}
@@ -152,6 +229,11 @@ export default function AdminJobsPage() {
                     mode: workModeFromBackend(job.workMode),
                   })}
                 </div>
+                {job.realCompanyName !== job.companyName && (
+                  <div className="mt-0.5 text-[12px] text-fog">
+                    {t('jobs.realCompany', { company: job.realCompanyName })}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <ShareButton
@@ -160,6 +242,12 @@ export default function AdminJobsPage() {
                   copiedLabel={t('jobs.linkCopied')}
                   className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
                 />
+                <Link
+                  to={localize(ROUTES.adminJobEdit(job.id))}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink no-underline"
+                >
+                  {t('jobs.edit')}
+                </Link>
                 <button
                   type="button"
                   disabled={featuringId === job.id}

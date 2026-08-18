@@ -90,6 +90,18 @@ public class Job {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    // Admin-only display override (AdminPostJobPage) — null means "show the owning company's own
+    // name/logo", the behavior every existing job and every company-posted job keeps. See
+    // JobService#adminUpdateBranding/#adminUpdateLogo.
+    @Column(name = "display_company_name")
+    private String displayCompanyName;
+
+    @Column(name = "logo_storage_key")
+    private String logoStorageKey;
+
+    @Column(name = "logo_content_type", length = 100)
+    private String logoContentType;
+
     protected Job() {
         // JPA
     }
@@ -174,6 +186,20 @@ public class Job {
         if (this.applicantCount > 0) {
             this.applicantCount--;
         }
+    }
+
+    public void updateDisplayCompanyName(String displayCompanyName) {
+        this.displayCompanyName = displayCompanyName;
+    }
+
+    public void updateLogo(String storageKey, String contentType) {
+        this.logoStorageKey = storageKey;
+        this.logoContentType = contentType;
+    }
+
+    public void clearLogo() {
+        this.logoStorageKey = null;
+        this.logoContentType = null;
     }
 
     public void feature() {
@@ -274,5 +300,17 @@ public class Job {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getDisplayCompanyName() {
+        return displayCompanyName;
+    }
+
+    public String getLogoStorageKey() {
+        return logoStorageKey;
+    }
+
+    public String getLogoContentType() {
+        return logoContentType;
     }
 }

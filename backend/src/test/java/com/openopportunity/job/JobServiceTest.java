@@ -3,6 +3,7 @@ package com.openopportunity.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,19 +18,29 @@ import com.openopportunity.auth.UserRole;
 import com.openopportunity.billing.CompanySubscription;
 import com.openopportunity.billing.CompanySubscriptionPlan;
 import com.openopportunity.billing.CompanySubscriptionRepository;
+import com.openopportunity.billing.exception.CompanyNotFoundException;
+import com.openopportunity.job.dto.AdminJobBrandingRequest;
+import com.openopportunity.job.dto.AdminJobSearchResult;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSearchResult;
 import com.openopportunity.job.dto.JobSummary;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
+import com.openopportunity.job.exception.InvalidJobLogoException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
+import com.openopportunity.job.exception.JobLogoNotFoundException;
 import com.openopportunity.job.exception.JobNotFoundException;
+import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.jobalert.JobAlertMatchEmailService;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
 import com.openopportunity.savedjob.SavedJobRepository;
 import com.openopportunity.search.JobSearchProvider;
+import com.openopportunity.storage.FileStorageService;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -37,13 +48,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.mock.web.MockMultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class JobServiceTest {
@@ -78,6 +92,9 @@ class JobServiceTest {
     @Mock
     private JobSearchProvider jobSearchProvider;
 
+    @Mock
+    private FileStorageService fileStorageService;
+
     private JobService jobService;
 
     @BeforeEach
@@ -93,7 +110,8 @@ class JobServiceTest {
                 newJobMatchEmailService,
                 jobAlertMatchEmailService,
                 jobSearchProvider,
-                Optional.empty());
+                Optional.empty(),
+                fileStorageService);
     }
 
     private CompanyProfile eligibleProfile(UUID companyId) {
@@ -326,6 +344,232 @@ class JobServiceTest {
     }
 
     @Test
+    void adminCreateSucceedsForACompanyThatIsNotYetEligibleToPostItself() {
+        UUID companyId = UUID.randomUUID();
+        User company = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(companyId)).thenReturn(Optional.of(company));
+        // No companyProfileRepository stub, and deliberately no eligibleProfile() (unverified/
+        // incomplete) — unlike create(), adminCreate must not require it.
+
+        JobDetail detail = jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE));
+
+        assertThat(detail.companyName()).isEqualTo("Vertex Robotics");
+        assertThat(detail.status()).isEqualTo(JobStatus.ACTIVE);
+    }
+
+    @Test
+    void adminCreateAllowsDirectActiveStatusAndNotifiesMatchingCandidates() {
+        UUID companyId = UUID.randomUUID();
+        when(userRepository.findById(companyId))
+                .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
+
+        jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE));
+
+        verify(newJobMatchEmailService).notifyMatchingCandidates(any());
+        verify(jobAlertMatchEmailService).notifyMatchingAlerts(any());
+        verify(notificationService).notify(eq(companyId), eq(NotificationType.JOB_APPROVED), any(), any());
+    }
+
+    @Test
+    void adminCreateRejectsATargetThatIsNotACompanyAccount() {
+        UUID candidateId = UUID.randomUUID();
+        when(userRepository.findById(candidateId))
+                .thenReturn(Optional.of(new User("rohan@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE)));
+
+        assertThatThrownBy(() -> jobService.adminCreate(candidateId, sampleRequest(JobStatus.ACTIVE)))
+                .isInstanceOf(CompanyNotFoundException.class);
+    }
+
+    @Test
+    void adminCreateRejectsAnUnknownCompanyId() {
+        UUID companyId = UUID.randomUUID();
+        when(userRepository.findById(companyId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE)))
+                .isInstanceOf(CompanyNotFoundException.class);
+    }
+
+    @Test
+    void adminCreateEnforcesThePostingLimitLikeAnyOtherCreationPath() {
+        UUID companyId = UUID.randomUUID();
+        when(userRepository.findById(companyId))
+                .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
+        when(jobRepository.countByCompanyId(companyId)).thenReturn(10L);
+
+        assertThatThrownBy(() -> jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE)))
+                .isInstanceOf(JobPostingLimitReachedException.class);
+    }
+
+    @Test
+    void adminUpdateEditsAJobRegardlessOfWhichCompanyOwnsIt() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        JobRequest edited = new JobRequest(
+                "Staff Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "desc",
+                List.of(),
+                List.of(),
+                List.of(),
+                JobStatus.ACTIVE);
+        JobDetail detail = jobService.adminUpdate(job.getId(), edited);
+
+        assertThat(detail.title()).isEqualTo("Staff Frontend Developer");
+    }
+
+    @Test
+    void adminUpdateNotifiesMatchingCandidatesWhenTransitioningToActive() {
+        UUID companyId = UUID.randomUUID();
+        Job job = jobWithStatus(companyId, JobStatus.PENDING_APPROVAL);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        jobService.adminUpdate(job.getId(), sampleRequest(JobStatus.ACTIVE));
+
+        verify(newJobMatchEmailService).notifyMatchingCandidates(any());
+        verify(jobAlertMatchEmailService).notifyMatchingAlerts(any());
+    }
+
+    @Test
+    void adminUpdateRejectsUnknownJob() {
+        when(jobRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.adminUpdate(UUID.randomUUID(), sampleRequest(JobStatus.ACTIVE)))
+                .isInstanceOf(JobNotFoundException.class);
+    }
+
+    @Test
+    void adminGetReturnsANonActiveJobRegardlessOfOwner() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.DRAFT);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        JobDetail detail = jobService.adminGet(job.getId());
+
+        assertThat(detail.id()).isEqualTo(job.getId());
+    }
+
+    @Test
+    void adminGetRejectsUnknownJob() {
+        when(jobRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.adminGet(UUID.randomUUID()))
+                .isInstanceOf(JobNotFoundException.class);
+    }
+
+    @Test
+    void adminUpdateBrandingOverridesTheDisplayedCompanyName() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        JobDetail detail =
+                jobService.adminUpdateBranding(job.getId(), new AdminJobBrandingRequest("Acme Talent Partners"));
+
+        assertThat(detail.companyName()).isEqualTo("Acme Talent Partners");
+    }
+
+    @Test
+    void adminUpdateBrandingBlankNameClearsTheOverride() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        job.updateDisplayCompanyName("Previously Overridden Name");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        JobDetail detail = jobService.adminUpdateBranding(job.getId(), new AdminJobBrandingRequest("  "));
+
+        assertThat(detail.companyName()).isEqualTo(job.getCompanyName());
+    }
+
+    @Test
+    void adminUpdateBrandingRejectsUnknownJob() {
+        when(jobRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(
+                        () -> jobService.adminUpdateBranding(UUID.randomUUID(), new AdminJobBrandingRequest("X")))
+                .isInstanceOf(JobNotFoundException.class);
+    }
+
+    @Test
+    void adminUploadLogoStoresAResizedImageAndPointsTheUrlAtTheJobLogoEndpoint() throws IOException {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+        when(fileStorageService.store(any(byte[].class), anyString(), eq("job-logos/" + job.getId())))
+                .thenReturn("job-logos/" + job.getId() + "/resized.jpg");
+
+        BufferedImage original = new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream originalBytes = new ByteArrayOutputStream();
+        ImageIO.write(original, "jpg", originalBytes);
+        MockMultipartFile file =
+                new MockMultipartFile("file", "logo.jpg", "image/jpeg", originalBytes.toByteArray());
+
+        JobDetail detail = jobService.adminUploadLogo(job.getId(), file);
+
+        ArgumentCaptor<byte[]> storedContent = ArgumentCaptor.forClass(byte[].class);
+        verify(fileStorageService)
+                .store(storedContent.capture(), eq("logo.jpg"), eq("job-logos/" + job.getId()));
+        assertThat(storedContent.getValue().length).isLessThan(originalBytes.size());
+        assertThat(detail.companyLogoUrl()).isEqualTo("/api/jobs/" + job.getId() + "/logo");
+    }
+
+    @Test
+    void adminUploadLogoRejectsAFileWhoseBytesArentActuallyAnImage() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+        MockMultipartFile file =
+                new MockMultipartFile("file", "logo.jpg", "image/jpeg", "not actually an image".getBytes());
+
+        assertThatThrownBy(() -> jobService.adminUploadLogo(job.getId(), file))
+                .isInstanceOf(InvalidJobLogoException.class);
+    }
+
+    @Test
+    void adminRemoveLogoRevertsToTheCompanysOwnLogo() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        job.updateLogo("job-logos/" + job.getId() + "/logo.jpg", "image/jpeg");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        JobDetail detail = jobService.adminRemoveLogo(job.getId());
+
+        assertThat(detail.companyLogoUrl()).isNull();
+    }
+
+    @Test
+    void getLogoReturnsTheStoredResourceWhenTheJobHasACustomLogo() throws IOException {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        job.updateLogo("job-logos/" + job.getId() + "/logo.jpg", "image/jpeg");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+        org.springframework.core.io.Resource resource =
+                new org.springframework.core.io.ByteArrayResource("fake-image-bytes".getBytes());
+        when(fileStorageService.load("job-logos/" + job.getId() + "/logo.jpg")).thenReturn(resource);
+
+        JobService.JobLogoContent logo = jobService.getLogo(job.getId());
+
+        assertThat(logo.contentType()).isEqualTo("image/jpeg");
+        assertThat(logo.resource()).isSameAs(resource);
+    }
+
+    @Test
+    void getLogoRejectsAJobWithNoCustomLogo() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> jobService.getLogo(job.getId())).isInstanceOf(JobLogoNotFoundException.class);
+    }
+
+    @Test
     void adminDeleteRejectsUnknownJob() {
         when(jobRepository.findById(any())).thenReturn(Optional.empty());
 
@@ -420,6 +664,49 @@ class JobServiceTest {
         assertThat(pending.get(0).aboutRole()).isEqualTo("Lead the dashboard rebuild.");
         assertThat(pending.get(0).responsibilities()).containsExactly("Own delivery");
         assertThat(pending.get(0).requirements()).containsExactly("5+ years React");
+    }
+
+    @Test
+    void adminSearchReturnsJobsRegardlessOfStatusWhenNoStatusFilterIsGiven() {
+        Job draft = jobWithStatus(UUID.randomUUID(), JobStatus.DRAFT);
+        Job active = jobWithStatus(UUID.randomUUID(), JobStatus.ACTIVE);
+        when(jobRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(draft, active));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+
+        AdminJobSearchResult result = jobService.adminSearch(null, null, 0, 10);
+
+        assertThat(result.jobs())
+                .extracting(job -> job.summary().id())
+                .containsExactly(draft.getId(), active.getId());
+        assertThat(result.totalCount()).isEqualTo(2);
+    }
+
+    @Test
+    void adminSearchIncludesTheRealCompanyNameAlongsideTheDisplayOverride() {
+        Job job = jobWithStatus(UUID.randomUUID(), JobStatus.ACTIVE);
+        job.updateDisplayCompanyName("Acme Talent Partners");
+        when(jobRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(job));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+
+        AdminJobSearchResult result = jobService.adminSearch(null, null, 0, 10);
+
+        assertThat(result.jobs().get(0).summary().companyName()).isEqualTo("Acme Talent Partners");
+        assertThat(result.jobs().get(0).realCompanyName()).isEqualTo(job.getCompanyName());
+    }
+
+    @Test
+    void adminSearchPagesResultsLikeTheOtherSearchEndpoints() {
+        Job first = jobWithStatus(UUID.randomUUID(), JobStatus.ACTIVE);
+        Job second = jobWithStatus(UUID.randomUUID(), JobStatus.DRAFT);
+        when(jobRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(List.of(first, second));
+        when(companyProfileRepository.findByUserIdIn(any())).thenReturn(List.of());
+
+        AdminJobSearchResult result = jobService.adminSearch(null, null, 0, 1);
+
+        assertThat(result.jobs()).extracting(job -> job.summary().id()).containsExactly(first.getId());
+        assertThat(result.totalCount()).isEqualTo(2);
+        assertThat(result.totalPages()).isEqualTo(2);
     }
 
     @Test
