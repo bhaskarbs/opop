@@ -18,7 +18,7 @@ class EmailServiceTest {
 
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
     private final EmailService emailService =
-            new EmailService(mailSender, "no-reply@openopportunity.com", "smtp-user");
+            new EmailService(mailSender, "customersupport@openopportunity.in", "smtp-user");
 
     @Test
     void stripsCarriageReturnsAndNewlinesFromTheSubjectToPreventHeaderInjection() throws Exception {
@@ -49,7 +49,7 @@ class EmailServiceTest {
 
     @Test
     void failsFastWithoutTouchingJavaMailSenderWhenNoUsernameIsConfigured() {
-        EmailService unconfigured = new EmailService(mailSender, "no-reply@openopportunity.com", "");
+        EmailService unconfigured = new EmailService(mailSender, "customersupport@openopportunity.in", "");
 
         assertThatThrownBy(() -> unconfigured.send("candidate@example.com", "Subject", "Heading", List.of("Body")))
                 .isInstanceOf(MailAuthenticationException.class);
