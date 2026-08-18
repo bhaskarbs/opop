@@ -69,6 +69,8 @@ export const ROUTES = {
   adminReports: '/admin/reports',
   adminBilling: '/admin/billing',
   adminJobs: '/admin/jobs',
+  adminPostJob: '/admin/jobs/post',
+  adminJobEdit: (jobId: string) => `/admin/jobs/${jobId}/edit`,
   adminIdeas: '/admin/ideas',
   adminVideos: '/admin/videos',
   adminBroadcastEmail: '/admin/broadcast-email',

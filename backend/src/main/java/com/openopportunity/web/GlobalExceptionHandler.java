@@ -55,7 +55,9 @@ import com.openopportunity.idea.exception.IdeaLimitReachedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.job.exception.CompanyNotEligibleToPostJobsException;
 import com.openopportunity.job.exception.InvalidJobStatusTransitionException;
+import com.openopportunity.job.exception.InvalidJobLogoException;
 import com.openopportunity.job.exception.JobAccessDeniedException;
+import com.openopportunity.job.exception.JobLogoNotFoundException;
 import com.openopportunity.job.exception.JobNotFoundException;
 import com.openopportunity.job.exception.JobPostingLimitReachedException;
 import com.openopportunity.jobalert.exception.JobAlertLimitReachedException;
@@ -241,6 +243,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(JobPostingLimitReachedException.class)
     public ResponseEntity<ApiError> handleJobPostingLimitReached(JobPostingLimitReachedException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidJobLogoException.class)
+    public ResponseEntity<ApiError> handleInvalidJobLogo(InvalidJobLogoException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(JobLogoNotFoundException.class)
+    public ResponseEntity<ApiError> handleJobLogoNotFound(JobLogoNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(JobAlertLimitReachedException.class)

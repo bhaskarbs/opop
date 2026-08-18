@@ -1,5 +1,7 @@
 package com.openopportunity.job;
 
+import com.openopportunity.job.dto.AdminJobBrandingRequest;
+import com.openopportunity.job.dto.AdminJobSearchResult;
 import com.openopportunity.job.dto.JobDetail;
 import com.openopportunity.job.dto.JobRequest;
 import com.openopportunity.job.dto.JobSearchResult;
@@ -9,7 +11,11 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -81,6 +88,14 @@ public class JobController {
         return jobService.get(id, currentUserIdOrNull());
     }
 
+    /** Admin read of any job's full detail, regardless of status or owner — see
+     * JobService#adminGet. Backs AdminJobsPage's edit form, which otherwise couldn't load a
+     * non-ACTIVE job it doesn't own via the plain detail() endpoint above. */
+    @GetMapping("/{id}/admin")
+    public JobDetail adminDetail(@PathVariable UUID id) {
+        return jobService.adminGet(id);
+    }
+
     @PostMapping
     public ResponseEntity<JobDetail> create(@Valid @RequestBody JobRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(jobService.create(currentUserId(), request));
@@ -104,6 +119,71 @@ public class JobController {
     public ResponseEntity<Void> adminDelete(@PathVariable UUID id) {
         jobService.adminDelete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Admin browsing across every status (AdminJobsPage's status filter) — see
+     * JobService#adminSearch. Distinct from search() above, which is the public listing and
+     * only ever returns ACTIVE jobs. */
+    @GetMapping("/admin")
+    public AdminJobSearchResult adminSearch(
+            @RequestParam(required = false) List<JobStatus> status,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        return jobService.adminSearch(status, q, page, size);
+    }
+
+    /** Admin posting a job on behalf of a company (AdminJobsPage) — see JobService#adminCreate
+     * for how this differs from create() above (companyId is chosen by the admin, not the
+     * caller; skips the eligibility/status-transition gates a company itself is bound by). */
+    @PostMapping("/admin")
+    public ResponseEntity<JobDetail> adminCreate(
+            @RequestParam UUID companyId, @Valid @RequestBody JobRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(jobService.adminCreate(companyId, request));
+    }
+
+    /** Admin edit of any job's content, regardless of which company owns it — see
+     * JobService#adminUpdate. Distinct from update(id) above, which is owner-scoped. */
+    @PutMapping("/{id}/admin")
+    public JobDetail adminUpdate(@PathVariable UUID id, @Valid @RequestBody JobRequest request) {
+        return jobService.adminUpdate(id, request);
+    }
+
+    // Same 10-minute public cache as CompanyLogoController — see its javadoc for why.
+    private static final CacheControl LOGO_CACHE_CONTROL = CacheControl.maxAge(10, TimeUnit.MINUTES).cachePublic();
+
+    /** Sets or clears the display company name shown on this job instead of the owning
+     * company's real name — see JobService#adminUpdateBranding. */
+    @PutMapping("/{id}/admin/branding")
+    public JobDetail adminUpdateBranding(
+            @PathVariable UUID id, @RequestBody AdminJobBrandingRequest request) {
+        return jobService.adminUpdateBranding(id, request);
+    }
+
+    /** Uploads a custom logo shown on this job instead of the owning company's own logo — see
+     * JobService#adminUploadLogo. */
+    @PostMapping("/{id}/admin/logo")
+    public JobDetail adminUploadLogo(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+        return jobService.adminUploadLogo(id, file);
+    }
+
+    /** Reverts this job back to the owning company's own logo — see JobService#adminRemoveLogo. */
+    @DeleteMapping("/{id}/admin/logo")
+    public JobDetail adminRemoveLogo(@PathVariable UUID id) {
+        return jobService.adminRemoveLogo(id);
+    }
+
+    /** Deliberately public (see SecurityConfig's permitAll for this path) — a plain
+     * {@code <img src>} can't attach a bearer token, mirrors CompanyLogoController. Only ever
+     * reachable for a job that actually has a custom logo override (see companyLogoUrl in
+     * JobService, which only ever points here when one exists). */
+    @GetMapping("/{id}/logo")
+    public ResponseEntity<Resource> logo(@PathVariable UUID id) {
+        JobService.JobLogoContent logo = jobService.getLogo(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(logo.contentType()))
+                .cacheControl(LOGO_CACHE_CONTROL)
+                .body(logo.resource());
     }
 
     private UUID currentUserId() {
