@@ -112,6 +112,27 @@ public class JobController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Company setting/clearing a display-name override on its own job — see
+     * JobService#updateBranding. Owner-scoped counterpart of adminUpdateBranding below. */
+    @PutMapping("/{id}/branding")
+    public JobDetail updateBranding(@PathVariable UUID id, @RequestBody AdminJobBrandingRequest request) {
+        return jobService.updateBranding(id, currentUserId(), request);
+    }
+
+    /** Company uploading a custom logo for its own job — see JobService#uploadLogo. Owner-scoped
+     * counterpart of adminUploadLogo below. */
+    @PostMapping("/{id}/logo")
+    public JobDetail uploadLogo(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+        return jobService.uploadLogo(id, currentUserId(), file);
+    }
+
+    /** Company removing its own job's custom logo — see JobService#removeLogo. Owner-scoped
+     * counterpart of adminRemoveLogo below. */
+    @DeleteMapping("/{id}/logo")
+    public JobDetail removeLogo(@PathVariable UUID id) {
+        return jobService.removeLogo(id, currentUserId());
+    }
+
     /** Admin hard delete — distinct from delete(id) above, which is owner-scoped; this one
      * requires no ownership and also cleans up applications and saved-job bookmarks (see
      * JobService#adminDelete). */

@@ -201,11 +201,25 @@ public class JobService {
     @Transactional
     public JobDetail adminUpdateBranding(UUID id, AdminJobBrandingRequest request) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
-        String displayCompanyName = request.displayCompanyName();
+        applyBranding(job, request.displayCompanyName());
+        return adminGet(id);
+    }
+
+    /** Same as adminUpdateBranding above, but for a company setting/clearing the override on its
+     * own job — e.g. an agency or multi-brand employer posting under a different name (see
+     * PostJobPage's "Company display name" field). Owner-scoped like update()/delete() above. */
+    @Transactional
+    public JobDetail updateBranding(UUID id, UUID companyId, AdminJobBrandingRequest request) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        requireOwner(job, companyId);
+        applyBranding(job, request.displayCompanyName());
+        return get(id, companyId);
+    }
+
+    private void applyBranding(Job job, String displayCompanyName) {
         job.updateDisplayCompanyName(
                 displayCompanyName == null || displayCompanyName.isBlank() ? null : displayCompanyName.trim());
         save(job);
-        return adminGet(id);
     }
 
     /** Uploads a custom logo shown for this job instead of the owning company's own logo — see
@@ -215,6 +229,21 @@ public class JobService {
     @Transactional
     public JobDetail adminUploadLogo(UUID id, MultipartFile file) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        applyLogo(job, file);
+        return adminGet(id);
+    }
+
+    /** Same as adminUploadLogo above, but for a company uploading a logo for its own job.
+     * Owner-scoped like update()/delete() above. */
+    @Transactional
+    public JobDetail uploadLogo(UUID id, UUID companyId, MultipartFile file) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        requireOwner(job, companyId);
+        applyLogo(job, file);
+        return get(id, companyId);
+    }
+
+    private void applyLogo(Job job, MultipartFile file) {
         byte[] bytes;
         try {
             bytes = file.getBytes();
@@ -226,13 +255,12 @@ public class JobService {
         String storageKey;
         try {
             byte[] resized = AvatarImageResizer.resize(bytes);
-            storageKey = fileStorageService.store(resized, file.getOriginalFilename(), "job-logos/" + id);
+            storageKey = fileStorageService.store(resized, file.getOriginalFilename(), "job-logos/" + job.getId());
         } catch (IOException ex) {
             throw new UncheckedIOException("Failed to store job logo", ex);
         }
         job.updateLogo(storageKey, contentType);
         save(job);
-        return adminGet(id);
     }
 
     /** Reverts this job back to showing the owning company's own logo. */
@@ -242,6 +270,17 @@ public class JobService {
         job.clearLogo();
         save(job);
         return adminGet(id);
+    }
+
+    /** Same as adminRemoveLogo above, but for a company removing its own job's custom logo.
+     * Owner-scoped like update()/delete() above. */
+    @Transactional
+    public JobDetail removeLogo(UUID id, UUID companyId) {
+        Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
+        requireOwner(job, companyId);
+        job.clearLogo();
+        save(job);
+        return get(id, companyId);
     }
 
     /** Public (unauthenticated) lookup — see JobController, which serves this straight to an

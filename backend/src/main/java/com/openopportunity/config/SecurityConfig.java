@@ -170,6 +170,18 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/*")
                         .hasRole("COMPANY")
+                        // A company setting/uploading/removing a display-name or logo override
+                        // on its own job — owner-scoped counterparts of the admin
+                        // branding/logo rules above. Two-segment patterns, structurally
+                        // distinct from the single-segment owner-scoped rules just above and
+                        // the three-segment admin ones above that, so no declaration-order
+                        // conflict either way.
+                        .requestMatchers(HttpMethod.PUT, "/api/jobs/*/branding")
+                        .hasRole("COMPANY")
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/*/logo")
+                        .hasRole("COMPANY")
+                        .requestMatchers(HttpMethod.DELETE, "/api/jobs/*/logo")
+                        .hasRole("COMPANY")
                         // Every admin tier (reviewer/admin/super_admin, all carry ROLE_ADMIN —
                         // see JwtAuthenticationFilter) can list team members; only super_admin
                         // (LEVEL_SUPER_ADMIN) can create or remove one. Declared before the

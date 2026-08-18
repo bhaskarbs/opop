@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { type KeyboardEvent, useEffect, useState } from 'react'
+import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller, useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -20,7 +20,7 @@ import {
   type ExperienceLevelLabel,
   type WorkModeLabel,
 } from '../../lib/jobEnums'
-import { apiErrorMessage } from '../../lib/apiClient'
+import { apiErrorMessage, API_BASE_URL } from '../../lib/apiClient'
 import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
 import { ROUTES } from '../../routes/paths'
 import { useCompanyProfileStore } from '../../stores/companyProfileStore'
@@ -109,6 +109,19 @@ export default function PostJobPage() {
   const [eligible, setEligible] = useState<boolean | null>(null)
   const [loadingExisting, setLoadingExisting] = useState(editing)
 
+  // Display branding override (edit mode only — see JobService#updateBranding/#uploadLogo,
+  // which both require the job to already exist). displayCompanyName/logoUrl are pre-filled
+  // from the job's already-resolved values (detail.companyName/companyLogoUrl already reflect
+  // any existing override), so this doubles as "edit the current value" whether or not an
+  // override is actually set — same pattern as AdminPostJobPage.
+  const [displayCompanyName, setDisplayCompanyName] = useState('')
+  const [initialDisplayCompanyName, setInitialDisplayCompanyName] = useState('')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [removingLogo, setRemovingLogo] = useState(false)
+  const [logoError, setLogoError] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     let cancelled = false
     useCompanyProfileStore
@@ -161,6 +174,9 @@ export default function PostJobPage() {
       .detail(jobId)
       .then((detail) => {
         if (cancelled) return
+        setDisplayCompanyName(detail.companyName)
+        setInitialDisplayCompanyName(detail.companyName)
+        setLogoUrl(detail.companyLogoUrl)
         reset({
           title: detail.title,
           employmentType: employmentTypeFromBackend(detail.employmentType),
@@ -193,6 +209,20 @@ export default function PostJobPage() {
     navigate(localize(ROUTES.companyJobPostings))
   }
 
+  // The display-name/logo overrides only exist on an already-created job (see
+  // JobService#updateBranding/#uploadLogo) — a fresh create routes here afterward instead of
+  // the dashboard, so a company can set them right away without a separate trip.
+  function goToEditNewJob(id: string) {
+    navigate(localize(ROUTES.companyJobEdit(id)), { replace: true })
+  }
+
+  // No-op (skipped) when the field wasn't touched — avoids an extra request on every save.
+  async function syncBrandingIfChanged(id: string) {
+    if (displayCompanyName.trim() === initialDisplayCompanyName.trim()) return
+    await jobsApi.updateBranding(id, displayCompanyName.trim() || null)
+    setInitialDisplayCompanyName(displayCompanyName.trim())
+  }
+
   async function onPublish(values: PostJobFormValues) {
     setFormError(null)
     try {
@@ -202,10 +232,11 @@ export default function PostJobPage() {
       // live with unreviewed changes.
       if (editing && jobId) {
         await jobsApi.update(jobId, toJobRequest(values, 'PENDING_APPROVAL'))
+        await syncBrandingIfChanged(jobId)
         goToMyJobPostings()
       } else {
-        await jobsApi.create(toJobRequest(values, 'PENDING_APPROVAL'))
-        navigate(localize(ROUTES.companyDashboard))
+        const created = await jobsApi.create(toJobRequest(values, 'PENDING_APPROVAL'))
+        goToEditNewJob(created.id)
       }
     } catch (error) {
       setFormError(apiErrorMessage(error, t('postJob.errorGeneric')))
@@ -234,13 +265,44 @@ export default function PostJobPage() {
     try {
       if (editing && jobId) {
         await jobsApi.update(jobId, toJobRequest(values, 'DRAFT'))
+        await syncBrandingIfChanged(jobId)
         goToMyJobPostings()
       } else {
-        await jobsApi.create(toJobRequest(values, 'DRAFT'))
-        navigate(localize(ROUTES.companyDashboard))
+        const created = await jobsApi.create(toJobRequest(values, 'DRAFT'))
+        goToEditNewJob(created.id)
       }
     } catch (error) {
       setFormError(apiErrorMessage(error, t('postJob.errorGeneric')))
+    }
+  }
+
+  async function handleLogoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !jobId) return
+    setLogoError(null)
+    setUploadingLogo(true)
+    try {
+      const detail = await jobsApi.uploadLogo(jobId, file)
+      setLogoUrl(detail.companyLogoUrl)
+    } catch (error) {
+      setLogoError(apiErrorMessage(error, t('postJob.logoError')))
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  async function handleRemoveLogo() {
+    if (!jobId) return
+    setLogoError(null)
+    setRemovingLogo(true)
+    try {
+      const detail = await jobsApi.removeLogo(jobId)
+      setLogoUrl(detail.companyLogoUrl)
+    } catch (error) {
+      setLogoError(apiErrorMessage(error, t('postJob.logoError')))
+    } finally {
+      setRemovingLogo(false)
     }
   }
 
@@ -281,6 +343,77 @@ export default function PostJobPage() {
       <p className="mb-6 text-sm text-slate">{t('postJob.subtitle')}</p>
 
       <form onSubmit={handleSubmit(onPublish)} noValidate>
+        <div className="mb-[18px] rounded-card border border-border bg-surface p-8">
+          <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">{t('postJob.branding')}</h2>
+          {editing ? (
+            <>
+              <div>
+                <label
+                  htmlFor="displayCompanyName"
+                  className="mb-1.5 block text-[13px] font-bold text-ink"
+                >
+                  {t('postJob.displayCompanyName')}
+                </label>
+                <p className="mb-1.5 text-[12.5px] text-fog">
+                  {t('postJob.displayCompanyNameHint')}
+                </p>
+                <input
+                  id="displayCompanyName"
+                  value={displayCompanyName}
+                  onChange={(event) => setDisplayCompanyName(event.target.value)}
+                  className="w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                />
+              </div>
+              <div className="mt-4">
+                <label className="mb-1.5 block text-[13px] font-bold text-ink">
+                  {t('postJob.logo')}
+                </label>
+                <div className="flex items-center gap-3">
+                  {logoUrl ? (
+                    <img
+                      src={`${API_BASE_URL}${logoUrl}`}
+                      alt=""
+                      className="h-12 w-12 rounded-lg border border-border object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-neutral-tint text-[11px] text-fog">
+                      {t('postJob.noLogo')}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => logoInputRef.current?.click()}
+                    loading={uploadingLogo}
+                  >
+                    {t('postJob.uploadLogo')}
+                  </Button>
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      disabled={removingLogo}
+                      className="text-[12.5px] font-bold text-danger disabled:opacity-60"
+                    >
+                      {removingLogo ? t('postJob.removingLogo') : t('postJob.removeLogo')}
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleLogoChange}
+                  className="hidden"
+                />
+                {logoError && <p className="mt-1.5 text-[13px] text-danger">{logoError}</p>}
+              </div>
+            </>
+          ) : (
+            <p className="text-[12.5px] text-fog">{t('postJob.brandingAfterCreateHint')}</p>
+          )}
+        </div>
+
         <div className="mb-[18px] rounded-card border border-border bg-surface p-8">
           <h2 className="mb-[18px] text-[15.5px] font-bold text-ink">{t('postJob.roleDetails')}</h2>
           <div className="mb-3.5">

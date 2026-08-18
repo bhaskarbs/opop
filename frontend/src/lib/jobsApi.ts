@@ -180,6 +180,26 @@ export const jobsApi = {
     }),
   remove: (id: string) =>
     request<void>(`/api/jobs/${id}`, { method: 'DELETE', headers: authHeaders() }),
+  // Sets or clears (blank/null) the display name a company shows on its own job instead of its
+  // real account name — see JobController#updateBranding. Owner-scoped counterpart of
+  // adminUpdateBranding below.
+  updateBranding: (id: string, displayCompanyName: string | null) =>
+    request<JobDetail>(`/api/jobs/${id}/branding`, {
+      method: 'PUT',
+      body: JSON.stringify({ displayCompanyName }),
+      headers: authHeaders(),
+    }),
+  // Uploads a custom logo for a company's own job — see JobController#uploadLogo. Owner-scoped
+  // counterpart of adminUploadLogo below.
+  uploadLogo: (id: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return uploadRequest<JobDetail>(`/api/jobs/${id}/logo`, formData, authHeaders())
+  },
+  // Removes a company's own job's custom logo — see JobController#removeLogo. Owner-scoped
+  // counterpart of adminRemoveLogo below.
+  removeLogo: (id: string) =>
+    request<JobDetail>(`/api/jobs/${id}/logo`, { method: 'DELETE', headers: authHeaders() }),
   // Admin posting on behalf of a company (AdminJobsPage) — see JobController#adminCreate.
   // Unlike create(), the admin can pick any status (including ACTIVE) and any company.
   adminCreate: (companyId: string, payload: JobRequestPayload) =>

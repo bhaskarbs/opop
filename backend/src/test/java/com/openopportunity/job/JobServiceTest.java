@@ -570,6 +570,83 @@ class JobServiceTest {
     }
 
     @Test
+    void updateBrandingOverridesTheDisplayedCompanyNameForTheOwningCompany() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        JobDetail detail = jobService.updateBranding(
+                job.getId(), ownerId, new AdminJobBrandingRequest("Acme Talent Partners"));
+
+        assertThat(detail.companyName()).isEqualTo("Acme Talent Partners");
+    }
+
+    @Test
+    void updateBrandingRejectsACompanyThatDoesNotOwnTheJob() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> jobService.updateBranding(
+                        job.getId(), UUID.randomUUID(), new AdminJobBrandingRequest("Acme Talent Partners")))
+                .isInstanceOf(JobAccessDeniedException.class);
+    }
+
+    @Test
+    void uploadLogoStoresAResizedImageForTheOwningCompany() throws IOException {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+        when(fileStorageService.store(any(byte[].class), anyString(), eq("job-logos/" + job.getId())))
+                .thenReturn("job-logos/" + job.getId() + "/resized.jpg");
+
+        BufferedImage original = new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream originalBytes = new ByteArrayOutputStream();
+        ImageIO.write(original, "jpg", originalBytes);
+        MockMultipartFile file =
+                new MockMultipartFile("file", "logo.jpg", "image/jpeg", originalBytes.toByteArray());
+
+        JobDetail detail = jobService.uploadLogo(job.getId(), ownerId, file);
+
+        assertThat(detail.companyLogoUrl()).isEqualTo("/api/jobs/" + job.getId() + "/logo");
+    }
+
+    @Test
+    void uploadLogoRejectsACompanyThatDoesNotOwnTheJob() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+        MockMultipartFile file =
+                new MockMultipartFile("file", "logo.jpg", "image/jpeg", "irrelevant".getBytes());
+
+        assertThatThrownBy(() -> jobService.uploadLogo(job.getId(), UUID.randomUUID(), file))
+                .isInstanceOf(JobAccessDeniedException.class);
+    }
+
+    @Test
+    void removeLogoRevertsToTheCompanysOwnLogoForTheOwningCompany() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        job.updateLogo("job-logos/" + job.getId() + "/logo.jpg", "image/jpeg");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        JobDetail detail = jobService.removeLogo(job.getId(), ownerId);
+
+        assertThat(detail.companyLogoUrl()).isNull();
+    }
+
+    @Test
+    void removeLogoRejectsACompanyThatDoesNotOwnTheJob() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        job.updateLogo("job-logos/" + job.getId() + "/logo.jpg", "image/jpeg");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> jobService.removeLogo(job.getId(), UUID.randomUUID()))
+                .isInstanceOf(JobAccessDeniedException.class);
+    }
+
+    @Test
     void adminDeleteRejectsUnknownJob() {
         when(jobRepository.findById(any())).thenReturn(Optional.empty());
 
