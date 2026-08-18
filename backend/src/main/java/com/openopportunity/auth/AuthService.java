@@ -17,6 +17,7 @@ import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.PasswordResetEmailException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.mail.AsyncEmailSender;
 import com.openopportunity.mail.EmailButton;
 import com.openopportunity.mail.EmailService;
 import com.openopportunity.notification.NotificationService;
@@ -52,6 +53,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final EmailService emailService;
+    private final AsyncEmailSender asyncEmailSender;
     private final NotificationService notificationService;
     private final PasswordResetRateLimiter passwordResetRateLimiter;
     private final long refreshTokenExpiryDays;
@@ -68,6 +70,7 @@ public class AuthService {
             JwtService jwtService,
             GoogleTokenVerifierService googleTokenVerifierService,
             EmailService emailService,
+            AsyncEmailSender asyncEmailSender,
             NotificationService notificationService,
             PasswordResetRateLimiter passwordResetRateLimiter,
             @Value("${app.jwt.refresh-token-expiry-days}") long refreshTokenExpiryDays,
@@ -81,6 +84,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.emailService = emailService;
+        this.asyncEmailSender = asyncEmailSender;
         this.notificationService = notificationService;
         this.passwordResetRateLimiter = passwordResetRateLimiter;
         this.refreshTokenExpiryDays = refreshTokenExpiryDays;
@@ -132,6 +136,7 @@ public class AuthService {
             candidateProfileRepository.save(profile);
         }
 
+        sendWelcomeEmail(user);
         return issueTokens(user);
     }
 
@@ -172,6 +177,7 @@ public class AuthService {
             user = new User(googleUser.email(), passwordEncoder.encode(generateRawToken()), fullName, UserRole.CANDIDATE);
             userRepository.save(user);
             candidateProfileRepository.save(new CandidateProfile(user.getId(), "", List.of(), null));
+            sendWelcomeEmail(user);
         }
 
         if (user.isSuspended()) {
@@ -204,6 +210,7 @@ public class AuthService {
             userRepository.save(user);
             companyProfileRepository.save(
                     new CompanyProfile(user.getId(), null, null, null, null, null, null, null, null, null));
+            sendWelcomeEmail(user);
         }
 
         if (user.isSuspended()) {
@@ -379,6 +386,32 @@ public class AuthService {
                 NotificationType.COMPANY_PENDING_VERIFICATION,
                 "New company \"" + companyName + "\" is awaiting verification.",
                 "/admin/approvals/companies");
+    }
+
+    /** Fires on every brand-new account — the password-form register() path and both
+     * loginWithGoogle*() auto-provisioning paths (see their call sites) — so "how a candidate or
+     * company signed up" never changes whether they get one. Best-effort/async like every other
+     * non-blocking notification email in this app (see AsyncEmailSender's own doc comment on why
+     * this, unlike password reset, must never fail the request that triggered it). */
+    private void sendWelcomeEmail(User user) {
+        boolean isCompany = user.getRole() == UserRole.COMPANY;
+        String ctaLabel = isCompany ? "Complete your company profile" : "Find jobs";
+        String ctaUrl = frontendBaseUrl + (isCompany ? "/en/company/login" : "/en/jobs");
+        asyncEmailSender.sendBestEffort(
+                user.getEmail(),
+                "Welcome to OpenOpportunity!",
+                "Welcome to OpenOpportunity",
+                isCompany
+                        ? List.of(
+                                "Hi " + user.getFullName() + ",",
+                                "Your company account is ready. Complete your profile to start posting jobs"
+                                        + " and searching candidates.")
+                        : List.of(
+                                "Hi " + user.getFullName() + ",",
+                                "Your candidate account is ready. Search jobs, apply, and explore startup"
+                                        + " partnerships — all in one place."),
+                new EmailButton(ctaLabel, ctaUrl),
+                () -> {});
     }
 
     private void requireCandidateProfileFields(RegisterRequest request, List<String> cleanedSkills) {

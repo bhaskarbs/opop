@@ -19,6 +19,7 @@ import com.openopportunity.auth.exception.InvalidGoogleTokenException;
 import com.openopportunity.auth.exception.InvalidRefreshTokenException;
 import com.openopportunity.auth.exception.InvalidRegistrationRoleException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
+import com.openopportunity.mail.AsyncEmailSender;
 import com.openopportunity.mail.EmailService;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
@@ -65,6 +66,9 @@ class AuthServiceTest {
     private EmailService emailService;
 
     @Mock
+    private AsyncEmailSender asyncEmailSender;
+
+    @Mock
     private NotificationService notificationService;
 
     @Mock
@@ -84,6 +88,7 @@ class AuthServiceTest {
                 jwtService,
                 googleTokenVerifierService,
                 emailService,
+                asyncEmailSender,
                 notificationService,
                 passwordResetRateLimiter,
                 30,
@@ -129,6 +134,8 @@ class AuthServiceTest {
         verify(userRepository).save(userCaptor.capture());
         assertThat(userCaptor.getValue().getPasswordHash()).isEqualTo("hashed");
         verify(refreshTokenRepository).save(any(RefreshToken.class));
+        verify(asyncEmailSender)
+                .sendBestEffort(eq("rohan@example.com"), any(), any(), any(), any(), any());
     }
 
     private static RegisterRequest companyRequest() {
@@ -159,6 +166,8 @@ class AuthServiceTest {
 
         verify(notificationService)
                 .notifyAdmins(eq(NotificationType.COMPANY_PENDING_VERIFICATION), any(), any());
+        verify(asyncEmailSender)
+                .sendBestEffort(eq("founder@vertex.com"), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -344,6 +353,8 @@ class AuthServiceTest {
         assertThat(userCaptor.getValue().getLastLoginAt()).isNotNull();
         assertThat(userCaptor.getValue().getLoginCount()).isEqualTo(1);
         verify(candidateProfileRepository).save(any(CandidateProfile.class));
+        verify(asyncEmailSender)
+                .sendBestEffort(eq("rohan@example.com"), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -363,6 +374,9 @@ class AuthServiceTest {
         assertThat(user.getLastLoginAt()).isNotNull();
         assertThat(user.getLoginCount()).isEqualTo(1);
         verify(userRepository).save(user);
+        // Only a brand-new account gets the welcome email — an existing candidate just logging
+        // in again via Google must not get a second one.
+        verify(asyncEmailSender, never()).sendBestEffort(any(), any(), any(), any(), any(), any());
     }
 
     @Test
