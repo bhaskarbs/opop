@@ -1,5 +1,6 @@
 package com.openopportunity.storage;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,7 +50,16 @@ public class LocalFileStorageService implements FileStorageService {
 
     @Override
     public Resource load(String storageKey) throws IOException {
-        return new UrlResource(rootDir.resolve(storageKey).toUri());
+        // Checked eagerly so a missing file surfaces here, where every caller already has an
+        // IOException handler, rather than as an uncaught FileNotFoundException deep inside
+        // Spring's response-serialization internals once the (lazy) UrlResource is actually read
+        // — matches GcsFileStorageService.load, which fails eagerly by construction since it
+        // reads the object's bytes up front.
+        Path path = rootDir.resolve(storageKey);
+        if (!Files.exists(path)) {
+            throw new FileNotFoundException("No stored file at " + storageKey);
+        }
+        return new UrlResource(path.toUri());
     }
 
     @Override
