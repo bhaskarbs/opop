@@ -393,6 +393,7 @@ public class JobService {
                 nonNull(request.requirements()),
                 nonNull(request.skills()),
                 request.status());
+        job.updateExperienceYears(request.experienceYearsMin(), request.experienceYearsMax());
         save(job);
         if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
             notifyAdminsJobPending(job, company.getFullName());
@@ -421,6 +422,7 @@ public class JobService {
                 nonNull(request.requirements()),
                 nonNull(request.skills()),
                 request.status());
+        job.updateExperienceYears(request.experienceYearsMin(), request.experienceYearsMax());
         save(job);
         if (previousStatus != JobStatus.PENDING_APPROVAL && job.getStatus() == JobStatus.PENDING_APPROVAL) {
             User company = userRepository.findById(companyId).orElseThrow();
@@ -460,6 +462,7 @@ public class JobService {
                 nonNull(request.requirements()),
                 nonNull(request.skills()),
                 request.status());
+        job.updateExperienceYears(request.experienceYearsMin(), request.experienceYearsMax());
         save(job);
         if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
             notifyAdminsJobPending(job, company.getFullName());
@@ -494,6 +497,7 @@ public class JobService {
                 nonNull(request.requirements()),
                 nonNull(request.skills()),
                 request.status());
+        job.updateExperienceYears(request.experienceYearsMin(), request.experienceYearsMax());
         save(job);
         if (previousStatus != JobStatus.PENDING_APPROVAL && job.getStatus() == JobStatus.PENDING_APPROVAL) {
             User company = userRepository.findById(companyId).orElseThrow();
@@ -773,6 +777,8 @@ public class JobService {
                 job.getEmploymentType(),
                 job.getSalaryMinLakhs(),
                 job.getSalaryMaxLakhs(),
+                job.getExperienceYearsMin(),
+                job.getExperienceYearsMax(),
                 job.getSkills(),
                 job.getStatus(),
                 job.getApplicantCount(),
@@ -793,6 +799,8 @@ public class JobService {
                 job.getEmploymentType(),
                 job.getSalaryMinLakhs(),
                 job.getSalaryMaxLakhs(),
+                job.getExperienceYearsMin(),
+                job.getExperienceYearsMax(),
                 job.getApplicationDeadline(),
                 job.getAboutRole(),
                 job.getResponsibilities(),

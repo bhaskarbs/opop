@@ -71,6 +71,8 @@ class SearchJobsChatToolTest {
                 EmploymentType.FULL_TIME,
                 BigDecimal.valueOf(10),
                 BigDecimal.valueOf(15),
+                null,
+                null,
                 List.of("Java"),
                 com.openopportunity.job.JobStatus.ACTIVE,
                 0,

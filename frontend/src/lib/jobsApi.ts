@@ -18,6 +18,10 @@ export interface JobSummary {
   employmentType: BackendEmploymentType
   salaryMinLakhs: number | null
   salaryMaxLakhs: number | null
+  // Optional "N-M years of experience" range, distinct from experienceLevel's coarse tier —
+  // either or both may be null ("not specified").
+  experienceYearsMin: number | null
+  experienceYearsMax: number | null
   skills: string[]
   status: BackendJobStatus
   applicantCount: number
@@ -47,6 +51,8 @@ export interface JobRequestPayload {
   location: string
   salaryMinLakhs: number | null
   salaryMaxLakhs: number | null
+  experienceYearsMin: number | null
+  experienceYearsMax: number | null
   applicationDeadline: string | null
   aboutRole: string
   responsibilities: string[]

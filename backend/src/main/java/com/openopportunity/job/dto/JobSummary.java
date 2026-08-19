@@ -21,6 +21,10 @@ public record JobSummary(
         EmploymentType employmentType,
         BigDecimal salaryMinLakhs,
         BigDecimal salaryMaxLakhs,
+        // Optional "N-M years of experience" range, distinct from experienceLevel's coarse
+        // tier — see Job#updateExperienceYears. Either or both may be null ("not specified").
+        Integer experienceYearsMin,
+        Integer experienceYearsMax,
         List<String> skills,
         JobStatus status,
         int applicantCount,

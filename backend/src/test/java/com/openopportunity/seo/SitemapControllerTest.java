@@ -96,6 +96,8 @@ class SitemapControllerTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 "Build things.",
                 List.of(),
                 List.of(),

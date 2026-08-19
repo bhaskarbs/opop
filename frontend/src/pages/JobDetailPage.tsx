@@ -25,6 +25,23 @@ function formatSalary(
   return `₹${minLakhs ?? maxLakhs}L`
 }
 
+// Unlike formatSalary above, this returns null (not a "not specified" fallback string) when
+// both bounds are unset — most jobs don't set this optional field, and unlike salary there's no
+// existing "not disclosed" convention worth inventing just for this one tag; the caller simply
+// omits the pill entirely in that case.
+function formatExperienceYears(
+  t: TFunction<'public'>,
+  minYears: number | null,
+  maxYears: number | null,
+): string | null {
+  if (minYears != null && maxYears != null) {
+    return t('jobDetail.experienceYearsRange', { min: minYears, max: maxYears })
+  }
+  if (minYears != null) return t('jobDetail.experienceYearsMinOnly', { min: minYears })
+  if (maxYears != null) return t('jobDetail.experienceYearsMaxOnly', { max: maxYears })
+  return null
+}
+
 function formatPostedLabel(t: TFunction<'public'>, createdAt: string): string {
   const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000)
   if (days <= 0) return t('jobDetail.postedToday')
@@ -277,14 +294,17 @@ export default function JobDetailPage() {
                     {[
                       ...job.skills,
                       formatSalary(t, job.salaryMinLakhs, job.salaryMaxLakhs) + ' / yr',
-                    ].map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-neutral-tint px-3 py-1 text-[12.5px] font-semibold text-[#3A414D]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                      formatExperienceYears(t, job.experienceYearsMin, job.experienceYearsMax),
+                    ]
+                      .filter((tag): tag is string => tag != null)
+                      .map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-neutral-tint px-3 py-1 text-[12.5px] font-semibold text-[#3A414D]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                   </div>
                 </div>
               </div>

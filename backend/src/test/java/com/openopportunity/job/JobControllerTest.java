@@ -120,6 +120,8 @@ class JobControllerTest {
                 minSalary,
                 maxSalary,
                 null,
+                null,
+                null,
                 "About the role.",
                 List.of("Ship features"),
                 List.of("Some years of experience"),

@@ -185,6 +185,9 @@
       "salaryRange": "सैलरी रेंज (₹/वर्ष)",
       "salaryMinPlaceholder": "न्यूनतम जैसे 12ला.",
       "salaryMaxPlaceholder": "अधिकतम जैसे 18ला.",
+      "experienceYears": "अनुभव के वर्ष",
+      "experienceYearsMinPlaceholder": "न्यूनतम जैसे 2",
+      "experienceYearsMaxPlaceholder": "अधिकतम जैसे 4",
       "deadline": "आवेदन की अंतिम तिथि",
       "aboutRolePlaceholder": "भूमिका, टीम, और सफलता कैसी दिखती है इसका वर्णन करें...",
       "onePerLine": "एक लाइन में एक"
