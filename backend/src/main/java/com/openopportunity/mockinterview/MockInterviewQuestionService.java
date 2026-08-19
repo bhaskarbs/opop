@@ -13,8 +13,12 @@ import com.openopportunity.mockinterview.exception.QuestionGenerationUnavailable
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -26,8 +30,10 @@ import org.springframework.stereotype.Service;
  * matchingQuestions/EXPERIENCE_LEVEL_LADDER) if the candidate's own level is too thin on its own,
  * so an entry-level candidate is never left short just because the bank happens to skew toward
  * more senior questions; (2) the Claude API otherwise, persisting whatever it returns into the
- * bank for next time. Either way, the final list returned to the candidate is sorted easy to very
- * difficult (see sortByDifficulty) and each question carries the skill(s) it tests, so
+ * bank for next time. Either way, a question already recorded in MockInterviewAskedQuestion for
+ * this candidate is never served again (see askedQuestionRepository below), and the final list
+ * returned to the candidate is grouped by skill and, within each skill, sorted easy to very
+ * difficult (see groupBySkillThenDifficulty) — each question carries the skill(s) it tests, so
  * MockInterviewPage can highlight them. If the AI call also fails — or
  * app.mock-interview.ai-generation-enabled is false, which disables the call altogether — this
  * throws QuestionGenerationUnavailableException and MockInterviewController lets that surface as
@@ -36,9 +42,10 @@ import org.springframework.stereotype.Service;
  *
  * <p>Deliberately not @Transactional: each repository call below (find/exists/save) is
  * independently transactional via Spring Data's default per-method behavior. That matters for
- * persistGenerated — the bank has a unique index on lower(text) (see V24), so a duplicate insert
- * throws; without a shared outer transaction, one failed insert doesn't abort the ones after it
- * in the same loop the way it would inside a single Postgres transaction. */
+ * persistAndResolve/recordAsked — both tables have a unique index (lower(text) on the bank, see
+ * V24; (candidate_id, question_id) on the asked-question table, see V67) that a duplicate insert
+ * throws against; without a shared outer transaction, one failed insert doesn't abort the ones
+ * after it in the same loop the way it would inside a single Postgres transaction. */
 @Service
 public class MockInterviewQuestionService {
 
@@ -68,14 +75,17 @@ public class MockInterviewQuestionService {
 
     private final AnthropicClient client;
     private final MockInterviewQuestionRepository questionRepository;
+    private final MockInterviewAskedQuestionRepository askedQuestionRepository;
     private final MockInterviewQuestionRateLimiter rateLimiter;
     private final boolean aiGenerationEnabled;
 
     public MockInterviewQuestionService(
             MockInterviewQuestionRepository questionRepository,
+            MockInterviewAskedQuestionRepository askedQuestionRepository,
             MockInterviewQuestionRateLimiter rateLimiter,
             @Value("${app.mock-interview.ai-generation-enabled:false}") boolean aiGenerationEnabled) {
         this.questionRepository = questionRepository;
+        this.askedQuestionRepository = askedQuestionRepository;
         this.rateLimiter = rateLimiter;
         this.aiGenerationEnabled = aiGenerationEnabled;
         AnthropicClient created;
@@ -92,31 +102,77 @@ public class MockInterviewQuestionService {
         if (!rateLimiter.tryAcquire(candidateId)) {
             throw new MockInterviewQuestionRateLimitedException();
         }
-        List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, industry, count);
-        List<MockInterviewSessionQuestion> questions;
+        Set<UUID> askedIds = askedQuestionRepository.findQuestionIdsByCandidateId(candidateId);
+        List<MockInterviewQuestion> bankMatches =
+                matchingQuestions(skills, experienceLevel, industry, count, askedIds);
+        List<MockInterviewQuestion> selected;
         if (bankMatches.size() > BANK_THRESHOLD) {
-            questions = pickFromBank(bankMatches, count, skills);
+            selected = pickFromBank(bankMatches, count);
         } else {
             List<GeneratedQuestion> generated = generateWithAi(skills, experienceLevel, industry, count);
-            persistGenerated(generated, industry, experienceLevel);
-            questions = generated.stream()
-                    .map(question -> new MockInterviewSessionQuestion(
-                            question.text(),
-                            question.skills() == null ? List.of() : question.skills(),
-                            question.difficulty()))
+            // A "freshly generated" question can still resolve to an existing bank entity (see
+            // persistAndResolve) — if that entity happens to be one this candidate was already
+            // asked, drop it rather than serve it again. A shorter-than-requested session is
+            // preferable to repeating a question.
+            selected = persistAndResolve(generated, industry, experienceLevel).stream()
+                    .filter(question -> !askedIds.contains(question.getId()))
                     .toList();
         }
-        return sortByDifficulty(questions);
+        recordAsked(candidateId, selected);
+        List<MockInterviewSessionQuestion> questions = selected.stream()
+                .map(question -> new MockInterviewSessionQuestion(
+                        question.getText(), relevantSkills(skills, question.getSkills()), question.getDifficulty()))
+                .toList();
+        return groupBySkillThenDifficulty(questions, skills);
     }
 
-    /** Easy first, very difficult last — a null difficulty (an older bank question added before
-     * difficulty was tracked, or one an admin never set) sorts to the end rather than breaking
-     * the comparison, since there's nowhere meaningful to place it in the progression. */
-    private List<MockInterviewSessionQuestion> sortByDifficulty(List<MockInterviewSessionQuestion> questions) {
-        List<MockInterviewSessionQuestion> sorted = new ArrayList<>(questions);
-        sorted.sort(Comparator.comparing(
-                MockInterviewSessionQuestion::difficulty, Comparator.nullsLast(Comparator.naturalOrder())));
-        return sorted;
+    /** One (candidate, question) row per selected question — best-effort like persistAndResolve's
+     * own inserts: a duplicate (the candidate somehow already has this exact pairing recorded)
+     * just means there's nothing new to record, not a real failure. */
+    private void recordAsked(UUID candidateId, List<MockInterviewQuestion> questions) {
+        for (MockInterviewQuestion question : questions) {
+            try {
+                askedQuestionRepository.save(new MockInterviewAskedQuestion(candidateId, question.getId()));
+            } catch (DataIntegrityViolationException ex) {
+                // Already recorded — nothing to do.
+            }
+        }
+    }
+
+    /** Groups by each question's first tagged skill, in the order the candidate listed their own
+     * skills (so the session flows through one skill at a time rather than jumping around) —
+     * questions tagged with a skill outside the candidate's own list keep their own trailing
+     * group in first-encountered order, and untagged/general questions come last as a wrap-up.
+     * Each group is internally sorted easy first, very difficult last, with a null difficulty
+     * (an older bank question added before difficulty was tracked, or one an admin never set)
+     * sorting to the end of its group rather than breaking the comparison. */
+    private List<MockInterviewSessionQuestion> groupBySkillThenDifficulty(
+            List<MockInterviewSessionQuestion> questions, List<String> candidateSkills) {
+        Comparator<MockInterviewSessionQuestion> byDifficulty = Comparator.comparing(
+                MockInterviewSessionQuestion::difficulty, Comparator.nullsLast(Comparator.naturalOrder()));
+
+        Map<String, List<MockInterviewSessionQuestion>> bySkill = new LinkedHashMap<>();
+        candidateSkills.forEach(skill -> bySkill.put(skill, new ArrayList<>()));
+        List<MockInterviewSessionQuestion> general = new ArrayList<>();
+
+        for (MockInterviewSessionQuestion question : questions) {
+            if (question.skills().isEmpty()) {
+                general.add(question);
+            } else {
+                bySkill.computeIfAbsent(question.skills().get(0), skill -> new ArrayList<>())
+                        .add(question);
+            }
+        }
+
+        List<MockInterviewSessionQuestion> result = new ArrayList<>();
+        for (List<MockInterviewSessionQuestion> group : bySkill.values()) {
+            List<MockInterviewSessionQuestion> sorted = new ArrayList<>(group);
+            sorted.sort(byDifficulty);
+            result.addAll(sorted);
+        }
+        general.sort(byDifficulty);
+        result.addAll(general);
+        return result;
     }
 
     /** Skill-filtered first (same for every level), then experience-level-filtered with widening:
@@ -126,9 +182,10 @@ public class MockInterviewQuestionService {
      * always gets a full session even on a bank that's thin on entry-level-tagged questions:
      * mid/senior questions get pulled in rather than leaving the session short. */
     private List<MockInterviewQuestion> matchingQuestions(
-            List<String> skills, ExperienceLevel experienceLevel, String industry, int count) {
+            List<String> skills, ExperienceLevel experienceLevel, String industry, int count, Set<UUID> askedIds) {
         List<MockInterviewQuestion> matches = questionRepository.findByOptionalFilters(industry);
         List<MockInterviewQuestion> skillFiltered = matches.stream()
+                .filter(question -> !askedIds.contains(question.getId()))
                 // A question with no skills tagged (e.g. a soft-skills question) is a match for
                 // anyone; otherwise at least one of its tagged skills has to overlap the
                 // candidate's selection.
@@ -158,15 +215,14 @@ public class MockInterviewQuestionService {
         return byLevel;
     }
 
-    private List<MockInterviewSessionQuestion> pickFromBank(
-            List<MockInterviewQuestion> eligible, int count, List<String> candidateSkills) {
+    private List<MockInterviewQuestion> pickFromBank(List<MockInterviewQuestion> eligible, int count) {
         List<MockInterviewQuestion> important = new ArrayList<>(
                 eligible.stream().filter(MockInterviewQuestion::isImportant).toList());
         List<MockInterviewQuestion> rest = new ArrayList<>(
                 eligible.stream().filter(question -> !question.isImportant()).toList());
-        // Randomizes which questions get picked (within each group) — the caller sorts the final
-        // result by difficulty afterward, so this shuffle only affects ordering among ties, not
-        // the overall easy-to-hard progression.
+        // Randomizes which questions get picked (within each group) — the caller groups/sorts
+        // the final result afterward (see groupBySkillThenDifficulty), so this shuffle only
+        // affects which questions end up in a session, not their eventual order within it.
         Collections.shuffle(important);
         Collections.shuffle(rest);
 
@@ -175,12 +231,7 @@ public class MockInterviewQuestionService {
             if (picked.size() >= count) break;
             picked.add(question);
         }
-        return picked.stream()
-                .map(question -> new MockInterviewSessionQuestion(
-                        question.getText(),
-                        relevantSkills(candidateSkills, question.getSkills()),
-                        question.getDifficulty()))
-                .toList();
+        return picked;
     }
 
     /** Narrows a question's tagged skills down to just the ones the candidate actually selected
@@ -196,24 +247,38 @@ public class MockInterviewQuestionService {
         return overlap.isEmpty() ? questionSkills : overlap;
     }
 
-    private void persistGenerated(List<GeneratedQuestion> questions, String industry, ExperienceLevel experienceLevel) {
+    /** Persists each freshly generated question into the bank (skipping any that already exist,
+     * find-or-create style) and returns the resolved entity — with a real id — for every one, so
+     * the caller can record/check them against the candidate's asked-question history the exact
+     * same way as a bank-sourced pick. A generated question that turns out to already be banked
+     * (Claude regenerated something close enough to trip the unique index on lower(text), see
+     * V24) still resolves to that existing entity rather than being dropped. */
+    private List<MockInterviewQuestion> persistAndResolve(
+            List<GeneratedQuestion> questions, String industry, ExperienceLevel experienceLevel) {
         List<ExperienceLevel> experienceLevels = experienceLevel == null ? List.of() : List.of(experienceLevel);
+        List<MockInterviewQuestion> resolved = new ArrayList<>();
         for (GeneratedQuestion question : questions) {
-            if (questionRepository.existsByTextIgnoreCase(question.text())) continue;
+            Optional<MockInterviewQuestion> existing = questionRepository.findByTextIgnoreCase(question.text());
+            if (existing.isPresent()) {
+                resolved.add(existing.get());
+                continue;
+            }
             List<String> questionSkills = question.skills() == null ? List.of() : question.skills();
             try {
-                questionRepository.save(new MockInterviewQuestion(
+                resolved.add(questionRepository.save(new MockInterviewQuestion(
                         question.text(),
                         questionSkills,
                         industry,
                         experienceLevels,
                         question.difficulty(),
-                        QuestionSource.AI));
+                        QuestionSource.AI)));
             } catch (DataIntegrityViolationException ex) {
                 // Lost a race against a concurrent insert of the same text (unique index on
-                // lower(text), see V24) — someone else already banked it, nothing to do here.
+                // lower(text), see V24) — fetch whichever insert actually won.
+                questionRepository.findByTextIgnoreCase(question.text()).ifPresent(resolved::add);
             }
         }
+        return resolved;
     }
 
     private List<GeneratedQuestion> generateWithAi(

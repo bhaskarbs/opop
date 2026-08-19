@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,15 +15,18 @@ import com.openopportunity.mockinterview.exception.MockInterviewQuestionRateLimi
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class MockInterviewQuestionServiceTest {
 
     private final MockInterviewQuestionRepository questionRepository = mock(MockInterviewQuestionRepository.class);
+    private final MockInterviewAskedQuestionRepository askedQuestionRepository =
+            mock(MockInterviewAskedQuestionRepository.class);
     private final MockInterviewQuestionRateLimiter rateLimiter = mock(MockInterviewQuestionRateLimiter.class);
     private final MockInterviewQuestionService service =
-            new MockInterviewQuestionService(questionRepository, rateLimiter, false);
+            new MockInterviewQuestionService(questionRepository, askedQuestionRepository, rateLimiter, false);
 
     @Test
     void refusesToServeQuestionsWhenTheCandidateIsRateLimited() {
@@ -140,5 +144,79 @@ class MockInterviewQuestionServiceTest {
                 service.getSessionQuestions(candidateId, List.of("React"), null, null, 5);
 
         assertThat(questions).allSatisfy(question -> assertThat(question.skills()).containsExactly("React"));
+    }
+
+    @Test
+    void neverServesAQuestionAlreadyAskedToTheCandidate() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        MockInterviewQuestion alreadyAsked = new MockInterviewQuestion(
+                "Already asked", List.of(), null, List.of(), QuestionDifficulty.EASY, QuestionSource.ADMIN);
+        List<MockInterviewQuestion> bank = new ArrayList<>(List.of(alreadyAsked));
+        // 105, not 101 — matchingQuestions excludes the already-asked one before the
+        // BANK_THRESHOLD (100) check runs, so 101 total (100 left after exclusion) would fall
+        // through to AI generation, which this test's service instance has disabled.
+        for (int i = 0; i < 105; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Filler " + i, List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
+        }
+        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+        when(askedQuestionRepository.findQuestionIdsByCandidateId(candidateId))
+                .thenReturn(Set.of(alreadyAsked.getId()));
+
+        List<MockInterviewSessionQuestion> questions =
+                service.getSessionQuestions(candidateId, List.of(), null, null, 10);
+
+        assertThat(questions).extracting(MockInterviewSessionQuestion::text).doesNotContain("Already asked");
+    }
+
+    @Test
+    void recordsEverySelectedQuestionAsAskedForTheCandidate() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        List<MockInterviewQuestion> bank = new ArrayList<>();
+        for (int i = 0; i < 101; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Question " + i, List.of(), null, List.of(), null, QuestionSource.ADMIN));
+        }
+        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+
+        List<MockInterviewSessionQuestion> questions =
+                service.getSessionQuestions(candidateId, List.of(), null, null, 5);
+
+        verify(askedQuestionRepository, times(questions.size())).save(any());
+    }
+
+    @Test
+    void groupsQuestionsBySkillInTheCandidatesOwnOrderThenByDifficultyWithinEachSkill() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        List<MockInterviewQuestion> bank = new ArrayList<>();
+        bank.add(new MockInterviewQuestion(
+                "React difficult", List.of("React"), null, List.of(), QuestionDifficulty.DIFFICULT,
+                QuestionSource.ADMIN));
+        bank.add(new MockInterviewQuestion(
+                "React easy", List.of("React"), null, List.of(), QuestionDifficulty.EASY, QuestionSource.ADMIN));
+        bank.add(new MockInterviewQuestion(
+                "Node difficult", List.of("Node.js"), null, List.of(), QuestionDifficulty.DIFFICULT,
+                QuestionSource.ADMIN));
+        bank.add(new MockInterviewQuestion(
+                "Node easy", List.of("Node.js"), null, List.of(), QuestionDifficulty.EASY, QuestionSource.ADMIN));
+        bank.add(new MockInterviewQuestion(
+                "General", List.of(), null, List.of(), QuestionDifficulty.EASY, QuestionSource.ADMIN));
+        for (int i = 0; i < 100; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Filler " + i, List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
+        }
+        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+
+        List<MockInterviewSessionQuestion> questions = service.getSessionQuestions(
+                candidateId, List.of("Node.js", "React"), null, null, bank.size());
+
+        List<String> texts = questions.stream().map(MockInterviewSessionQuestion::text).toList();
+        assertThat(texts.indexOf("Node easy")).isLessThan(texts.indexOf("Node difficult"));
+        assertThat(texts.indexOf("Node difficult")).isLessThan(texts.indexOf("React easy"));
+        assertThat(texts.indexOf("React easy")).isLessThan(texts.indexOf("React difficult"));
+        assertThat(texts.indexOf("React difficult")).isLessThan(texts.indexOf("General"));
     }
 }

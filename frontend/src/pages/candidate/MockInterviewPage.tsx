@@ -16,11 +16,15 @@ import { useCandidateProfileStore } from '../../stores/candidateProfileStore'
 
 // Questions are generated per-session by the backend via the Claude API (see
 // mockInterviewApi.generateQuestions), tailored to the candidate's selected skills, experience
-// level, and industry, already ordered easy to very difficult with skills attached per question.
-// QUESTION_TEMPLATES/FALLBACK_QUESTIONS below are the local fallback used only when that call
-// fails (no API key configured, network error, rate limit, etc.) — see fetchSessionQuestions —
-// so a candidate can always start a session; they mirror the same easy-to-very-difficult
-// ordering and per-question skill tagging the backend provides.
+// level, and industry — already grouped by skill and, within each skill, ordered easy to very
+// difficult, and never repeating a question this candidate has already been asked (see
+// MockInterviewQuestionService on the backend). QUESTION_TEMPLATES/FALLBACK_QUESTIONS below are
+// the local fallback used only when that call fails (no API key configured, network error, rate
+// limit, etc.) — see fetchSessionQuestions — so a candidate can always start a session; they
+// mirror the same easy-to-very-difficult ordering and per-question skill tagging the backend
+// provides, though (being a last-resort, no-backend-connectivity fallback) without the
+// cross-session dedup or skill-grouping, since there's no persisted history to group/dedup
+// against on the client.
 const FALLBACK_QUESTIONS: Array<{ text: string; difficulty: MockInterviewQuestionDifficulty }> = [
   { text: 'Tell me about yourself.', difficulty: 'EASY' },
   { text: 'Where do you see yourself in three years?', difficulty: 'EASY' },
