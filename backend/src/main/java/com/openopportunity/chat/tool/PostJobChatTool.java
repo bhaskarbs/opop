@@ -136,6 +136,10 @@ public class PostJobChatTool implements ChatTool {
                 parsed.location(),
                 parsed.salaryMinLakhs(),
                 parsed.salaryMaxLakhs(),
+                // Not exposed as a chat-tool input (yet) — a company can still set it afterward
+                // via PostJobPage's edit form.
+                null,
+                null,
                 parseDate(parsed.applicationDeadline()),
                 parsed.aboutRole(),
                 parsed.responsibilities(),

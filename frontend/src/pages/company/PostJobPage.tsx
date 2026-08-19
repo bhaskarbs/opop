@@ -53,6 +53,8 @@ const postJobSchema = z.object({
   location: z.string().min(2, 'Enter a location'),
   salaryMin: z.string().optional(),
   salaryMax: z.string().optional(),
+  experienceYearsMin: z.string().optional(),
+  experienceYearsMax: z.string().optional(),
   deadline: z.string().optional(),
   aboutRole: z.string().min(10, 'Describe the role, team, and what success looks like'),
   responsibilities: z.string().min(2, 'List at least one responsibility'),
@@ -66,6 +68,12 @@ function parseSalaryLakhs(value: string | undefined): number | null {
   if (!value) return null
   const match = value.match(/[\d.]+/)
   return match ? Number.parseFloat(match[0]) : null
+}
+
+function parseYears(value: string | undefined): number | null {
+  if (!value) return null
+  const match = value.match(/\d+/)
+  return match ? Number.parseInt(match[0], 10) : null
 }
 
 function splitLines(value: string): string[] {
@@ -87,6 +95,8 @@ function toJobRequest(
     location: values.location,
     salaryMinLakhs: parseSalaryLakhs(values.salaryMin),
     salaryMaxLakhs: parseSalaryLakhs(values.salaryMax),
+    experienceYearsMin: parseYears(values.experienceYearsMin),
+    experienceYearsMax: parseYears(values.experienceYearsMax),
     applicationDeadline: values.deadline || null,
     aboutRole: values.aboutRole,
     responsibilities: splitLines(values.responsibilities),
@@ -156,6 +166,8 @@ export default function PostJobPage() {
       location: '',
       salaryMin: '',
       salaryMax: '',
+      experienceYearsMin: '',
+      experienceYearsMax: '',
       deadline: '',
       aboutRole: '',
       responsibilities: '',
@@ -185,6 +197,10 @@ export default function PostJobPage() {
           location: detail.location,
           salaryMin: detail.salaryMinLakhs != null ? String(detail.salaryMinLakhs) : '',
           salaryMax: detail.salaryMaxLakhs != null ? String(detail.salaryMaxLakhs) : '',
+          experienceYearsMin:
+            detail.experienceYearsMin != null ? String(detail.experienceYearsMin) : '',
+          experienceYearsMax:
+            detail.experienceYearsMax != null ? String(detail.experienceYearsMax) : '',
           deadline: detail.applicationDeadline ?? '',
           aboutRole: detail.aboutRole,
           responsibilities: detail.responsibilities.join('\n'),
@@ -509,6 +525,27 @@ export default function PostJobPage() {
                 type="date"
                 className="rounded-control border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
                 {...register('deadline')}
+              />
+            </div>
+          </div>
+          <div className="mt-3.5 flex flex-col">
+            <label className="mb-1.5 text-[13px] font-bold text-ink">
+              {t('postJob.fields.experienceYears')}
+            </label>
+            <div className="flex max-w-[calc(50%-0.4375rem)] gap-2">
+              <input
+                placeholder={t('postJob.fields.experienceYearsMinPlaceholder')}
+                type="number"
+                min={0}
+                className="min-w-0 flex-1 rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                {...register('experienceYearsMin')}
+              />
+              <input
+                placeholder={t('postJob.fields.experienceYearsMaxPlaceholder')}
+                type="number"
+                min={0}
+                className="min-w-0 flex-1 rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                {...register('experienceYearsMax')}
               />
             </div>
           </div>

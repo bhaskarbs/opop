@@ -54,6 +54,15 @@ public class Job {
     @Column(name = "salary_max_lakhs", precision = 6, scale = 2)
     private BigDecimal salaryMaxLakhs;
 
+    // Optional "N-M years of experience" range, distinct from experienceLevel's coarse tier —
+    // see updateExperienceYears. Both null (the default) means "not specified", same optional
+    // convention as salaryMinLakhs/salaryMaxLakhs above.
+    @Column(name = "experience_years_min")
+    private Integer experienceYearsMin;
+
+    @Column(name = "experience_years_max")
+    private Integer experienceYearsMax;
+
     @Column(name = "application_deadline")
     private LocalDate applicationDeadline;
 
@@ -170,6 +179,15 @@ public class Job {
         this.status = status;
     }
 
+    /** Kept out of the main constructor/update() above (unlike salaryMinLakhs/salaryMaxLakhs,
+     * which this otherwise mirrors) so adding this field didn't require touching every existing
+     * `new Job(...)`/`job.update(...)` call site across the codebase — JobService calls this
+     * once right alongside create()/update()/adminCreate()/adminUpdate() instead. */
+    public void updateExperienceYears(Integer experienceYearsMin, Integer experienceYearsMax) {
+        this.experienceYearsMin = experienceYearsMin;
+        this.experienceYearsMax = experienceYearsMax;
+    }
+
     public void approve() {
         this.status = JobStatus.ACTIVE;
     }
@@ -260,6 +278,14 @@ public class Job {
 
     public BigDecimal getSalaryMaxLakhs() {
         return salaryMaxLakhs;
+    }
+
+    public Integer getExperienceYearsMin() {
+        return experienceYearsMin;
+    }
+
+    public Integer getExperienceYearsMax() {
+        return experienceYearsMax;
     }
 
     public LocalDate getApplicationDeadline() {

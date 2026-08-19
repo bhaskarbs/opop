@@ -55,6 +55,8 @@ class SavedJobServiceTest {
                 EmploymentType.FULL_TIME,
                 BigDecimal.valueOf(18),
                 BigDecimal.valueOf(24),
+                null,
+                null,
                 List.of("React"),
                 JobStatus.ACTIVE,
                 3,

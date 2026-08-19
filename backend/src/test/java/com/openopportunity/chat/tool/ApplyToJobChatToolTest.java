@@ -42,6 +42,8 @@ class ApplyToJobChatToolTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 "Own our payments platform.",
                 List.of(),
                 List.of(),

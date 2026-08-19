@@ -185,6 +185,9 @@
       "salaryRange": "Salary range (₹/yr)",
       "salaryMinPlaceholder": "Min e.g. 12L",
       "salaryMaxPlaceholder": "Max e.g. 18L",
+      "experienceYears": "Years of experience",
+      "experienceYearsMinPlaceholder": "Min e.g. 2",
+      "experienceYearsMaxPlaceholder": "Max e.g. 4",
       "deadline": "Application deadline",
       "aboutRolePlaceholder": "Describe the role, team, and what success looks like...",
       "onePerLine": "One per line"
