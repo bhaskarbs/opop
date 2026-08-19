@@ -4,9 +4,13 @@ import type { BackendExperienceLevel } from './jobsApi'
 
 export type MockInterviewQuestionDifficulty = 'EASY' | 'NORMAL' | 'DIFFICULT' | 'VERY_DIFFICULT'
 
-// One question in a generated session, already ordered easy to very difficult by the backend
-// (see MockInterviewQuestionService.getSessionQuestions) — skills is what MockInterviewPage
-// highlights alongside the question text so the candidate knows what it's testing.
+// One question in a generated session, already grouped by skill (in the order the candidate
+// selected their own skills, general/no-skill questions last) and, within each skill, ordered
+// easy to very difficult by the backend (see
+// MockInterviewQuestionService.getSessionQuestions/groupBySkillThenDifficulty) — skills is what
+// MockInterviewPage highlights alongside the question text so the candidate knows what it's
+// testing. The backend also never repeats a question it's already asked this candidate before
+// (see MockInterviewAskedQuestion).
 export interface MockInterviewSessionQuestion {
   text: string
   skills: string[]
