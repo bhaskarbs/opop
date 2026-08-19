@@ -15,6 +15,7 @@ import { RequireAuth } from './routes/RequireAuth'
 import { ScrollToTop } from './routes/ScrollToTop'
 import i18n, { DEFAULT_LANGUAGE, isSupportedLanguage } from './i18n'
 import { LoadingState } from './components/ui'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Every page (and the two layouts below) is lazy — each becomes its own chunk, so a candidate
 // never downloads company/admin page code and vice versa. Route changes suspend on the single
@@ -149,122 +150,124 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Suspense fallback={<LoadingState />}>
-        <Routes>
-          <Route path="/" element={<Navigate to={`/${DEFAULT_LANGUAGE}`} replace />} />
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingState />}>
+          <Routes>
+            <Route path="/" element={<Navigate to={`/${DEFAULT_LANGUAGE}`} replace />} />
 
-          <Route path="/:lang" element={<LocaleRoot />}>
-            <Route element={<PublicLayout />}>
-              <Route index element={<LandingPage />} />
-              <Route path="jobs" element={<JobSearchPage />} />
-              <Route path="jobs/:jobId" element={<JobDetailPage />} />
-              <Route path="partnerships" element={<PartnershipsPage />} />
-              <Route path="partnerships/ideas" element={<IdeasBrowsePage />} />
-              <Route path="partnerships/ideas/:ideaId" element={<IdeaDetailPage />} />
-              <Route path="community" element={<CommunityPage />} />
-              <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
-              <Route path="terms-of-service" element={<TermsOfServicePage />} />
-              <Route path="refund-policy" element={<RefundPolicyPage />} />
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route path="forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="reset-password" element={<ResetPasswordPage />} />
-              <Route path="company/login" element={<CompanyLoginPage />} />
-              <Route path="company/register" element={<CompanyRegisterPage />} />
-              <Route path="company/forgot-password" element={<CompanyForgotPasswordPage />} />
-              <Route path="admin/login" element={<AdminLoginPage />} />
-            </Route>
-
-            <Route element={<RequireAuth role="CANDIDATE" />}>
-              <Route element={<AuthenticatedLayout headerVariant="candidate" />}>
-                <Route path="candidate/dashboard" element={<CandidateDashboardPage />} />
-                <Route path="candidate/profile" element={<CandidateProfilePage />} />
-                <Route path="candidate/profile/add-details" element={<AddMissingDetailsPage />} />
-                <Route path="candidate/applications" element={<ApplicationsPage />} />
-                <Route path="candidate/saved-jobs" element={<SavedJobsPage />} />
-                <Route path="candidate/job-alerts" element={<JobAlertsPage />} />
-                <Route path="candidate/mock-interview" element={<MockInterviewPage />} />
-                <Route path="candidate/ideas" element={<MyIdeasPage />} />
-                <Route path="candidate/ideas/submit" element={<IdeaSubmitPage />} />
-                <Route path="candidate/ideas/:ideaId/edit" element={<IdeaSubmitPage />} />
-                <Route path="candidate/billing" element={<CandidateBillingPage />} />
+            <Route path="/:lang" element={<LocaleRoot />}>
+              <Route element={<PublicLayout />}>
+                <Route index element={<LandingPage />} />
+                <Route path="jobs" element={<JobSearchPage />} />
+                <Route path="jobs/:jobId" element={<JobDetailPage />} />
+                <Route path="partnerships" element={<PartnershipsPage />} />
+                <Route path="partnerships/ideas" element={<IdeasBrowsePage />} />
+                <Route path="partnerships/ideas/:ideaId" element={<IdeaDetailPage />} />
+                <Route path="community" element={<CommunityPage />} />
+                <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="terms-of-service" element={<TermsOfServicePage />} />
+                <Route path="refund-policy" element={<RefundPolicyPage />} />
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="reset-password" element={<ResetPasswordPage />} />
+                <Route path="company/login" element={<CompanyLoginPage />} />
+                <Route path="company/register" element={<CompanyRegisterPage />} />
+                <Route path="company/forgot-password" element={<CompanyForgotPasswordPage />} />
+                <Route path="admin/login" element={<AdminLoginPage />} />
               </Route>
-            </Route>
 
-            <Route element={<RequireAuth role="COMPANY" />}>
-              <Route element={<AuthenticatedLayout headerVariant="company" />}>
-                <Route path="company/dashboard" element={<CompanyDashboardPage />} />
-                <Route path="company/profile" element={<CompanyProfilePage />} />
-                <Route path="company/partnerships" element={<CompanyPartnershipsPage />} />
-                <Route path="company/post-job" element={<PostJobPage />} />
-                <Route path="company/job-postings" element={<MyJobPostingsPage />} />
-                <Route path="company/job-postings/:jobId/edit" element={<PostJobPage />} />
-                <Route
-                  path="company/job-postings/:jobId/applicants"
-                  element={<JobApplicantsPage />}
-                />
-                <Route path="company/search-candidates" element={<SearchCandidatesPage />} />
-                <Route path="company/candidates/:userId" element={<CandidateProfileViewPage />} />
-                <Route path="company/seminars" element={<SeminarSchedulerPage />} />
-                <Route path="company/ideas" element={<MyIdeasPage />} />
-                <Route path="company/ideas/submit" element={<IdeaSubmitPage />} />
-                <Route path="company/ideas/:ideaId/edit" element={<IdeaSubmitPage />} />
-                <Route path="company/billing" element={<CompanyBillingPage />} />
-              </Route>
-            </Route>
-
-            <Route element={<RequireAuth role="ADMIN" />}>
-              <Route element={<AuthenticatedLayout headerVariant="admin" />}>
-                {/* Every admin tier — reviewer, admin, super_admin — reaches approvals and
-                    user management (see AdminLevel.java and RequireAdminLevel). */}
-                <Route path="admin/approvals" element={<AdminApprovalsPage />}>
-                  <Route index element={<Navigate to="companies" replace />} />
-                  <Route path="companies" element={<AdminCompanyApprovalsPage />} />
-                  <Route path="jobs" element={<AdminJobApprovalsPage />} />
-                  <Route path="ideas" element={<AdminIdeaApprovalsPage />} />
+              <Route element={<RequireAuth role="CANDIDATE" />}>
+                <Route element={<AuthenticatedLayout headerVariant="candidate" />}>
+                  <Route path="candidate/dashboard" element={<CandidateDashboardPage />} />
+                  <Route path="candidate/profile" element={<CandidateProfilePage />} />
+                  <Route path="candidate/profile/add-details" element={<AddMissingDetailsPage />} />
+                  <Route path="candidate/applications" element={<ApplicationsPage />} />
+                  <Route path="candidate/saved-jobs" element={<SavedJobsPage />} />
+                  <Route path="candidate/job-alerts" element={<JobAlertsPage />} />
+                  <Route path="candidate/mock-interview" element={<MockInterviewPage />} />
+                  <Route path="candidate/ideas" element={<MyIdeasPage />} />
+                  <Route path="candidate/ideas/submit" element={<IdeaSubmitPage />} />
+                  <Route path="candidate/ideas/:ideaId/edit" element={<IdeaSubmitPage />} />
+                  <Route path="candidate/billing" element={<CandidateBillingPage />} />
                 </Route>
-                <Route path="admin/users" element={<AdminUsersPage />} />
-                <Route path="admin/users/candidates/:id" element={<AdminCandidateDetailPage />} />
-                <Route path="admin/users/companies/:id" element={<AdminCompanyDetailPage />} />
+              </Route>
 
-                {/* Everything else in the admin console is admin/super_admin only — a reviewer
-                    hitting one of these directly bounces to Approvals (see RequireAdminLevel). */}
-                <Route element={<RequireAdminLevel levels={['ADMIN', 'SUPER_ADMIN']} />}>
-                  <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+              <Route element={<RequireAuth role="COMPANY" />}>
+                <Route element={<AuthenticatedLayout headerVariant="company" />}>
+                  <Route path="company/dashboard" element={<CompanyDashboardPage />} />
+                  <Route path="company/profile" element={<CompanyProfilePage />} />
+                  <Route path="company/partnerships" element={<CompanyPartnershipsPage />} />
+                  <Route path="company/post-job" element={<PostJobPage />} />
+                  <Route path="company/job-postings" element={<MyJobPostingsPage />} />
+                  <Route path="company/job-postings/:jobId/edit" element={<PostJobPage />} />
                   <Route
-                    path="admin/mock-interview-questions"
-                    element={<AdminMockInterviewQuestionsPage />}
+                    path="company/job-postings/:jobId/applicants"
+                    element={<JobApplicantsPage />}
                   />
-                  <Route path="admin/reports" element={<AdminReportsPage />} />
-                  <Route path="admin/billing" element={<AdminBillingPage />} />
-                  <Route path="admin/jobs" element={<AdminJobsPage />} />
-                  <Route path="admin/jobs/post" element={<AdminPostJobPage />} />
-                  <Route path="admin/jobs/:jobId/edit" element={<AdminPostJobPage />} />
-                  <Route path="admin/ideas" element={<AdminIdeasPage />} />
-                  <Route path="admin/videos" element={<AdminVideosPage />} />
-                  <Route path="admin/broadcast-email" element={<AdminBroadcastEmailPage />} />
+                  <Route path="company/search-candidates" element={<SearchCandidatesPage />} />
+                  <Route path="company/candidates/:userId" element={<CandidateProfileViewPage />} />
+                  <Route path="company/seminars" element={<SeminarSchedulerPage />} />
+                  <Route path="company/ideas" element={<MyIdeasPage />} />
+                  <Route path="company/ideas/submit" element={<IdeaSubmitPage />} />
+                  <Route path="company/ideas/:ideaId/edit" element={<IdeaSubmitPage />} />
+                  <Route path="company/billing" element={<CompanyBillingPage />} />
                 </Route>
               </Route>
-            </Route>
 
-            {/* Deliberately outside PublicLayout — no site nav/footer for an external recipient
+              <Route element={<RequireAuth role="ADMIN" />}>
+                <Route element={<AuthenticatedLayout headerVariant="admin" />}>
+                  {/* Every admin tier — reviewer, admin, super_admin — reaches approvals and
+                    user management (see AdminLevel.java and RequireAdminLevel). */}
+                  <Route path="admin/approvals" element={<AdminApprovalsPage />}>
+                    <Route index element={<Navigate to="companies" replace />} />
+                    <Route path="companies" element={<AdminCompanyApprovalsPage />} />
+                    <Route path="jobs" element={<AdminJobApprovalsPage />} />
+                    <Route path="ideas" element={<AdminIdeaApprovalsPage />} />
+                  </Route>
+                  <Route path="admin/users" element={<AdminUsersPage />} />
+                  <Route path="admin/users/candidates/:id" element={<AdminCandidateDetailPage />} />
+                  <Route path="admin/users/companies/:id" element={<AdminCompanyDetailPage />} />
+
+                  {/* Everything else in the admin console is admin/super_admin only — a reviewer
+                    hitting one of these directly bounces to Approvals (see RequireAdminLevel). */}
+                  <Route element={<RequireAdminLevel levels={['ADMIN', 'SUPER_ADMIN']} />}>
+                    <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+                    <Route
+                      path="admin/mock-interview-questions"
+                      element={<AdminMockInterviewQuestionsPage />}
+                    />
+                    <Route path="admin/reports" element={<AdminReportsPage />} />
+                    <Route path="admin/billing" element={<AdminBillingPage />} />
+                    <Route path="admin/jobs" element={<AdminJobsPage />} />
+                    <Route path="admin/jobs/post" element={<AdminPostJobPage />} />
+                    <Route path="admin/jobs/:jobId/edit" element={<AdminPostJobPage />} />
+                    <Route path="admin/ideas" element={<AdminIdeasPage />} />
+                    <Route path="admin/videos" element={<AdminVideosPage />} />
+                    <Route path="admin/broadcast-email" element={<AdminBroadcastEmailPage />} />
+                  </Route>
+                </Route>
+              </Route>
+
+              {/* Deliberately outside PublicLayout — no site nav/footer for an external recipient
                 who opened an emailed link, just the video (see WatchSharedVideoPage). */}
-            <Route path="watch/:token" element={<WatchSharedVideoPage />} />
-            <Route path="watch-interview/:token" element={<WatchMockInterviewPage />} />
+              <Route path="watch/:token" element={<WatchSharedVideoPage />} />
+              <Route path="watch-interview/:token" element={<WatchMockInterviewPage />} />
 
-            <Route path="dev/style-guide" element={<StyleGuidePage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </Suspense>
-      {/* Own Suspense boundary (fallback={null}) so the widget's lazy chunk loading never
+              <Route path="dev/style-guide" element={<StyleGuidePage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+        {/* Own Suspense boundary (fallback={null}) so the widget's lazy chunk loading never
           blocks/replaces the page itself with the full-screen LoadingState fallback above —
           it just pops in once ready, same as it would after any other async load. */}
-      {SHOW_CHAT_WIDGET && (
-        <Suspense fallback={null}>
-          <ChatWidget />
-        </Suspense>
-      )}
+        {SHOW_CHAT_WIDGET && (
+          <Suspense fallback={null}>
+            <ChatWidget />
+          </Suspense>
+        )}
+      </ErrorBoundary>
     </BrowserRouter>
   )
 }
