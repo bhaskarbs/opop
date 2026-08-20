@@ -33,6 +33,20 @@ const DIFFICULTY_LABEL_KEYS: Record<BackendQuestionDifficulty, string> = {
 
 const PAGE_SIZE = 10
 
+// Case-insensitive de-dupe within the batch itself — the backend still independently rejects a
+// line that duplicates an existing question's text (see DuplicateMockInterviewQuestionException).
+function splitQuestionLines(text: string): string[] {
+  const seen = new Set<string>()
+  const lines: string[] = []
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim()
+    if (!line || seen.has(line.toLowerCase())) continue
+    seen.add(line.toLowerCase())
+    lines.push(line)
+  }
+  return lines
+}
+
 export default function AdminMockInterviewQuestionsPage() {
   const { t } = useTranslation('admin')
 
@@ -167,27 +181,71 @@ export default function AdminMockInterviewQuestionsPage() {
     setFormError(null)
     setSubmitting(true)
     try {
-      const payload = {
-        text: formText.trim(),
-        skills: formSkills,
-        industry: formIndustry.trim() || null,
-        experienceLevels: formExperienceLevels,
-        difficulty: formDifficulty || null,
-      }
       if (editingId) {
-        const updated = await adminApi.updateMockInterviewQuestion(editingId, payload)
+        const updated = await adminApi.updateMockInterviewQuestion(editingId, {
+          text: formText.trim(),
+          skills: formSkills,
+          industry: formIndustry.trim() || null,
+          experienceLevels: formExperienceLevels,
+          difficulty: formDifficulty || null,
+        })
         setQuestions((prev) =>
           prev.map((existing) => (existing.id === editingId ? updated : existing)),
         )
         setAllQuestions((prev) =>
           prev.map((existing) => (existing.id === editingId ? updated : existing)),
         )
-      } else {
-        const created = await adminApi.createMockInterviewQuestion(payload)
-        setQuestions((prev) => [created, ...prev])
-        setAllQuestions((prev) => [created, ...prev])
+        resetForm()
+        return
       }
-      resetForm()
+
+      // Adding new: one question per non-blank line, all sharing the skills/industry/experience
+      // levels/difficulty picked once above — lets an admin paste a whole batch of questions for
+      // one skill instead of round-tripping the form once per question.
+      const lines = splitQuestionLines(formText)
+      const created: AdminMockInterviewQuestionSummary[] = []
+      const failed: { text: string; message: string }[] = []
+      for (const line of lines) {
+        try {
+          created.push(
+            await adminApi.createMockInterviewQuestion({
+              text: line,
+              skills: formSkills,
+              industry: formIndustry.trim() || null,
+              experienceLevels: formExperienceLevels,
+              difficulty: formDifficulty || null,
+            }),
+          )
+        } catch (caught) {
+          failed.push({
+            text: line,
+            message:
+              caught instanceof ApiError ? caught.message : t('mockInterviewQuestions.saveError'),
+          })
+        }
+      }
+      if (created.length > 0) {
+        const newestFirst = [...created].reverse()
+        setQuestions((prev) => [...newestFirst, ...prev])
+        setAllQuestions((prev) => [...newestFirst, ...prev])
+      }
+      if (failed.length === 0) {
+        resetForm()
+      } else {
+        // Only the failed lines are left in the box (successes already saved) so retrying means
+        // fixing/resubmitting just those, not the whole batch — skills/industry/levels/difficulty
+        // stay as-is since they were never the problem.
+        setFormText(failed.map((f) => f.text).join('\n'))
+        setFormError(
+          [
+            t('mockInterviewQuestions.bulkAddedSummary', {
+              added: created.length,
+              total: lines.length,
+            }),
+            ...failed.map((f) => `"${f.text}" — ${f.message}`),
+          ].join('\n'),
+        )
+      }
     } catch (caught) {
       setFormError(
         caught instanceof ApiError ? caught.message : t('mockInterviewQuestions.saveError'),
@@ -230,6 +288,8 @@ export default function AdminMockInterviewQuestionsPage() {
       setActioningId(null)
     }
   }
+
+  const pendingQuestionCount = splitQuestionLines(formText).length
 
   const pageCount = Math.max(1, Math.ceil(questions.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
@@ -290,15 +350,28 @@ export default function AdminMockInterviewQuestionsPage() {
         <h2 className="mb-3 text-base font-bold text-ink">
           {editingId ? t('mockInterviewQuestions.editTitle') : t('mockInterviewQuestions.addTitle')}
         </h2>
-        {formError && <p className="mb-3 text-[13px] font-semibold text-danger">{formError}</p>}
-        <textarea
-          value={formText}
-          onChange={(event) => setFormText(event.target.value)}
-          placeholder={t('mockInterviewQuestions.textPlaceholder')}
-          rows={2}
-          required
-          className="mb-3 w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:outline-none"
-        />
+        {formError && (
+          <p className="mb-3 text-[13px] font-semibold whitespace-pre-line text-danger">
+            {formError}
+          </p>
+        )}
+        <div className="mb-3">
+          <textarea
+            value={formText}
+            onChange={(event) => setFormText(event.target.value)}
+            placeholder={
+              editingId
+                ? t('mockInterviewQuestions.textPlaceholder')
+                : t('mockInterviewQuestions.textPlaceholderBulk')
+            }
+            rows={editingId ? 2 : 4}
+            required
+            className="w-full rounded-control border border-border px-3 py-2.5 text-sm text-ink placeholder:text-fog focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:outline-none"
+          />
+          {!editingId && (
+            <p className="mt-1 text-[12px] text-slate">{t('mockInterviewQuestions.bulkHint')}</p>
+          )}
+        </div>
         <div className="mb-3">
           <span className="mb-1.5 block text-[13px] font-bold text-ink">
             {t('mockInterviewQuestions.experienceLevelsField')}
@@ -365,7 +438,9 @@ export default function AdminMockInterviewQuestionsPage() {
               ? t('mockInterviewQuestions.saving')
               : editingId
                 ? t('mockInterviewQuestions.saveChanges')
-                : t('mockInterviewQuestions.addQuestion')}
+                : pendingQuestionCount > 1
+                  ? t('mockInterviewQuestions.addQuestionsCount', { count: pendingQuestionCount })
+                  : t('mockInterviewQuestions.addQuestion')}
           </button>
           {editingId && (
             <button
