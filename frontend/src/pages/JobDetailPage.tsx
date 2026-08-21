@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BackButton, Card, LoadingState, ShareButton } from '../components/ui'
+import { BackButton, Card, LoadingState, LocationPinIcon, ShareButton } from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
@@ -287,8 +287,15 @@ export default function JobDetailPage() {
                   <h1 className="mb-1.5 text-[23px] font-extrabold tracking-[-0.01em] text-ink">
                     {job.title}
                   </h1>
-                  <div className="text-[15px] text-slate">
-                    {job.companyName} · {job.location} · {mode}
+                  <div className="flex flex-wrap items-center gap-1 text-[15px] text-slate">
+                    <span>{job.companyName}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <LocationPinIcon />
+                      {job.location}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>{mode}</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {[
@@ -345,20 +352,30 @@ export default function JobDetailPage() {
             <p className="mb-[18px] text-[14.5px] leading-[1.7] whitespace-pre-line text-[#3A414D]">
               {job.aboutRole}
             </p>
-            <h3 className="mb-2.5 text-[15px] font-bold text-ink">
-              {t('jobDetail.responsibilities')}
-            </h3>
-            <ul className="mb-[18px] list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
-              {job.responsibilities.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            <h3 className="mb-2.5 text-[15px] font-bold text-ink">{t('jobDetail.requirements')}</h3>
-            <ul className="mb-[18px] list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
-              {job.requirements.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
+            {job.responsibilities.length > 0 && (
+              <>
+                <h3 className="mb-2.5 text-[15px] font-bold text-ink">
+                  {t('jobDetail.responsibilities')}
+                </h3>
+                <ul className="mb-[18px] list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
+                  {job.responsibilities.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {job.requirements.length > 0 && (
+              <>
+                <h3 className="mb-2.5 text-[15px] font-bold text-ink">
+                  {t('jobDetail.requirements')}
+                </h3>
+                <ul className="mb-[18px] list-disc pl-5 text-[14.5px] leading-[1.8] text-[#3A414D]">
+                  {job.requirements.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </>
+            )}
             <div className="flex justify-end border-t border-[#F0F1F3] pt-5">
               <ApplyButton
                 applied={applicationId != null}
