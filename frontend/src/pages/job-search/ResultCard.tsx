@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Card, ShareButton } from '../../components/ui'
+import { Card, LocationPinIcon, ShareButton } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL } from '../../lib/apiClient'
 import { jobShareUrl } from '../../lib/jobsApi'
@@ -92,8 +92,13 @@ export function ResultCard({
               </span>
             )}
           </div>
-          <div className="mt-0.5 text-sm text-slate">
-            {job.company} · {job.location}
+          <div className="mt-0.5 flex flex-wrap items-center gap-1 text-sm text-slate">
+            <span>{job.company}</span>
+            <span aria-hidden="true">·</span>
+            <span className="inline-flex items-center gap-1">
+              <LocationPinIcon />
+              {job.location}
+            </span>
           </div>
           <div className="my-3 flex flex-wrap gap-2">
             {job.tags.map((tag) => (
