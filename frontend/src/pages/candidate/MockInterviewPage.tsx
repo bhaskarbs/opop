@@ -128,9 +128,33 @@ const DIFFICULTY_TIERS: MockInterviewQuestionDifficulty[] = [
   'VERY_DIFFICULT',
 ]
 
-// MediaRecorder picks whichever mimeType the browser actually supports; Chrome/Firefox/Edge
-// all support webm/vp8+opus.
-const RECORDER_MIME_TYPE = 'video/webm;codecs=vp8,opus'
+// Preferred first: VP9 typically encodes 20-40% smaller than VP8 at the same visual quality,
+// which is worth the extra live-encode CPU cost at the low resolution/frame rate this records at
+// (see RECORDING_VIDEO_CONSTRAINTS below). Not every browser can encode VP9 live in
+// MediaRecorder though (support is less universal than VP8's), so this falls back to
+// webm/vp8+opus — supported by Chrome/Firefox/Edge — and finally to the browser's own default
+// if neither is available.
+const RECORDER_MIME_TYPE_PREFERENCE = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus']
+
+function pickRecorderMimeType(): string | undefined {
+  return RECORDER_MIME_TYPE_PREFERENCE.find((mimeType) => MediaRecorder.isTypeSupported(mimeType))
+}
+
+// This is a talking-head interview recording, not a demo reel — capping the camera at 480p/24fps
+// and setting explicit (low) encode bitrates keeps stored files small without any visible loss
+// for that use case. Left unconstrained, the browser requests its default camera resolution
+// (720p+ on most webcams) and MediaRecorder falls back to its own default VP8 bitrate, which
+// scales with resolution and commonly lands well over 2 Mbps — a full MAX_DURATION_SECONDS
+// (~21 min) session at that rate can approach or exceed the backend's 150MB cap (see
+// MockInterviewService#MAX_VIDEO_SIZE_BYTES). At the rates below (~450 kbps combined) a full
+// session lands around 70MB.
+const RECORDING_VIDEO_CONSTRAINTS: MediaTrackConstraints = {
+  width: { ideal: 640, max: 854 },
+  height: { ideal: 480, max: 480 },
+  frameRate: { ideal: 24, max: 24 },
+}
+const RECORDING_VIDEO_BITS_PER_SECOND = 400_000
+const RECORDING_AUDIO_BITS_PER_SECOND = 48_000
 
 function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
@@ -461,19 +485,22 @@ export default function MockInterviewPage() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: RECORDING_VIDEO_CONSTRAINTS,
+        audio: true,
+      })
       streamRef.current = stream
       setHasStream(true)
       if (videoRef.current) videoRef.current.srcObject = stream
       setMicOn(true)
       setCameraOn(true)
 
-      const recorder = new MediaRecorder(
-        stream,
-        MediaRecorder.isTypeSupported(RECORDER_MIME_TYPE)
-          ? { mimeType: RECORDER_MIME_TYPE }
-          : undefined,
-      )
+      const recorderMimeType = pickRecorderMimeType()
+      const recorder = new MediaRecorder(stream, {
+        ...(recorderMimeType ? { mimeType: recorderMimeType } : undefined),
+        videoBitsPerSecond: RECORDING_VIDEO_BITS_PER_SECOND,
+        audioBitsPerSecond: RECORDING_AUDIO_BITS_PER_SECOND,
+      })
       chunksRef.current = []
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunksRef.current.push(event.data)
