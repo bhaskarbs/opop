@@ -448,11 +448,28 @@
       "candidate": "उम्मीदवार",
       "company": "कंपनी"
     },
+    "addIdea": "+ आइडिया पोस्ट करें",
+    "edit": "संपादित करें",
     "delete": "हटाएं",
     "confirmDelete": "\"{{title}}\" को स्थायी रूप से हटाएं? इससे इसमें व्यक्त की गई सभी रुचियां भी हट जाएंगी — इसे पूर्ववत नहीं किया जा सकता।",
     "previousPage": "← पिछला",
     "nextPage": "अगला →",
-    "pageLabel": "पृष्ठ {{page}} / {{total}}"
+    "pageLabel": "पृष्ठ {{page}} / {{total}}",
+    "postForm": {
+      "title": "आइडिया पोस्ट करें",
+      "titleEdit": "आइडिया संपादित करें",
+      "subtitle": "किसी भी उम्मीदवार या कंपनी की ओर से एक आइडिया पोस्ट या संपादित करें।",
+      "submitter": "सबमिटर",
+      "submitterSearchPlaceholder": "नाम या ईमेल से उम्मीदवार या कंपनियां खोजें",
+      "searchingSubmitters": "खोज रहे हैं…",
+      "changeSubmitter": "बदलें",
+      "postIdea": "आइडिया पोस्ट करें",
+      "saveChanges": "बदलाव सेव करें",
+      "cancel": "रद्द करें",
+      "loadingExisting": "आइडिया लोड हो रहा है…",
+      "errorGeneric": "कुछ गलत हो गया। कृपया फिर से कोशिश करें।",
+      "errorSubmitterRequired": "सेव करने से पहले एक सबमिटर चुनें।"
+    }
   },
   "videos": {
     "title": "वीडियो",

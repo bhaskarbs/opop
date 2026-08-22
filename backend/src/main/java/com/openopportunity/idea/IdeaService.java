@@ -97,6 +97,38 @@ public class IdeaService {
         return toDetail(idea);
     }
 
+    /** Admin-authored idea (AdminIdeasPage) — on behalf of a submitter the admin chooses, rather
+     * than the caller themselves (see create() above, where submitterId is always the
+     * authenticated caller's own id). Posts straight to APPROVED rather than PENDING — an admin
+     * acting directly *is* the approval, mirroring JobService#adminCreate. Still enforces
+     * MAX_IDEAS_PER_SUBMITTER, same as any other creation path. */
+    @Transactional
+    public IdeaDetail adminCreate(UUID submitterId, IdeaRequest request) {
+        if (ideaRepository.countBySubmitterId(submitterId) >= MAX_IDEAS_PER_SUBMITTER) {
+            throw new IdeaLimitReachedException();
+        }
+        User submitter = userRepository.findById(submitterId).orElseThrow();
+        Idea idea = new Idea(
+                submitterId,
+                submitter.getFullName(),
+                submitter.getRole(),
+                request.title(),
+                request.category(),
+                request.stage(),
+                request.problem(),
+                request.solution(),
+                request.targetMarket(),
+                request.funding(),
+                request.equity(),
+                request.teamSize(),
+                request.timeline(),
+                request.videoLink(),
+                request.contactEmail());
+        idea.approve();
+        idea = ideaRepository.save(idea);
+        return toDetail(idea);
+    }
+
     @Transactional(readOnly = true)
     public List<IdeaSummary> browse(String q, String category, IdeaStage stage) {
         Specification<Idea> spec = Specification.allOf(
@@ -120,6 +152,15 @@ public class IdeaService {
         if (idea.getStatus() != IdeaStatus.APPROVED && !isOwner) {
             throw new IdeaNotFoundException(id);
         }
+        return toDetail(idea);
+    }
+
+    /** Admin read of any idea's full detail, regardless of status or submitter — see
+     * IdeaService#get above, which blocks a non-owner from seeing a PENDING/REJECTED idea.
+     * Backs AdminIdeasPage's edit form, which otherwise couldn't load one it doesn't own. */
+    @Transactional(readOnly = true)
+    public IdeaDetail adminGet(UUID id) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
         return toDetail(idea);
     }
 
@@ -207,6 +248,30 @@ public class IdeaService {
                 request.contactEmail());
         ideaRepository.save(idea);
         notifyAdminsIdeaPending(idea);
+        return toDetail(idea);
+    }
+
+    /** Admin edit of any idea's content, regardless of which submitter owns it (AdminIdeasPage)
+     * — mirrors update() above but skips findOwned's ownership check and, via Idea#adminUpdate,
+     * doesn't reset status back to PENDING (the admin doing the edit *is* the review), same
+     * reasoning as JobService#adminUpdate. */
+    @Transactional
+    public IdeaDetail adminUpdate(UUID id, IdeaRequest request) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
+        idea.adminUpdate(
+                request.title(),
+                request.category(),
+                request.stage(),
+                request.problem(),
+                request.solution(),
+                request.targetMarket(),
+                request.funding(),
+                request.equity(),
+                request.teamSize(),
+                request.timeline(),
+                request.videoLink(),
+                request.contactEmail());
+        ideaRepository.save(idea);
         return toDetail(idea);
     }
 

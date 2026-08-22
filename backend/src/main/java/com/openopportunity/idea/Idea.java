@@ -158,6 +158,36 @@ public class Idea {
         this.edited = true;
     }
 
+    /** Same field set as update() above, but for an admin editing directly (AdminIdeasPage) —
+     * unlike a submitter's own edit, this doesn't reset status to PENDING or flip `edited`,
+     * since the admin doing the edit *is* the review; see IdeaService#adminUpdate. */
+    public void adminUpdate(
+            String title,
+            String category,
+            IdeaStage stage,
+            String problem,
+            String solution,
+            String targetMarket,
+            String funding,
+            String equity,
+            Integer teamSize,
+            String timeline,
+            String videoLink,
+            String contactEmail) {
+        this.title = title;
+        this.category = category;
+        this.stage = stage;
+        this.problem = problem;
+        this.solution = solution;
+        this.targetMarket = targetMarket;
+        this.funding = funding;
+        this.equity = equity;
+        this.teamSize = teamSize;
+        this.timeline = timeline;
+        this.videoLink = videoLink;
+        this.contactEmail = contactEmail;
+    }
+
     public void approve() {
         this.status = IdeaStatus.APPROVED;
     }

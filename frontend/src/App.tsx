@@ -85,6 +85,7 @@ const AdminBillingPage = lazy(() => import('./pages/admin/AdminBillingPage'))
 const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'))
 const AdminPostJobPage = lazy(() => import('./pages/admin/AdminPostJobPage'))
 const AdminIdeasPage = lazy(() => import('./pages/admin/AdminIdeasPage'))
+const AdminPostIdeaPage = lazy(() => import('./pages/admin/AdminPostIdeaPage'))
 const AdminVideosPage = lazy(() => import('./pages/admin/AdminVideosPage'))
 const AdminBroadcastEmailPage = lazy(() => import('./pages/admin/AdminBroadcastEmailPage'))
 const WatchSharedVideoPage = lazy(() => import('./pages/WatchSharedVideoPage'))
@@ -243,6 +244,8 @@ function App() {
                     <Route path="admin/jobs/post" element={<AdminPostJobPage />} />
                     <Route path="admin/jobs/:jobId/edit" element={<AdminPostJobPage />} />
                     <Route path="admin/ideas" element={<AdminIdeasPage />} />
+                    <Route path="admin/ideas/post" element={<AdminPostIdeaPage />} />
+                    <Route path="admin/ideas/:ideaId/edit" element={<AdminPostIdeaPage />} />
                     <Route path="admin/videos" element={<AdminVideosPage />} />
                     <Route path="admin/broadcast-email" element={<AdminBroadcastEmailPage />} />
                   </Route>

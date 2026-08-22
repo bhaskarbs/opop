@@ -448,11 +448,28 @@
       "candidate": "Candidate",
       "company": "Company"
     },
+    "addIdea": "+ Post an idea",
+    "edit": "Edit",
     "delete": "Delete",
     "confirmDelete": "Permanently delete \"{{title}}\"? This also removes everyone's expressed interest in it — it can't be undone.",
     "previousPage": "← Previous",
     "nextPage": "Next →",
-    "pageLabel": "Page {{page}} of {{total}}"
+    "pageLabel": "Page {{page}} of {{total}}",
+    "postForm": {
+      "title": "Post an idea",
+      "titleEdit": "Edit idea",
+      "subtitle": "Post or edit an idea on behalf of any candidate or company.",
+      "submitter": "Submitter",
+      "submitterSearchPlaceholder": "Search candidates or companies by name or email",
+      "searchingSubmitters": "Searching…",
+      "changeSubmitter": "Change",
+      "postIdea": "Post idea",
+      "saveChanges": "Save changes",
+      "cancel": "Cancel",
+      "loadingExisting": "Loading idea…",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "errorSubmitterRequired": "Select a submitter before saving."
+    }
   },
   "videos": {
     "title": "Videos",

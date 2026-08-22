@@ -140,6 +140,26 @@ export const ideasApi = {
     }),
   remove: (id: string) =>
     request<void>(`/api/ideas/${id}`, { method: 'DELETE', headers: authHeaders() }),
+  // Admin read of any idea's full detail, regardless of status or submitter — see
+  // IdeaController#adminGet. Backs AdminPostIdeaPage's edit form, which otherwise couldn't load
+  // a non-approved idea it doesn't own via the plain get() endpoint above.
+  adminDetail: (id: string) =>
+    request<IdeaDetail>(`/api/ideas/${id}/admin`, { headers: authHeaders() }),
+  // Admin posting on behalf of a submitter (AdminPostIdeaPage) — see IdeaController#adminCreate.
+  // Unlike create(), the admin picks the submitter and the idea posts straight to APPROVED.
+  adminCreate: (submitterId: string, payload: IdeaRequestPayload) =>
+    request<IdeaDetail>(`/api/ideas/admin?submitterId=${encodeURIComponent(submitterId)}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  // Admin edit of any idea regardless of submitter — see IdeaController#adminUpdate.
+  adminUpdate: (id: string, payload: IdeaRequestPayload) =>
+    request<IdeaDetail>(`/api/ideas/${id}/admin`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
   submitInterest: (id: string, payload: IdeaInterestRequestPayload) =>
     request<IdeaInterestSummary>(`/api/ideas/${id}/interests`, {
       method: 'POST',
