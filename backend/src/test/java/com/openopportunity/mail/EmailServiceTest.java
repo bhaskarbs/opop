@@ -17,8 +17,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 class EmailServiceTest {
 
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
-    private final EmailService emailService =
-            new EmailService(mailSender, "customersupport@openopportunity.in", "smtp-user");
+    private final EmailService emailService = new EmailService(
+            mailSender, "customersupport@openopportunity.in", "OpenOpportunity", "smtp-user");
 
     @Test
     void stripsCarriageReturnsAndNewlinesFromTheSubjectToPreventHeaderInjection() throws Exception {
@@ -38,6 +38,17 @@ class EmailServiceTest {
     }
 
     @Test
+    void setsADisplayNameOnTheFromHeaderSoRecipientsSeeItRatherThanTheRawAddress() throws Exception {
+        MimeMessage realMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(realMessage);
+
+        emailService.send("candidate@example.com", "Subject", "Heading", List.of("Body"));
+
+        assertThat(realMessage.getFrom()[0].toString())
+                .isEqualTo("OpenOpportunity <customersupport@openopportunity.in>");
+    }
+
+    @Test
     void leavesAnOrdinarySubjectUnchanged() throws Exception {
         MimeMessage realMessage = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(realMessage);
@@ -49,7 +60,8 @@ class EmailServiceTest {
 
     @Test
     void failsFastWithoutTouchingJavaMailSenderWhenNoUsernameIsConfigured() {
-        EmailService unconfigured = new EmailService(mailSender, "customersupport@openopportunity.in", "");
+        EmailService unconfigured = new EmailService(
+                mailSender, "customersupport@openopportunity.in", "OpenOpportunity", "");
 
         assertThatThrownBy(() -> unconfigured.send("candidate@example.com", "Subject", "Heading", List.of("Body")))
                 .isInstanceOf(MailAuthenticationException.class);
