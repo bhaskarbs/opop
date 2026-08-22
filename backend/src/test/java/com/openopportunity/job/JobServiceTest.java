@@ -111,7 +111,8 @@ class JobServiceTest {
                 jobAlertMatchEmailService,
                 jobSearchProvider,
                 Optional.empty(),
-                fileStorageService);
+                fileStorageService,
+                "sourced-jobs@openopportunity.in");
     }
 
     private CompanyProfile eligibleProfile(UUID companyId) {
@@ -400,6 +401,50 @@ class JobServiceTest {
 
         assertThatThrownBy(() -> jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE)))
                 .isInstanceOf(JobPostingLimitReachedException.class);
+    }
+
+    // The one named exemption from MAX_JOB_POSTINGS_PER_COMPANY — see
+    // app.jobs.unlimited-posting-company-email, matched by email regardless of which
+    // create/adminCreate path is used.
+    @Test
+    void adminCreateExemptsTheConfiguredUnlimitedPostingCompanyFromTheLimit() {
+        UUID companyId = UUID.randomUUID();
+        when(userRepository.findById(companyId))
+                .thenReturn(Optional.of(
+                        new User("sourced-jobs@openopportunity.in", "hash", "OpenOpportunity Sourced Jobs", UserRole.COMPANY)));
+        // Deliberately no countByCompanyId stub — the exemption must short-circuit before that
+        // call, so mockito's strict stubbing would flag an unused stub here if it didn't.
+
+        JobDetail detail = jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE));
+
+        assertThat(detail.companyName()).isEqualTo("OpenOpportunity Sourced Jobs");
+    }
+
+    @Test
+    void createStillEnforcesThePostingLimitForAnOrdinaryCompany() {
+        UUID companyId = UUID.randomUUID();
+        when(userRepository.findById(companyId))
+                .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(eligibleProfile(companyId)));
+        when(jobRepository.countByCompanyId(companyId)).thenReturn(10L);
+
+        assertThatThrownBy(() -> jobService.create(companyId, sampleRequest(JobStatus.DRAFT)))
+                .isInstanceOf(JobPostingLimitReachedException.class);
+    }
+
+    @Test
+    void createExemptsTheConfiguredUnlimitedPostingCompanyFromTheLimit() {
+        UUID companyId = UUID.randomUUID();
+        when(userRepository.findById(companyId))
+                .thenReturn(Optional.of(
+                        new User("sourced-jobs@openopportunity.in", "hash", "OpenOpportunity Sourced Jobs", UserRole.COMPANY)));
+        when(companyProfileRepository.findByUserId(companyId)).thenReturn(Optional.of(eligibleProfile(companyId)));
+        // Deliberately no countByCompanyId stub — the exemption must short-circuit before that
+        // call, so mockito's strict stubbing would flag an unused stub here if it didn't.
+
+        JobDetail detail = jobService.create(companyId, sampleRequest(JobStatus.DRAFT));
+
+        assertThat(detail.companyName()).isEqualTo("OpenOpportunity Sourced Jobs");
     }
 
     @Test
