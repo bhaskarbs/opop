@@ -205,6 +205,11 @@ export default function IdeasBrowsePage() {
                       <span className="rounded-full bg-teal-tint px-2.5 py-[3px] text-[11.5px] font-bold text-teal">
                         {idea.category}
                       </span>
+                      {idea.isFeatured && (
+                        <span className="rounded-full bg-primary-tint px-2.5 py-[3px] text-[11.5px] font-bold text-primary">
+                          {t('browse.featured')}
+                        </span>
+                      )}
                       {applied && (
                         <span className="rounded-full bg-teal px-2.5 py-[3px] text-[11.5px] font-bold text-white">
                           {t('browse.applied')}

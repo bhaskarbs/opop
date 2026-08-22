@@ -22,6 +22,9 @@ export interface IdeaSummary {
   // a re-review-after-edit PENDING idea apart from a brand new submission.
   edited: boolean
   interestedCount: number
+  // True once an admin has featured this idea — see adminApi.featureIdea. Pins it above the
+  // rest of the community browse list.
+  isFeatured: boolean
   createdAt: string
 }
 
@@ -44,6 +47,7 @@ export interface IdeaDetail {
   status: BackendIdeaStatus
   edited: boolean
   interestedCount: number
+  isFeatured: boolean
   createdAt: string
 }
 

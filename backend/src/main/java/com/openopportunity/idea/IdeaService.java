@@ -23,6 +23,7 @@ import com.openopportunity.idea.exception.IdeaLimitReachedException;
 import com.openopportunity.idea.exception.IdeaNotFoundException;
 import com.openopportunity.notification.NotificationService;
 import com.openopportunity.notification.NotificationType;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -136,8 +137,16 @@ public class IdeaService {
                 IdeaSpecifications.matchesKeyword(q),
                 IdeaSpecifications.hasCategory(category),
                 IdeaSpecifications.hasStage(stage));
-        return ideaRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt")).stream()
-                .map(this::toSummary)
+        List<Idea> ideas = ideaRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return rankByFeatured(ideas).stream().map(this::toSummary).toList();
+    }
+
+    /** Layered on top of the createdAt-desc DB order — an admin-featured idea leads, and
+     * Stream.sorted's stable-sort guarantee means everything else keeps that original order
+     * within the two tiers. Mirrors JobService#rankSearchResults. */
+    private List<Idea> rankByFeatured(List<Idea> ideas) {
+        return ideas.stream()
+                .sorted(Comparator.comparing((Idea idea) -> idea.getFeaturedAt() != null ? 0 : 1))
                 .toList();
     }
 
@@ -227,6 +236,24 @@ public class IdeaService {
                 NotificationType.IDEA_REJECTED,
                 "Your idea \"" + idea.getTitle() + "\" was not approved. Reason: " + reason,
                 "/partnerships/ideas/" + idea.getId());
+        return toDetail(idea);
+    }
+
+    /** Pins this idea above the rest of the community browse list (see rankByFeatured) —
+     * mirrors JobService#feature. */
+    @Transactional
+    public IdeaDetail feature(UUID id) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
+        idea.feature();
+        ideaRepository.save(idea);
+        return toDetail(idea);
+    }
+
+    @Transactional
+    public IdeaDetail unfeature(UUID id) {
+        Idea idea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(id));
+        idea.unfeature();
+        ideaRepository.save(idea);
         return toDetail(idea);
     }
 
@@ -406,6 +433,7 @@ public class IdeaService {
                 idea.getStatus(),
                 idea.isEdited(),
                 idea.getInterestedCount(),
+                idea.getFeaturedAt() != null,
                 idea.getCreatedAt());
     }
 
@@ -429,6 +457,7 @@ public class IdeaService {
                 idea.getStatus(),
                 idea.isEdited(),
                 idea.getInterestedCount(),
+                idea.getFeaturedAt() != null,
                 idea.getCreatedAt());
     }
 }

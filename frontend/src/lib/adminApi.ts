@@ -364,6 +364,10 @@ export const adminApi = {
   // one) — admin/super_admin only, no submitter ownership required.
   deleteIdea: (id: string) =>
     request<void>(`/api/ideas/${id}/admin`, { method: 'DELETE', headers: authHeaders() }),
+  featureIdea: (id: string) =>
+    request<IdeaDetail>(`/api/ideas/${id}/feature`, { method: 'POST', headers: authHeaders() }),
+  unfeatureIdea: (id: string) =>
+    request<IdeaDetail>(`/api/ideas/${id}/unfeature`, { method: 'POST', headers: authHeaders() }),
 
   pendingCompanies: (q?: string) =>
     request<AdminCompanyProfileSummary[]>(

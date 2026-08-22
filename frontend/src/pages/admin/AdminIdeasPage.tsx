@@ -18,6 +18,7 @@ export default function AdminIdeasPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [featuringId, setFeaturingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
   useEffect(() => {
@@ -45,6 +46,24 @@ export default function AdminIdeasPage() {
       clearTimeout(timeoutId)
     }
   }, [query, t])
+
+  async function handleToggleFeatured(idea: IdeaSummary) {
+    setFeaturingId(idea.id)
+    try {
+      const updated = idea.isFeatured
+        ? await adminApi.unfeatureIdea(idea.id)
+        : await adminApi.featureIdea(idea.id)
+      setIdeas((prev) =>
+        prev.map((existing) =>
+          existing.id === idea.id ? { ...existing, isFeatured: updated.isFeatured } : existing,
+        ),
+      )
+    } catch {
+      // Best-effort — the row simply keeps its current featured state if the call fails.
+    } finally {
+      setFeaturingId(null)
+    }
+  }
 
   async function handleDelete(idea: IdeaSummary) {
     if (!window.confirm(t('ideas.confirmDelete', { title: idea.title }))) return
@@ -124,6 +143,11 @@ export default function AdminIdeasPage() {
                   <span className="rounded-full bg-neutral-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-[#3A414D]">
                     {idea.category}
                   </span>
+                  {idea.isFeatured && (
+                    <span className="rounded-full bg-primary-tint px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-primary">
+                      {t('ideas.featured')}
+                    </span>
+                  )}
                 </div>
                 <div className="mt-0.5 text-[13px] text-slate">
                   {t('ideas.ideaMeta', {
@@ -139,6 +163,15 @@ export default function AdminIdeasPage() {
                 >
                   {t('ideas.edit')}
                 </Link>
+                <button
+                  type="button"
+                  disabled={featuringId === idea.id}
+                  onClick={() => handleToggleFeatured(idea)}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink disabled:opacity-60"
+                >
+                  {featuringId === idea.id && <Spinner className="h-3.5 w-3.5" />}
+                  {idea.isFeatured ? t('ideas.unfeature') : t('ideas.feature')}
+                </button>
                 <button
                   type="button"
                   disabled={deletingId === idea.id}

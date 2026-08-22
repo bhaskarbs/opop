@@ -79,6 +79,11 @@ public class Idea {
     @Column(nullable = false)
     private boolean edited;
 
+    // Set by an admin to pin this idea above the rest of the community browse list (see
+    // IdeaService#feature) — null means not featured. Same convention as Job#featuredAt.
+    @Column(name = "featured_at")
+    private Instant featuredAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -200,6 +205,14 @@ public class Idea {
         this.interestedCount++;
     }
 
+    public void feature() {
+        this.featuredAt = Instant.now();
+    }
+
+    public void unfeature() {
+        this.featuredAt = null;
+    }
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
@@ -286,6 +299,10 @@ public class Idea {
 
     public boolean isEdited() {
         return edited;
+    }
+
+    public Instant getFeaturedAt() {
+        return featuredAt;
     }
 
     public Instant getCreatedAt() {

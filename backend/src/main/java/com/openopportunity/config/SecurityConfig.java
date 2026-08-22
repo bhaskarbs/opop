@@ -223,6 +223,10 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/ideas/*/approve", "/api/ideas/*/reject")
                         .hasRole("ADMIN")
+                        // Idea-featuring lives on the admin Ideas page (ADMIN/SUPER_ADMIN only,
+                        // not reviewer) — same tier split as the job-featuring rule above.
+                        .requestMatchers(HttpMethod.POST, "/api/ideas/*/feature", "/api/ideas/*/unfeature")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         // Admin hard delete (AdminIdeasPage) — a distinct path from the
                         // submitter-scoped DELETE /api/ideas/* below, so no declaration-order
                         // conflict with it either way.

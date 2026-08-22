@@ -62,6 +62,16 @@ public class IdeaController {
         return ideaService.reject(id, request.reason());
     }
 
+    @PostMapping("/{id}/feature")
+    public IdeaDetail feature(@PathVariable UUID id) {
+        return ideaService.feature(id);
+    }
+
+    @PostMapping("/{id}/unfeature")
+    public IdeaDetail unfeature(@PathVariable UUID id) {
+        return ideaService.unfeature(id);
+    }
+
     @GetMapping("/{id}")
     public IdeaDetail get(@PathVariable UUID id) {
         return ideaService.get(id, currentUserIdOrNull());
