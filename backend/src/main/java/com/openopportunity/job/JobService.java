@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -58,7 +59,8 @@ public class JobService {
 
     // Applies to every status (DRAFT/PENDING_APPROVAL/ACTIVE/REJECTED/CLOSED all count) — same
     // flat-cap approach as IdeaService.MAX_IDEAS_PER_SUBMITTER, so drafts can't be used to dodge
-    // the limit.
+    // the limit. One named exemption — see hasUnlimitedJobPostings /
+    // app.jobs.unlimited-posting-company-email.
     private static final long MAX_JOB_POSTINGS_PER_COMPANY = 10;
 
     private final JobRepository jobRepository;
@@ -73,6 +75,7 @@ public class JobService {
     private final JobSearchProvider jobSearchProvider;
     private final Optional<JobIndexingService> jobIndexingService;
     private final FileStorageService fileStorageService;
+    private final String unlimitedPostingCompanyEmail;
 
     public JobService(
             JobRepository jobRepository,
@@ -86,7 +89,8 @@ public class JobService {
             JobAlertMatchEmailService jobAlertMatchEmailService,
             JobSearchProvider jobSearchProvider,
             Optional<JobIndexingService> jobIndexingService,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            @Value("${app.jobs.unlimited-posting-company-email}") String unlimitedPostingCompanyEmail) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.companyProfileRepository = companyProfileRepository;
@@ -102,6 +106,12 @@ public class JobService {
         // @ConditionalOnProperty), so there's nothing to keep in sync in the default case.
         this.jobIndexingService = jobIndexingService;
         this.fileStorageService = fileStorageService;
+        this.unlimitedPostingCompanyEmail = unlimitedPostingCompanyEmail;
+    }
+
+    // See app.jobs.unlimited-posting-company-email's doc comment in application.properties.
+    private boolean hasUnlimitedJobPostings(User company) {
+        return company.getEmail().equalsIgnoreCase(unlimitedPostingCompanyEmail);
     }
 
     // A client-suppliable page size that's too large would defeat pagination's whole point
@@ -373,10 +383,10 @@ public class JobService {
     public JobDetail create(UUID companyId, JobRequest request) {
         requireClientSettableStatus(request.status());
         requireEligibleToPostJobs(companyId);
-        if (jobRepository.countByCompanyId(companyId) >= MAX_JOB_POSTINGS_PER_COMPANY) {
+        User company = userRepository.findById(companyId).orElseThrow();
+        if (!hasUnlimitedJobPostings(company) && jobRepository.countByCompanyId(companyId) >= MAX_JOB_POSTINGS_PER_COMPANY) {
             throw new JobPostingLimitReachedException();
         }
-        User company = userRepository.findById(companyId).orElseThrow();
         Job job = new Job(
                 companyId,
                 company.getFullName(),
@@ -439,11 +449,12 @@ public class JobService {
      * something that check should block) and requireClientSettableStatus (an admin can publish
      * straight to ACTIVE without a separate approve() call — they *are* the approver). Still
      * enforces MAX_JOB_POSTINGS_PER_COMPANY, same as any other creation path, so this can't be
-     * used to bypass that cap either. */
+     * used to bypass that cap either — except for the one named exemption, see
+     * hasUnlimitedJobPostings. */
     @Transactional
     public JobDetail adminCreate(UUID companyId, JobRequest request) {
         User company = requireCompany(companyId);
-        if (jobRepository.countByCompanyId(companyId) >= MAX_JOB_POSTINGS_PER_COMPANY) {
+        if (!hasUnlimitedJobPostings(company) && jobRepository.countByCompanyId(companyId) >= MAX_JOB_POSTINGS_PER_COMPANY) {
             throw new JobPostingLimitReachedException();
         }
         Job job = new Job(
