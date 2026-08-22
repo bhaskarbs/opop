@@ -22,6 +22,12 @@ export interface DisplayJob {
   companyLogoUrl: string | null
   tags: string[]
   salary: string
+  // Whether salary carries an actual figure — lets a caller decide whether a "/ yr" (or similar)
+  // suffix makes sense next to it ("Salary not disclosed / yr" reads as a mistake).
+  salaryDisclosed: boolean
+  // Distinct from level (the coarse ExperienceLevel tier) — the granular "N-M years" range, when
+  // the job posting set one. Null when neither bound was set.
+  experienceYears: string | null
   postedLabel: string
   source: string
   sourceColorClass: string
@@ -41,6 +47,13 @@ function formatSalary(minLakhs: number | null, maxLakhs: number | null): string 
   if (minLakhs == null && maxLakhs == null) return 'Salary not disclosed'
   if (minLakhs != null && maxLakhs != null) return `₹${minLakhs}L–${maxLakhs}L`
   return `₹${minLakhs ?? maxLakhs}L`
+}
+
+function formatExperienceYears(minYears: number | null, maxYears: number | null): string | null {
+  if (minYears != null && maxYears != null) return `${minYears}-${maxYears} years`
+  if (minYears != null) return `${minYears}+ years`
+  if (maxYears != null) return `Up to ${maxYears} years`
+  return null
 }
 
 function formatPostedLabel(createdAt: string): string {
@@ -65,6 +78,8 @@ export function toDisplayJob(job: JobSummary): DisplayJob {
     companyLogoUrl: job.companyLogoUrl,
     tags: job.skills,
     salary: formatSalary(job.salaryMinLakhs, job.salaryMaxLakhs),
+    salaryDisclosed: job.salaryMinLakhs != null || job.salaryMaxLakhs != null,
+    experienceYears: formatExperienceYears(job.experienceYearsMin, job.experienceYearsMax),
     postedLabel: formatPostedLabel(job.createdAt),
     source: 'OpenOpportunity',
     sourceColorClass: 'text-slate',

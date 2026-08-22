@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BackButton, Card, LoadingState, LocationPinIcon, ShareButton } from '../components/ui'
+import {
+  BackButton,
+  Card,
+  ExperienceIcon,
+  LoadingState,
+  LocationPinIcon,
+  SalaryIcon,
+  ShareButton,
+} from '../components/ui'
 import { useLocalizedPath } from '../i18n/useLocalizedPath'
 import { ApiError, API_BASE_URL } from '../lib/apiClient'
 import { applicationsApi } from '../lib/applicationsApi'
@@ -263,6 +271,15 @@ export default function JobDetailPage() {
 
   const mode = workModeFromBackend(job.workMode)
   const initial = job.companyName.charAt(0).toUpperCase()
+  const experienceYearsLabel = formatExperienceYears(
+    t,
+    job.experienceYearsMin,
+    job.experienceYearsMax,
+  )
+  const salaryLabel = formatSalary(t, job.salaryMinLakhs, job.salaryMaxLakhs)
+  // "/ yr" only makes sense once there's an actual figure attached to it — "Salary not
+  // disclosed / yr" reads as a mistake, not a unit.
+  const salaryDisclosed = job.salaryMinLakhs != null || job.salaryMaxLakhs != null
 
   return (
     <main className="mx-auto max-w-[1120px] px-6 py-7 pb-16">
@@ -298,21 +315,30 @@ export default function JobDetailPage() {
                     <span>{mode}</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {[
-                      ...job.skills,
-                      formatSalary(t, job.salaryMinLakhs, job.salaryMaxLakhs) + ' / yr',
-                      formatExperienceYears(t, job.experienceYearsMin, job.experienceYearsMax),
-                    ]
-                      .filter((tag): tag is string => tag != null)
-                      .map((tag) => (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-tint px-3 py-1 text-[12.5px] font-bold text-primary">
+                      <SalaryIcon />
+                      {salaryLabel}
+                      {salaryDisclosed ? ' / yr' : ''}
+                    </span>
+                    {experienceYearsLabel && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-tint px-3 py-1 text-[12.5px] font-bold text-primary">
+                        <ExperienceIcon />
+                        {experienceYearsLabel}
+                      </span>
+                    )}
+                  </div>
+                  {job.skills.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {job.skills.map((skill) => (
                         <span
-                          key={tag}
+                          key={skill}
                           className="rounded-full bg-neutral-tint px-3 py-1 text-[12.5px] font-semibold text-[#3A414D]"
                         >
-                          {tag}
+                          {skill}
                         </span>
                       ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-wrap items-start gap-2.5">
