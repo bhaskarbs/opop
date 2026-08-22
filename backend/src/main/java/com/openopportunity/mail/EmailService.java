@@ -2,6 +2,7 @@ package com.openopportunity.mail;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailAuthenticationException;
@@ -19,6 +20,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
+    // What recipients actually see as the sender name (e.g. "OpenOpportunity") — without it,
+    // mail clients fall back to showing the raw fromAddress or its local-part.
+    private final String fromName;
     // Blank locally (see spring.mail.username in application.properties) — checked so an
     // unconfigured deployment fails a send immediately instead of waiting out a real TCP
     // connect + AUTH round trip to MAIL_HOST just to get the same auth failure back a second or
@@ -29,9 +33,11 @@ public class EmailService {
     public EmailService(
             JavaMailSender mailSender,
             @Value("${app.mail.from}") String fromAddress,
+            @Value("${app.mail.from-name}") String fromName,
             @Value("${spring.mail.username:}") String mailUsername) {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
+        this.fromName = fromName;
         this.configured = !mailUsername.isBlank();
     }
 
@@ -52,11 +58,11 @@ public class EmailService {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
-            helper.setFrom(fromAddress);
+            helper.setFrom(fromAddress, fromName);
             helper.setTo(to);
             helper.setSubject(sanitizeSubject(subject));
             helper.setText(EmailTemplate.render(heading, paragraphs, button), true);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             throw new MailPreparationException(e);
         }
         mailSender.send(mimeMessage);
