@@ -540,6 +540,9 @@ public class JobService {
                 .orElseThrow(() -> new CompanyNotFoundException(companyId));
     }
 
+    /** Company-initiated delete of its own job — also removes any candidate applications and
+     * saved-job bookmarks for it (see the private delete(Job) below), so a candidate never sees
+     * their application stuck at a stale status for a job that's gone. */
     @Transactional
     public void delete(UUID id, UUID companyId) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
@@ -548,14 +551,11 @@ public class JobService {
     }
 
     /** Admin-initiated hard delete — unlike delete(id, companyId) above, doesn't require company
-     * ownership, and also cleans up applications and saved-job bookmarks that reference this
-     * job, since neither has a DB-level FK enforcing that cleanup automatically. Also the
-     * per-job half of AdminAccountDeletionService#deleteCompany's cascade. */
+     * ownership. Same application/saved-job cleanup as that method (see the private delete(Job)
+     * below). Also the per-job half of AdminAccountDeletionService#deleteCompany's cascade. */
     @Transactional
     public void adminDelete(UUID id) {
         Job job = jobRepository.findById(id).orElseThrow(() -> new JobNotFoundException(id));
-        applicationRepository.deleteByJobId(id);
-        savedJobRepository.deleteByJobId(id);
         delete(job);
     }
 
@@ -708,7 +708,14 @@ public class JobService {
         jobIndexingService.ifPresent(service -> service.index(job));
     }
 
+    // Neither applications nor saved-job bookmarks have a DB-level FK back to jobs (see
+    // architecture doc's database-per-service reasoning), so nothing enforces this cleanup
+    // automatically — every job deletion path (company-initiated and admin-initiated) funnels
+    // through here specifically so a deleted job never leaves orphaned applications a candidate
+    // would otherwise see stuck at a stale status forever, or bookmarks pointing at nothing.
     private void delete(Job job) {
+        applicationRepository.deleteByJobId(job.getId());
+        savedJobRepository.deleteByJobId(job.getId());
         jobIndexingService.ifPresent(service -> service.delete(job.getId()));
         jobRepository.delete(job);
     }
