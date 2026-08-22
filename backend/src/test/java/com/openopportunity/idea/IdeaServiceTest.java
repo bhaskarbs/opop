@@ -196,6 +196,72 @@ class IdeaServiceTest {
     }
 
     @Test
+    void adminCreatePostsDirectlyAsApprovedRegardlessOfSubmitter() {
+        UUID submitterId = UUID.randomUUID();
+        User submitter = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(submitterId)).thenReturn(Optional.of(submitter));
+        when(ideaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IdeaDetail detail = ideaService.adminCreate(submitterId, sampleRequest());
+
+        assertThat(detail.submitterName()).isEqualTo("Vertex Robotics");
+        assertThat(detail.status()).isEqualTo(IdeaStatus.APPROVED);
+    }
+
+    @Test
+    void adminCreateDoesNotNotifyAdminsSinceTheAdminIsAlreadyTheApprover() {
+        UUID submitterId = UUID.randomUUID();
+        User submitter = new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY);
+        when(userRepository.findById(submitterId)).thenReturn(Optional.of(submitter));
+        when(ideaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ideaService.adminCreate(submitterId, sampleRequest());
+
+        verify(notificationService, org.mockito.Mockito.never()).notifyAdmins(any(), any(), any());
+    }
+
+    @Test
+    void adminUpdateEditsAnyIdeaWithoutResettingItsStatus() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        idea.approve();
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        IdeaDetail detail = ideaService.adminUpdate(idea.getId(), sampleRequest());
+
+        assertThat(detail.status()).isEqualTo(IdeaStatus.APPROVED);
+        assertThat(detail.title()).isEqualTo(sampleRequest().title());
+        verify(notificationService, org.mockito.Mockito.never()).notifyAdmins(any(), any(), any());
+    }
+
+    @Test
+    void adminUpdateRejectsUnknownIdea() {
+        when(ideaRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> ideaService.adminUpdate(UUID.randomUUID(), sampleRequest()))
+                .isInstanceOf(IdeaNotFoundException.class);
+    }
+
+    @Test
+    void adminGetReturnsAPendingIdeaRegardlessOfCaller() {
+        UUID ownerId = UUID.randomUUID();
+        Idea idea = sampleIdea(ownerId);
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        IdeaDetail detail = ideaService.adminGet(idea.getId());
+
+        assertThat(detail.status()).isEqualTo(IdeaStatus.PENDING);
+    }
+
+    @Test
+    void adminGetRejectsUnknownIdea() {
+        when(ideaRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> ideaService.adminGet(UUID.randomUUID()))
+                .isInstanceOf(IdeaNotFoundException.class);
+    }
+
+    @Test
     void updateRejectsNonOwner() {
         UUID ownerId = UUID.randomUUID();
         UUID otherId = UUID.randomUUID();

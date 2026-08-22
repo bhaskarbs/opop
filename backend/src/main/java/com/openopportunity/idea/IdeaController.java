@@ -67,14 +67,38 @@ public class IdeaController {
         return ideaService.get(id, currentUserIdOrNull());
     }
 
+    /** Admin read of any idea's full detail, regardless of status or submitter — see
+     * IdeaService#adminGet. Backs AdminIdeasPage's edit form, which otherwise couldn't load a
+     * non-approved idea it doesn't own via the plain get() endpoint above. */
+    @GetMapping("/{id}/admin")
+    public IdeaDetail adminGet(@PathVariable UUID id) {
+        return ideaService.adminGet(id);
+    }
+
     @PostMapping
     public ResponseEntity<IdeaDetail> create(@Valid @RequestBody IdeaRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ideaService.create(currentUserId(), request));
     }
 
+    /** Admin posting an idea on behalf of a submitter (AdminIdeasPage) — see
+     * IdeaService#adminCreate for how this differs from create() above (submitterId is chosen
+     * by the admin, not the caller; posts straight to APPROVED). */
+    @PostMapping("/admin")
+    public ResponseEntity<IdeaDetail> adminCreate(
+            @RequestParam UUID submitterId, @Valid @RequestBody IdeaRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ideaService.adminCreate(submitterId, request));
+    }
+
     @PutMapping("/{id}")
     public IdeaDetail update(@PathVariable UUID id, @Valid @RequestBody IdeaRequest request) {
         return ideaService.update(id, currentUserId(), request);
+    }
+
+    /** Admin edit of any idea's content, regardless of which submitter owns it — see
+     * IdeaService#adminUpdate. Distinct from update(id) above, which is submitter-scoped. */
+    @PutMapping("/{id}/admin")
+    public IdeaDetail adminUpdate(@PathVariable UUID id, @Valid @RequestBody IdeaRequest request) {
+        return ideaService.adminUpdate(id, request);
     }
 
     @DeleteMapping("/{id}")

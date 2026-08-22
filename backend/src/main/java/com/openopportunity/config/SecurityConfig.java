@@ -223,10 +223,20 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/ideas/*/approve", "/api/ideas/*/reject")
                         .hasRole("ADMIN")
-                        // Admin hard delete (a future AdminIdeasPage) — a distinct path from the
+                        // Admin hard delete (AdminIdeasPage) — a distinct path from the
                         // submitter-scoped DELETE /api/ideas/* below, so no declaration-order
                         // conflict with it either way.
                         .requestMatchers(HttpMethod.DELETE, "/api/ideas/*/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        // Admin create/edit/detail-read (AdminIdeasPage) — same tier and same
+                        // structurally-distinct-pattern reasoning as the admin job rules above;
+                        // "/api/ideas/*/admin" and "/api/ideas/admin" don't overlap with the
+                        // owner-scoped/permitAll rules for "/api/ideas"/"/api/ideas/*" below.
+                        .requestMatchers(HttpMethod.POST, "/api/ideas/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/ideas/*/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/ideas/*/admin")
                         .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         // GET (browse/detail) is public — anyone can read the community ideas
                         // page (see IdeasBrowsePage); IdeaService.get() still hides

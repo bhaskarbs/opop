@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { LoadingState, Spinner } from '../../components/ui'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { ApiError } from '../../lib/apiClient'
 import { adminApi } from '../../lib/adminApi'
 import { ideasApi, type IdeaSummary } from '../../lib/ideasApi'
+import { ROUTES } from '../../routes/paths'
 
 const PAGE_SIZE = 10
 
 export default function AdminIdeasPage() {
   const { t } = useTranslation('admin')
+  const localize = useLocalizedPath()
   const [query, setQuery] = useState('')
   const [ideas, setIdeas] = useState<IdeaSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,9 +65,17 @@ export default function AdminIdeasPage() {
 
   return (
     <main className="mx-auto max-w-[1280px] px-6 py-7 pb-16">
-      <div className="mb-5">
-        <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('ideas.title')}</h1>
-        <p className="text-sm text-slate">{t('ideas.subtitle')}</p>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="mb-1 text-[22px] font-extrabold text-ink">{t('ideas.title')}</h1>
+          <p className="text-sm text-slate">{t('ideas.subtitle')}</p>
+        </div>
+        <Link
+          to={localize(ROUTES.adminPostIdea)}
+          className="inline-block rounded-lg bg-primary px-4 py-2.5 text-[13px] font-bold text-white no-underline"
+        >
+          {t('ideas.addIdea')}
+        </Link>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2.5 rounded-card border border-border bg-surface p-4">
@@ -120,15 +132,23 @@ export default function AdminIdeasPage() {
                   })}
                 </div>
               </div>
-              <button
-                type="button"
-                disabled={deletingId === idea.id}
-                onClick={() => handleDelete(idea)}
-                className="flex items-center gap-1.5 rounded-md border border-[#FCA5A5] bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-danger disabled:opacity-60"
-              >
-                {deletingId === idea.id && <Spinner className="h-3.5 w-3.5" />}
-                {t('ideas.delete')}
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <Link
+                  to={localize(ROUTES.adminIdeaEdit(idea.id))}
+                  className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink no-underline"
+                >
+                  {t('ideas.edit')}
+                </Link>
+                <button
+                  type="button"
+                  disabled={deletingId === idea.id}
+                  onClick={() => handleDelete(idea)}
+                  className="flex items-center gap-1.5 rounded-md border border-[#FCA5A5] bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-danger disabled:opacity-60"
+                >
+                  {deletingId === idea.id && <Spinner className="h-3.5 w-3.5" />}
+                  {t('ideas.delete')}
+                </button>
+              </div>
             </div>
           ))}
           {ideas.length === 0 && (
