@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Card, LocationPinIcon, ShareButton } from '../../components/ui'
+import { Card, ExperienceIcon, LocationPinIcon, SalaryIcon, ShareButton } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { API_BASE_URL } from '../../lib/apiClient'
 import { jobShareUrl } from '../../lib/jobsApi'
@@ -100,19 +100,34 @@ export function ResultCard({
               {job.location}
             </span>
           </div>
-          <div className="my-3 flex flex-wrap gap-2">
-            {job.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-neutral-tint px-2.5 py-1 text-[12px] font-semibold text-[#3A414D]"
-              >
-                {tag}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-tint px-2.5 py-1 text-[12px] font-bold text-primary">
+              <SalaryIcon />
+              {job.salary}
+              {job.salaryDisclosed ? ' / yr' : ''}
+            </span>
+            {job.experienceYears && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-tint px-2.5 py-1 text-[12px] font-bold text-primary">
+                <ExperienceIcon />
+                {job.experienceYears}
               </span>
-            ))}
+            )}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {job.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {job.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-neutral-tint px-2.5 py-1 text-[12px] font-semibold text-[#3A414D]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
             <div className="text-[13.5px] text-slate">
-              {job.salary} · {job.postedLabel} ·{' '}
+              {job.postedLabel} ·{' '}
               <span className={`font-semibold ${job.sourceColorClass}`}>{job.source}</span>
             </div>
             <Link
