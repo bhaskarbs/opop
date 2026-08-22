@@ -318,6 +318,38 @@ class JobServiceTest {
                 .isInstanceOf(JobAccessDeniedException.class);
     }
 
+    // A company deleting its own job used to leave that job's applications/saved bookmarks
+    // orphaned (only adminDelete cleaned those up) — a candidate would see their application
+    // stuck at a stale status forever, pointing at a job that no longer exists. Both delete
+    // paths now share the same cleanup (see the private delete(Job) in JobService).
+    @Test
+    void deleteByOwnerAlsoRemovesItsApplicationsAndSavedBookmarks() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = new Job(
+                ownerId,
+                "Vertex Robotics",
+                "Senior Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                "Bengaluru",
+                null,
+                null,
+                null,
+                "desc",
+                List.of(),
+                List.of(),
+                List.of(),
+                JobStatus.ACTIVE);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        jobService.delete(job.getId(), ownerId);
+
+        verify(applicationRepository).deleteByJobId(job.getId());
+        verify(savedJobRepository).deleteByJobId(job.getId());
+        verify(jobRepository).delete(job);
+    }
+
     @Test
     void adminDeleteRemovesTheJobAndItsApplicationsAndSavedBookmarksRegardlessOfOwner() {
         UUID ownerId = UUID.randomUUID();
