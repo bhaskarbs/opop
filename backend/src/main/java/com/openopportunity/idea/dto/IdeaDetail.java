@@ -25,4 +25,5 @@ public record IdeaDetail(
         IdeaStatus status,
         boolean edited,
         int interestedCount,
+        boolean isFeatured,
         Instant createdAt) {}

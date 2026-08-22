@@ -329,6 +329,34 @@ class IdeaServiceTest {
     }
 
     @Test
+    void featureSetsFeaturedAtAndUnfeatureClearsIt() {
+        Idea idea = sampleIdea(UUID.randomUUID());
+        when(ideaRepository.findById(idea.getId())).thenReturn(Optional.of(idea));
+
+        IdeaDetail featured = ideaService.feature(idea.getId());
+        assertThat(featured.isFeatured()).isTrue();
+
+        IdeaDetail unfeatured = ideaService.unfeature(idea.getId());
+        assertThat(unfeatured.isFeatured()).isFalse();
+    }
+
+    @Test
+    void browseListsFeaturedIdeasFirstEvenWhenOlder() {
+        Idea olderFeatured = sampleIdea(UUID.randomUUID());
+        olderFeatured.feature();
+        Idea newerPlain = sampleIdea(UUID.randomUUID());
+        // DB order is createdAt desc, so the newer plain idea comes first here — browse() must
+        // still promote the older featured one above it.
+        when(ideaRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(java.util.List.of(newerPlain, olderFeatured));
+
+        var browsed = ideaService.browse(null, null, null);
+
+        assertThat(browsed).extracting("id").containsExactly(olderFeatured.getId(), newerPlain.getId());
+        assertThat(browsed.get(0).isFeatured()).isTrue();
+    }
+
+    @Test
     void getMineReturnsOnlyTheCallersOwnIdeasRegardlessOfStatus() {
         UUID ownerId = UUID.randomUUID();
         Idea pending = sampleIdea(ownerId);

@@ -19,6 +19,7 @@
     },
     "seekingInterested": "Seeking {{funding}} · {{count}} interested",
     "viewIdea": "View idea →",
+    "featured": "Featured",
     "applied": "Applied",
     "noResults": "No ideas match your filters.",
     "loading": "Loading ideas…",

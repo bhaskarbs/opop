@@ -78,6 +78,7 @@ class PostIdeaChatToolTest {
                 IdeaStatus.PENDING,
                 false,
                 0,
+                false,
                 Instant.now());
         when(ideaService.create(eq(userId), any())).thenReturn(created);
 

@@ -48,6 +48,7 @@ class ExpressInterestInIdeaChatToolTest {
                 IdeaStatus.APPROVED,
                 false,
                 0,
+                false,
                 Instant.now());
     }
 
