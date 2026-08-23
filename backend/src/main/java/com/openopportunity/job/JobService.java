@@ -215,6 +215,19 @@ public class JobService {
         return adminGet(id);
     }
 
+    /** Backdates an already-posted job's "posted" date — e.g.
+     * scripts/backdate_naukri_jobs.py spreading a batch of already-imported jobs across the
+     * last couple weeks so they don't all read "Posted today". See
+     * JobRepository#updateCreatedAt for why this can't just go through the normal Job setter. */
+    @Transactional
+    public JobDetail adminUpdatePostedAt(UUID id, Instant postedAt) {
+        if (!jobRepository.existsById(id)) {
+            throw new JobNotFoundException(id);
+        }
+        jobRepository.updateCreatedAt(id, postedAt);
+        return adminGet(id);
+    }
+
     /** Same as adminUpdateBranding above, but for a company setting/clearing the override on its
      * own job — e.g. an agency or multi-brand employer posting under a different name (see
      * PostJobPage's "Company display name" field). Owner-scoped like update()/delete() above. */

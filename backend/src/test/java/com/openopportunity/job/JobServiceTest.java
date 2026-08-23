@@ -578,6 +578,30 @@ class JobServiceTest {
                 .isInstanceOf(JobNotFoundException.class);
     }
 
+    // Backs scripts/backdate_naukri_jobs.py — see JobRepository#updateCreatedAt for why this
+    // goes through a direct repository update query rather than the entity setter.
+    @Test
+    void adminUpdatePostedAtBackdatesViaTheRepositoryUpdateQuery() {
+        UUID ownerId = UUID.randomUUID();
+        Job job = jobWithStatus(ownerId, JobStatus.ACTIVE);
+        when(jobRepository.existsById(job.getId())).thenReturn(true);
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+        Instant backdated = Instant.now().minus(10, ChronoUnit.DAYS);
+
+        JobDetail detail = jobService.adminUpdatePostedAt(job.getId(), backdated);
+
+        verify(jobRepository).updateCreatedAt(job.getId(), backdated);
+        assertThat(detail.id()).isEqualTo(job.getId());
+    }
+
+    @Test
+    void adminUpdatePostedAtRejectsUnknownJob() {
+        when(jobRepository.existsById(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> jobService.adminUpdatePostedAt(UUID.randomUUID(), Instant.now()))
+                .isInstanceOf(JobNotFoundException.class);
+    }
+
     @Test
     void adminUploadLogoStoresAResizedImageAndPointsTheUrlAtTheJobLogoEndpoint() throws IOException {
         UUID ownerId = UUID.randomUUID();

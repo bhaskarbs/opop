@@ -154,6 +154,11 @@ public class SecurityConfig {
                         // here, so no declaration-order conflict either way.
                         .requestMatchers(HttpMethod.PUT, "/api/jobs/*/admin/branding")
                         .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
+                        // Backdating an already-posted job's "posted" date (scripts/
+                        // backdate_naukri_jobs.py) — same tier as the branding/logo three-segment
+                        // admin rules above.
+                        .requestMatchers(HttpMethod.PUT, "/api/jobs/*/admin/posted-at")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/jobs/*/admin/logo")
                         .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/*/admin/logo")
