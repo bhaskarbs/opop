@@ -24,6 +24,10 @@ import org.springframework.stereotype.Service;
  * <p>A single sitemap file is capped at 50,000 URLs by the sitemap protocol itself — comfortably
  * enough headroom for this app's current scale (twice the ACTIVE job count), but a real
  * multi-file sitemap index would be needed well before that ceiling.
+ *
+ * <p>Renders an empty (but still valid) {@code <urlset>} while app.seo.crawling-enabled is
+ * false, rather than listing every job URL for a crawler that ignores robots.txt's Disallow —
+ * see RobotsController/JobSeoService for the rest of that same kill switch.
  */
 @Service
 public class SitemapService {
@@ -34,14 +38,19 @@ public class SitemapService {
 
     private final JobRepository jobRepository;
     private final String frontendBaseUrl;
+    private final boolean crawlingEnabled;
 
-    public SitemapService(JobRepository jobRepository, @Value("${app.frontend.base-url}") String frontendBaseUrl) {
+    public SitemapService(
+            JobRepository jobRepository,
+            @Value("${app.frontend.base-url}") String frontendBaseUrl,
+            @Value("${app.seo.crawling-enabled}") boolean crawlingEnabled) {
         this.jobRepository = jobRepository;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.crawlingEnabled = crawlingEnabled;
     }
 
     public String renderSitemap() {
-        List<Job> activeJobs = jobRepository.findByStatus(JobStatus.ACTIVE);
+        List<Job> activeJobs = crawlingEnabled ? jobRepository.findByStatus(JobStatus.ACTIVE) : List.of();
 
         StringBuilder xml = new StringBuilder();
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");

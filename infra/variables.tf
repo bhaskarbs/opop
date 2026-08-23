@@ -197,6 +197,18 @@ variable "backend_max_instances" {
   }
 }
 
+# Site-wide search-engine crawling kill switch — see application.properties'
+# app.seo.crawling-enabled doc comment and com.openopportunity.seo.RobotsController/JobSeoService
+# for what this actually does (robots.txt Disallow: /, an empty sitemap.xml, and a noindex tag on
+# every job page). Defaults to true (crawlable) so this variable existing doesn't change behavior
+# for anyone who's never touched it; flip it via scripts/enable-seo-crawling.sh /
+# disable-seo-crawling.sh, not by editing deploy.tfvars by hand.
+variable "seo_crawling_enabled" {
+  description = "Whether search engines are allowed to crawl/index the production site. false disallows everything in robots.txt, empties sitemap.xml, and adds a noindex tag to job pages."
+  type        = bool
+  default     = true
+}
+
 # See monitoring.tf — blank (default) creates no alerting at all, so a plain `terraform apply`
 # never starts emailing anyone. Deliberately notification-only, not automation: enabling/disabling
 # Redis/Elasticsearch/the SQL read replica has real cost and (for Elasticsearch/the replica) data

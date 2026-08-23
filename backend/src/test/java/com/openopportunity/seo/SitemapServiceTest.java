@@ -29,7 +29,7 @@ class SitemapServiceTest {
 
     @BeforeEach
     void setUp() {
-        sitemapService = new SitemapService(jobRepository, "http://localhost:5173");
+        sitemapService = new SitemapService(jobRepository, "http://localhost:5173", true);
     }
 
     private static Job activeJob() {
@@ -75,6 +75,20 @@ class SitemapServiceTest {
         when(jobRepository.findByStatus(JobStatus.ACTIVE)).thenReturn(List.of());
 
         String xml = sitemapService.renderSitemap();
+
+        assertThat(xml).doesNotContain("<url>");
+        assertThat(xml).contains("<urlset");
+    }
+
+    // Belt-and-suspenders alongside RobotsController's site-wide Disallow — see
+    // app.seo.crawling-enabled's doc comment in application.properties.
+    @Test
+    void rendersAnEmptySitemapWhenCrawlingIsDisabledEvenWithActiveJobs() {
+        SitemapService disabled = new SitemapService(jobRepository, "http://localhost:5173", false);
+        // Not stubbing jobRepository.findByStatus at all — asserting the disabled path never
+        // even queries for active jobs, not just that it drops them from the output afterward.
+
+        String xml = disabled.renderSitemap();
 
         assertThat(xml).doesNotContain("<url>");
         assertThat(xml).contains("<urlset");

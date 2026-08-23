@@ -105,8 +105,9 @@ local toggle change is invisible to CI and would get silently reverted on the ne
 | `scripts/set-sql-tier.sh <tier>` | `sql_tier = "<tier>"` (see below) |
 | `scripts/upgrade-sql-replica.sh` / `downgrade-sql-replica.sh` | `enable_sql_read_replica = true` / `false` |
 | `scripts/scale-up-backend.sh <n>` / `scale-down-backend.sh <n>` | `backend_max_instances = <n>` (see below) |
+| `scripts/enable-seo-crawling.sh` / `disable-seo-crawling.sh` | `seo_crawling_enabled = true` / `false` (see below) |
 
-All thirteen live at the repo root's `scripts/` and just run (no arguments, except the ones that
+All fifteen live at the repo root's `scripts/` and just run (no arguments, except the ones that
 explicitly take a value): `../scripts/enable-redis.sh`, `../scripts/scale-up-backend.sh 5`, etc.
 `terraform apply` will still show you the real plan and ask to confirm before changing
 anything — the scripts don't add `-auto-approve`.
@@ -295,6 +296,28 @@ separate, bigger decision this pair of scripts deliberately doesn't touch.
 Both take the target number directly (not a relative step) and refuse a value that doesn't
 actually move in the direction the script name promises — e.g. `scale-up-backend.sh 1` when
 it's currently 5 errors instead of silently doing the opposite of what the name says.
+
+## Toggle: search-engine crawling
+
+`seo_crawling_enabled` (default `true`) controls whether search engines are allowed to
+crawl/index the production site at all — see `application.properties`'
+`app.seo.crawling-enabled` doc comment and `com.openopportunity.seo.RobotsController` /
+`JobSeoService` / `SitemapService` for what actually changes: `false` makes `/robots.txt`
+disallow every path for every user-agent, `/sitemap.xml` render empty instead of listing every
+active job, and every server-rendered job page (`JobSeoController`) add a `noindex, nofollow`
+signal (both a `<meta name="robots">` tag and an `X-Robots-Tag` response header) — the robots.txt
+block and the noindex signal are deliberately redundant with each other, since Google's own
+guidance is that a page a crawler never fetches (blocked by robots.txt) can still show up in
+search results without a snippet if it's linked from elsewhere, while `noindex` alone doesn't
+stop crawling. Together they cover both cases.
+
+```bash
+../scripts/disable-seo-crawling.sh   # block every search engine (robots.txt Disallow: /, noindex)
+../scripts/enable-seo-crawling.sh    # allow crawling/indexing again
+```
+
+Useful before a soft launch, or for any non-production-like deployment that's reachable at a real
+domain but shouldn't show up in search results yet.
 
 ## Load monitoring: alerts, not automation
 
