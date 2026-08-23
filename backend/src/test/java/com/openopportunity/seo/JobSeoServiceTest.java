@@ -32,7 +32,7 @@ class JobSeoServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobSeoService = new JobSeoService(jobRepository, new ObjectMapper(), "http://localhost:5173");
+        jobSeoService = new JobSeoService(jobRepository, new ObjectMapper(), "http://localhost:5173", true);
     }
 
     private static Job job(
@@ -138,5 +138,30 @@ class JobSeoServiceTest {
         when(jobRepository.findById(jobId)).thenReturn(Optional.empty());
 
         assertThat(jobSeoService.renderJobPage(jobId, "en")).isEmpty();
+    }
+
+    // Belt-and-suspenders alongside RobotsController's site-wide Disallow — see
+    // app.seo.crawling-enabled's doc comment in application.properties.
+    @Test
+    void addsANoindexMetaTagWhenCrawlingIsDisabled() {
+        JobSeoService disabled = new JobSeoService(jobRepository, new ObjectMapper(), "http://localhost:5173", false);
+        UUID jobId = UUID.randomUUID();
+        Job job = job("Engineer", "Acme", "Build things.", WorkMode.ON_SITE, null, null, JobStatus.ACTIVE);
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        String html = disabled.renderJobPage(jobId, "en").orElseThrow();
+
+        assertThat(html).contains("<meta name=\"robots\" content=\"noindex, nofollow\">");
+    }
+
+    @Test
+    void omitsTheNoindexMetaTagWhenCrawlingIsEnabled() {
+        UUID jobId = UUID.randomUUID();
+        Job job = job("Engineer", "Acme", "Build things.", WorkMode.ON_SITE, null, null, JobStatus.ACTIVE);
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        String html = jobSeoService.renderJobPage(jobId, "en").orElseThrow();
+
+        assertThat(html).doesNotContain("name=\"robots\"");
     }
 }

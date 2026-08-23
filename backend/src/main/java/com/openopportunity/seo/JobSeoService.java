@@ -46,14 +46,17 @@ public class JobSeoService {
     private final JobRepository jobRepository;
     private final ObjectMapper objectMapper;
     private final String frontendBaseUrl;
+    private final boolean crawlingEnabled;
 
     public JobSeoService(
             JobRepository jobRepository,
             ObjectMapper objectMapper,
-            @Value("${app.frontend.base-url}") String frontendBaseUrl) {
+            @Value("${app.frontend.base-url}") String frontendBaseUrl,
+            @Value("${app.seo.crawling-enabled}") boolean crawlingEnabled) {
         this.jobRepository = jobRepository;
         this.objectMapper = objectMapper;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.crawlingEnabled = crawlingEnabled;
     }
 
     public Optional<String> renderJobPage(UUID jobId, String lang) {
@@ -76,6 +79,13 @@ public class JobSeoService {
         html.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
         html.append("<title>").append(pageTitle).append(" | OpenOpportunity</title>\n");
         html.append("<meta name=\"description\" content=\"").append(metaDescription).append("\">\n");
+        // Belt-and-suspenders alongside RobotsController's site-wide Disallow: a crawler that
+        // already has this URL linked from elsewhere (so never fetches robots.txt for it) still
+        // sees this and drops it from the index — see JobSeoController for the equivalent
+        // X-Robots-Tag response header, Google's other documented mechanism for the same thing.
+        if (!crawlingEnabled) {
+            html.append("<meta name=\"robots\" content=\"noindex, nofollow\">\n");
+        }
         html.append("<link rel=\"canonical\" href=\"").append(canonicalUrl).append("\">\n");
         for (String altLang : List.of("en", "hi")) {
             html.append("<link rel=\"alternate\" hreflang=\"")

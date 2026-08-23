@@ -119,6 +119,12 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "APP_CORS_ALLOWED_ORIGINS"
         value = local.cors_allowed_origins
       }
+      env {
+        # See variables.tf's seo_crawling_enabled doc comment — RobotsController/JobSeoService
+        # read this as a boolean, but Cloud Run env values are always strings.
+        name  = "APP_SEO_CRAWLING_ENABLED"
+        value = tostring(var.seo_crawling_enabled)
+      }
 
       # See mail.tf — Resend's SMTP relay. "resend" is Resend's own literal SMTP username (not
       # an email address); the real credential is the API key, held in Secret Manager like every
