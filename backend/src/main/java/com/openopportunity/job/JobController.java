@@ -9,6 +9,7 @@ import com.openopportunity.job.dto.JobSummary;
 import com.openopportunity.job.dto.RejectJobRequest;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -179,6 +180,14 @@ public class JobController {
     public JobDetail adminUpdateBranding(
             @PathVariable UUID id, @RequestBody AdminJobBrandingRequest request) {
         return jobService.adminUpdateBranding(id, request);
+    }
+
+    /** Backdates an already-posted job's "posted" date — see JobService#adminUpdatePostedAt.
+     * Used by scripts/backdate_naukri_jobs.py to spread a batch of already-imported jobs across
+     * the last couple weeks instead of every one reading "Posted today". */
+    @PutMapping("/{id}/admin/posted-at")
+    public JobDetail adminUpdatePostedAt(@PathVariable UUID id, @RequestParam Instant postedAt) {
+        return jobService.adminUpdatePostedAt(id, postedAt);
     }
 
     /** Uploads a custom logo shown on this job instead of the owning company's own logo — see
