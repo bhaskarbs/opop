@@ -38,7 +38,7 @@ const SORT_LABEL_KEYS: Record<SortOption, string> = {
 
 export default function JobSearchPage() {
   const { t } = useTranslation('public')
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') ?? ''
   const initialLocation = searchParams.get('loc') ?? ''
 
@@ -207,6 +207,23 @@ export default function JobSearchPage() {
     }, 300)
     return () => clearTimeout(timeoutId)
   }, [hasSearched, skills, locations, filters, sortBy])
+
+  // Keeps the URL's ?q=/&loc= in sync with the current search (mirrors what's read into
+  // initialQuery/initialLocation above) — otherwise the browser history entry a candidate
+  // lands back on via BackButton's navigate(-1) from a job detail page still has whatever
+  // (or no) query string they originally arrived on, silently dropping the search they'd
+  // actually run since. replace: true so typing/adding tags doesn't spam new history entries
+  // of its own — only the single entry for this page visit is kept up to date.
+  useEffect(() => {
+    if (!hasSearched) return
+    const next = new URLSearchParams()
+    if (skills[0]) next.set('q', skills[0])
+    if (locations[0]) next.set('loc', locations[0])
+    setSearchParams(next, { replace: true })
+    // setSearchParams is stable per react-router-dom's contract — omitted so this doesn't
+    // over-trigger; including it would just add a no-op dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSearched, skills, locations])
 
   // Resets to page 1 whenever a new search actually runs — including when it's served instantly
   // from the query cache (see lib/queryClient.ts), so re-running a search you already made still
