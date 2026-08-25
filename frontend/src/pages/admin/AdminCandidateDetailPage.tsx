@@ -99,7 +99,9 @@ export default function AdminCandidateDetailPage() {
       .catch((caught) => {
         if (!cancelled) {
           setApplicationsError(
-            caught instanceof ApiError ? caught.message : t('candidateDetail.applications.loadError')
+            caught instanceof ApiError
+              ? caught.message
+              : t('candidateDetail.applications.loadError'),
           )
         }
       })
@@ -351,7 +353,9 @@ export default function AdminCandidateDetailPage() {
       </div>
 
       <div className="mt-4 rounded-card border border-border bg-surface p-7">
-        <h2 className="mb-3 text-base font-bold text-ink">{t('candidateDetail.applications.title')}</h2>
+        <h2 className="mb-3 text-base font-bold text-ink">
+          {t('candidateDetail.applications.title')}
+        </h2>
         {applicationsError && <p className="text-[13px] text-danger">{applicationsError}</p>}
         {!applicationsError && applications === null && (
           <p className="text-[13px] text-slate">{t('candidateDetail.loading')}</p>
