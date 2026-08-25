@@ -21,6 +21,8 @@ locals {
     "redis.googleapis.com",
     # Only used by monitoring.tf's alert policies (alert_notification_email set).
     "monitoring.googleapis.com",
+    # Only used by scheduler.tf's jobs (enable_backend_night_schedule=true).
+    "cloudscheduler.googleapis.com",
   ]
 }
 

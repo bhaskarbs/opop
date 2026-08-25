@@ -106,9 +106,10 @@ local toggle change is invisible to CI and would get silently reverted on the ne
 | `scripts/upgrade-sql-replica.sh` / `downgrade-sql-replica.sh` | `enable_sql_read_replica = true` / `false` |
 | `scripts/scale-up-backend.sh <n>` / `scale-down-backend.sh <n>` | `backend_max_instances = <n>` (see below) |
 | `scripts/keep-backend-warm.sh` / `allow-backend-scale-to-zero.sh` | `backend_min_instances = 1` / `0` (see below) |
+| `scripts/enable-backend-night-schedule.sh` / `disable-backend-night-schedule.sh` | `enable_backend_night_schedule = true` / `false` (see below) |
 | `scripts/enable-seo-crawling.sh` / `disable-seo-crawling.sh` | `seo_crawling_enabled = true` / `false` (see below) |
 
-All seventeen live at the repo root's `scripts/` and just run (no arguments, except the ones that
+All nineteen live at the repo root's `scripts/` and just run (no arguments, except the ones that
 explicitly take a value): `../scripts/enable-redis.sh`, `../scripts/scale-up-backend.sh 5`, etc.
 `terraform apply` will still show you the real plan and ask to confirm before changing
 anything — the scripts don't add `-auto-approve`.
@@ -315,6 +316,34 @@ The trade-off: at `min_instance_count = 0` (the default), the first request afte
 period pays for a full cold start — new container boot + Spring Boot init (JPA, Flyway, Cloud SQL
 connection) — typically 10-30+ seconds. `keep-backend-warm.sh` trades that latency for the 24/7
 cost above.
+
+## Toggle: scaling the backend down overnight
+
+`enable_backend_night_schedule` (default `false`) layers on top of `keep-backend-warm.sh` above —
+two Cloud Scheduler jobs (see `scheduler.tf`) scale the backend down to 0 instances at 11PM IST
+and back up to `backend_min_instances` at 7AM IST, so you get most of the cost savings of
+scale-to-zero without eating a cold start during the day. Only makes sense with
+`backend_min_instances >= 1`; with `backend_min_instances = 0` (already scale-to-zero) both jobs
+are harmless no-ops.
+
+```bash
+../scripts/enable-backend-night-schedule.sh    # scale down 11PM-7AM IST
+../scripts/disable-backend-night-schedule.sh   # back to staying at backend_min_instances 24/7
+```
+
+Unlike every other toggle on this page, the nightly scale-down/scale-up itself does **not** go
+through `deploy.tfvars` — the two Cloud Scheduler jobs call the Cloud Run Admin API directly with
+their own OAuth token (a dedicated `openopportunity-sched` service account, scoped to
+`roles/run.developer` on just this one service, nothing project-wide). Editing `deploy.tfvars`
+twice a day would fight with CI's own `terraform apply` on every push to main; this sidesteps
+that by never writing to Terraform state for the nightly flip at all.
+
+The one sharp edge from that design: Terraform reconciles the backend's *entire* live config
+against `deploy.tfvars` on every apply, not just whatever that particular apply changed — so a
+push to main (or running any other `scripts/*.sh` toggle) during the 11PM-7AM window immediately
+scales the backend back up to `backend_min_instances`, canceling that night's savings from that
+point on. Harmless, just worth knowing if a 2 AM deploy doesn't seem to be saving as much as
+expected.
 
 ## Toggle: search-engine crawling
 

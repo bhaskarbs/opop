@@ -219,6 +219,30 @@ variable "backend_min_instances" {
   }
 }
 
+# See scheduler.tf — two Cloud Scheduler jobs that call the Cloud Run Admin API directly to flip
+# min_instance_count between 0 (11PM IST) and var.backend_min_instances (7AM IST), bypassing
+# Terraform/deploy.tfvars entirely for that twice-daily back-and-forth (editing deploy.tfvars
+# that often would fight with CI's own terraform apply on every push to main — see
+# deploy.tfvars's header comment). The morning job's target is var.backend_min_instances, not a
+# hardcoded 1, so it stays correct if that's ever raised — but with backend_min_instances=0
+# (scale-to-zero already, no keep-backend-warm.sh), both jobs become harmless no-ops, so there's
+# no real point turning this on without that too.
+#
+# Important asymmetry: this bypasses Terraform for the nightly PATCH calls, but *not* for the
+# reverse — any terraform apply for any reason (any scripts/*.sh toggle, or CI on every push to
+# main) reconciles the backend's *entire* live state against deploy.tfvars, which immediately
+# corrects any night-time drift back to backend_min_instances regardless of the hour. A push to
+# main (or running any other toggle script) during the 11PM-7AM window effectively cancels that
+# night's savings from that point on.
+#
+# Flip via scripts/enable-backend-night-schedule.sh / disable-backend-night-schedule.sh, not by
+# editing deploy.tfvars by hand.
+variable "enable_backend_night_schedule" {
+  description = "Scale the backend down to 0 instances 11PM-7AM IST and back up to backend_min_instances the rest of the day, via Cloud Scheduler calling the Cloud Run Admin API directly (see scheduler.tf). Only meaningful when backend_min_instances >= 1."
+  type        = bool
+  default     = false
+}
+
 # Site-wide search-engine crawling kill switch — see application.properties'
 # app.seo.crawling-enabled doc comment and com.openopportunity.seo.RobotsController/JobSeoService
 # for what this actually does (robots.txt Disallow: /, an empty sitemap.xml, and a noindex tag on
