@@ -105,9 +105,10 @@ local toggle change is invisible to CI and would get silently reverted on the ne
 | `scripts/set-sql-tier.sh <tier>` | `sql_tier = "<tier>"` (see below) |
 | `scripts/upgrade-sql-replica.sh` / `downgrade-sql-replica.sh` | `enable_sql_read_replica = true` / `false` |
 | `scripts/scale-up-backend.sh <n>` / `scale-down-backend.sh <n>` | `backend_max_instances = <n>` (see below) |
+| `scripts/keep-backend-warm.sh` / `allow-backend-scale-to-zero.sh` | `backend_min_instances = 1` / `0` (see below) |
 | `scripts/enable-seo-crawling.sh` / `disable-seo-crawling.sh` | `seo_crawling_enabled = true` / `false` (see below) |
 
-All fifteen live at the repo root's `scripts/` and just run (no arguments, except the ones that
+All seventeen live at the repo root's `scripts/` and just run (no arguments, except the ones that
 explicitly take a value): `../scripts/enable-redis.sh`, `../scripts/scale-up-backend.sh 5`, etc.
 `terraform apply` will still show you the real plan and ask to confirm before changing
 anything — the scripts don't add `-auto-approve`.
@@ -296,6 +297,24 @@ separate, bigger decision this pair of scripts deliberately doesn't touch.
 Both take the target number directly (not a relative step) and refuse a value that doesn't
 actually move in the direction the script name promises — e.g. `scale-up-backend.sh 1` when
 it's currently 5 errors instead of silently doing the opposite of what the name says.
+
+## Toggle: keeping the backend warm (no cold starts)
+
+`backend_min_instances` (default 0) is the floor on concurrent Cloud Run backend instances —
+unlike `backend_max_instances` above (a ceiling, free until traffic actually uses it), this is a
+real, continuous cost the moment it's above 0: Cloud Run keeps that many instances running with
+CPU always allocated, 24/7, regardless of traffic. At this service's current 1 vCPU / 1Gi (see
+`run.tf`'s `containers.resources`), keeping one instance warm runs roughly $15-25/month.
+
+```bash
+../scripts/keep-backend-warm.sh              # backend_min_instances = 1, no more cold starts
+../scripts/allow-backend-scale-to-zero.sh    # backend_min_instances = 0, back to idle = free
+```
+
+The trade-off: at `min_instance_count = 0` (the default), the first request after any idle
+period pays for a full cold start — new container boot + Spring Boot init (JPA, Flyway, Cloud SQL
+connection) — typically 10-30+ seconds. `keep-backend-warm.sh` trades that latency for the 24/7
+cost above.
 
 ## Toggle: search-engine crawling
 
