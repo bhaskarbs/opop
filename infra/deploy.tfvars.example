@@ -3,13 +3,14 @@
 # own header comment for why it has to be tracked, unlike terraform.tfvars). This .example file
 # is just a clean starting point if you ever need to regenerate deploy.tfvars from scratch;
 # scripts/*.sh never touch this one, only the real deploy.tfvars.
-frontend_mode           = "firebase"
-enable_redis            = false
-enable_elasticsearch    = false
-load_balancer_domain    = ""
-firebase_custom_domain  = ""
-sql_tier                = "db-f1-micro"
-enable_sql_read_replica = false
-backend_max_instances   = 2
-backend_min_instances   = 0
-seo_crawling_enabled    = true
+frontend_mode                 = "firebase"
+enable_redis                  = false
+enable_elasticsearch          = false
+load_balancer_domain          = ""
+firebase_custom_domain        = ""
+sql_tier                      = "db-f1-micro"
+enable_sql_read_replica       = false
+backend_max_instances         = 2
+backend_min_instances         = 0
+enable_backend_night_schedule = false
+seo_crawling_enabled          = true
