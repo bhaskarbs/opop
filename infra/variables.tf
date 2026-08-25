@@ -197,6 +197,28 @@ variable "backend_max_instances" {
   }
 }
 
+# Unlike backend_max_instances above (a ceiling, free until traffic actually uses it),
+# min_instance_count is a real, continuous cost the moment it's above 0 — Cloud Run keeps that
+# many instances warm (CPU always allocated, not just during requests) 24/7 regardless of
+# traffic. 0 (the default) matches what this was hardcoded to before this variable existed, so
+# introducing it changes nothing until you actually run one of the scripts below. At this
+# service's current 1 vCPU / 1Gi (see run.tf's containers.resources), keeping one instance warm
+# runs roughly $15-25/month depending on region — worth it once cold-start latency (a full
+# container boot + Spring Boot init, typically 10-30+ seconds on the first request after any
+# idle period) matters more than that cost. Flip it via
+# scripts/keep-backend-warm.sh / allow-backend-scale-to-zero.sh, not by editing deploy.tfvars by
+# hand.
+variable "backend_min_instances" {
+  description = "Floor on concurrent Cloud Run backend instances (min_instance_count). 0 (default) scale-to-zero when idle; 1+ keeps that many instances warm 24/7 at real, continuous cost."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.backend_min_instances >= 0
+    error_message = "backend_min_instances can't be negative."
+  }
+}
+
 # Site-wide search-engine crawling kill switch — see application.properties'
 # app.seo.crawling-enabled doc comment and com.openopportunity.seo.RobotsController/JobSeoService
 # for what this actually does (robots.txt Disallow: /, an empty sitemap.xml, and a noindex tag on

@@ -30,11 +30,12 @@ resource "google_cloud_run_v2_service" "backend" {
     service_account = google_service_account.backend_run.email
 
     scaling {
-      # Scale-to-zero — this is a low/no-traffic deploy, so idle cost matters more than
-      # cold-start latency. Raise this (a bigger decision than max_instance_count below — it's
-      # what actually costs money 24/7, not just a ceiling) once that trade-off flips; not
-      # something scale-up/down-backend.sh touch, on purpose.
-      min_instance_count = 0
+      # Scale-to-zero by default — idle cost matters more than cold-start latency for a
+      # low/no-traffic deploy. This is a bigger decision than max_instance_count below (it's
+      # what actually costs money 24/7, not just a ceiling), so it gets its own pair of scripts
+      # rather than living on scale-up/down-backend.sh — see variables.tf's backend_min_instances
+      # and scripts/keep-backend-warm.sh / allow-backend-scale-to-zero.sh.
+      min_instance_count = var.backend_min_instances
       # See variables.tf — scripts/scale-up-backend.sh / scale-down-backend.sh set this.
       max_instance_count = var.backend_max_instances
     }
