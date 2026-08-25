@@ -55,6 +55,15 @@ public class ApplicationController {
         return applicationService.getForJob(jobId, currentUserId());
     }
 
+    /** Admin read of any candidate's application history (AdminCandidateDetailPage) — see
+     * getMine() above, which this reuses as-is: that method never does its own ownership check
+     * (the caller decides whose id to pass), so an admin passing an arbitrary candidateId here
+     * is exactly as safe as a candidate passing their own via currentUserId(). */
+    @GetMapping("/candidate/{candidateId}/admin")
+    public List<ApplicationSummary> forCandidate(@PathVariable UUID candidateId) {
+        return applicationService.getMine(candidateId);
+    }
+
     private UUID currentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

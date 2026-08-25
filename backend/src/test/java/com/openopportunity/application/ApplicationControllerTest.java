@@ -249,6 +249,50 @@ class ApplicationControllerTest {
     }
 
     @Test
+    void adminCanViewAnyCandidatesApplicationHistoryButNoOneElseCan() throws Exception {
+        String companyToken = registerAndGetToken("admin-app-co@example.com", "Admin App Co", "company");
+        MvcResult candidateRegister = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(
+                                "admin-app-cand@example.com",
+                                "password123",
+                                "Admin App Candidate",
+                                "candidate",
+                                "Private Limited",
+                                "U74999KA2021PTC145632",
+                                "29ABCDE1234F1Z5",
+                                "ABCDE1234F",
+                                "Technology",
+                                "123 Test Street, Bengaluru",
+                                "Test Signatory",
+                                "9876543210",
+                                null,
+                                "9876543210",
+                                List.of("React", "TypeScript"),
+                                null))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        var candidateBody = objectMapper.readTree(candidateRegister.getResponse().getContentAsString());
+        String candidateToken = candidateBody.get("accessToken").asText();
+        String candidateId = candidateBody.get("user").get("id").asText();
+        String jobId = createActiveJob(companyToken);
+        applyToJob(candidateToken, jobId);
+
+        mockMvc.perform(get("/api/applications/candidate/" + candidateId + "/admin")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$[0].jobTitle").value("Senior Frontend Developer"));
+
+        mockMvc.perform(get("/api/applications/candidate/" + candidateId + "/admin")
+                        .header("Authorization", "Bearer " + candidateToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/applications/candidate/" + candidateId + "/admin")
+                        .header("Authorization", "Bearer " + companyToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void cannotApplyToADraftJob() throws Exception {
         String companyToken = registerAndGetToken("draft-co@example.com", "Draft Co", "company");
         String candidateToken = registerAndGetToken("draft-cand@example.com", "Draft Candidate", "candidate");

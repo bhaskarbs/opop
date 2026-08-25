@@ -280,6 +280,12 @@ public class SecurityConfig {
                         .hasRole("COMPANY")
                         .requestMatchers(HttpMethod.GET, "/api/applications/job/*")
                         .hasRole("COMPANY")
+                        // Admin read of any candidate's application history — see
+                        // ApplicationController#forCandidate. Three-segment pattern, structurally
+                        // distinct from the two-segment "/api/applications/job/*" above, so no
+                        // declaration-order conflict either way.
+                        .requestMatchers(HttpMethod.GET, "/api/applications/candidate/*/admin")
+                        .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers("/api/candidate/**")
                         .hasRole("CANDIDATE")
                         .requestMatchers("/api/company/**")

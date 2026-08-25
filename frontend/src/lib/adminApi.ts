@@ -1,6 +1,7 @@
 import { useAuthStore } from '../stores/authStore'
 import { blobRequest, request } from './apiClient'
 import type { AdminLevel } from './apiClient'
+import type { ApplicationSummary } from './applicationsApi'
 import type { BackendSubscriptionPlan, BillingTransactionStatus } from './billingApi'
 import type { BackendNoticePeriod } from './candidateApi'
 import type { CompanyCertificateSummary } from './companyApi'
@@ -402,6 +403,10 @@ export const adminApi = {
     }),
   getCandidateResume: (id: string) =>
     blobRequest(`/api/admin/users/candidates/${id}/resume`, authHeaders()),
+  getCandidateApplications: (id: string) =>
+    request<ApplicationSummary[]>(`/api/applications/candidate/${id}/admin`, {
+      headers: authHeaders(),
+    }),
   suspendUser: (id: string) =>
     request<AdminUserSummary>(`/api/admin/users/${id}/suspend`, {
       method: 'POST',

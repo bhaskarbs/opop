@@ -185,7 +185,19 @@
     "resumeMeta": "Uploaded {{date}} · {{size}}",
     "downloadResume": "Download resume",
     "resumeLoading": "Downloading…",
-    "resumeError": "Could not download this resume. Please try again."
+    "resumeError": "Could not download this resume. Please try again.",
+    "applications": {
+      "title": "Applications",
+      "empty": "This candidate hasn't applied to any jobs yet.",
+      "loadError": "Could not load this candidate's applications.",
+      "appliedOn": "Applied {{date}}",
+      "status": {
+        "applied": "Applied",
+        "underReview": "Under review",
+        "notSelected": "Not selected",
+        "withdrawn": "Withdrawn"
+      }
+    }
   },
   "companyDetail": {
     "loading": "Loading company…",

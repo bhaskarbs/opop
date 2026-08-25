@@ -1,16 +1,33 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { BackButton, LoadingState, Spinner } from '../../components/ui'
 import { API_BASE_URL, ApiError } from '../../lib/apiClient'
 import { adminApi, type AdminCandidateProfileSummary } from '../../lib/adminApi'
+import type { ApplicationStatus, ApplicationSummary } from '../../lib/applicationsApi'
+import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import { experienceLevelFromBackend, noticePeriodFromBackend } from '../../lib/jobEnums'
+import { ROUTES } from '../../routes/paths'
 
 const EXPERIENCE_LEVEL_KEYS: Record<string, string> = {
   'Entry level': 'public:filters.experienceLevel.entry',
   'Mid level': 'public:filters.experienceLevel.mid',
   Senior: 'public:filters.experienceLevel.senior',
   Leadership: 'public:filters.experienceLevel.leadership',
+}
+
+const STATUS_CLASSES: Record<ApplicationStatus, string> = {
+  UNDER_REVIEW: 'bg-warning-tint text-warning',
+  APPLIED: 'bg-neutral-tint text-slate',
+  REJECTED: 'bg-[#FDECEC] text-danger',
+  WITHDRAWN: 'bg-neutral-tint text-fog',
+}
+
+const STATUS_LABEL_KEYS: Record<ApplicationStatus, string> = {
+  UNDER_REVIEW: 'candidateDetail.applications.status.underReview',
+  APPLIED: 'candidateDetail.applications.status.applied',
+  REJECTED: 'candidateDetail.applications.status.notSelected',
+  WITHDRAWN: 'candidateDetail.applications.status.withdrawn',
 }
 
 const AVATAR_COLOR_CLASSES = ['bg-primary', 'bg-teal', 'bg-amber']
@@ -36,6 +53,7 @@ function formatDate(iso: string): string {
 
 export default function AdminCandidateDetailPage() {
   const { t } = useTranslation('admin')
+  const localize = useLocalizedPath()
   const { id } = useParams()
 
   const [candidate, setCandidate] = useState<AdminCandidateProfileSummary | null>(null)
@@ -43,6 +61,11 @@ export default function AdminCandidateDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [resumeDownloading, setResumeDownloading] = useState(false)
   const [resumeError, setResumeError] = useState<string | null>(null)
+
+  // Loaded separately from the profile above (own loading/error state) so a hiccup fetching
+  // applications never blocks the rest of the page from rendering.
+  const [applications, setApplications] = useState<ApplicationSummary[] | null>(null)
+  const [applicationsError, setApplicationsError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -59,6 +82,26 @@ export default function AdminCandidateDetailPage() {
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id, t])
+
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    adminApi
+      .getCandidateApplications(id)
+      .then((result) => {
+        if (!cancelled) setApplications(result)
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setApplicationsError(
+            caught instanceof ApiError ? caught.message : t('candidateDetail.applications.loadError')
+          )
+        }
       })
     return () => {
       cancelled = true
@@ -305,6 +348,47 @@ export default function AdminCandidateDetailPage() {
           </div>
         )}
         {resumeError && <p className="mt-3 text-[13px] text-danger">{resumeError}</p>}
+      </div>
+
+      <div className="mt-4 rounded-card border border-border bg-surface p-7">
+        <h2 className="mb-3 text-base font-bold text-ink">{t('candidateDetail.applications.title')}</h2>
+        {applicationsError && <p className="text-[13px] text-danger">{applicationsError}</p>}
+        {!applicationsError && applications === null && (
+          <p className="text-[13px] text-slate">{t('candidateDetail.loading')}</p>
+        )}
+        {applications !== null &&
+          (applications.length === 0 ? (
+            <p className="text-[13px] text-slate">{t('candidateDetail.applications.empty')}</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {applications.map((application) => (
+                <li
+                  key={application.id}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F1F3] pb-3 last:border-0 last:pb-0"
+                >
+                  <div>
+                    <Link
+                      to={localize(ROUTES.jobDetail(application.jobId))}
+                      className="text-[13.5px] font-bold text-ink no-underline hover:text-primary"
+                    >
+                      {application.jobTitle}
+                    </Link>
+                    <div className="mt-0.5 text-[12px] text-fog">
+                      {application.companyName} ·{' '}
+                      {t('candidateDetail.applications.appliedOn', {
+                        date: formatDate(application.appliedAt),
+                      })}
+                    </div>
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap ${STATUS_CLASSES[application.status]}`}
+                  >
+                    {t(STATUS_LABEL_KEYS[application.status])}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ))}
       </div>
     </main>
   )
