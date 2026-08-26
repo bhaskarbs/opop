@@ -85,6 +85,11 @@ locals {
     "roles/monitoring.admin",
     "roles/serviceusage.serviceUsageAdmin",
     "roles/firebase.admin",
+    # Needed once scheduler.tf's google_cloud_scheduler_job resources exist
+    # (enable_backend_night_schedule=true) — without this, CI's own terraform apply fails
+    # refreshing them: "lacks IAM permission cloudscheduler.jobs.get". Confirmed against a real
+    # failed CI run, not assumed — same discovery pattern as iam.workloadIdentityPoolAdmin above.
+    "roles/cloudscheduler.admin",
   ]
 }
 
