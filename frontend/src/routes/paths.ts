@@ -66,6 +66,7 @@ export const ROUTES = {
   adminCandidateDetail: (id: string) => `/admin/users/candidates/${id}`,
   adminCompanyDetail: (id: string) => `/admin/users/companies/${id}`,
   adminMockInterviewQuestions: '/admin/mock-interview-questions',
+  adminMockInterviews: '/admin/mock-interviews',
   adminReports: '/admin/reports',
   adminBilling: '/admin/billing',
   adminJobs: '/admin/jobs',

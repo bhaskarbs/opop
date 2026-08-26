@@ -17,6 +17,7 @@
     "title": "Platform overview",
     "manageVideos": "Manage videos →",
     "broadcastEmail": "Send broadcast email →",
+    "mockInterviewQuestions": "Interview questions →",
     "kpis": {
       "totalCandidates": "Total candidates",
       "registeredCompanies": "Registered companies",
@@ -247,6 +248,22 @@
     "deleteConfirm": "Delete this question? This can't be undone.",
     "sourceAi": "AI-generated",
     "sourceAdmin": "Added by admin",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageLabel": "Page {{page}} of {{total}}"
+  },
+  "mockInterviews": {
+    "title": "Recorded mock interviews",
+    "subtitle": "Every mock interview recording across every candidate, most recent first.",
+    "loading": "Loading recorded interviews…",
+    "loadError": "Could not load recorded interviews.",
+    "empty": "No mock interviews have been recorded yet.",
+    "unknownCandidate": "Unknown candidate",
+    "visibleToCompanies": "Visible to companies",
+    "recordedOn": "Recorded {{date}}",
+    "durationAndQuestions": "{{duration}} · {{count}} questions",
+    "watch": "Watch",
+    "searchPlaceholder": "Search by candidate name or email…",
     "previousPage": "← Previous",
     "nextPage": "Next →",
     "pageLabel": "Page {{page}} of {{total}}"

@@ -9,6 +9,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.openopportunity.auth.User;
+import com.openopportunity.auth.UserRepository;
+import com.openopportunity.auth.UserRole;
+import com.openopportunity.mockinterview.dto.AdminMockInterviewSessionSummary;
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
@@ -24,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class MockInterviewServiceTest {
@@ -34,11 +39,15 @@ class MockInterviewServiceTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @Mock
+    private UserRepository userRepository;
+
     private MockInterviewService mockInterviewService;
 
     @BeforeEach
     void setUp() {
-        mockInterviewService = new MockInterviewService(mockInterviewSessionRepository, fileStorageService);
+        mockInterviewService =
+                new MockInterviewService(mockInterviewSessionRepository, fileStorageService, userRepository);
     }
 
     private MockMultipartFile sampleVideo() {
@@ -297,5 +306,61 @@ class MockInterviewServiceTest {
 
         assertThatThrownBy(() -> mockInterviewService.getVideoForCompany(session.getId(), otherCandidateId))
                 .isInstanceOf(MockInterviewSessionNotFoundException.class);
+    }
+
+    @Test
+    void adminGetAllJoinsInCandidateIdentityAcrossEveryCandidate() {
+        UUID candidateId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(candidateId);
+        User candidate = new User("interviewee@example.com", "hash", "Interviewee Candidate", UserRole.CANDIDATE);
+        ReflectionTestUtils.setField(candidate, "id", candidateId);
+        when(mockInterviewSessionRepository.findAllByOrderByRecordedAtDesc()).thenReturn(List.of(session));
+        when(userRepository.findAllById(List.of(candidateId))).thenReturn(List.of(candidate));
+
+        List<AdminMockInterviewSessionSummary> result = mockInterviewService.adminGetAll(null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).candidateId()).isEqualTo(candidateId);
+        assertThat(result.get(0).candidateName()).isEqualTo("Interviewee Candidate");
+        assertThat(result.get(0).candidateEmail()).isEqualTo("interviewee@example.com");
+        assertThat(result.get(0).summary().id()).isEqualTo(session.getId());
+    }
+
+    @Test
+    void adminGetAllToleratesACandidateThatNoLongerExists() {
+        UUID candidateId = UUID.randomUUID();
+        MockInterviewSession session = sampleSession(candidateId);
+        when(mockInterviewSessionRepository.findAllByOrderByRecordedAtDesc()).thenReturn(List.of(session));
+        when(userRepository.findAllById(List.of(candidateId))).thenReturn(List.of());
+
+        List<AdminMockInterviewSessionSummary> result = mockInterviewService.adminGetAll(null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).candidateName()).isNull();
+    }
+
+    @Test
+    void adminGetAllFiltersByCandidateNameOrEmailCaseInsensitively() {
+        UUID rohanId = UUID.randomUUID();
+        UUID priyaId = UUID.randomUUID();
+        MockInterviewSession rohanSession = sampleSession(rohanId);
+        MockInterviewSession priyaSession = sampleSession(priyaId);
+        User rohan = new User("rohan.mehta@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE);
+        User priya = new User("priya@example.com", "hash", "Priya Sharma", UserRole.CANDIDATE);
+        ReflectionTestUtils.setField(rohan, "id", rohanId);
+        ReflectionTestUtils.setField(priya, "id", priyaId);
+        when(mockInterviewSessionRepository.findAllByOrderByRecordedAtDesc())
+                .thenReturn(List.of(rohanSession, priyaSession));
+        when(userRepository.findAllById(List.of(rohanId, priyaId))).thenReturn(List.of(rohan, priya));
+
+        List<AdminMockInterviewSessionSummary> byName = mockInterviewService.adminGetAll("mehta");
+        List<AdminMockInterviewSessionSummary> byEmail = mockInterviewService.adminGetAll("PRIYA@EXAMPLE");
+        List<AdminMockInterviewSessionSummary> noMatch = mockInterviewService.adminGetAll("nobody");
+
+        assertThat(byName).extracting(AdminMockInterviewSessionSummary::candidateName).containsExactly("Rohan Mehta");
+        assertThat(byEmail)
+                .extracting(AdminMockInterviewSessionSummary::candidateName)
+                .containsExactly("Priya Sharma");
+        assertThat(noMatch).isEmpty();
     }
 }
