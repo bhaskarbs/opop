@@ -10,6 +10,10 @@ public interface MockInterviewSessionRepository extends JpaRepository<MockInterv
 
     List<MockInterviewSession> findByCandidateIdOrderByRecordedAtDesc(UUID candidateId);
 
+    // Backs the admin listing of every recorded session across every candidate (see
+    // MockInterviewService#adminGetAll) — the only query here with no candidateId filter at all.
+    List<MockInterviewSession> findAllByOrderByRecordedAtDesc();
+
     // Backs the public share link (see MockInterviewShareAccessService) — the token alone, no
     // candidateId check, is deliberately all that's needed here.
     Optional<MockInterviewSession> findByShareToken(String shareToken);

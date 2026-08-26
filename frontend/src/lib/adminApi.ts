@@ -8,6 +8,7 @@ import type { CompanyCertificateSummary } from './companyApi'
 import type { BackendCompanySubscriptionPlan } from './companyBillingApi'
 import type { IdeaDetail } from './ideasApi'
 import type { BackendExperienceLevel, JobDetail } from './jobsApi'
+import type { MockInterviewSessionSummary } from './mockInterviewApi'
 
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED'
@@ -519,4 +520,18 @@ export const adminApi = {
       body: JSON.stringify(payload),
       headers: authHeaders(),
     }),
+
+  mockInterviews: (q?: string) =>
+    request<AdminMockInterviewSessionSummary[]>(
+      `/api/admin/mock-interviews${q ? `?q=${encodeURIComponent(q)}` : ''}`,
+      { headers: authHeaders() },
+    ),
+}
+
+// Same shape as MockInterviewSessionSummary (candidate-facing, no candidate identity in it at
+// all) plus who recorded it — see AdminMockInterviewsPage.
+export interface AdminMockInterviewSessionSummary extends MockInterviewSessionSummary {
+  candidateId: string
+  candidateName: string | null
+  candidateEmail: string | null
 }

@@ -1,5 +1,8 @@
 package com.openopportunity.mockinterview;
 
+import com.openopportunity.auth.User;
+import com.openopportunity.auth.UserRepository;
+import com.openopportunity.mockinterview.dto.AdminMockInterviewSessionSummary;
 import com.openopportunity.mockinterview.dto.MockInterviewSessionSummary;
 import com.openopportunity.mockinterview.exception.InvalidMockInterviewVideoException;
 import com.openopportunity.mockinterview.exception.MockInterviewSessionLimitReachedException;
@@ -10,7 +13,9 @@ import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,12 +35,16 @@ public class MockInterviewService {
 
     private final MockInterviewSessionRepository mockInterviewSessionRepository;
     private final FileStorageService fileStorageService;
+    private final UserRepository userRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public MockInterviewService(
-            MockInterviewSessionRepository mockInterviewSessionRepository, FileStorageService fileStorageService) {
+            MockInterviewSessionRepository mockInterviewSessionRepository,
+            FileStorageService fileStorageService,
+            UserRepository userRepository) {
         this.mockInterviewSessionRepository = mockInterviewSessionRepository;
         this.fileStorageService = fileStorageService;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -74,6 +83,42 @@ public class MockInterviewService {
     public List<MockInterviewSessionSummary> getMine(UUID candidateId) {
         return mockInterviewSessionRepository.findByCandidateIdOrderByRecordedAtDesc(candidateId).stream()
                 .map(this::toSummary)
+                .toList();
+    }
+
+    /** Admin listing of every recorded session across every candidate, most recent first — see
+     * AdminMockInterviewSessionController. Watching a video reuses the session's existing public
+     * share link (shareToken, already on MockInterviewSessionSummary) rather than adding a
+     * second, admin-only video-streaming endpoint — same file, same range-request-capable route
+     * MockInterviewShareController already serves.
+     *
+     * <p>query, when given, filters by candidate name/email (case-insensitive substring) —
+     * in-memory over the already-fetched list, same "fetch everything, filter in Java" approach
+     * AdminMockInterviewQuestionService.list uses, since this data is nowhere near the scale
+     * where a SQL-level filter would matter. Pagination is left entirely to the frontend (see
+     * AdminMockInterviewsPage), same split as that sibling page. */
+    @Transactional(readOnly = true)
+    public List<AdminMockInterviewSessionSummary> adminGetAll(String query) {
+        List<MockInterviewSession> sessions = mockInterviewSessionRepository.findAllByOrderByRecordedAtDesc();
+        Map<UUID, User> usersById = userRepository
+                .findAllById(sessions.stream().map(MockInterviewSession::getCandidateId).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        String normalizedQuery = query == null || query.isBlank() ? null : query.trim().toLowerCase();
+        return sessions.stream()
+                .map(session -> {
+                    User candidate = usersById.get(session.getCandidateId());
+                    return new AdminMockInterviewSessionSummary(
+                            session.getCandidateId(),
+                            candidate != null ? candidate.getFullName() : null,
+                            candidate != null ? candidate.getEmail() : null,
+                            toSummary(session));
+                })
+                .filter(summary -> normalizedQuery == null
+                        || (summary.candidateName() != null
+                                && summary.candidateName().toLowerCase().contains(normalizedQuery))
+                        || (summary.candidateEmail() != null
+                                && summary.candidateEmail().toLowerCase().contains(normalizedQuery)))
                 .toList();
     }
 

@@ -215,6 +215,7 @@ public class SecurityConfig {
                                 "/api/admin/company-billing/**",
                                 "/api/admin/candidate-billing/**",
                                 "/api/admin/mock-interview-questions/**",
+                                "/api/admin/mock-interviews/**",
                                 "/api/admin/broadcast-email/**")
                         .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers("/api/admin/**")

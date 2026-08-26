@@ -130,6 +130,12 @@ export default function AdminDashboardPage() {
         <h1 className="text-[22px] font-extrabold text-ink">{t('dashboard.title')}</h1>
         <div className="flex flex-wrap gap-4">
           <Link
+            to={localize(ROUTES.adminMockInterviewQuestions)}
+            className="text-[13px] font-bold text-primary no-underline"
+          >
+            {t('dashboard.mockInterviewQuestions')}
+          </Link>
+          <Link
             to={localize(ROUTES.adminVideos)}
             className="text-[13px] font-bold text-primary no-underline"
           >
