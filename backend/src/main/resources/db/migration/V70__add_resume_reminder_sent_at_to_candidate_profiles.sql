@@ -1,0 +1,1 @@
+alter table candidate_profiles add column resume_reminder_sent_at timestamptz;

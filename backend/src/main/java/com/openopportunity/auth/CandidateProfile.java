@@ -157,6 +157,11 @@ public class CandidateProfile {
     @Column(name = "education_graduation_year")
     private Integer educationGraduationYear;
 
+    // Set once, the first (and only) time ResumeReminderService emails this candidate about
+    // still not having uploaded a resume — a one-shot nudge, not a recurring reminder.
+    @Column(name = "resume_reminder_sent_at")
+    private Instant resumeReminderSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -271,6 +276,10 @@ public class CandidateProfile {
 
     public void recordProfileView() {
         this.profileViewCount++;
+    }
+
+    public void markResumeReminderSent(Instant at) {
+        this.resumeReminderSentAt = at;
     }
 
     public UUID getId() {
@@ -403,6 +412,10 @@ public class CandidateProfile {
 
     public Integer getEducationGraduationYear() {
         return educationGraduationYear;
+    }
+
+    public Instant getResumeReminderSentAt() {
+        return resumeReminderSentAt;
     }
 
     public Instant getCreatedAt() {

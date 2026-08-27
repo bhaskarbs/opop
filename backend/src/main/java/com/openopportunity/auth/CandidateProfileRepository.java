@@ -18,4 +18,10 @@ public interface CandidateProfileRepository
     long countByResumeStorageKeyIsNotNull();
 
     long countByResumeStorageKeyIsNotNullAndResumeUploadedAtAfter(Instant since);
+
+    // Backs ResumeReminderService's nightly sweep — candidates who registered before the cutoff
+    // (e.g. 2+ days ago), still have no resume uploaded, and haven't already gotten this
+    // one-shot nudge.
+    List<CandidateProfile> findByResumeStorageKeyIsNullAndResumeReminderSentAtIsNullAndCreatedAtBefore(
+            Instant cutoff);
 }
