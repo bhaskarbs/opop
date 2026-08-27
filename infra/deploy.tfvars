@@ -32,4 +32,4 @@ enable_sql_read_replica       = false
 backend_max_instances         = 2
 backend_min_instances         = 1
 enable_backend_night_schedule = true
-seo_crawling_enabled          = false
+seo_crawling_enabled          = true
