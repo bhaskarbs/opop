@@ -1,0 +1,1 @@
+alter table candidate_profiles add column mock_interview_reminder_sent_at timestamptz;

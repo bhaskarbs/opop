@@ -162,6 +162,10 @@ public class CandidateProfile {
     @Column(name = "resume_reminder_sent_at")
     private Instant resumeReminderSentAt;
 
+    // Same one-shot pattern as resumeReminderSentAt above, for MockInterviewReminderService.
+    @Column(name = "mock_interview_reminder_sent_at")
+    private Instant mockInterviewReminderSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -280,6 +284,10 @@ public class CandidateProfile {
 
     public void markResumeReminderSent(Instant at) {
         this.resumeReminderSentAt = at;
+    }
+
+    public void markMockInterviewReminderSent(Instant at) {
+        this.mockInterviewReminderSentAt = at;
     }
 
     public UUID getId() {
@@ -416,6 +424,10 @@ public class CandidateProfile {
 
     public Instant getResumeReminderSentAt() {
         return resumeReminderSentAt;
+    }
+
+    public Instant getMockInterviewReminderSentAt() {
+        return mockInterviewReminderSentAt;
     }
 
     public Instant getCreatedAt() {
