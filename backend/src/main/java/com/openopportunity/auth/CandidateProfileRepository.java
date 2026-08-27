@@ -24,4 +24,11 @@ public interface CandidateProfileRepository
     // one-shot nudge.
     List<CandidateProfile> findByResumeStorageKeyIsNullAndResumeReminderSentAtIsNullAndCreatedAtBefore(
             Instant cutoff);
+
+    // Backs MockInterviewReminderService's nightly sweep — candidates who registered before the
+    // cutoff (e.g. a week ago) and haven't already gotten this one-shot nudge. Whether they've
+    // actually taken a mock interview isn't a CandidateProfile column (see
+    // MockInterviewSessionRepository.countByCandidateId), so that part of the filter happens in
+    // the service, per candidate, over this already-narrowed pool.
+    List<CandidateProfile> findByMockInterviewReminderSentAtIsNullAndCreatedAtBefore(Instant cutoff);
 }
