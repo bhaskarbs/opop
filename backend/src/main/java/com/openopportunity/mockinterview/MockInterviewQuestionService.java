@@ -25,12 +25,14 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 /** Supplies mock-interview session questions, in priority order: (1) the question bank in
- * Postgres, once it holds enough relevant questions to skip the AI call entirely — widening the
- * experience-level match up the ladder (entry -> mid -> senior -> leadership, see
- * matchingQuestions/EXPERIENCE_LEVEL_LADDER) if the candidate's own level is too thin on its own,
- * so an entry-level candidate is never left short just because the bank happens to skew toward
- * more senior questions; (2) the Claude API otherwise, persisting whatever it returns into the
- * bank for next time. Either way, a question already recorded in MockInterviewAskedQuestion for
+ * Postgres, whenever it already has enough relevant, not-yet-asked questions to fill this session
+ * outright (see BANK_THRESHOLD's own doc comment for why that's compared against the requested
+ * count, not some large fixed number) — widening the experience-level match up the ladder (entry
+ * -> mid -> senior -> leadership, see matchingQuestions/EXPERIENCE_LEVEL_LADDER) if the
+ * candidate's own level is too thin on its own, so an entry-level candidate is never left short
+ * just because the bank happens to skew toward more senior questions; (2) the Claude API
+ * otherwise, persisting whatever it returns into the bank for next time. Either way, a question
+ * already recorded in MockInterviewAskedQuestion for
  * this candidate is never served again (see askedQuestionRepository below), and the final list
  * returned to the candidate is grouped by skill and, within each skill, sorted easy to very
  * difficult (see groupBySkillThenDifficulty) — each question carries the skill(s) it tests, so
@@ -49,9 +51,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class MockInterviewQuestionService {
 
-    /** Once the bank has more than this many questions matching a session's industry,
-     * experience level, and (loosely) skills, serve from the bank instead of calling the AI. */
-    private static final int BANK_THRESHOLD = 100;
+    // No named constant here on purpose — the bank vs. AI decision (see getSessionQuestions)
+    // compares matchingQuestions' result directly against the requested `count`: if the bank
+    // already has enough relevant, not-yet-asked questions to fill this session outright, use
+    // it; otherwise call the AI rather than serve a short session. A previous version compared
+    // against a flat threshold (100) instead of `count` — with a few hundred questions spread
+    // across a few hundred distinct skills, almost no single skill/level/industry combination
+    // ever reached 100 matches, so the bank was effectively never used regardless of how much
+    // content admins added. Confirmed against production data (746 total questions, still
+    // essentially never enough per narrow combination to clear a fixed 100), not assumed.
 
     /** Ascending order — used by matchingQuestions to widen an experience-level match upward
      * (entry -> mid -> senior -> leadership) when the candidate's own level doesn't have enough
@@ -106,7 +114,7 @@ public class MockInterviewQuestionService {
         List<MockInterviewQuestion> bankMatches =
                 matchingQuestions(skills, experienceLevel, industry, count, askedIds);
         List<MockInterviewQuestion> selected;
-        if (bankMatches.size() > BANK_THRESHOLD) {
+        if (bankMatches.size() >= count) {
             selected = pickFromBank(bankMatches, count);
         } else {
             List<GeneratedQuestion> generated = generateWithAi(skills, experienceLevel, industry, count);
