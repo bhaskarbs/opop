@@ -20,10 +20,31 @@ const STAGE_KEYS: Record<BackendIdeaStage, string> = {
 // job/company content elsewhere — they stay in English rather than being translated UI copy.
 const TRENDING_SKILLS = [
   'Frontend Developer',
+  'Backend Developer',
+  'Full Stack Developer',
   'Data Analyst',
+  'Data Scientist',
+  'Product Manager',
+  'Business Analyst',
+  'UI/UX Design',
+  'Digital Marketing',
+  'DevOps Engineer',
+  'Cloud Engineer',
+  'Cybersecurity Analyst',
+  'Civil Engineer',
+  'Mechanical Engineer',
+  'QA Tester',
+  'Financial Analyst',
+  'Operations Manager',
+  'Recruiter',
+  'Interior Designer',
+  'Video Editor',
   'Customer Support',
   'Sales',
   'Content Writing',
+  'Graphic Design',
+  'Accounting',
+  'HR',
 ]
 
 // Combines job roles with individual technical/soft skills, since candidates search by either —
