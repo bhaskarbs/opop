@@ -104,7 +104,7 @@ resource "google_cloud_scheduler_job" "backend_scale_up_morning" {
   count = var.enable_backend_night_schedule ? 1 : 0
 
   name      = "openopportunity-backend-scale-up-morning"
-  schedule  = "0 7 * * *"
+  schedule  = "0 11 * * *"
   time_zone = "Asia/Kolkata"
 
   http_target {
