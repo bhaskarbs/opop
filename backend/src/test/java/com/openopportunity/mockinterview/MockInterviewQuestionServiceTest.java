@@ -40,12 +40,19 @@ class MockInterviewQuestionServiceTest {
         verify(questionRepository, never()).findByOptionalFilters(any());
     }
 
+    /** The bank only needs to have as many matching, not-yet-asked questions as the session
+     * actually requests (`count`) — not some large fixed number. A bank of exactly `count`
+     * questions (5 here) previously would have fallen straight through to the AI (disabled in
+     * this test's service instance, see the service field above) under the old flat-100
+     * threshold; confirmed this was the real cause of the bank effectively never being used in
+     * production, where a few hundred questions spread across a few hundred distinct skills
+     * almost never reached 100 matches for any one specific combination. */
     @Test
-    void servesFromTheBankWithoutCallingAiWhenThereAreEnoughMatches() {
+    void servesFromTheBankWithoutCallingAiWhenItHasExactlyEnoughMatches() {
         UUID candidateId = UUID.randomUUID();
         when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
         List<MockInterviewQuestion> bank = new ArrayList<>();
-        for (int i = 0; i < 101; i++) {
+        for (int i = 0; i < 5; i++) {
             bank.add(new MockInterviewQuestion(
                     "Question " + i,
                     List.of(),
@@ -63,14 +70,37 @@ class MockInterviewQuestionServiceTest {
     }
 
     @Test
+    void fallsBackToAiWhenTheBankHasFewerMatchesThanRequested() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        List<MockInterviewQuestion> bank = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Question " + i,
+                    List.of(),
+                    "Tech",
+                    List.of(ExperienceLevel.SENIOR),
+                    null,
+                    QuestionSource.ADMIN));
+        }
+        when(questionRepository.findByOptionalFilters("Tech")).thenReturn(bank);
+
+        // AI generation is disabled in this test's service instance (see the service field
+        // above), so falling through to it surfaces as this exception rather than a real call.
+        assertThatThrownBy(() ->
+                        service.getSessionQuestions(candidateId, List.of(), ExperienceLevel.SENIOR, "Tech", 5))
+                .isInstanceOf(com.openopportunity.mockinterview.exception.QuestionGenerationUnavailableException.class);
+    }
+
+    @Test
     void widensToMidAndSeniorQuestionsWhenEntryLevelBankCoverageIsThin() {
         UUID candidateId = UUID.randomUUID();
         when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
         List<MockInterviewQuestion> bank = new ArrayList<>();
-        // Only 5 entry-level-tagged questions — on its own this is far below BANK_THRESHOLD
-        // (100), so without widening this would fall through to the AI (disabled in this test's
-        // service instance, see setUp) and throw QuestionGenerationUnavailableException instead
-        // of returning a full session.
+        // Only 5 entry-level-tagged questions — on its own that's fewer than the 8 requested, so
+        // without widening this would fall through to the AI (disabled in this test's service
+        // instance, see the service field above) and throw QuestionGenerationUnavailableException
+        // instead of returning a full session.
         for (int i = 0; i < 5; i++) {
             bank.add(new MockInterviewQuestion(
                     "Entry " + i,
@@ -153,10 +183,10 @@ class MockInterviewQuestionServiceTest {
         MockInterviewQuestion alreadyAsked = new MockInterviewQuestion(
                 "Already asked", List.of(), null, List.of(), QuestionDifficulty.EASY, QuestionSource.ADMIN);
         List<MockInterviewQuestion> bank = new ArrayList<>(List.of(alreadyAsked));
-        // 105, not 101 — matchingQuestions excludes the already-asked one before the
-        // BANK_THRESHOLD (100) check runs, so 101 total (100 left after exclusion) would fall
-        // through to AI generation, which this test's service instance has disabled.
-        for (int i = 0; i < 105; i++) {
+        // matchingQuestions excludes the already-asked one before the bank-vs-AI size check
+        // runs, so this only needs to comfortably clear the requested count (10) once that
+        // exclusion happens, not the raw bank size including it.
+        for (int i = 0; i < 12; i++) {
             bank.add(new MockInterviewQuestion(
                     "Filler " + i, List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
         }
