@@ -37,7 +37,7 @@ class MockInterviewQuestionServiceTest {
                         service.getSessionQuestions(candidateId, List.of("React"), ExperienceLevel.SENIOR, "Tech", 5))
                 .isInstanceOf(MockInterviewQuestionRateLimitedException.class);
 
-        verify(questionRepository, never()).findByOptionalFilters(any());
+        verify(questionRepository, never()).findAll();
     }
 
     /** The bank only needs to have as many matching, not-yet-asked questions as the session
@@ -61,10 +61,39 @@ class MockInterviewQuestionServiceTest {
                     null,
                     QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters("Tech")).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
 
         List<MockInterviewSessionQuestion> questions =
                 service.getSessionQuestions(candidateId, List.of(), ExperienceLevel.SENIOR, "Tech", 5);
+
+        assertThat(questions).hasSize(5);
+    }
+
+    /** Industry must never gate bank eligibility — it's free text on both ends (an admin types a
+     * question's industry in AdminMockInterviewQuestionsPage, a candidate separately types their
+     * own in their profile) with no shared vocabulary, so requiring an exact match would exclude
+     * almost the whole bank for almost every real candidate. Confirmed against production data,
+     * not assumed: 743 of 746 live bank questions carry one of just 4 exact industry strings an
+     * admin happened to type, so this was silently starving the bank even after the
+     * count-vs-BANK_THRESHOLD fix landed. */
+    @Test
+    void servesFromTheBankEvenWhenTheCandidatesIndustryDoesNotMatchAnyBankQuestion() {
+        UUID candidateId = UUID.randomUUID();
+        when(rateLimiter.tryAcquire(candidateId)).thenReturn(true);
+        List<MockInterviewQuestion> bank = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            bank.add(new MockInterviewQuestion(
+                    "Question " + i,
+                    List.of(),
+                    "Software Development",
+                    List.of(ExperienceLevel.SENIOR),
+                    null,
+                    QuestionSource.ADMIN));
+        }
+        when(questionRepository.findAll()).thenReturn(bank);
+
+        List<MockInterviewSessionQuestion> questions = service.getSessionQuestions(
+                candidateId, List.of(), ExperienceLevel.SENIOR, "A Completely Different Industry", 5);
 
         assertThat(questions).hasSize(5);
     }
@@ -83,7 +112,7 @@ class MockInterviewQuestionServiceTest {
                     null,
                     QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters("Tech")).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
 
         // AI generation is disabled in this test's service instance (see the service field
         // above), so falling through to it surfaces as this exception rather than a real call.
@@ -114,7 +143,7 @@ class MockInterviewQuestionServiceTest {
             bank.add(new MockInterviewQuestion(
                     "Senior " + i, List.of(), "Tech", List.of(ExperienceLevel.SENIOR), null, QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters("Tech")).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
 
         List<MockInterviewSessionQuestion> questions =
                 service.getSessionQuestions(candidateId, List.of(), ExperienceLevel.ENTRY_LEVEL, "Tech", 8);
@@ -144,7 +173,7 @@ class MockInterviewQuestionServiceTest {
             bank.add(new MockInterviewQuestion(
                     "Filler " + i, List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
 
         List<MockInterviewSessionQuestion> questions =
                 service.getSessionQuestions(candidateId, List.of(), null, null, 4);
@@ -168,7 +197,7 @@ class MockInterviewQuestionServiceTest {
                     null,
                     QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
 
         List<MockInterviewSessionQuestion> questions =
                 service.getSessionQuestions(candidateId, List.of("React"), null, null, 5);
@@ -190,7 +219,7 @@ class MockInterviewQuestionServiceTest {
             bank.add(new MockInterviewQuestion(
                     "Filler " + i, List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
         when(askedQuestionRepository.findQuestionIdsByCandidateId(candidateId))
                 .thenReturn(Set.of(alreadyAsked.getId()));
 
@@ -209,7 +238,7 @@ class MockInterviewQuestionServiceTest {
             bank.add(new MockInterviewQuestion(
                     "Question " + i, List.of(), null, List.of(), null, QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
 
         List<MockInterviewSessionQuestion> questions =
                 service.getSessionQuestions(candidateId, List.of(), null, null, 5);
@@ -238,7 +267,7 @@ class MockInterviewQuestionServiceTest {
             bank.add(new MockInterviewQuestion(
                     "Filler " + i, List.of(), null, List.of(), QuestionDifficulty.NORMAL, QuestionSource.ADMIN));
         }
-        when(questionRepository.findByOptionalFilters(null)).thenReturn(bank);
+        when(questionRepository.findAll()).thenReturn(bank);
 
         List<MockInterviewSessionQuestion> questions = service.getSessionQuestions(
                 candidateId, List.of("Node.js", "React"), null, null, bank.size());

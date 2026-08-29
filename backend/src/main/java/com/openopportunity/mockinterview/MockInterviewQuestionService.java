@@ -111,8 +111,7 @@ public class MockInterviewQuestionService {
             throw new MockInterviewQuestionRateLimitedException();
         }
         Set<UUID> askedIds = askedQuestionRepository.findQuestionIdsByCandidateId(candidateId);
-        List<MockInterviewQuestion> bankMatches =
-                matchingQuestions(skills, experienceLevel, industry, count, askedIds);
+        List<MockInterviewQuestion> bankMatches = matchingQuestions(skills, experienceLevel, count, askedIds);
         List<MockInterviewQuestion> selected;
         if (bankMatches.size() >= count) {
             selected = pickFromBank(bankMatches, count);
@@ -188,10 +187,22 @@ public class MockInterviewQuestionService {
      * matches, keeps adding the next level up the ladder until it does (or every level has been
      * tried) — see EXPERIENCE_LEVEL_LADDER. This is what guarantees an entry-level candidate
      * always gets a full session even on a bank that's thin on entry-level-tagged questions:
-     * mid/senior questions get pulled in rather than leaving the session short. */
+     * mid/senior questions get pulled in rather than leaving the session short.
+     *
+     * <p>Deliberately no industry filter here (industry is still recorded on each question and
+     * still passed to the AI when generating new ones — see getSessionQuestions/generateWithAi —
+     * just not used to gate which bank questions are eligible). Both sides are free text with no
+     * shared vocabulary: an admin types a question's industry in AdminMockInterviewQuestionsPage,
+     * a candidate separately types their own in their profile, and the two are never going to
+     * reliably line up. Confirmed against production data, not assumed: 743 of 746 bank questions
+     * carry one of just 4 exact industry strings an admin happened to type, so any candidate whose
+     * own free-typed industry wasn't a character-for-character match against one of those 4 was
+     * previously left with only the 3 industry-less questions to match against — i.e. the bank was
+     * effectively unusable for the overwhelming majority of real candidates regardless of skill,
+     * even after the count-vs-BANK_THRESHOLD fix. */
     private List<MockInterviewQuestion> matchingQuestions(
-            List<String> skills, ExperienceLevel experienceLevel, String industry, int count, Set<UUID> askedIds) {
-        List<MockInterviewQuestion> matches = questionRepository.findByOptionalFilters(industry);
+            List<String> skills, ExperienceLevel experienceLevel, int count, Set<UUID> askedIds) {
+        List<MockInterviewQuestion> matches = questionRepository.findAll();
         List<MockInterviewQuestion> skillFiltered = matches.stream()
                 .filter(question -> !askedIds.contains(question.getId()))
                 // A question with no skills tagged (e.g. a soft-skills question) is a match for
