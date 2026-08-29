@@ -386,7 +386,7 @@ class JobServiceTest {
         // No companyProfileRepository stub, and deliberately no eligibleProfile() (unverified/
         // incomplete) — unlike create(), adminCreate must not require it.
 
-        JobDetail detail = jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE));
+        JobDetail detail = jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE), false);
 
         assertThat(detail.companyName()).isEqualTo("Vertex Robotics");
         assertThat(detail.status()).isEqualTo(JobStatus.ACTIVE);
@@ -398,10 +398,30 @@ class JobServiceTest {
         when(userRepository.findById(companyId))
                 .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
 
-        jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE));
+        jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE), false);
 
         verify(newJobMatchEmailService).notifyMatchingCandidates(any());
         verify(jobAlertMatchEmailService).notifyMatchingAlerts(any());
+        verify(notificationService).notify(eq(companyId), eq(NotificationType.JOB_APPROVED), any(), any());
+    }
+
+    /** suppressJobAlertEmails=true is what JobController maps X-Suppress-Job-Alert-Emails onto
+     * for the Naukri bulk importer (jobs/scripts/import_naukri_jobs.py) — a single saved job
+     * alert can match hundreds of scraped jobs imported in one run, so left on that's hundreds
+     * of alert emails for jobs the recipient never proactively applied to. The company "it's
+     * live" notification and per-candidate skill-match emails are a different concern and must
+     * still fire exactly as for any other ACTIVE job — only the job-alert fan-out is skipped. */
+    @Test
+    void adminCreateSuppressesOnlyJobAlertEmailsWhenAsked() {
+        UUID companyId = UUID.randomUUID();
+        when(userRepository.findById(companyId))
+                .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
+
+        JobDetail detail = jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE), true);
+
+        assertThat(detail.status()).isEqualTo(JobStatus.ACTIVE);
+        verify(jobAlertMatchEmailService, never()).notifyMatchingAlerts(any());
+        verify(newJobMatchEmailService).notifyMatchingCandidates(any());
         verify(notificationService).notify(eq(companyId), eq(NotificationType.JOB_APPROVED), any(), any());
     }
 
@@ -411,7 +431,7 @@ class JobServiceTest {
         when(userRepository.findById(candidateId))
                 .thenReturn(Optional.of(new User("rohan@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE)));
 
-        assertThatThrownBy(() -> jobService.adminCreate(candidateId, sampleRequest(JobStatus.ACTIVE)))
+        assertThatThrownBy(() -> jobService.adminCreate(candidateId, sampleRequest(JobStatus.ACTIVE), false))
                 .isInstanceOf(CompanyNotFoundException.class);
     }
 
@@ -420,7 +440,7 @@ class JobServiceTest {
         UUID companyId = UUID.randomUUID();
         when(userRepository.findById(companyId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE)))
+        assertThatThrownBy(() -> jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE), false))
                 .isInstanceOf(CompanyNotFoundException.class);
     }
 
@@ -431,7 +451,7 @@ class JobServiceTest {
                 .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
         when(jobRepository.countByCompanyId(companyId)).thenReturn(10L);
 
-        assertThatThrownBy(() -> jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE)))
+        assertThatThrownBy(() -> jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE), false))
                 .isInstanceOf(JobPostingLimitReachedException.class);
     }
 
@@ -447,7 +467,7 @@ class JobServiceTest {
         // Deliberately no countByCompanyId stub — the exemption must short-circuit before that
         // call, so mockito's strict stubbing would flag an unused stub here if it didn't.
 
-        JobDetail detail = jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE));
+        JobDetail detail = jobService.adminCreate(companyId, sampleRequest(JobStatus.ACTIVE), false);
 
         assertThat(detail.companyName()).isEqualTo("OpenOpportunity Sourced Jobs");
     }

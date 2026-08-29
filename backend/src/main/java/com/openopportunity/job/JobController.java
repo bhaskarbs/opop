@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -157,11 +158,22 @@ public class JobController {
 
     /** Admin posting a job on behalf of a company (AdminJobsPage) — see JobService#adminCreate
      * for how this differs from create() above (companyId is chosen by the admin, not the
-     * caller; skips the eligibility/status-transition gates a company itself is bound by). */
+     * caller; skips the eligibility/status-transition gates a company itself is bound by).
+     *
+     * <p>X-Suppress-Job-Alert-Emails is honored only here, not on create() above — the SPA never
+     * sends it (a real admin publishing a job wants saved-alert subscribers notified same as
+     * any other job), but the Naukri bulk importer (jobs/scripts/import_naukri_jobs.py) always
+     * does, since posting hundreds of scraped jobs in one run would otherwise fan out hundreds
+     * of job-alert emails to anyone whose saved alert happens to match. See
+     * JobService#adminCreate for exactly what this does and doesn't suppress. */
     @PostMapping("/admin")
     public ResponseEntity<JobDetail> adminCreate(
-            @RequestParam UUID companyId, @Valid @RequestBody JobRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(jobService.adminCreate(companyId, request));
+            @RequestParam UUID companyId,
+            @Valid @RequestBody JobRequest request,
+            @RequestHeader(value = "X-Suppress-Job-Alert-Emails", required = false, defaultValue = "false")
+                    boolean suppressJobAlertEmails) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(jobService.adminCreate(companyId, request, suppressJobAlertEmails));
     }
 
     /** Admin edit of any job's content, regardless of which company owns it — see
