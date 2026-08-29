@@ -148,10 +148,11 @@ function pickRecorderMimeType(): string | undefined {
 // (~21 min) session at that rate can approach or exceed the backend's 150MB cap (see
 // MockInterviewService#MAX_VIDEO_SIZE_BYTES). At the rates below (~450 kbps combined) a full
 // session lands around 70MB.
+const RECORDING_FRAME_RATE = 24
 const RECORDING_VIDEO_CONSTRAINTS: MediaTrackConstraints = {
   width: { ideal: 640, max: 854 },
   height: { ideal: 480, max: 480 },
-  frameRate: { ideal: 24, max: 24 },
+  frameRate: { ideal: RECORDING_FRAME_RATE, max: RECORDING_FRAME_RATE },
 }
 const RECORDING_VIDEO_BITS_PER_SECOND = 400_000
 const RECORDING_AUDIO_BITS_PER_SECOND = 48_000
@@ -259,7 +260,8 @@ function formatDuration(totalSeconds: number): string {
 /** Speaks a question aloud so the avatar "asks" it — heard live by the candidate during the
  * session. Browsers give no API to capture SpeechSynthesis output as a MediaStreamTrack, so
  * this can't be mixed into the MediaRecorder recording itself; only the candidate's own mic
- * (captured via getUserMedia below) ends up in the saved video. */
+ * (captured via getUserMedia below) ends up in the saved audio. The question text itself is
+ * still preserved in the recording visually, though — see drawQuestionOverlay. */
 function speakQuestion(text: string, onStart: () => void, onEnd: () => void) {
   if (!('speechSynthesis' in window)) return
   window.speechSynthesis.cancel()
@@ -268,6 +270,26 @@ function speakQuestion(text: string, onStart: () => void, onEnd: () => void) {
   utterance.onend = onEnd
   utterance.onerror = onEnd
   window.speechSynthesis.speak(utterance)
+}
+
+/** Wraps `text` to fit within `maxWidth` at the canvas context's current font — canvas has no
+ * built-in text wrapping, so drawQuestionOverlay below needs this to keep the question caption
+ * readable instead of running off the edge of the recorded frame. */
+function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(' ')
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word
+    if (current && ctx.measureText(candidate).width > maxWidth) {
+      lines.push(current)
+      current = word
+    } else {
+      current = candidate
+    }
+  }
+  if (current) lines.push(current)
+  return lines
 }
 
 /** Grabs a single still frame from the just-recorded clip to use as its thumbnail — seeks to a
@@ -349,6 +371,15 @@ export default function MockInterviewPage() {
   const countdownIntervalRef = useRef<number | null>(null)
   const sessionQuestionsRef = useRef<MockInterviewSessionQuestion[]>([])
   const preparedQuestionsRef = useRef<MockInterviewSessionQuestion[]>([])
+  // The recorded video is drawn from this canvas (see drawQuestionOverlay), not straight from
+  // the camera — that's what lets the current question get baked into the saved frames, since
+  // (per speakQuestion's comment above) there's no way to capture its spoken audio instead.
+  // Audio is unaffected: the recording's audio track still comes straight from streamRef's raw
+  // getUserMedia mic track, only the video track is swapped for the canvas's.
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const overlayStreamRef = useRef<MediaStream | null>(null)
+  const drawLoopIdRef = useRef<number | null>(null)
+  const currentQuestionRef = useRef('')
 
   function loadThumbnail(session: MockInterviewSessionSummary) {
     if (!session.hasThumbnail) return
@@ -411,6 +442,8 @@ export default function MockInterviewPage() {
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop())
+      overlayStreamRef.current?.getTracks().forEach((track) => track.stop())
+      if (drawLoopIdRef.current !== null) cancelAnimationFrame(drawLoopIdRef.current)
       window.speechSynthesis?.cancel()
       if (autoStopTimeoutRef.current !== null) window.clearTimeout(autoStopTimeoutRef.current)
       if (countdownIntervalRef.current !== null) window.clearInterval(countdownIntervalRef.current)
@@ -423,8 +456,46 @@ export default function MockInterviewPage() {
   function stopStream() {
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
+    if (drawLoopIdRef.current !== null) {
+      cancelAnimationFrame(drawLoopIdRef.current)
+      drawLoopIdRef.current = null
+    }
+    overlayStreamRef.current?.getTracks().forEach((track) => track.stop())
+    overlayStreamRef.current = null
+    overlayCanvasRef.current = null
     setHasStream(false)
     if (videoRef.current) videoRef.current.srcObject = null
+  }
+
+  /** Redraws the camera frame plus a caption bar for the current question onto
+   * overlayCanvasRef every animation frame while recording — this canvas, not the raw camera
+   * stream, is what MediaRecorder actually saves (see handleStart). Reads currentQuestionRef
+   * rather than the `currentQuestion` state so this loop doesn't need to be torn down and
+   * restarted every time the question changes. */
+  function drawQuestionOverlay() {
+    const canvas = overlayCanvasRef.current
+    const videoEl = videoRef.current
+    if (canvas && videoEl) {
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height)
+        const question = currentQuestionRef.current
+        if (question) {
+          ctx.font = 'bold 18px sans-serif'
+          const lines = wrapCanvasText(ctx, question, canvas.width - 40)
+          const lineHeight = 24
+          const barHeight = lines.length * lineHeight + 24
+          ctx.fillStyle = 'rgba(20, 24, 31, 0.72)'
+          ctx.fillRect(0, canvas.height - barHeight, canvas.width, barHeight)
+          ctx.fillStyle = '#FFFFFF'
+          ctx.textBaseline = 'top'
+          lines.forEach((line, index) => {
+            ctx.fillText(line, 20, canvas.height - barHeight + 12 + index * lineHeight)
+          })
+        }
+      }
+    }
+    drawLoopIdRef.current = requestAnimationFrame(drawQuestionOverlay)
   }
 
   /** Asks Claude (via the backend) for this session's full question set, tailored to the
@@ -459,6 +530,7 @@ export default function MockInterviewPage() {
         difficulty: null,
       }
     setCurrentQuestion(question.text)
+    currentQuestionRef.current = question.text
     setCurrentQuestionSkills(question.skills)
     sessionQuestionsRef.current.push(question)
     questionsAskedRef.current += 1
@@ -495,8 +567,24 @@ export default function MockInterviewPage() {
       setMicOn(true)
       setCameraOn(true)
 
+      // Records from this canvas, not the raw camera stream — see drawQuestionOverlay/the
+      // overlayCanvasRef comment above for why. Sized to the negotiated camera resolution (not
+      // just RECORDING_VIDEO_CONSTRAINTS' ideal values) so the overlay isn't stretched if the
+      // webcam didn't grant exactly that resolution.
+      const videoSettings = stream.getVideoTracks()[0]?.getSettings()
+      const canvas = document.createElement('canvas')
+      canvas.width = videoSettings?.width || 640
+      canvas.height = videoSettings?.height || 480
+      overlayCanvasRef.current = canvas
+      const canvasStream = canvas.captureStream(RECORDING_FRAME_RATE)
+      overlayStreamRef.current = canvasStream
+      const recordingStream = new MediaStream([
+        ...canvasStream.getVideoTracks(),
+        ...stream.getAudioTracks(),
+      ])
+
       const recorderMimeType = pickRecorderMimeType()
-      const recorder = new MediaRecorder(stream, {
+      const recorder = new MediaRecorder(recordingStream, {
         ...(recorderMimeType ? { mimeType: recorderMimeType } : undefined),
         videoBitsPerSecond: RECORDING_VIDEO_BITS_PER_SECOND,
         audioBitsPerSecond: RECORDING_AUDIO_BITS_PER_SECOND,
@@ -523,6 +611,12 @@ export default function MockInterviewPage() {
         }, 1000)
       }
       recorderRef.current = recorder
+      // Must start drawing before recorder.start(), not inside onstart — a MediaRecorder
+      // given a canvas track that has never emitted a single frame never actually fires
+      // 'start' at all (nothing for it to encode yet), so kicking the draw loop off from
+      // onstart is a deadlock: onstart waits on a frame that only the onstart handler itself
+      // would have produced.
+      drawLoopIdRef.current = requestAnimationFrame(drawQuestionOverlay)
       recorder.start()
       setRecording(true)
     } catch {
