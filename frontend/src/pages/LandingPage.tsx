@@ -146,23 +146,31 @@ export default function LandingPage() {
   return (
     <main>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-primary-tint to-page px-6 pt-16 pb-6">
-        <div className="mx-auto max-w-[1120px] text-center">
-          <div className="mb-[22px] inline-flex items-center gap-1.5 rounded-full border border-[#D8E1FB] bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-primary">
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary-tint to-page px-6 pt-16 pb-6">
+        {/* Purely decorative depth behind the hero content — soft blurred brand-color blobs, no
+            imagery assets available, so this is what "richer hero" comes from without inventing
+            binary assets. Hidden from assistive tech and never intercepts clicks. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 h-[380px] w-[380px] rounded-full bg-primary/20 blur-[100px]" />
+          <div className="absolute top-10 -right-20 h-[320px] w-[320px] rounded-full bg-teal/15 blur-[100px]" />
+          <div className="absolute bottom-[-140px] left-1/3 h-[280px] w-[280px] rounded-full bg-amber/15 blur-[100px]" />
+        </div>
+        <div className="relative mx-auto max-w-[1120px] text-center">
+          <div className="animate-fade-in-up mb-[22px] inline-flex items-center gap-1.5 rounded-full border border-[#D8E1FB] bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-primary">
             {t('landing.badge')}
           </div>
-          <h1 className="mb-[18px] text-[clamp(32px,5vw,52px)] leading-[1.12] font-extrabold tracking-[-0.02em] text-ink">
+          <h1 className="animate-fade-in-up mb-[18px] text-[clamp(32px,5vw,52px)] leading-[1.12] font-extrabold tracking-[-0.02em] text-ink [animation-delay:0.08s]">
             {t('landing.hero.titleLine1')}
             <br />
             {t('landing.hero.titleLine2')}
           </h1>
-          <p className="mx-auto mb-9 max-w-[640px] text-lg leading-[1.6] text-slate">
+          <p className="animate-fade-in-up mx-auto mb-9 max-w-[640px] text-lg leading-[1.6] text-slate [animation-delay:0.16s]">
             {t('landing.hero.subtitle')}
           </p>
 
           <form
             onSubmit={handleSearchSubmit}
-            className="mx-auto flex max-w-[820px] flex-wrap gap-2 rounded-card border border-border bg-surface p-2.5 shadow-[0_8px_24px_rgba(20,24,31,0.06)]"
+            className="animate-fade-in-up mx-auto flex max-w-[820px] flex-wrap gap-2 rounded-card border border-border bg-surface p-2.5 shadow-[0_8px_24px_rgba(20,24,31,0.06)] [animation-delay:0.24s]"
           >
             <SearchAutocompleteInput
               value={query}
@@ -218,7 +226,7 @@ export default function LandingPage() {
             </button>
           </form>
 
-          <div className="mt-4 flex flex-wrap justify-center gap-2.5">
+          <div className="animate-fade-in-up mt-4 flex flex-wrap justify-center gap-2.5 [animation-delay:0.32s]">
             {TRENDING_SKILLS.map((skill) => (
               <Link
                 key={skill}
@@ -242,17 +250,17 @@ export default function LandingPage() {
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5">
           {THREE_PATHS.map((path) => (
-            <Card key={path.titleKey} className="p-7">
+            <Card key={path.titleKey} interactive className="group p-7">
               <div
-                className={`mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] ${path.iconBgClass}`}
+                className={`mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${path.iconBgClass} transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-105`}
               >
                 <svg
-                  width="22"
-                  height="22"
+                  width="30"
+                  height="30"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke={path.iconColor}
-                  strokeWidth={2}
+                  strokeWidth={1.75}
                 >
                   {path.icon}
                 </svg>
@@ -304,10 +312,10 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[18px]">
             {startups.map((idea) => (
-              <Card key={idea.id} className="p-[22px]">
+              <Card key={idea.id} interactive className="p-[22px]">
                 <div className="mb-3.5 flex items-center gap-3">
                   <div
-                    className={`flex h-[42px] w-[42px] items-center justify-center rounded-[10px] text-[15px] font-bold text-white ${avatarColorClass(idea.submitterName)}`}
+                    className={`ring-surface flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[12px] text-base font-bold text-white shadow-sm ring-2 ${avatarColorClass(idea.submitterName)}`}
                   >
                     {idea.submitterName.charAt(0).toUpperCase()}
                   </div>
@@ -334,8 +342,12 @@ export default function LandingPage() {
 
       {/* Community income banner */}
       <section className="mx-auto mb-16 max-w-[1120px] px-6">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] items-center gap-8 rounded-[20px] bg-[#0B3B34] p-11">
-          <div>
+        <div className="relative grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] items-center gap-8 overflow-hidden rounded-[20px] bg-[#0B3B34] p-11">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-16 -right-16 h-[260px] w-[260px] rounded-full bg-[#7FE0C4]/20 blur-[100px]"
+          />
+          <div className="relative">
             <span className="mb-3.5 inline-block rounded-full bg-[rgba(127,224,196,0.12)] px-3 py-[5px] text-[12.5px] font-bold text-[#7FE0C4]">
               {t('landing.community.badge')}
             </span>
