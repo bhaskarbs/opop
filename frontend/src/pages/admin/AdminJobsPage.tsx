@@ -225,7 +225,7 @@ export default function AdminJobsPage() {
                 <div className="mt-0.5 text-[13px] text-slate">
                   {t('jobs.jobMeta', {
                     company: job.companyName,
-                    location: job.location,
+                    location: job.locations.join(', '),
                     mode: workModeFromBackend(job.workMode),
                   })}
                 </div>

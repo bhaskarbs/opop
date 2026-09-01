@@ -219,7 +219,7 @@ class AdminReportsServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,

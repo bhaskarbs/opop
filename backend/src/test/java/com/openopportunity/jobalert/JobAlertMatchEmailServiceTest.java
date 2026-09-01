@@ -57,7 +57,7 @@ class JobAlertMatchEmailServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -133,6 +133,39 @@ class JobAlertMatchEmailServiceTest {
         Job job = aJob();
         UUID candidateId = UUID.randomUUID();
         JobAlert alert = new JobAlert(candidateId, List.of(), List.of("Bengal"), null, null);
+        when(jobAlertRepository.findAll()).thenReturn(List.of(alert));
+        when(userRepository.findById(candidateId))
+                .thenReturn(Optional.of(new User("rohan@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE)));
+
+        service.notifyMatchingAlerts(job);
+
+        verify(asyncEmailSender)
+                .sendBestEffort(
+                        eq("rohan@example.com"), anyString(), anyString(), anyList(), any(EmailButton.class), any());
+    }
+
+    @Test
+    void matchesOnAnySingleLocationOfAMultiLocationJob() {
+        Job job = new Job(
+                UUID.randomUUID(),
+                "Vertex Robotics",
+                "Senior Frontend Developer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.HYBRID,
+                List.of("Bengaluru", "Mumbai", "Remote"),
+                null,
+                null,
+                null,
+                "desc",
+                List.of(),
+                List.of(),
+                List.of("React", "TypeScript"),
+                JobStatus.ACTIVE);
+        UUID candidateId = UUID.randomUUID();
+        // "Mumbai" only matches the job's second location — an alert checking just the job's
+        // first location (or joining them into one string) would have missed this.
+        JobAlert alert = new JobAlert(candidateId, List.of(), List.of("Mumbai"), null, null);
         when(jobAlertRepository.findAll()).thenReturn(List.of(alert));
         when(userRepository.findById(candidateId))
                 .thenReturn(Optional.of(new User("rohan@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE)));

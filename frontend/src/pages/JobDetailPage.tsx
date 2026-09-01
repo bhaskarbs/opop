@@ -309,7 +309,7 @@ export default function JobDetailPage() {
                     <span aria-hidden="true">·</span>
                     <span className="inline-flex items-center gap-1">
                       <LocationPinIcon />
-                      {job.location}
+                      {job.locations.join(', ')}
                     </span>
                     <span aria-hidden="true">·</span>
                     <span>{mode}</span>

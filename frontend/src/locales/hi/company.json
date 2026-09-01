@@ -146,8 +146,7 @@
     "manage": "प्रबंधित करें →",
     "viewApplicants": "आवेदक देखें",
     "share": "शेयर करें",
-    "linkCopied": "कॉपी हो गया!",
-    "pendingReviewNotice": "यह नौकरी एडमिन समीक्षा की प्रतीक्षा कर रही है — यह पूरा होने तक आप इसे संपादित नहीं कर सकते।"
+    "linkCopied": "कॉपी हो गया!"
   },
   "postJob": {
     "employmentType": {
@@ -182,6 +181,8 @@
       "jobTitle": "जॉब टाइटल",
       "employmentType": "एम्प्लॉयमेंट टाइप",
       "location": "स्थान",
+      "locationPlaceholder": "एक शहर जोड़ें और Enter दबाएं",
+      "areaPlaceholder": "क्षेत्र, कॉमा से अलग करें (वैकल्पिक)",
       "salaryRange": "सैलरी रेंज (₹/वर्ष)",
       "salaryMinPlaceholder": "न्यूनतम जैसे 12ला.",
       "salaryMaxPlaceholder": "अधिकतम जैसे 18ला.",

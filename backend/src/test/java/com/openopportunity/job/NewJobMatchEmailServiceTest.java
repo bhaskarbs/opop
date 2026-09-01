@@ -51,7 +51,7 @@ class NewJobMatchEmailServiceTest {
                 EmploymentType.FULL_TIME,
                 level,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,

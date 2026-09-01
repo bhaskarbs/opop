@@ -92,7 +92,7 @@ class SitemapControllerTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.REMOTE,
-                "Remote",
+                List.of("Remote"),
                 null,
                 null,
                 null,

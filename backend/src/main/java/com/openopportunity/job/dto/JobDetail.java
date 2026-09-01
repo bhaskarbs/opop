@@ -14,7 +14,7 @@ public record JobDetail(
         UUID id,
         String title,
         String companyName,
-        String location,
+        List<String> locations,
         WorkMode workMode,
         ExperienceLevel experienceLevel,
         EmploymentType employmentType,

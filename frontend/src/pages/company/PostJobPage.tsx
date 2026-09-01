@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
-import { Button, Input, LoadingState } from '../../components/ui'
+import { Button, Input, LoadingState, SkillsTagInput } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
   employmentTypeToBackend,
@@ -22,6 +22,7 @@ import {
 } from '../../lib/jobEnums'
 import { apiErrorMessage, API_BASE_URL } from '../../lib/apiClient'
 import { jobsApi, type JobRequestPayload } from '../../lib/jobsApi'
+import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { ROUTES } from '../../routes/paths'
 import { useCompanyProfileStore } from '../../stores/companyProfileStore'
 
@@ -50,7 +51,16 @@ const postJobSchema = z.object({
   employmentType: z.enum(EMPLOYMENT_TYPES),
   experienceLevel: z.enum(EXPERIENCE_LEVELS),
   workMode: z.enum(WORK_MODES),
-  location: z.string().min(2, 'Enter a location'),
+  locationRows: z
+    .array(
+      z.object({
+        location: z.string().min(1, 'Enter a location'),
+        // Free-typed, comma-separated areas/neighborhoods within this one location — kept as a
+        // single string per row (not a tag list) so it round-trips through a plain text input.
+        areas: z.string(),
+      }),
+    )
+    .min(1, 'Add at least one location'),
   salaryMin: z.string().optional(),
   salaryMax: z.string().optional(),
   experienceYearsMin: z.string().optional(),
@@ -83,6 +93,39 @@ function splitLines(value: string): string[] {
     .filter(Boolean)
 }
 
+type LocationRow = { location: string; areas: string }
+
+// The backend still only ever sees a flat locations: string[] (no schema change for areas) — an
+// area is stored as "{location} - {area}" alongside the bare location entry. These two functions
+// are the only place that encoding exists: one flattens the form's per-location rows into that
+// flat array for submission, the other parses an existing job's flat array back into rows when
+// loading it for editing.
+function flattenLocationRows(rows: LocationRow[]): string[] {
+  const flat: string[] = []
+  for (const row of rows) {
+    const location = row.location.trim()
+    if (!location) continue
+    flat.push(location)
+    for (const area of row.areas
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean)) {
+      flat.push(`${location} - ${area}`)
+    }
+  }
+  return flat
+}
+function toLocationRows(locations: string[]): LocationRow[] {
+  const bareLocations = locations.filter((value) => !value.includes(' - '))
+  return bareLocations.map((location) => {
+    const prefix = `${location} - `
+    const areas = locations
+      .filter((value) => value.startsWith(prefix))
+      .map((value) => value.slice(prefix.length))
+    return { location, areas: areas.join(', ') }
+  })
+}
+
 function toJobRequest(
   values: PostJobFormValues,
   status: 'PENDING_APPROVAL' | 'DRAFT',
@@ -92,7 +135,7 @@ function toJobRequest(
     employmentType: employmentTypeToBackend(values.employmentType),
     experienceLevel: experienceLevelToBackend(values.experienceLevel),
     workMode: workModeToBackend(values.workMode),
-    location: values.location,
+    locations: flattenLocationRows(values.locationRows),
     salaryMinLakhs: parseSalaryLakhs(values.salaryMin),
     salaryMaxLakhs: parseSalaryLakhs(values.salaryMax),
     experienceYearsMin: parseYears(values.experienceYearsMin),
@@ -116,7 +159,10 @@ export default function PostJobPage() {
   const [formError, setFormError] = useState<string | null>(null)
   // Mirrors JobService.requireEligibleToPostJobs on the backend — checked here too so a
   // not-yet-eligible company sees why instead of filling out the whole form only to hit a 403.
-  const [eligible, setEligible] = useState<boolean | null>(null)
+  // Only gates *creating* a new posting — JobService#update has no such check (a company can
+  // always edit a job it already owns, regardless of its current profile/verification status),
+  // so this stays permanently true when editing rather than blocking access to an existing job.
+  const [eligible, setEligible] = useState<boolean | null>(editing ? true : null)
   const [loadingExisting, setLoadingExisting] = useState(editing)
 
   // Display branding override (edit mode only — see JobService#updateBranding/#uploadLogo,
@@ -133,6 +179,8 @@ export default function PostJobPage() {
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    // See the eligible state's own comment — editing an existing job never depends on this.
+    if (editing) return
     let cancelled = false
     useCompanyProfileStore
       .getState()
@@ -147,7 +195,7 @@ export default function PostJobPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [editing])
 
   const {
     register,
@@ -163,7 +211,7 @@ export default function PostJobPage() {
       employmentType: EMPLOYMENT_TYPES[0],
       experienceLevel: EXPERIENCE_LEVELS[0],
       workMode: WORK_MODES[0],
-      location: '',
+      locationRows: [],
       salaryMin: '',
       salaryMax: '',
       experienceYearsMin: '',
@@ -175,6 +223,12 @@ export default function PostJobPage() {
       skills: [],
     },
   })
+
+  const {
+    fields: locationRows,
+    append: appendLocationRow,
+    remove: removeLocationRow,
+  } = useFieldArray({ control, name: 'locationRows' })
 
   // Owner-only visibility on GET /api/jobs/{id} (see JobService.get) means this loads
   // regardless of the existing posting's status (DRAFT/PENDING_APPROVAL/ACTIVE/...), unlike the
@@ -194,7 +248,7 @@ export default function PostJobPage() {
           employmentType: employmentTypeFromBackend(detail.employmentType),
           experienceLevel: experienceLevelFromBackend(detail.experienceLevel),
           workMode: workModeFromBackend(detail.workMode),
-          location: detail.location,
+          locationRows: toLocationRows(detail.locations),
           salaryMin: detail.salaryMinLakhs != null ? String(detail.salaryMinLakhs) : '',
           salaryMax: detail.salaryMaxLakhs != null ? String(detail.salaryMaxLakhs) : '',
           experienceYearsMin:
@@ -262,15 +316,16 @@ export default function PostJobPage() {
   async function onSaveDraft() {
     setFormError(null)
     const values = getValues()
-    // Mirrors JobRequest's actual @NotBlank fields on the backend (title/location/aboutRole —
-    // see JobRequest.java) — a draft still has to satisfy these, so checking only the title
-    // here let a save-as-draft 400 with a generic "Validation failed" that was easy to miss,
-    // leaving the company thinking their draft saved when it was never actually persisted.
+    // Mirrors JobRequest's actual @NotBlank/@NotEmpty fields on the backend (title/locations/
+    // aboutRole — see JobRequest.java) — a draft still has to satisfy these, so checking only
+    // the title here let a save-as-draft 400 with a generic "Validation failed" that was easy
+    // to miss, leaving the company thinking their draft saved when it was never actually
+    // persisted.
     if (!values.title.trim()) {
       setFormError(t('postJob.errorTitleRequired'))
       return
     }
-    if (!values.location.trim()) {
+    if (values.locationRows.length === 0) {
       setFormError(t('postJob.errorLocationRequired'))
       return
     }
@@ -491,12 +546,49 @@ export default function PostJobPage() {
                 ))}
               </select>
             </div>
-            <Input
-              label={t('postJob.fields.location')}
-              placeholder="e.g. Bengaluru, India"
-              error={errors.location?.message}
-              {...register('location')}
-            />
+            <div className="flex flex-col gap-2">
+              {/* Purely an "add a location" control, not a value display — value is always []
+                  so SkillsTagInput never renders its own chips here; each add becomes a new
+                  row below instead of a chip in this input's own list. */}
+              <SkillsTagInput
+                label={t('postJob.fields.location')}
+                value={[]}
+                onChange={(next) => {
+                  const added = next[0]?.trim()
+                  if (added) appendLocationRow({ location: added, areas: '' })
+                }}
+                suggestions={LOCATION_SUGGESTIONS}
+                placeholder={t('postJob.fields.locationPlaceholder')}
+                error={errors.locationRows?.message}
+                removeSkillLabel={(location) =>
+                  t('candidate:profile.removeSkill', { skill: location })
+                }
+              />
+              {locationRows.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {locationRows.map((row, index) => (
+                    <div key={row.id} className="flex items-center gap-2">
+                      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-tint px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap text-[#3A414D]">
+                        {row.location}
+                        <button
+                          type="button"
+                          onClick={() => removeLocationRow(index)}
+                          aria-label={t('candidate:profile.removeSkill', { skill: row.location })}
+                          className="cursor-pointer text-fog"
+                        >
+                          ×
+                        </button>
+                      </span>
+                      <input
+                        {...register(`locationRows.${index}.areas`)}
+                        placeholder={t('postJob.fields.areaPlaceholder')}
+                        className="min-w-0 flex-1 rounded-control border border-border px-3 py-2 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="flex flex-col">

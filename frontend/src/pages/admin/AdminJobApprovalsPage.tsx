@@ -187,7 +187,7 @@ export default function AdminJobApprovalsPage() {
                     <div className="mt-0.5 text-[13px] text-slate">
                       {t('jobApprovals.jobMeta', {
                         company: job.companyName,
-                        location: job.location,
+                        location: job.locations.join(', '),
                         mode: workModeFromBackend(job.workMode),
                         submitted: formatSubmittedLabel(t, job.createdAt),
                       })}

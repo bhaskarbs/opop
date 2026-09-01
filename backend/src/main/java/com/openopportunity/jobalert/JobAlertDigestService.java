@@ -78,7 +78,8 @@ public class JobAlertDigestService {
                         : matches.size() + " new jobs match your alert:");
         matches.stream()
                 .limit(MAX_JOBS_LISTED_PER_EMAIL)
-                .forEach(job -> paragraphs.add(job.title() + " at " + job.companyName() + " — " + job.location()));
+                .forEach(job -> paragraphs.add(
+                        job.title() + " at " + job.companyName() + " — " + String.join(", ", job.locations())));
         if (matches.size() > MAX_JOBS_LISTED_PER_EMAIL) {
             paragraphs.add("+ " + (matches.size() - MAX_JOBS_LISTED_PER_EMAIL) + " more.");
         }

@@ -180,7 +180,7 @@ class AdminAccountDeletionServiceTest {
         Job job = new Job(
                 UUID.randomUUID(), "Vertex Robotics", "Backend Engineer",
                 com.openopportunity.job.EmploymentType.FULL_TIME, com.openopportunity.job.ExperienceLevel.SENIOR,
-                com.openopportunity.job.WorkMode.HYBRID, "Bengaluru", null, null, null, "desc", List.of(),
+                com.openopportunity.job.WorkMode.HYBRID, List.of("Bengaluru"), null, null, null, "desc", List.of(),
                 List.of(), List.of(), com.openopportunity.job.JobStatus.ACTIVE);
         Application application = new Application(job.getId(), candidateId, job.getTitle(), job.getCompanyName());
         when(applicationRepository.findByCandidateIdOrderByAppliedAtDesc(candidateId))
@@ -251,7 +251,7 @@ class AdminAccountDeletionServiceTest {
         Job job = new Job(
                 companyId, "Vertex Robotics", "Backend Engineer",
                 com.openopportunity.job.EmploymentType.FULL_TIME, com.openopportunity.job.ExperienceLevel.SENIOR,
-                com.openopportunity.job.WorkMode.HYBRID, "Bengaluru", null, null, null, "desc", List.of(),
+                com.openopportunity.job.WorkMode.HYBRID, List.of("Bengaluru"), null, null, null, "desc", List.of(),
                 List.of(), List.of(), com.openopportunity.job.JobStatus.ACTIVE);
         when(jobRepository.findByCompanyIdOrderByCreatedAtDesc(companyId)).thenReturn(List.of(job));
 

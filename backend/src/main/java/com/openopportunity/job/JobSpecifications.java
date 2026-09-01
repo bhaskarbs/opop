@@ -50,8 +50,9 @@ final class JobSpecifications {
         };
     }
 
-    /** Matches a job if ANY of the given locations is a substring of its location — same
-     * multi-value relaxation as matchesAnyKeyword, for the search bar's city tags. */
+    /** Matches a job if ANY of the given search-term locations is a substring of ANY of its own
+     * (now possibly multiple) locations — same multi-value relaxation as matchesAnyKeyword, for
+     * the search bar's city tags. */
     static Specification<Job> matchesAnyLocation(List<String> locations) {
         List<String> normalized = normalize(locations);
         if (normalized.isEmpty()) return null;
@@ -60,7 +61,13 @@ final class JobSpecifications {
 
     private static Specification<Job> matchesLocation(String location) {
         String pattern = "%" + location.toLowerCase() + "%";
-        return (root, query, cb) -> cb.like(cb.lower(root.get("location")), pattern);
+        return (root, query, cb) -> {
+            // Same immutable_array_to_string (see V54/V72) joined-array LIKE approach as
+            // matchesKeyword's skills handling above — locations is now text[], not a scalar.
+            Expression<String> locationsJoined = cb.lower(cb.function(
+                    "immutable_array_to_string", String.class, root.get("locations"), cb.literal(",")));
+            return cb.like(locationsJoined, pattern);
+        };
     }
 
     private static List<String> normalize(List<String> values) {

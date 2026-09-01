@@ -130,21 +130,12 @@ export default function MyJobPostingsPage() {
                     className="text-[13px] font-bold text-primary"
                   />
                 )}
-                {posting.status === 'PENDING_APPROVAL' ? (
-                  <span
-                    title={t('myJobPostings.pendingReviewNotice')}
-                    className="cursor-not-allowed text-[13px] font-bold text-fog"
-                  >
-                    {t('myJobPostings.manage')}
-                  </span>
-                ) : (
-                  <Link
-                    to={localize(ROUTES.companyJobEdit(posting.id))}
-                    className="text-[13px] font-bold text-primary no-underline"
-                  >
-                    {t('myJobPostings.manage')}
-                  </Link>
-                )}
+                <Link
+                  to={localize(ROUTES.companyJobEdit(posting.id))}
+                  className="text-[13px] font-bold text-primary no-underline"
+                >
+                  {t('myJobPostings.manage')}
+                </Link>
               </div>
             </div>
           ))}

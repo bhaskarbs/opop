@@ -5,6 +5,7 @@ import com.openopportunity.job.ExperienceLevel;
 import com.openopportunity.job.JobStatus;
 import com.openopportunity.job.WorkMode;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,7 +16,7 @@ public record JobRequest(
         @NotNull EmploymentType employmentType,
         @NotNull ExperienceLevel experienceLevel,
         @NotNull WorkMode workMode,
-        @NotBlank String location,
+        @NotEmpty List<String> locations,
         BigDecimal salaryMinLakhs,
         BigDecimal salaryMaxLakhs,
         // Optional "N-M years of experience" range, distinct from experienceLevel's coarse

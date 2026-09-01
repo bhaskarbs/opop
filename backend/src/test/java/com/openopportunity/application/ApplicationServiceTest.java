@@ -78,7 +78,7 @@ class ApplicationServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -125,7 +125,7 @@ class ApplicationServiceTest {
         UUID candidateId = UUID.randomUUID();
         Job draft = new Job(
                 UUID.randomUUID(), "Vertex Robotics", "Draft Role", EmploymentType.FULL_TIME,
-                ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "desc",
+                ExperienceLevel.SENIOR, WorkMode.HYBRID, List.of("Bengaluru"), null, null, null, "desc",
                 List.of(), List.of(), List.of(), JobStatus.DRAFT);
         when(jobRepository.findById(draft.getId())).thenReturn(Optional.of(draft));
 

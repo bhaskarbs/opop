@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
-import { Button, Input, LoadingState, Spinner } from '../../components/ui'
+import { Button, Input, LoadingState, SkillsTagInput, Spinner } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 import {
   employmentTypeToBackend,
@@ -23,6 +23,7 @@ import {
 import { apiErrorMessage, API_BASE_URL } from '../../lib/apiClient'
 import { adminApi, type AdminUserSummary } from '../../lib/adminApi'
 import { jobsApi, type BackendJobStatus, type JobRequestPayload } from '../../lib/jobsApi'
+import { LOCATION_SUGGESTIONS } from '../../mocks/locations'
 import { ROUTES } from '../../routes/paths'
 
 const EMPLOYMENT_TYPE_KEYS: Record<EmploymentTypeLabel, string> = {
@@ -71,7 +72,16 @@ const postJobSchema = z.object({
   employmentType: z.enum(EMPLOYMENT_TYPES),
   experienceLevel: z.enum(EXPERIENCE_LEVELS),
   workMode: z.enum(WORK_MODES),
-  location: z.string().min(2, 'Enter a location'),
+  locationRows: z
+    .array(
+      z.object({
+        location: z.string().min(1, 'Enter a location'),
+        // Free-typed, comma-separated areas/neighborhoods within this one location — kept as a
+        // single string per row (not a tag list) so it round-trips through a plain text input.
+        areas: z.string(),
+      }),
+    )
+    .min(1, 'Add at least one location'),
   salaryMin: z.string().optional(),
   salaryMax: z.string().optional(),
   experienceYearsMin: z.string().optional(),
@@ -105,13 +115,46 @@ function splitLines(value: string): string[] {
     .filter(Boolean)
 }
 
+type LocationRow = { location: string; areas: string }
+
+// The backend still only ever sees a flat locations: string[] (no schema change for areas) — an
+// area is stored as "{location} - {area}" alongside the bare location entry. These two functions
+// are the only place that encoding exists: one flattens the form's per-location rows into that
+// flat array for submission, the other parses an existing job's flat array back into rows when
+// loading it for editing.
+function flattenLocationRows(rows: LocationRow[]): string[] {
+  const flat: string[] = []
+  for (const row of rows) {
+    const location = row.location.trim()
+    if (!location) continue
+    flat.push(location)
+    for (const area of row.areas
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean)) {
+      flat.push(`${location} - ${area}`)
+    }
+  }
+  return flat
+}
+function toLocationRows(locations: string[]): LocationRow[] {
+  const bareLocations = locations.filter((value) => !value.includes(' - '))
+  return bareLocations.map((location) => {
+    const prefix = `${location} - `
+    const areas = locations
+      .filter((value) => value.startsWith(prefix))
+      .map((value) => value.slice(prefix.length))
+    return { location, areas: areas.join(', ') }
+  })
+}
+
 function toJobRequest(values: PostJobFormValues): JobRequestPayload {
   return {
     title: values.title,
     employmentType: employmentTypeToBackend(values.employmentType),
     experienceLevel: experienceLevelToBackend(values.experienceLevel),
     workMode: workModeToBackend(values.workMode),
-    location: values.location,
+    locations: flattenLocationRows(values.locationRows),
     salaryMinLakhs: parseSalaryLakhs(values.salaryMin),
     salaryMaxLakhs: parseSalaryLakhs(values.salaryMax),
     experienceYearsMin: parseYears(values.experienceYearsMin),
@@ -170,7 +213,7 @@ export default function AdminPostJobPage() {
       employmentType: EMPLOYMENT_TYPES[0],
       experienceLevel: EXPERIENCE_LEVELS[0],
       workMode: WORK_MODES[0],
-      location: '',
+      locationRows: [],
       salaryMin: '',
       salaryMax: '',
       experienceYearsMin: '',
@@ -185,6 +228,12 @@ export default function AdminPostJobPage() {
       status: 'ACTIVE',
     },
   })
+
+  const {
+    fields: locationRows,
+    append: appendLocationRow,
+    remove: removeLocationRow,
+  } = useFieldArray({ control, name: 'locationRows' })
 
   useEffect(() => {
     if (!jobId) return
@@ -202,7 +251,7 @@ export default function AdminPostJobPage() {
           employmentType: employmentTypeFromBackend(detail.employmentType),
           experienceLevel: experienceLevelFromBackend(detail.experienceLevel),
           workMode: workModeFromBackend(detail.workMode),
-          location: detail.location,
+          locationRows: toLocationRows(detail.locations),
           salaryMin: detail.salaryMinLakhs != null ? String(detail.salaryMinLakhs) : '',
           salaryMax: detail.salaryMaxLakhs != null ? String(detail.salaryMaxLakhs) : '',
           experienceYearsMin:
@@ -299,15 +348,15 @@ export default function AdminPostJobPage() {
   async function onSaveDraft() {
     setFormError(null)
     const values = getValues()
-    // Mirrors JobRequest's actual @NotBlank fields on the backend (title/location/aboutRole —
-    // see JobRequest.java) — a draft still has to satisfy these, so checking only the title
-    // here let an admin "save" a draft that then 400'd with a generic "Validation failed" and
-    // was never actually persisted (the job silently didn't exist afterward).
+    // Mirrors JobRequest's actual @NotBlank/@NotEmpty fields on the backend (title/locations/
+    // aboutRole — see JobRequest.java) — a draft still has to satisfy these, so checking only
+    // the title here let an admin "save" a draft that then 400'd with a generic "Validation
+    // failed" and was never actually persisted (the job silently didn't exist afterward).
     if (!values.title.trim()) {
       setFormError(t('jobs.postForm.errorTitleRequired'))
       return
     }
-    if (!values.location.trim()) {
+    if (values.locationRows.length === 0) {
       setFormError(t('jobs.postForm.errorLocationRequired'))
       return
     }
@@ -571,12 +620,49 @@ export default function AdminPostJobPage() {
                 ))}
               </select>
             </div>
-            <Input
-              label={t('company:postJob.fields.location')}
-              placeholder="e.g. Bengaluru, India"
-              error={errors.location?.message}
-              {...register('location')}
-            />
+            <div className="flex flex-col gap-2">
+              {/* Purely an "add a location" control, not a value display — value is always []
+                  so SkillsTagInput never renders its own chips here; each add becomes a new
+                  row below instead of a chip in this input's own list. */}
+              <SkillsTagInput
+                label={t('company:postJob.fields.location')}
+                value={[]}
+                onChange={(next) => {
+                  const added = next[0]?.trim()
+                  if (added) appendLocationRow({ location: added, areas: '' })
+                }}
+                suggestions={LOCATION_SUGGESTIONS}
+                placeholder={t('company:postJob.fields.locationPlaceholder')}
+                error={errors.locationRows?.message}
+                removeSkillLabel={(location) =>
+                  t('candidate:profile.removeSkill', { skill: location })
+                }
+              />
+              {locationRows.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {locationRows.map((row, index) => (
+                    <div key={row.id} className="flex items-center gap-2">
+                      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-tint px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap text-[#3A414D]">
+                        {row.location}
+                        <button
+                          type="button"
+                          onClick={() => removeLocationRow(index)}
+                          aria-label={t('candidate:profile.removeSkill', { skill: row.location })}
+                          className="cursor-pointer text-fog"
+                        >
+                          ×
+                        </button>
+                      </span>
+                      <input
+                        {...register(`locationRows.${index}.areas`)}
+                        placeholder={t('company:postJob.fields.areaPlaceholder')}
+                        className="min-w-0 flex-1 rounded-control border border-border px-3 py-2 text-sm text-ink placeholder:text-fog focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="flex flex-col">

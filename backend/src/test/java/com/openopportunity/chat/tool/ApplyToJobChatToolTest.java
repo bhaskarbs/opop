@@ -35,7 +35,7 @@ class ApplyToJobChatToolTest {
                 id,
                 "Senior Backend Engineer",
                 "Acme",
-                "Bangalore",
+                List.of("Bangalore"),
                 WorkMode.REMOTE,
                 ExperienceLevel.SENIOR,
                 EmploymentType.FULL_TIME,

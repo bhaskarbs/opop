@@ -50,7 +50,7 @@ class JobSeoServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 workMode,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 minLakhs,
                 maxLakhs,
                 null,
@@ -89,6 +89,38 @@ class JobSeoServiceTest {
         assertThat(html).contains("\"minValue\":1000000");
         assertThat(html).contains("\"maxValue\":1500000");
         assertThat(html).contains("\"addressLocality\":\"Bengaluru\"");
+    }
+
+    @Test
+    void emitsOnePlacePerLocationForAMultiLocationJob() {
+        UUID jobId = UUID.randomUUID();
+        Job job = new Job(
+                UUID.randomUUID(),
+                "Acme",
+                "Senior Engineer",
+                EmploymentType.FULL_TIME,
+                ExperienceLevel.SENIOR,
+                WorkMode.ON_SITE,
+                List.of("Bengaluru", "Mumbai"),
+                null,
+                null,
+                null,
+                "Build things.",
+                List.of("Ship features"),
+                List.of("5+ years experience"),
+                List.of("Java", "React"),
+                JobStatus.ACTIVE);
+        ReflectionTestUtils.setField(job, "createdAt", Instant.parse("2026-01-15T00:00:00Z"));
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        String html = jobSeoService.renderJobPage(jobId, "en").orElseThrow();
+
+        // A single-location job emits jobLocation as one Place object (see the test above); a
+        // multi-location job must emit an array of them instead, per schema.org/Google's own
+        // guidance for a job posted to more than one place.
+        assertThat(html).contains("\"jobLocation\":[");
+        assertThat(html).contains("\"addressLocality\":\"Bengaluru\"");
+        assertThat(html).contains("\"addressLocality\":\"Mumbai\"");
     }
 
     @Test
