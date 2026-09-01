@@ -93,7 +93,7 @@ public class SearchJobsChatTool implements ChatTool {
                     .append("\" at ")
                     .append(job.companyName())
                     .append(" — ")
-                    .append(job.location())
+                    .append(String.join(", ", job.locations()))
                     .append(", ")
                     .append(job.workMode())
                     .append(", ")

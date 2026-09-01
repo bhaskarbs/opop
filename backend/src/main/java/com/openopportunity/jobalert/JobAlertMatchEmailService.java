@@ -82,8 +82,10 @@ public class JobAlertMatchEmailService {
         if (normalized.isEmpty()) {
             return true;
         }
-        String jobLocation = job.getLocation().toLowerCase(Locale.ROOT);
-        return normalized.stream().anyMatch(jobLocation::contains);
+        List<String> jobLocations =
+                job.getLocations().stream().map(location -> location.toLowerCase(Locale.ROOT)).toList();
+        return normalized.stream()
+                .anyMatch(term -> jobLocations.stream().anyMatch(jobLocation -> jobLocation.contains(term)));
     }
 
     // Same rule as JobSpecifications.normalize: strip null/blank entries, lowercase and trim
@@ -108,7 +110,8 @@ public class JobAlertMatchEmailService {
                 candidate.getEmail(),
                 "New job matching your alert: " + job.getTitle(),
                 "A new job matches your alert",
-                List.of(job.getTitle() + " at " + job.getCompanyName() + " — " + job.getLocation()),
+                List.of(job.getTitle() + " at " + job.getCompanyName() + " — "
+                        + String.join(", ", job.getLocations())),
                 new EmailButton("View job", frontendBaseUrl + "/en/jobs/" + job.getId()),
                 () -> {});
     }

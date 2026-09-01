@@ -40,7 +40,7 @@ class SitemapServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.ON_SITE,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,

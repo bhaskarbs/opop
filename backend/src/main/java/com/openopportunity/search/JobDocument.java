@@ -31,7 +31,7 @@ public class JobDocument {
     private final String companyName;
 
     @Field(type = FieldType.Text)
-    private final String location;
+    private final List<String> locations;
 
     @Field(type = FieldType.Text)
     private final List<String> skills;
@@ -57,7 +57,7 @@ public class JobDocument {
             String id,
             String title,
             String companyName,
-            String location,
+            List<String> locations,
             List<String> skills,
             String status,
             String experienceLevel,
@@ -67,7 +67,7 @@ public class JobDocument {
         this.id = id;
         this.title = title;
         this.companyName = companyName;
-        this.location = location;
+        this.locations = locations;
         this.skills = skills;
         this.status = status;
         this.experienceLevel = experienceLevel;
@@ -81,7 +81,7 @@ public class JobDocument {
                 job.getId().toString(),
                 job.getTitle(),
                 job.getCompanyName(),
-                job.getLocation(),
+                job.getLocations(),
                 job.getSkills(),
                 job.getStatus().name(),
                 job.getExperienceLevel().name(),
@@ -102,8 +102,8 @@ public class JobDocument {
         return companyName;
     }
 
-    public String getLocation() {
-        return location;
+    public List<String> getLocations() {
+        return locations;
     }
 
     public List<String> getSkills() {

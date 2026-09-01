@@ -39,7 +39,7 @@ public class PostJobChatTool implements ChatTool {
             String employmentType,
             String experienceLevel,
             String workMode,
-            String location,
+            List<String> locations,
             BigDecimal salaryMinLakhs,
             BigDecimal salaryMaxLakhs,
             String applicationDeadline,
@@ -81,7 +81,9 @@ public class PostJobChatTool implements ChatTool {
                                         ToolSchemas.enumProperty(
                                                 "Work mode.", List.of("REMOTE", "HYBRID", "ON_SITE"))),
                                 Map.entry(
-                                        "location", ToolSchemas.stringProperty("Job location, e.g. \"Bangalore\".")),
+                                        "locations",
+                                        ToolSchemas.stringArrayProperty(
+                                                "Job location(s), e.g. [\"Bangalore\"] or [\"Bangalore\", \"Remote\"] — at least one required.")),
                                 Map.entry(
                                         "salaryMinLakhs",
                                         ToolSchemas.numberProperty("Minimum salary in lakhs per year (optional).")),
@@ -114,7 +116,7 @@ public class PostJobChatTool implements ChatTool {
                                 "employmentType",
                                 "experienceLevel",
                                 "workMode",
-                                "location",
+                                "locations",
                                 "aboutRole",
                                 "confirmed")))
                 .build();
@@ -133,7 +135,7 @@ public class PostJobChatTool implements ChatTool {
                 parseEnum(parsed.employmentType(), EmploymentType::valueOf, "employment type"),
                 parseEnum(parsed.experienceLevel(), ExperienceLevel::valueOf, "experience level"),
                 parseEnum(parsed.workMode(), WorkMode::valueOf, "work mode"),
-                parsed.location(),
+                parsed.locations(),
                 parsed.salaryMinLakhs(),
                 parsed.salaryMaxLakhs(),
                 // Not exposed as a chat-tool input (yet) — a company can still set it afterward
@@ -162,7 +164,7 @@ public class PostJobChatTool implements ChatTool {
         preview.append("- Type: ").append(request.employmentType()).append('\n');
         preview.append("- Experience level: ").append(request.experienceLevel()).append('\n');
         preview.append("- Work mode: ").append(request.workMode()).append('\n');
-        preview.append("- Location: ").append(request.location()).append('\n');
+        preview.append("- Location: ").append(String.join(", ", request.locations())).append('\n');
         if (request.salaryMinLakhs() != null || request.salaryMaxLakhs() != null) {
             preview.append("- Salary: ")
                     .append(request.salaryMinLakhs() != null ? request.salaryMinLakhs() : "?")

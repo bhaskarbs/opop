@@ -83,7 +83,8 @@ public class NewJobMatchEmailService {
                     "New job matching your profile: " + job.getTitle(),
                     "A new job matches your profile",
                     List.of(
-                            job.getTitle() + " at " + job.getCompanyName() + " — " + job.getLocation(),
+                            job.getTitle() + " at " + job.getCompanyName() + " — "
+                                    + String.join(", ", job.getLocations()),
                             "We matched this to your profile based on your skills and experience level."),
                     new EmailButton("View job", jobUrl),
                     () -> {});

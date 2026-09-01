@@ -146,8 +146,7 @@
     "manage": "Manage →",
     "viewApplicants": "View applicants",
     "share": "Share",
-    "linkCopied": "Copied!",
-    "pendingReviewNotice": "This job is awaiting admin review — you can't edit it until that's done."
+    "linkCopied": "Copied!"
   },
   "postJob": {
     "employmentType": {
@@ -182,6 +181,8 @@
       "jobTitle": "Job title",
       "employmentType": "Employment type",
       "location": "Location",
+      "locationPlaceholder": "Add a city and press Enter",
+      "areaPlaceholder": "Areas, comma separated (optional)",
       "salaryRange": "Salary range (₹/yr)",
       "salaryMinPlaceholder": "Min e.g. 12L",
       "salaryMaxPlaceholder": "Max e.g. 18L",

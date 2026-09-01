@@ -12,7 +12,7 @@ export interface JobSummary {
   id: string
   title: string
   companyName: string
-  location: string
+  locations: string[]
   workMode: BackendWorkMode
   experienceLevel: BackendExperienceLevel
   employmentType: BackendEmploymentType
@@ -48,7 +48,7 @@ export interface JobRequestPayload {
   employmentType: BackendEmploymentType
   experienceLevel: BackendExperienceLevel
   workMode: BackendWorkMode
-  location: string
+  locations: string[]
   salaryMinLakhs: number | null
   salaryMaxLakhs: number | null
   experienceYearsMin: number | null

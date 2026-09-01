@@ -109,7 +109,7 @@ public class JobSeoService {
         html.append("<p>")
                 .append(HtmlUtils.htmlEscape(job.getCompanyName()))
                 .append(" &mdash; ")
-                .append(HtmlUtils.htmlEscape(job.getLocation()))
+                .append(HtmlUtils.htmlEscape(String.join(", ", job.getLocations())))
                 .append("</p>\n");
         html.append("<p>")
                 .append(HtmlUtils.htmlEscape(humanize(job.getEmploymentType().name())))
@@ -181,14 +181,22 @@ public class JobSeoService {
             country.put("name", "IN");
             data.put("applicantLocationRequirement", country);
         } else {
-            Map<String, Object> address = new LinkedHashMap<>();
-            address.put("@type", "PostalAddress");
-            address.put("addressLocality", job.getLocation());
-            address.put("addressCountry", "IN");
-            Map<String, Object> place = new LinkedHashMap<>();
-            place.put("@type", "Place");
-            place.put("address", address);
-            data.put("jobLocation", place);
+            // Google/schema.org explicitly support an array of Place entries for a job posted
+            // to multiple locations — a single object (not a one-element array) when there's
+            // just one, matching the shape this always emitted before locations became plural.
+            List<Object> places = job.getLocations().stream()
+                    .map(location -> {
+                        Map<String, Object> address = new LinkedHashMap<>();
+                        address.put("@type", "PostalAddress");
+                        address.put("addressLocality", location);
+                        address.put("addressCountry", "IN");
+                        Map<String, Object> place = new LinkedHashMap<>();
+                        place.put("@type", "Place");
+                        place.put("address", address);
+                        return (Object) place;
+                    })
+                    .toList();
+            data.put("jobLocation", places.size() == 1 ? places.get(0) : places);
         }
 
         if (job.getSalaryMinLakhs() != null || job.getSalaryMaxLakhs() != null) {

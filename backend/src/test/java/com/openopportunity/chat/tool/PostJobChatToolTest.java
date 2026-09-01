@@ -34,7 +34,7 @@ class PostJobChatToolTest {
                 "employmentType", "FULL_TIME",
                 "experienceLevel", "SENIOR",
                 "workMode", "REMOTE",
-                "location", "Bangalore",
+                "locations", List.of("Bangalore"),
                 "aboutRole", "Own our payments platform.");
     }
 
@@ -64,7 +64,7 @@ class PostJobChatToolTest {
                 UUID.randomUUID(),
                 "Senior Backend Engineer",
                 "Acme",
-                "Bangalore",
+                List.of("Bangalore"),
                 WorkMode.REMOTE,
                 ExperienceLevel.SENIOR,
                 EmploymentType.FULL_TIME,
@@ -100,7 +100,7 @@ class PostJobChatToolTest {
                                 EmploymentType.FULL_TIME,
                                 ExperienceLevel.SENIOR,
                                 WorkMode.REMOTE,
-                                "Bangalore",
+                                List.of("Bangalore"),
                                 null,
                                 null,
                                 null,

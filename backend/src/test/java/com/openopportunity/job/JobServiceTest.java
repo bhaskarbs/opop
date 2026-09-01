@@ -128,7 +128,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 BigDecimal.valueOf(18),
                 BigDecimal.valueOf(24),
                 null,
@@ -223,7 +223,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -256,7 +256,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -303,7 +303,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -332,7 +332,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -360,7 +360,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -510,7 +510,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -789,7 +789,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -815,7 +815,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -848,7 +848,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,
@@ -919,15 +919,15 @@ class JobServiceTest {
 
         Job plainJob = new Job(
                 plainCompanyId, "Plain Co", "Plain Role", EmploymentType.FULL_TIME, ExperienceLevel.SENIOR,
-                WorkMode.HYBRID, "Bengaluru", null, null, null, "About", List.of(), List.of(), List.of(),
+                WorkMode.HYBRID, List.of("Bengaluru"), null, null, null, "About", List.of(), List.of(), List.of(),
                 JobStatus.ACTIVE);
         Job promotedJob = new Job(
                 promotedCompanyId, "Promoted Co", "Promoted Role", EmploymentType.FULL_TIME,
-                ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "About", List.of(),
+                ExperienceLevel.SENIOR, WorkMode.HYBRID, List.of("Bengaluru"), null, null, null, "About", List.of(),
                 List.of(), List.of(), JobStatus.ACTIVE);
         Job featuredJob = new Job(
                 featuredCompanyId, "Featured Co", "Featured Role", EmploymentType.FULL_TIME,
-                ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "About", List.of(),
+                ExperienceLevel.SENIOR, WorkMode.HYBRID, List.of("Bengaluru"), null, null, null, "About", List.of(),
                 List.of(), List.of(), JobStatus.ACTIVE);
         featuredJob.feature();
 
@@ -963,7 +963,7 @@ class JobServiceTest {
         for (int i = 0; i < 5; i++) {
             jobs.add(new Job(
                     UUID.randomUUID(), "Co " + i, "Role " + i, EmploymentType.FULL_TIME,
-                    ExperienceLevel.SENIOR, WorkMode.HYBRID, "Bengaluru", null, null, null, "About",
+                    ExperienceLevel.SENIOR, WorkMode.HYBRID, List.of("Bengaluru"), null, null, null, "About",
                     List.of(), List.of(), List.of(), JobStatus.ACTIVE));
         }
         when(jobSearchProvider.searchIds(any(), any(), any(), any(), any(), any()))
@@ -1006,7 +1006,7 @@ class JobServiceTest {
                 EmploymentType.FULL_TIME,
                 ExperienceLevel.SENIOR,
                 WorkMode.HYBRID,
-                "Bengaluru",
+                List.of("Bengaluru"),
                 null,
                 null,
                 null,

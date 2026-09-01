@@ -116,7 +116,7 @@ class JobControllerTest {
                 EmploymentType.FULL_TIME,
                 level,
                 mode,
-                location,
+                List.of(location),
                 minSalary,
                 maxSalary,
                 null,

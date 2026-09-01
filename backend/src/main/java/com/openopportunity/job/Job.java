@@ -45,8 +45,9 @@ public class Job {
     @Column(name = "work_mode", nullable = false, length = 20)
     private WorkMode workMode;
 
-    @Column(nullable = false)
-    private String location;
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "text[]")
+    private List<String> locations;
 
     @Column(name = "salary_min_lakhs", precision = 6, scale = 2)
     private BigDecimal salaryMinLakhs;
@@ -122,7 +123,7 @@ public class Job {
             EmploymentType employmentType,
             ExperienceLevel experienceLevel,
             WorkMode workMode,
-            String location,
+            List<String> locations,
             BigDecimal salaryMinLakhs,
             BigDecimal salaryMaxLakhs,
             LocalDate applicationDeadline,
@@ -138,7 +139,7 @@ public class Job {
         this.employmentType = employmentType;
         this.experienceLevel = experienceLevel;
         this.workMode = workMode;
-        this.location = location;
+        this.locations = locations;
         this.salaryMinLakhs = salaryMinLakhs;
         this.salaryMaxLakhs = salaryMaxLakhs;
         this.applicationDeadline = applicationDeadline;
@@ -155,7 +156,7 @@ public class Job {
             EmploymentType employmentType,
             ExperienceLevel experienceLevel,
             WorkMode workMode,
-            String location,
+            List<String> locations,
             BigDecimal salaryMinLakhs,
             BigDecimal salaryMaxLakhs,
             LocalDate applicationDeadline,
@@ -168,7 +169,7 @@ public class Job {
         this.employmentType = employmentType;
         this.experienceLevel = experienceLevel;
         this.workMode = workMode;
-        this.location = location;
+        this.locations = locations;
         this.salaryMinLakhs = salaryMinLakhs;
         this.salaryMaxLakhs = salaryMaxLakhs;
         this.applicationDeadline = applicationDeadline;
@@ -268,8 +269,8 @@ public class Job {
         return workMode;
     }
 
-    public String getLocation() {
-        return location;
+    public List<String> getLocations() {
+        return locations;
     }
 
     public BigDecimal getSalaryMinLakhs() {

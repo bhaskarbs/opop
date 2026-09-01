@@ -49,7 +49,7 @@ class SavedJobServiceTest {
                 jobId,
                 "Senior Frontend Developer",
                 "Vertex Robotics",
-                "Bengaluru",
+                List.of("Bengaluru"),
                 WorkMode.HYBRID,
                 ExperienceLevel.SENIOR,
                 EmploymentType.FULL_TIME,

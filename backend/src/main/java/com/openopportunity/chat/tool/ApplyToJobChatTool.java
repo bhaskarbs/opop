@@ -60,7 +60,8 @@ public class ApplyToJobChatTool implements ChatTool {
         JobDetail job = jobService.get(jobId, currentUserId);
 
         if (!Boolean.TRUE.equals(parsed.confirmed())) {
-            return "Ready to apply to \"" + job.title() + "\" at " + job.companyName() + " (" + job.location()
+            return "Ready to apply to \"" + job.title() + "\" at " + job.companyName() + " ("
+                    + String.join(", ", job.locations())
                     + "). This hasn't been submitted yet. Ask the user to confirm, then call apply_to_job again "
                     + "with confirmed=true to actually apply.";
         }

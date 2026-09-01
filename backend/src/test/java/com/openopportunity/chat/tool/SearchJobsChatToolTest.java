@@ -65,7 +65,7 @@ class SearchJobsChatToolTest {
                 UUID.randomUUID(),
                 "Senior Backend Engineer",
                 "Acme",
-                "Remote",
+                List.of("Remote"),
                 WorkMode.REMOTE,
                 ExperienceLevel.SENIOR,
                 EmploymentType.FULL_TIME,

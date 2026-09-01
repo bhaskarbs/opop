@@ -70,7 +70,7 @@ export function toDisplayJob(job: JobSummary): DisplayJob {
     id: job.id,
     title: job.title,
     company: job.companyName,
-    location: job.location,
+    location: job.locations.join(', '),
     mode: workModeFromBackend(job.workMode),
     level: experienceLevelFromBackend(job.experienceLevel),
     initial: job.companyName.charAt(0).toUpperCase(),

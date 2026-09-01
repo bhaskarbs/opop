@@ -75,7 +75,7 @@ public class ElasticsearchJobSearchProvider implements JobSearchProvider {
         if (keywordQuery != null) {
             bool.must(keywordQuery);
         }
-        Query locationQuery = matchAnyFieldAnyValue(List.of("location"), locations);
+        Query locationQuery = matchAnyFieldAnyValue(List.of("locations"), locations);
         if (locationQuery != null) {
             bool.must(locationQuery);
         }
