@@ -465,16 +465,16 @@ public class JobService {
      * used to bypass that cap either — except for the one named exemption, see
      * hasUnlimitedJobPostings.
      *
-     * <p>suppressJobAlertEmails skips only the job-alert email fan-out in notifyJobIsLive (see
-     * its javadoc) when the job is created straight to ACTIVE — for the Naukri bulk importer
+     * <p>suppressJobEmails skips every notifyJobIsLive email side effect (see its javadoc) when
+     * the job is created straight to ACTIVE — for the Naukri bulk importer
      * (jobs/scripts/import_naukri_jobs.py), which posts hundreds of scraped jobs per run through
-     * this exact endpoint/JWT. A saved job alert can match hundreds of imported rows in a single
-     * run, so left on that's hundreds of alert emails for jobs the recipient didn't apply for
-     * proactively; the company "it's live" notification and per-candidate skill-match emails
-     * still fire same as any other job. A real admin using AdminJobsPage always passes false
+     * this exact endpoint/JWT. Left on, that's hundreds of job-alert emails, candidate
+     * skill-match emails, and "it's live" notifications for jobs nobody proactively engaged
+     * with — and, per the 2026-09-02 production incident, enough email volume in a single run to
+     * saturate emailTaskExecutor outright. A real admin using AdminJobsPage always passes false
      * (see JobController#adminCreate). */
     @Transactional
-    public JobDetail adminCreate(UUID companyId, JobRequest request, boolean suppressJobAlertEmails) {
+    public JobDetail adminCreate(UUID companyId, JobRequest request, boolean suppressJobEmails) {
         User company = requireCompany(companyId);
         if (!hasUnlimitedJobPostings(company) && jobRepository.countByCompanyId(companyId) >= MAX_JOB_POSTINGS_PER_COMPANY) {
             throw new JobPostingLimitReachedException();
@@ -500,7 +500,7 @@ public class JobService {
         if (job.getStatus() == JobStatus.PENDING_APPROVAL) {
             notifyAdminsJobPending(job, company.getFullName());
         } else if (job.getStatus() == JobStatus.ACTIVE) {
-            notifyJobIsLive(job, suppressJobAlertEmails);
+            notifyJobIsLive(job, suppressJobEmails);
         }
         return toDetail(
                 job, companyProfileRepository.findByUserId(companyId).orElse(null), isPromoted(companyId));
@@ -544,18 +544,21 @@ public class JobService {
 
     /** Same "job just went live" side effects as approve() — reused here so an admin publishing
      * straight to ACTIVE via adminCreate/adminUpdate notifies the company and matching
-     * candidates identically to going through the approval queue. suppressJobAlertEmails is only
-     * ever true from adminCreate's bulk-import path — see its javadoc. */
-    private void notifyJobIsLive(Job job, boolean suppressJobAlertEmails) {
+     * candidates identically to going through the approval queue. suppressJobEmails is only ever
+     * true from adminCreate's bulk-import path — see its javadoc — and, when set, skips every
+     * side effect below rather than just the job-alert fan-out, since a scripted bulk import has
+     * no real engaged recipient for any of them. */
+    private void notifyJobIsLive(Job job, boolean suppressJobEmails) {
+        if (suppressJobEmails) {
+            return;
+        }
         notificationService.notify(
                 job.getCompanyId(),
                 NotificationType.JOB_APPROVED,
                 "Your job posting \"" + job.getTitle() + "\" has been approved and is now live.",
                 "/company/dashboard");
         newJobMatchEmailService.notifyMatchingCandidates(job);
-        if (!suppressJobAlertEmails) {
-            jobAlertMatchEmailService.notifyMatchingAlerts(job);
-        }
+        jobAlertMatchEmailService.notifyMatchingAlerts(job);
     }
 
     private User requireCompany(UUID companyId) {

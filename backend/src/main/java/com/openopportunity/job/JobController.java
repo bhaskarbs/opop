@@ -160,20 +160,21 @@ public class JobController {
      * for how this differs from create() above (companyId is chosen by the admin, not the
      * caller; skips the eligibility/status-transition gates a company itself is bound by).
      *
-     * <p>X-Suppress-Job-Alert-Emails is honored only here, not on create() above — the SPA never
-     * sends it (a real admin publishing a job wants saved-alert subscribers notified same as
-     * any other job), but the Naukri bulk importer (jobs/scripts/import_naukri_jobs.py) always
-     * does, since posting hundreds of scraped jobs in one run would otherwise fan out hundreds
-     * of job-alert emails to anyone whose saved alert happens to match. See
-     * JobService#adminCreate for exactly what this does and doesn't suppress. */
+     * <p>X-Suppress-Job-Emails is honored only here, not on create() above — the SPA never sends
+     * it (a real admin publishing a job wants the company/candidates/alert-subscribers notified
+     * same as any other job), but the Naukri bulk importer (jobs/scripts/import_naukri_jobs.py)
+     * always does, since posting hundreds of scraped jobs in one run would otherwise fan out
+     * hundreds of emails — job-alert matches, candidate skill matches, and the sourced-jobs
+     * account's own "it's live" notification — for jobs nobody proactively engaged with. See
+     * JobService#adminCreate for exactly what this suppresses. */
     @PostMapping("/admin")
     public ResponseEntity<JobDetail> adminCreate(
             @RequestParam UUID companyId,
             @Valid @RequestBody JobRequest request,
-            @RequestHeader(value = "X-Suppress-Job-Alert-Emails", required = false, defaultValue = "false")
-                    boolean suppressJobAlertEmails) {
+            @RequestHeader(value = "X-Suppress-Job-Emails", required = false, defaultValue = "false")
+                    boolean suppressJobEmails) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(jobService.adminCreate(companyId, request, suppressJobAlertEmails));
+                .body(jobService.adminCreate(companyId, request, suppressJobEmails));
     }
 
     /** Admin edit of any job's content, regardless of which company owns it — see

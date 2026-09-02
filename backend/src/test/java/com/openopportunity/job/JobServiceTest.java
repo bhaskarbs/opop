@@ -405,14 +405,15 @@ class JobServiceTest {
         verify(notificationService).notify(eq(companyId), eq(NotificationType.JOB_APPROVED), any(), any());
     }
 
-    /** suppressJobAlertEmails=true is what JobController maps X-Suppress-Job-Alert-Emails onto
-     * for the Naukri bulk importer (jobs/scripts/import_naukri_jobs.py) — a single saved job
-     * alert can match hundreds of scraped jobs imported in one run, so left on that's hundreds
-     * of alert emails for jobs the recipient never proactively applied to. The company "it's
-     * live" notification and per-candidate skill-match emails are a different concern and must
-     * still fire exactly as for any other ACTIVE job — only the job-alert fan-out is skipped. */
+    /** suppressJobEmails=true is what JobController maps X-Suppress-Job-Emails onto for the
+     * Naukri bulk importer (jobs/scripts/import_naukri_jobs.py) — a scripted run posting
+     * hundreds of scraped jobs back to back has no real engaged recipient for any of the
+     * "job just went live" side effects (job-alert matches, candidate skill matches, or the
+     * sourced-jobs account's own "it's live" notification), and per the 2026-09-02 production
+     * incident, leaving any of them on is enough volume to saturate emailTaskExecutor and 500
+     * the request. So suppressJobEmails skips all of them, not just the job-alert fan-out. */
     @Test
-    void adminCreateSuppressesOnlyJobAlertEmailsWhenAsked() {
+    void adminCreateSuppressesAllJobEmailsWhenAsked() {
         UUID companyId = UUID.randomUUID();
         when(userRepository.findById(companyId))
                 .thenReturn(Optional.of(new User("founder@vertex.com", "hash", "Vertex Robotics", UserRole.COMPANY)));
@@ -421,8 +422,8 @@ class JobServiceTest {
 
         assertThat(detail.status()).isEqualTo(JobStatus.ACTIVE);
         verify(jobAlertMatchEmailService, never()).notifyMatchingAlerts(any());
-        verify(newJobMatchEmailService).notifyMatchingCandidates(any());
-        verify(notificationService).notify(eq(companyId), eq(NotificationType.JOB_APPROVED), any(), any());
+        verify(newJobMatchEmailService, never()).notifyMatchingCandidates(any());
+        verify(notificationService, never()).notify(eq(companyId), eq(NotificationType.JOB_APPROVED), any(), any());
     }
 
     @Test
