@@ -216,7 +216,8 @@ public class SecurityConfig {
                                 "/api/admin/candidate-billing/**",
                                 "/api/admin/mock-interview-questions/**",
                                 "/api/admin/mock-interviews/**",
-                                "/api/admin/broadcast-email/**")
+                                "/api/admin/broadcast-email/**",
+                                "/api/admin/career-guide-steps/**")
                         .hasAnyAuthority("LEVEL_ADMIN", "LEVEL_SUPER_ADMIN")
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")

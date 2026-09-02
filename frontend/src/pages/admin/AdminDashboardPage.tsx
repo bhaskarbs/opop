@@ -147,6 +147,12 @@ export default function AdminDashboardPage() {
           >
             {t('dashboard.broadcastEmail')}
           </Link>
+          <Link
+            to={localize(ROUTES.adminCareerGuideSteps)}
+            className="text-[13px] font-bold text-primary no-underline"
+          >
+            {t('dashboard.careerGuideSteps')}
+          </Link>
         </div>
       </div>
 

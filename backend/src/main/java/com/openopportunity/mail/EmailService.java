@@ -68,6 +68,25 @@ public class EmailService {
         mailSender.send(mimeMessage);
     }
 
+    /** See EmailTemplate.renderCareerGuide — same MailException contract as send() above. */
+    public void sendCareerGuide(String to, String subject, List<CareerGuideStepCta> steps) {
+        if (!configured) {
+            throw new MailAuthenticationException(
+                    "No SMTP credentials configured (spring.mail.username is blank)");
+        }
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
+            helper.setFrom(fromAddress, fromName);
+            helper.setTo(to);
+            helper.setSubject(sanitizeSubject(subject));
+            helper.setText(EmailTemplate.renderCareerGuide(steps), true);
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            throw new MailPreparationException(e);
+        }
+        mailSender.send(mimeMessage);
+    }
+
     // Some callers build subject from user-supplied text (e.g. CommunityInterestService, which
     // includes the submitter's own name) with no server-side restriction on its characters — a
     // CR or LF in there could otherwise inject extra headers into the outgoing message. Stripped

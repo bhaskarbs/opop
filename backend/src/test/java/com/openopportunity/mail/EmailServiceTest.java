@@ -69,4 +69,54 @@ class EmailServiceTest {
         verify(mailSender, never()).createMimeMessage();
         verify(mailSender, never()).send(org.mockito.ArgumentMatchers.<MimeMessage>any());
     }
+
+    @Test
+    void rendersEveryStepAsAButtonLinkingToItsOwnVideoUrl() throws Exception {
+        MimeMessage realMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(realMessage);
+
+        emailService.sendCareerGuide(
+                "candidate@example.com",
+                "Subject",
+                List.of(
+                        new CareerGuideStepCta(1, "Understand how the world of work is changing.", "https://video.example/1"),
+                        new CareerGuideStepCta(2, "Learn the skills employers value today.", "https://video.example/2")));
+
+        String html = (String) realMessage.getContent();
+        assertThat(html).contains("Step 1").contains("Step 2");
+        assertThat(html).contains("href=\"https://video.example/1\"").contains("href=\"https://video.example/2\"");
+        assertThat(html).contains("Understand how the world of work is changing.");
+        assertThat(html).contains("Learn the skills employers value today.");
+    }
+
+    @Test
+    void escapesStepDescriptionAndUrlInTheCareerGuideEmail() throws Exception {
+        MimeMessage realMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(realMessage);
+
+        emailService.sendCareerGuide(
+                "candidate@example.com",
+                "Subject",
+                List.of(new CareerGuideStepCta(1, "<script>alert(1)</script>", "https://video.example/1?a=1&b=2")));
+
+        String html = (String) realMessage.getContent();
+        assertThat(html).doesNotContain("<script>");
+        assertThat(html).contains("&lt;script&gt;");
+        assertThat(html).contains("https://video.example/1?a=1&amp;b=2");
+    }
+
+    @Test
+    void sendCareerGuideFailsFastWithoutTouchingJavaMailSenderWhenNoUsernameIsConfigured() {
+        EmailService unconfigured = new EmailService(
+                mailSender, "customersupport@openopportunity.in", "OpenOpportunity", "");
+
+        assertThatThrownBy(() -> unconfigured.sendCareerGuide(
+                        "candidate@example.com",
+                        "Subject",
+                        List.of(new CareerGuideStepCta(1, "Description", "https://video.example/1"))))
+                .isInstanceOf(MailAuthenticationException.class);
+
+        verify(mailSender, never()).createMimeMessage();
+        verify(mailSender, never()).send(org.mockito.ArgumentMatchers.<MimeMessage>any());
+    }
 }

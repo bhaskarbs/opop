@@ -18,6 +18,7 @@
     "manageVideos": "Manage videos →",
     "broadcastEmail": "Send broadcast email →",
     "mockInterviewQuestions": "Interview questions →",
+    "careerGuideSteps": "Career guide email →",
     "kpis": {
       "totalCandidates": "Total candidates",
       "registeredCompanies": "Registered companies",
@@ -546,5 +547,38 @@
     "send": "Send email",
     "success": "Sent to {{count}} recipients.",
     "error": "Could not send this email."
+  },
+  "careerGuideSteps": {
+    "title": "Career guide email",
+    "subtitle": "Manage the Step 1/2/3... videos shown in the career guide email, and send a sample to check how it looks.",
+    "sendTest": {
+      "heading": "Send a sample email",
+      "emailPlaceholder": "you@example.com",
+      "send": "Send sample",
+      "success": "Sample email sent to {{email}}.",
+      "error": "Could not send the sample email.",
+      "needsSteps": "Add at least one step below before sending a sample."
+    },
+    "form": {
+      "addTitle": "Add a step",
+      "editTitle": "Edit step",
+      "descriptionField": "Description",
+      "descriptionPlaceholder": "Understand how the world of work is changing.",
+      "videoUrlField": "Video URL",
+      "videoUrlPlaceholder": "https://...",
+      "add": "Add step",
+      "saveChanges": "Save changes",
+      "cancelEdit": "Cancel"
+    },
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this step? The remaining steps will be renumbered.",
+    "none": "No steps configured yet — add one below.",
+    "loading": "Loading steps…",
+    "loadError": "Could not load steps.",
+    "saveError": "Could not save this step.",
+    "stepLabel": "Step {{number}}"
   }
 }

@@ -18,6 +18,7 @@
     "manageVideos": "वीडियो प्रबंधित करें →",
     "broadcastEmail": "ब्रॉडकास्ट ईमेल भेजें →",
     "mockInterviewQuestions": "इंटरव्यू प्रश्न →",
+    "careerGuideSteps": "करियर गाइड ईमेल →",
     "kpis": {
       "totalCandidates": "कुल उम्मीदवार",
       "registeredCompanies": "पंजीकृत कंपनियां",
@@ -546,5 +547,38 @@
     "send": "ईमेल भेजें",
     "success": "{{count}} प्राप्तकर्ताओं को भेजा गया।",
     "error": "यह ईमेल नहीं भेजा जा सका।"
+  },
+  "careerGuideSteps": {
+    "title": "करियर गाइड ईमेल",
+    "subtitle": "करियर गाइड ईमेल में दिखाए जाने वाले Step 1/2/3... वीडियो प्रबंधित करें, और देखें कि यह कैसा दिखता है इसके लिए एक सैंपल भेजें।",
+    "sendTest": {
+      "heading": "सैंपल ईमेल भेजें",
+      "emailPlaceholder": "you@example.com",
+      "send": "सैंपल भेजें",
+      "success": "सैंपल ईमेल {{email}} पर भेजा गया।",
+      "error": "सैंपल ईमेल नहीं भेजा जा सका।",
+      "needsSteps": "सैंपल भेजने से पहले नीचे कम से कम एक स्टेप जोड़ें।"
+    },
+    "form": {
+      "addTitle": "एक स्टेप जोड़ें",
+      "editTitle": "स्टेप संपादित करें",
+      "descriptionField": "विवरण",
+      "descriptionPlaceholder": "समझें कि काम की दुनिया कैसे बदल रही है।",
+      "videoUrlField": "वीडियो URL",
+      "videoUrlPlaceholder": "https://...",
+      "add": "स्टेप जोड़ें",
+      "saveChanges": "बदलाव सहेजें",
+      "cancelEdit": "रद्द करें"
+    },
+    "moveUp": "ऊपर ले जाएं",
+    "moveDown": "नीचे ले जाएं",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "deleteConfirm": "इस स्टेप को हटाएं? बाकी स्टेप्स की संख्या फिर से क्रमबद्ध हो जाएगी।",
+    "none": "अभी तक कोई स्टेप कॉन्फ़िगर नहीं किया गया — नीचे एक जोड़ें।",
+    "loading": "स्टेप्स लोड हो रहे हैं…",
+    "loadError": "स्टेप्स लोड नहीं हो सके।",
+    "saveError": "यह स्टेप सहेजा नहीं जा सका।",
+    "stepLabel": "स्टेप {{number}}"
   }
 }

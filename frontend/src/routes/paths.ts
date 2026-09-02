@@ -77,6 +77,7 @@ export const ROUTES = {
   adminIdeaEdit: (ideaId: string) => `/admin/ideas/${ideaId}/edit`,
   adminVideos: '/admin/videos',
   adminBroadcastEmail: '/admin/broadcast-email',
+  adminCareerGuideSteps: '/admin/career-guide-steps',
 } as const
 
 /** MyIdeasPage/IdeaSubmitPage are mounted twice — once under /candidate, once under /company
