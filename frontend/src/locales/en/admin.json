@@ -523,6 +523,8 @@
     "delete": "Delete",
     "deleteShare": "Delete link",
     "noShares": "Not shared with anyone yet.",
+    "copyLink": "Copy link",
+    "linkCopied": "Copied!",
     "watchedPercent": "{{percent}}% watched",
     "watchedSeconds": "{{seconds}}s watched",
     "viewCount": "opened {{count}} times",

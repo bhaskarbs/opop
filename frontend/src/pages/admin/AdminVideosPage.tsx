@@ -74,6 +74,9 @@ export default function AdminVideosPage() {
   const [shares, setShares] = useState<AdminVideoShareSummary[]>([])
   const [sharesLoading, setSharesLoading] = useState(false)
   const [deletingShareId, setDeletingShareId] = useState<string | null>(null)
+  // Which share's link was most recently copied — drives a transient "Copied" label on that
+  // row's button only, not a page-wide toast.
+  const [copiedShareId, setCopiedShareId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -183,6 +186,16 @@ export default function AdminVideosPage() {
       // Best-effort — the row just stays put if the delete failed, and the button re-enables.
     } finally {
       setDeletingShareId(null)
+    }
+  }
+
+  async function handleCopyShareUrl(shareId: string, shareUrl: string) {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopiedShareId(shareId)
+      setTimeout(() => setCopiedShareId((current) => (current === shareId ? null : current)), 2000)
+    } catch {
+      // Best-effort — the URL is still visible/selectable in the row for a manual copy.
     }
   }
 
@@ -322,38 +335,59 @@ export default function AdminVideosPage() {
                       {shares.map((share) => (
                         <li
                           key={share.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3"
+                          className="flex flex-col gap-2 rounded-xl border border-border p-3"
                         >
-                          <div>
-                            <div className="text-[13px] font-bold text-ink">
-                              {share.recipientName}
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <div className="text-[13px] font-bold text-ink">
+                                {share.recipientName}
+                              </div>
+                              <div className="text-[12px] text-fog">{share.recipientEmail}</div>
                             </div>
-                            <div className="text-[12px] text-fog">{share.recipientEmail}</div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right text-[12px] text-slate">
+                                <div>
+                                  {share.watchedPercent != null
+                                    ? t('videos.watchedPercent', { percent: share.watchedPercent })
+                                    : t('videos.watchedSeconds', {
+                                        seconds: share.maxWatchedSeconds,
+                                      })}
+                                </div>
+                                <div className="text-fog">
+                                  {t('videos.viewCount', { count: share.viewCount })}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteShare(video.id, share.id)}
+                                disabled={deletingShareId === share.id}
+                                className="rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                              >
+                                {deletingShareId === share.id ? (
+                                  <Spinner className="h-3 w-3" />
+                                ) : (
+                                  t('videos.deleteShare')
+                                )}
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right text-[12px] text-slate">
-                              <div>
-                                {share.watchedPercent != null
-                                  ? t('videos.watchedPercent', { percent: share.watchedPercent })
-                                  : t('videos.watchedSeconds', {
-                                      seconds: share.maxWatchedSeconds,
-                                    })}
-                              </div>
-                              <div className="text-fog">
-                                {t('videos.viewCount', { count: share.viewCount })}
-                              </div>
-                            </div>
+                          <div className="flex items-center gap-2 border-t border-[#F0F1F3] pt-2">
+                            <a
+                              href={share.shareUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="min-w-0 flex-1 truncate text-[12px] text-primary"
+                            >
+                              {share.shareUrl}
+                            </a>
                             <button
                               type="button"
-                              onClick={() => handleDeleteShare(video.id, share.id)}
-                              disabled={deletingShareId === share.id}
-                              className="rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-bold text-danger disabled:opacity-50"
+                              onClick={() => handleCopyShareUrl(share.id, share.shareUrl)}
+                              className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-[11.5px] font-bold text-ink"
                             >
-                              {deletingShareId === share.id ? (
-                                <Spinner className="h-3 w-3" />
-                              ) : (
-                                t('videos.deleteShare')
-                              )}
+                              {copiedShareId === share.id
+                                ? t('videos.linkCopied')
+                                : t('videos.copyLink')}
                             </button>
                           </div>
                         </li>
