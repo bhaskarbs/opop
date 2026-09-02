@@ -86,6 +86,20 @@ export interface BroadcastEmailResult {
   recipientCount: number
 }
 
+export interface CareerGuideStepSummary {
+  id: string
+  stepOrder: number
+  description: string
+  videoUrl: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CareerGuideStepPayload {
+  description: string
+  videoUrl: string
+}
+
 export interface AdminCompanyProfileSummary {
   userId: string
   companyName: string
@@ -526,6 +540,38 @@ export const adminApi = {
       `/api/admin/mock-interviews${q ? `?q=${encodeURIComponent(q)}` : ''}`,
       { headers: authHeaders() },
     ),
+
+  careerGuideSteps: () =>
+    request<CareerGuideStepSummary[]>('/api/admin/career-guide-steps', { headers: authHeaders() }),
+  createCareerGuideStep: (payload: CareerGuideStepPayload) =>
+    request<CareerGuideStepSummary>('/api/admin/career-guide-steps', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  updateCareerGuideStep: (id: string, payload: CareerGuideStepPayload) =>
+    request<CareerGuideStepSummary>(`/api/admin/career-guide-steps/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      headers: authHeaders(),
+    }),
+  deleteCareerGuideStep: (id: string) =>
+    request<void>(`/api/admin/career-guide-steps/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }),
+  reorderCareerGuideSteps: (orderedStepIds: string[]) =>
+    request<CareerGuideStepSummary[]>('/api/admin/career-guide-steps/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ orderedStepIds }),
+      headers: authHeaders(),
+    }),
+  sendCareerGuideTestEmail: (email: string) =>
+    request<void>('/api/admin/career-guide-steps/send-test', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      headers: authHeaders(),
+    }),
 }
 
 // Same shape as MockInterviewSessionSummary (candidate-facing, no candidate identity in it at

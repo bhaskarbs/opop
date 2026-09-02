@@ -37,6 +37,10 @@ import com.openopportunity.auth.exception.ProfilePhotoNotFoundException;
 import com.openopportunity.auth.exception.ResumeRenderingFailedException;
 import com.openopportunity.auth.exception.SuspendedAccountException;
 import com.openopportunity.billing.exception.BillingTransactionNotFoundException;
+import com.openopportunity.careerguide.exception.CareerGuideEmailSendException;
+import com.openopportunity.careerguide.exception.CareerGuideStepNotFoundException;
+import com.openopportunity.careerguide.exception.InvalidCareerGuideStepReorderException;
+import com.openopportunity.careerguide.exception.NoCareerGuideStepsConfiguredException;
 import com.openopportunity.billing.exception.CandidateNotFoundException;
 import com.openopportunity.billing.exception.CompanyNotFoundException;
 import com.openopportunity.billing.exception.CompanyPaidPlanRequiresCheckoutException;
@@ -471,6 +475,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ChatRateLimitedException.class)
     public ResponseEntity<ApiError> handleChatRateLimited(ChatRateLimitedException ex) {
         return error(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CareerGuideStepNotFoundException.class)
+    public ResponseEntity<ApiError> handleCareerGuideStepNotFound(CareerGuideStepNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidCareerGuideStepReorderException.class)
+    public ResponseEntity<ApiError> handleInvalidCareerGuideStepReorder(InvalidCareerGuideStepReorderException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(NoCareerGuideStepsConfiguredException.class)
+    public ResponseEntity<ApiError> handleNoCareerGuideStepsConfigured(NoCareerGuideStepsConfiguredException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(CareerGuideEmailSendException.class)
+    public ResponseEntity<ApiError> handleCareerGuideEmailSend(CareerGuideEmailSendException ex) {
+        return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
