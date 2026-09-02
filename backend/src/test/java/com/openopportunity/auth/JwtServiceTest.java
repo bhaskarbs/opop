@@ -30,7 +30,17 @@ class JwtServiceTest {
     void rejectsTamperedToken() {
         User user = new User("rohan@example.com", "hash", "Rohan Mehta", UserRole.CANDIDATE);
         String token = jwtService.generateAccessToken(user);
-        String tampered = token.substring(0, token.length() - 2) + "xx";
+        // Flip the payload segment's first character rather than the token's last 2 -- a
+        // 32-byte HMAC signature base64url-encodes to 43 chars, and the trailing char only
+        // carries 4 of its 6 bits as real signature data (2 are unused padding bits), so
+        // overwriting the last 2 chars with a fixed literal could coincidentally decode to the
+        // same signature bytes for some randomly generated user ids, making this test flaky
+        // (confirmed via a CI failure). The first character of any base64url segment is never
+        // subject to that padding ambiguity, so flipping it always changes the signed payload
+        // and deterministically invalidates the signature.
+        int payloadStart = token.indexOf('.') + 1;
+        char flipped = token.charAt(payloadStart) == 'A' ? 'B' : 'A';
+        String tampered = token.substring(0, payloadStart) + flipped + token.substring(payloadStart + 1);
 
         assertThatThrownBy(() -> jwtService.parseAndValidate(tampered)).isInstanceOf(JwtException.class);
     }
