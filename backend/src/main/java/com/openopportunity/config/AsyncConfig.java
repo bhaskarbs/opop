@@ -1,6 +1,7 @@
 package com.openopportunity.config;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -39,6 +40,19 @@ public class AsyncConfig {
         executor.setMaxPoolSize(20);
         executor.setQueueCapacity(1000);
         executor.setThreadNamePrefix("email-async-");
+        // Confirmed via production Cloud Run logs on 2026-09-02: a high-volume bulk import (600+
+        // jobs posted back to back, each firing 2-3 notification emails) saturated this pool
+        // (20/20 threads, 1000/1000 queued) and the resulting RejectedExecutionException is thrown
+        // synchronously at task-submission time, in the CALLER's stack — AsyncEmailSender's own
+        // try/catch can't see it, since that only wraps the async method body, not its submission.
+        // It propagated all the way up through JobService.adminCreate() and crashed the HTTP
+        // request with a 500, even though the request itself was entirely valid. CallerRunsPolicy
+        // makes a rejected task run synchronously on the calling thread instead of throwing, which
+        // both preserves the "best-effort, never fails the caller" contract this pool exists for
+        // and naturally self-throttles a fast producer (like a scripted bulk import) to the rate
+        // real SMTP sends can keep up with, instead of endlessly growing a queue that eventually
+        // bursts anyway.
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
     }
