@@ -121,6 +121,15 @@ resource "google_cloud_run_v2_service" "backend" {
         value = local.cors_allowed_origins
       }
       env {
+        # Confirmed missing in production on 2026-09-03 — every outgoing link that embeds this
+        # (password reset, job alert/match emails, shared video links) and both SEO endpoints
+        # (sitemap.xml, robots.txt) were silently falling back to application.properties'
+        # http://localhost:5173 dev default. See frontend.tf's frontend_canonical_url comment for
+        # why this isn't just cors_allowed_origins reused.
+        name  = "APP_FRONTEND_BASE_URL"
+        value = local.frontend_canonical_url
+      }
+      env {
         # See variables.tf's seo_crawling_enabled doc comment — RobotsController/JobSeoService
         # read this as a boolean, but Cloud Run env values are always strings.
         name  = "APP_SEO_CRAWLING_ENABLED"

@@ -191,4 +191,17 @@ locals {
     "https://${var.project_id}.firebaseapp.com",
     var.firebase_custom_domain != "" ? "https://${var.firebase_custom_domain}" : "",
   ])) : local.frontend_origin
+
+  # The single canonical URL embedded in outgoing links — password reset, job alert/match,
+  # video share emails (see APP_FRONTEND_BASE_URL in run.tf), and SEO (sitemap.xml/robots.txt).
+  # Prefers the custom domain over frontend_origin's bare .web.app default whenever one's
+  # configured, since that's the branded address real users and search engines should see;
+  # falls back to frontend_origin (still real and working, just not the branded domain) when no
+  # custom domain has been added yet. Distinct from cors_allowed_origins, which must list every
+  # origin the frontend might be served from — this is just "the one true URL" for a link.
+  frontend_canonical_url = (
+    var.frontend_mode == "firebase" && var.firebase_custom_domain != ""
+    ? "https://${var.firebase_custom_domain}"
+    : local.frontend_origin
+  )
 }
