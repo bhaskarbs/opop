@@ -68,7 +68,6 @@ export default function LoginPage() {
           <Input
             label={t('fields.email')}
             type="email"
-            placeholder="rohan@email.com"
             error={errors.email?.message}
             {...register('email')}
           />
@@ -77,7 +76,6 @@ export default function LoginPage() {
         <div className="mb-[18px]">
           <PasswordInput
             label={t('fields.password')}
-            placeholder="••••••••"
             error={errors.password?.message}
             showPasswordLabel={t('fields.showPassword')}
             hidePasswordLabel={t('fields.hidePassword')}
