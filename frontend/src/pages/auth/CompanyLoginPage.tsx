@@ -75,7 +75,6 @@ export default function CompanyLoginPage() {
           <Input
             label={t('fields.workEmail')}
             type="email"
-            placeholder="you@company.com"
             error={errors.workEmail?.message}
             {...register('workEmail')}
           />
@@ -84,7 +83,6 @@ export default function CompanyLoginPage() {
         <div className="mb-[18px]">
           <PasswordInput
             label={t('fields.password')}
-            placeholder="••••••••"
             error={errors.password?.message}
             showPasswordLabel={t('fields.showPassword')}
             hidePasswordLabel={t('fields.hidePassword')}
