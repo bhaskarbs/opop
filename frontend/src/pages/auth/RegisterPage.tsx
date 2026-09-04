@@ -1,17 +1,21 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Controller, useForm } from 'react-hook-form'
+// Controller is only needed for the skills/resume fields — see the "commented out on request"
+// block further down. Restore this import alongside that block if it comes back.
+// import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { candidateApi } from '../../lib/candidateApi'
-import { Button, Input, SkillsTagInput } from '../../components/ui'
+import { Button, Input, PasswordInput } from '../../components/ui'
+// import { SkillsTagInput } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
-import { SKILL_SUGGESTIONS } from '../../mocks/skills'
+// import { SKILL_SUGGESTIONS } from '../../mocks/skills'
 import { ROUTES } from '../../routes/paths'
 import { useAuthStore } from '../../stores/authStore'
-import { FileDropInput } from './shared/FileDropInput'
+// import { FileDropInput } from './shared/FileDropInput'
 import { PhoneInput } from './shared/PhoneInput'
 
 const registerSchema = z.object({
@@ -22,7 +26,10 @@ const registerSchema = z.object({
     .min(1, 'Mobile number is required')
     .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  skills: z.array(z.string()).min(1, 'Add at least one skill'),
+  // Commented out on request alongside the skills/resume fields below — no longer collected (or
+  // required) at registration time. skills stays in the schema/payload as an always-empty array
+  // (the backend already treats it as an optional list) so this is a one-block revert later.
+  skills: z.array(z.string()),
   resume: z.instanceof(File).optional(),
   agreeTerms: z
     .boolean()
@@ -46,7 +53,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    control,
+    // control, // only needed for the commented-out skills/resume Controller fields below
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -101,14 +108,12 @@ export default function RegisterPage() {
             <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <Input
                 label={t('fields.fullName')}
-                placeholder="Rohan Mehta"
                 error={errors.fullName?.message}
                 {...register('fullName')}
               />
               <Input
                 label={t('fields.email')}
                 type="email"
-                placeholder="rohan@email.com"
                 error={errors.email?.message}
                 {...register('email')}
               />
@@ -117,18 +122,23 @@ export default function RegisterPage() {
             <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <PhoneInput
                 label={t('fields.mobile')}
+                placeholder=""
                 error={errors.mobile?.message}
                 {...register('mobile')}
               />
-              <Input
+              <PasswordInput
                 label={t('fields.password')}
-                type="password"
-                placeholder={t('register.passwordPlaceholder')}
                 error={errors.password?.message}
+                showPasswordLabel={t('fields.showPassword')}
+                hidePasswordLabel={t('fields.hidePassword')}
                 {...register('password')}
               />
             </div>
 
+            {/* Commented out on request (2026-09-04) — skills and resume upload are no longer
+                collected at registration time. Restore alongside the Controller/SkillsTagInput/
+                SKILL_SUGGESTIONS/FileDropInput imports and the `control` destructure above if
+                this comes back.
             <div className="mb-3.5">
               <Controller
                 name="skills"
@@ -163,6 +173,7 @@ export default function RegisterPage() {
                 )}
               />
             </div>
+            */}
 
             <label className="mb-[22px] flex items-start gap-2.5 text-[13px] leading-[1.5] text-slate">
               <input
@@ -171,21 +182,23 @@ export default function RegisterPage() {
                 {...register('agreeTerms')}
               />
               {t('register.agreeToThe')}{' '}
-              <a
-                href="#terms"
-                onClick={(event) => event.preventDefault()}
+              <Link
+                to={localize(ROUTES.termsOfService)}
+                target="_blank"
+                rel="noreferrer"
                 className="font-semibold no-underline"
               >
                 {t('register.termsOfService')}
-              </a>{' '}
+              </Link>{' '}
               {t('register.and')}{' '}
-              <a
-                href="#privacy"
-                onClick={(event) => event.preventDefault()}
+              <Link
+                to={localize(ROUTES.privacyPolicy)}
+                target="_blank"
+                rel="noreferrer"
                 className="font-semibold no-underline"
               >
                 {t('register.privacyPolicy')}
-              </a>
+              </Link>
               .
             </label>
             {errors.agreeTerms && (

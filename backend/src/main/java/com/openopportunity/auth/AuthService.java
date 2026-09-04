@@ -414,9 +414,12 @@ public class AuthService {
                 () -> {});
     }
 
+    // Skills is no longer collected on the register form (commented out there 2026-09-04) — only
+    // mobile is required now. cleanedSkills is left as a parameter (always empty in practice
+    // today) rather than removed, since CandidateProfile still stores whatever skills are passed
+    // and a future caller could reintroduce them without touching this signature.
     private void requireCandidateProfileFields(RegisterRequest request, List<String> cleanedSkills) {
-        boolean complete = isNotBlank(request.mobile()) && !cleanedSkills.isEmpty();
-        if (!complete) {
+        if (!isNotBlank(request.mobile())) {
             throw new IncompleteCandidateProfileException();
         }
     }
