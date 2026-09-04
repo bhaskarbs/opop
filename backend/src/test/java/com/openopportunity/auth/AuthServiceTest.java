@@ -194,7 +194,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerRejectsCandidateMissingMobileOrSkills() {
+    void registerRejectsCandidateMissingMobile() {
         RegisterRequest request = new RegisterRequest(
                 "rohan@example.com",
                 "password123",
@@ -215,6 +215,38 @@ class AuthServiceTest {
         when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(false);
 
         assertThatThrownBy(() -> authService.register(request)).isInstanceOf(IncompleteCandidateProfileException.class);
+    }
+
+    /** Skills is no longer collected on the register form (commented out there 2026-09-04) —
+     * confirms a candidate with a mobile number but no skills registers successfully, unlike
+     * before when both were required. */
+    @Test
+    void registerAllowsCandidateWithMobileButNoSkills() {
+        RegisterRequest request = new RegisterRequest(
+                "rohan@example.com",
+                "password123",
+                "Rohan Mehta",
+                "candidate",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "9876543210",
+                List.of(),
+                null);
+        when(userRepository.existsByEmailAndRole("rohan@example.com", UserRole.CANDIDATE)).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("hashed");
+        when(jwtService.generateAccessToken(any())).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpirySeconds()).thenReturn(900L);
+
+        AuthService.Issued issued = authService.register(request);
+
+        assertThat(issued.response().user().role()).isEqualTo(UserRole.CANDIDATE);
     }
 
     @Test

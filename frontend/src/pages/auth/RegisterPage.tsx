@@ -9,7 +9,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, authApi } from '../../lib/apiClient'
 import { candidateApi } from '../../lib/candidateApi'
-import { Button, Input } from '../../components/ui'
+import { Button, Input, PasswordInput } from '../../components/ui'
 // import { SkillsTagInput } from '../../components/ui'
 import { useLocalizedPath } from '../../i18n/useLocalizedPath'
 // import { SKILL_SUGGESTIONS } from '../../mocks/skills'
@@ -126,10 +126,11 @@ export default function RegisterPage() {
                 error={errors.mobile?.message}
                 {...register('mobile')}
               />
-              <Input
+              <PasswordInput
                 label={t('fields.password')}
-                type="password"
                 error={errors.password?.message}
+                showPasswordLabel={t('fields.showPassword')}
+                hidePasswordLabel={t('fields.hidePassword')}
                 {...register('password')}
               />
             </div>
