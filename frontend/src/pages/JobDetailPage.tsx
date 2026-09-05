@@ -367,8 +367,6 @@ export default function JobDetailPage() {
                 {t('jobDetail.postedPrefix', { label: formatPostedLabel(t, job.createdAt) })}
               </span>
               <span>·</span>
-              <span>{t('jobDetail.applicantsCount', { count: job.applicantCount })}</span>
-              <span>·</span>
               <span>{t('jobDetail.sourcedFrom')}</span>
             </div>
           </Card>
