@@ -88,8 +88,8 @@ const postJobSchema = z.object({
   experienceYearsMax: z.string().optional(),
   deadline: z.string().optional(),
   aboutRole: z.string().min(10, 'Describe the role, team, and what success looks like'),
-  responsibilities: z.string().min(2, 'List at least one responsibility'),
-  requirements: z.string().min(2, 'List at least one requirement'),
+  responsibilities: z.string(),
+  requirements: z.string(),
   skills: z.array(z.string()).min(1, 'Add at least one required skill'),
   status: z.enum(['DRAFT', 'PENDING_APPROVAL', 'ACTIVE', 'REJECTED', 'CLOSED']),
 })

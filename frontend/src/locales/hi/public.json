@@ -97,11 +97,6 @@
       "remote": "रिमोट",
       "hybrid": "हाइब्रिड",
       "onSite": "ऑन-साइट"
-    },
-    "salaryRange": {
-      "heading": "सैलरी रेंज (₹/वर्ष)",
-      "min": "न्यूनतम ₹{{value}}ला.",
-      "max": "₹40ला.+"
     }
   },
   "resultCard": {
