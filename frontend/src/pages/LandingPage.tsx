@@ -140,7 +140,14 @@ export default function LandingPage() {
     if (query.trim()) params.set('q', query.trim())
     if (location.trim()) params.set('loc', location.trim())
     const queryString = params.toString()
-    navigate(queryString ? `${localize(ROUTES.jobs)}?${queryString}` : localize(ROUTES.jobs))
+    // router state (not a query param) so submitting with both fields blank still tells
+    // JobSearchPage "the user explicitly searched" and it lists every job, rather than showing
+    // its default "start your search" prompt — distinct from just landing on /jobs directly
+    // (e.g. the top-nav "Find Jobs" link), which still gets that prompt (or, for a logged-in
+    // candidate, personalized suggestions — see JobSearchPage's personalization effect).
+    navigate(queryString ? `${localize(ROUTES.jobs)}?${queryString}` : localize(ROUTES.jobs), {
+      state: { triggeredSearch: true },
+    })
   }
 
   return (

@@ -1,6 +1,6 @@
 import { type SubmitEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Spinner } from '../../components/ui'
 import { TRENDING_SKILLS } from '../../mocks/jobs'
@@ -41,6 +41,12 @@ export default function JobSearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') ?? ''
   const initialLocation = searchParams.get('loc') ?? ''
+  // Set by LandingPage's search form when submitted with both fields blank — router state
+  // rather than a query param, so it doesn't linger if this page is later reloaded/shared.
+  const routerLocation = useLocation()
+  const triggeredEmptySearch = Boolean(
+    (routerLocation.state as { triggeredSearch?: boolean } | null)?.triggeredSearch,
+  )
 
   const authStatus = useAuthStore((state) => state.status)
   const user = useAuthStore((state) => state.user)
@@ -50,7 +56,9 @@ export default function JobSearchPage() {
   // until it's actually added as a tag, so the search effect below never fires on a keystroke.
   const [skills, setSkills] = useState<string[]>(initialQuery ? [initialQuery] : [])
   const [locations, setLocations] = useState<string[]>(initialLocation ? [initialLocation] : [])
-  const [hasSearched, setHasSearched] = useState(Boolean(initialQuery || initialLocation))
+  const [hasSearched, setHasSearched] = useState(
+    Boolean(initialQuery || initialLocation || triggeredEmptySearch),
+  )
   const [filters, setFilters] = useState<FilterState>(createDefaultFilterState())
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
   const [page, setPage] = useState(1)
