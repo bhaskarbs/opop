@@ -19,7 +19,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useApplicationsStore } from '../../stores/applicationsStore'
 import { useSavedJobsStore } from '../../stores/savedJobsStore'
 import { FilterSidebar } from './FilterSidebar'
-import { createDefaultFilterState, MIN_SALARY_LAKHS, type FilterState } from './filterState'
+import { createDefaultFilterState, type FilterState } from './filterState'
 import { ResultCard } from './ResultCard'
 import { SearchTagAutocompleteField } from './SearchTagAutocompleteField'
 import { toDisplayJob } from './jobDisplay'
@@ -200,8 +200,6 @@ export default function JobSearchPage() {
         location: locations.length > 0 ? locations : undefined,
         level: [...filters.levels].map(experienceLevelToBackend),
         mode: [...filters.modes].map(workModeToBackend),
-        minSalaryLakhs:
-          filters.minSalaryLakhs > MIN_SALARY_LAKHS ? filters.minSalaryLakhs : undefined,
         sort: sortBy,
       })
     }, 300)

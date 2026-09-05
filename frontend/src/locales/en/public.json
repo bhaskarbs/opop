@@ -97,11 +97,6 @@
       "remote": "Remote",
       "hybrid": "Hybrid",
       "onSite": "On-site"
-    },
-    "salaryRange": {
-      "heading": "Salary range (₹/yr)",
-      "min": "Min ₹{{value}}L",
-      "max": "₹40L+"
     }
   },
   "resultCard": {

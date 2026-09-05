@@ -5,12 +5,7 @@ import {
   type ExperienceLevelLabel,
   type WorkModeLabel,
 } from '../../lib/jobEnums'
-import {
-  createDefaultFilterState,
-  MAX_SALARY_LAKHS,
-  MIN_SALARY_LAKHS,
-  type FilterState,
-} from './filterState'
+import { createDefaultFilterState, type FilterState } from './filterState'
 
 interface FilterSidebarProps {
   filters: FilterState
@@ -93,28 +88,6 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
             {t(WORK_MODE_KEYS[mode])}
           </label>
         ))}
-      </div>
-
-      <div>
-        <div className="mb-2.5 text-[13px] font-bold text-ink">
-          {t('filters.salaryRange.heading')}
-        </div>
-        <input
-          type="range"
-          min={MIN_SALARY_LAKHS}
-          max={MAX_SALARY_LAKHS}
-          value={filters.minSalaryLakhs}
-          onChange={(event) => onChange({ ...filters, minSalaryLakhs: Number(event.target.value) })}
-          className="w-full accent-primary"
-        />
-        <div className="mt-1 flex justify-between text-[12.5px] text-fog">
-          <span>₹3L</span>
-          <span>
-            {filters.minSalaryLakhs >= MAX_SALARY_LAKHS
-              ? t('filters.salaryRange.max')
-              : t('filters.salaryRange.min', { value: filters.minSalaryLakhs })}
-          </span>
-        </div>
       </div>
     </div>
   )
