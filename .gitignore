@@ -54,3 +54,4 @@ terraform.tfvars
 # Firebase (holds your real project id — see .firebaserc.example)
 .firebaserc
 .firebase/
+.codewhale/
