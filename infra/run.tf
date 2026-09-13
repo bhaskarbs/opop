@@ -138,9 +138,8 @@ resource "google_cloud_run_v2_service" "backend" {
 
       # See mail.tf — Resend's SMTP relay. "resend" is Resend's own literal SMTP username (not
       # an email address); the real credential is the API key, held in Secret Manager like every
-      # other sensitive value here. app.community.contact-email (APP_COMMUNITY_CONTACT_EMAIL) is
-      # left unset deliberately — no separate inbox for that yet, same "blank means disabled"
-      # convention as everywhere else in this app.
+      # other sensitive value here. Community interest requests land in the shared support inbox
+      # (APP_COMMUNITY_CONTACT_EMAIL) rather than a dedicated mailbox.
       env {
         name  = "MAIL_HOST"
         value = "smtp.resend.com"
@@ -164,6 +163,10 @@ resource "google_cloud_run_v2_service" "backend" {
       }
       env {
         name  = "APP_MAIL_FROM"
+        value = "customersupport@openopportunity.in"
+      }
+      env {
+        name  = "APP_COMMUNITY_CONTACT_EMAIL"
         value = "customersupport@openopportunity.in"
       }
 

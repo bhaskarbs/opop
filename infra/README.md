@@ -48,9 +48,10 @@ Then `terraform apply` — `MAIL_HOST`/`MAIL_USERNAME` are Resend's own fixed SM
 in Secret Manager, and `APP_MAIL_FROM` is hardcoded to `customersupport@openopportunity.in` —
 change that value directly in `run.tf` if the sending address ever needs to move.
 
-`app.community.contact-email` (`APP_COMMUNITY_CONTACT_EMAIL`) is left unset here — no separate
-inbox for community interest requests yet, same "blank means disabled" convention as everywhere
-else in this app.
+`app.community.contact-email` (`APP_COMMUNITY_CONTACT_EMAIL`) is hardcoded to
+`customersupport@openopportunity.in` in `run.tf` — community interest requests land in the shared
+support inbox, the same mailbox `APP_MAIL_FROM` sends from. Change that value directly in
+`run.tf` if the inbox ever moves.
 
 Local dev needs the matching env vars set directly (`bootRun` doesn't read Terraform state):
 ```bash
