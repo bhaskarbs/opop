@@ -21,12 +21,22 @@ import { useSavedJobsStore } from '../../stores/savedJobsStore'
 import { FilterSidebar } from './FilterSidebar'
 import { createDefaultFilterState, type FilterState } from './filterState'
 import { ResultCard } from './ResultCard'
-import { SearchTagAutocompleteField } from './SearchTagAutocompleteField'
+import { SearchField } from './SearchField'
 import { toDisplayJob } from './jobDisplay'
 
 // Keyword suggestions combine job roles (TRENDING_SKILLS, despite the name) with individual
 // technical/soft skills, since candidates search by either — deduplicated in case of overlap.
 const KEYWORD_SUGGESTIONS = [...new Set([...TRENDING_SKILLS, ...SKILL_SUGGESTIONS])]
+
+// The empty state's starter chips — a small curated set (the mockup showed 5), not the full
+// suggestion list, so first-time visitors see a gentle prompt instead of a wall of tags.
+const POPULAR_SEARCHES = [
+  'Frontend Developer',
+  'Data Analyst',
+  'Customer Support',
+  'Sales',
+  'Content Writing',
+]
 
 type SortOption = 'relevant' | 'newest' | 'salary'
 
@@ -51,11 +61,12 @@ export default function JobSearchPage() {
   const authStatus = useAuthStore((state) => state.status)
   const user = useAuthStore((state) => state.user)
 
-  // Each is a set of tags rather than free text — typing a candidate skill/keyword doesn't
-  // reach this state at all (it lives inside SearchTagAutocompleteField's own draft state)
-  // until it's actually added as a tag, so the search effect below never fires on a keystroke.
-  const [skills, setSkills] = useState<string[]>(initialQuery ? [initialQuery] : [])
-  const [locations, setLocations] = useState<string[]>(initialLocation ? [initialLocation] : [])
+  // Keyword and location are plain strings — what the user sees in the labeled search fields
+  // is exactly what gets searched when they press Search. (The backend still receives arrays:
+  // keyword is comma-split on submit, so "react, node" stays a multi-keyword search without
+  // the tag-input ceremony.)
+  const [keyword, setKeyword] = useState(initialQuery)
+  const [location, setLocation] = useState(initialLocation)
   const [hasSearched, setHasSearched] = useState(
     Boolean(initialQuery || initialLocation || triggeredEmptySearch),
   )
@@ -142,7 +153,7 @@ export default function JobSearchPage() {
           const withLevel = await jobsApi.search({ q: candidateSkills, level: [level] })
           if (cancelled) return
           if (withLevel.jobs.length > 0) {
-            setSkills(candidateSkills)
+            setKeyword(candidateSkills.join(', '))
             setFilters({
               ...createDefaultFilterState(),
               levels: new Set([experienceLevelFromBackend(level)]),
@@ -154,7 +165,7 @@ export default function JobSearchPage() {
         const skillsOnly = await jobsApi.search({ q: candidateSkills })
         if (cancelled) return
         if (skillsOnly.jobs.length > 0) {
-          setSkills(candidateSkills)
+          setKeyword(candidateSkills.join(', '))
           setHasSearched(true)
         }
       })
@@ -204,32 +215,37 @@ export default function JobSearchPage() {
     if (!hasSearched) return
     const timeoutId = setTimeout(() => {
       setSearchQueryParams({
-        q: skills.length > 0 ? skills : undefined,
-        location: locations.length > 0 ? locations : undefined,
+        q: keyword
+          ? keyword
+              .split(',')
+              .map((part) => part.trim())
+              .filter(Boolean)
+          : undefined,
+        location: location.trim() ? [location.trim()] : undefined,
         level: [...filters.levels].map(experienceLevelToBackend),
         mode: [...filters.modes].map(workModeToBackend),
         sort: sortBy,
       })
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [hasSearched, skills, locations, filters, sortBy])
+  }, [hasSearched, keyword, location, filters, sortBy])
 
   // Keeps the URL's ?q=/&loc= in sync with the current search (mirrors what's read into
   // initialQuery/initialLocation above) — otherwise the browser history entry a candidate
   // lands back on via BackButton's navigate(-1) from a job detail page still has whatever
   // (or no) query string they originally arrived on, silently dropping the search they'd
-  // actually run since. replace: true so typing/adding tags doesn't spam new history entries
-  // of its own — only the single entry for this page visit is kept up to date.
+  // actually run since. replace: true so typing doesn't spam new history entries of its own —
+  // only the single entry for this page visit is kept up to date.
   useEffect(() => {
     if (!hasSearched) return
     const next = new URLSearchParams()
-    if (skills[0]) next.set('q', skills[0])
-    if (locations[0]) next.set('loc', locations[0])
+    if (keyword.trim()) next.set('q', keyword.trim())
+    if (location.trim()) next.set('loc', location.trim())
     setSearchParams(next, { replace: true })
     // setSearchParams is stable per react-router-dom's contract — omitted so this doesn't
     // over-trigger; including it would just add a no-op dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSearched, skills, locations])
+  }, [hasSearched, keyword, location])
 
   // Resets to page 1 whenever a new search actually runs — including when it's served instantly
   // from the query cache (see lib/queryClient.ts), so re-running a search you already made still
@@ -267,127 +283,134 @@ export default function JobSearchPage() {
       : t('jobSearch.errorLoading')
     : null
 
-  function handleSkillsChange(next: string[]) {
-    setSkills(next)
-    if (next.length > 0 || locations.length > 0) setHasSearched(true)
-  }
-
-  function handleLocationsChange(next: string[]) {
-    setLocations(next)
-    if (skills.length > 0 || next.length > 0) setHasSearched(true)
-  }
-
-  function runSearch() {
-    if (skills.length > 0 || locations.length > 0) {
-      setHasSearched(true)
-    }
-  }
-
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    runSearch()
+    // Search is search: clicking the button always runs one, even with both fields blank
+    // (which lists every job, same as LandingPage's empty-submit behavior). Predictable beats
+    // conditional here — the old tag version only searched when at least one tag existed,
+    // which is exactly the kind of silent no-op that confuses people.
+    setHasSearched(true)
   }
 
-  function searchTrendingSkill(skill: string) {
-    setSkills((prev) => (prev.includes(skill) ? prev : [...prev, skill]))
+  function searchPopularTerm(term: string) {
+    setKeyword(term)
     setHasSearched(true)
   }
 
   return (
     <main>
-      <div className="border-b border-border bg-surface">
-        <form
-          onSubmit={handleSubmit}
-          className="mx-auto flex max-w-[1280px] flex-wrap gap-2.5 px-6 py-5"
-        >
-          <SearchTagAutocompleteField
-            values={skills}
-            onChange={handleSkillsChange}
-            suggestions={KEYWORD_SUGGESTIONS}
-            placeholder={t('jobSearch.skillsPlaceholder')}
-            removeLabel={(value) => t('jobSearch.removeSkill', { value })}
-            containerClassName="min-w-[220px] flex-[2]"
-            icon={
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                className="shrink-0 text-fog"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="M21 21l-4.3-4.3" />
-              </svg>
-            }
-          />
-          <SearchTagAutocompleteField
-            values={locations}
-            onChange={handleLocationsChange}
-            suggestions={LOCATION_SUGGESTIONS}
-            placeholder={t('jobSearch.locationsPlaceholder')}
-            removeLabel={(value) => t('jobSearch.removeLocation', { value })}
-            containerClassName="min-w-[160px] flex-1"
-            icon={
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                className="shrink-0 text-fog"
-              >
-                <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-            }
-          />
-          <button
-            type="submit"
-            className="min-h-[44px] rounded-control bg-primary px-[26px] text-[14.5px] font-bold text-white hover:bg-primary/90"
+      {/* Search hero — the fields and button are the centered, unmissable focus of the page.
+          Full hero (title + subtitle + popular searches) before the first search; once results
+          exist it compacts to just the centered search panel so results get the room. */}
+      <section
+        className={`border-b border-border bg-gradient-to-b from-primary-tint to-page px-6 ${
+          hasSearched ? 'py-6' : 'pt-14 pb-12'
+        }`}
+      >
+        <div className="mx-auto max-w-[880px]">
+          {!hasSearched && (
+            <div className="mb-8 text-center">
+              <h1 className="text-[clamp(28px,4vw,40px)] font-extrabold tracking-[-0.02em] text-ink">
+                {t('jobSearch.heroTitle')}
+              </h1>
+              <p className="mx-auto mt-3 max-w-[560px] text-base leading-[1.6] text-slate">
+                {t('jobSearch.heroSubtitle')}
+              </p>
+            </div>
+          )}
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-card border border-border bg-surface p-3 shadow-[0_8px_24px_rgba(20,24,31,0.08)]"
           >
-            {t('landing.search.submit')}
-          </button>
-        </form>
-      </div>
-
-      {!hasSearched ? (
-        <div className="mx-auto max-w-[640px] px-6 py-[88px] text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-tint">
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#2451D6"
-              strokeWidth={2}
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4.3-4.3" />
-            </svg>
-          </div>
-          <h2 className="mb-2 text-[19px] font-extrabold text-ink">
-            {t('jobSearch.startYourSearch.title')}
-          </h2>
-          <p className="mb-6 text-[14.5px] leading-[1.6] text-slate">
-            {t('jobSearch.startYourSearch.description')}
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {TRENDING_SKILLS.map((skill) => (
+            <div className="flex flex-col gap-3 search:flex-row search:items-end">
+              <SearchField
+                inputId="job-search-keyword"
+                label={t('jobSearch.whatLabel')}
+                value={keyword}
+                onChange={setKeyword}
+                suggestions={KEYWORD_SUGGESTIONS}
+                placeholder={t('jobSearch.skillsPlaceholder')}
+                containerClassName="search:flex-[2]"
+                icon={
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    className="shrink-0 text-fog"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.3-4.3" />
+                  </svg>
+                }
+              />
+              <SearchField
+                inputId="job-search-location"
+                label={t('jobSearch.whereLabel')}
+                value={location}
+                onChange={setLocation}
+                suggestions={LOCATION_SUGGESTIONS}
+                placeholder={t('jobSearch.locationsPlaceholder')}
+                containerClassName="search:flex-1"
+                icon={
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    className="shrink-0 text-fog"
+                  >
+                    <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                }
+              />
               <button
-                key={skill}
-                type="button"
-                onClick={() => searchTrendingSkill(skill)}
-                className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-slate"
+                type="submit"
+                className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-control bg-primary px-7 text-[15px] font-bold text-white hover:bg-primary/90 search:w-auto"
               >
-                {skill}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.3-4.3" />
+                </svg>
+                {t('landing.search.submit')}
               </button>
-            ))}
-          </div>
+            </div>
+          </form>
+          {!hasSearched && (
+            <div className="mt-6 text-center">
+              <div className="mb-2.5 text-[12px] font-bold tracking-[0.06em] text-fog uppercase">
+                {t('jobSearch.popularSearches')}
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {POPULAR_SEARCHES.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => searchPopularTerm(term)}
+                    className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-slate hover:border-primary/40 hover:text-primary"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
+      </section>
+
+      {hasSearched && (
         <div className="search:grid-cols-[260px_1fr] mx-auto grid max-w-[1280px] grid-cols-1 gap-6 px-6 py-7 pb-16">
           <aside className="search:block hidden">
             <FilterSidebar filters={filters} onChange={setFilters} />

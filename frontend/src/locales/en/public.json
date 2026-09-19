@@ -79,10 +79,8 @@
     }
   },
   "jobSearch": {
-    "startYourSearch": {
-      "title": "Start your search",
-      "description": "Enter a job title, skill, or keyword above — we'll surface matching jobs."
-    },
+    "heroTitle": "Find your next job",
+    "heroSubtitle": "Search verified full-time, contract, and remote jobs across India.",
     "searching": "Searching…",
     "showingCount": "Showing {{count}} jobs for you",
     "sortBy": "Sort by",
@@ -96,8 +94,11 @@
     "previousPage": "← Previous",
     "nextPage": "Next →",
     "pageLabel": "Page {{page}} of {{total}}",
-    "skillsPlaceholder": "Add a job title, skill, or keyword",
-    "locationsPlaceholder": "Add a city or remote",
+    "skillsPlaceholder": "Job title, skill, or keyword",
+    "locationsPlaceholder": "City or remote",
+    "whatLabel": "What",
+    "whereLabel": "Where",
+    "popularSearches": "Popular searches",
     "removeSkill": "Remove {{value}}",
     "removeLocation": "Remove {{value}}"
   },
