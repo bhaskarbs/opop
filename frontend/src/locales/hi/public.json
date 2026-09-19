@@ -79,10 +79,8 @@
     }
   },
   "jobSearch": {
-    "startYourSearch": {
-      "title": "अपनी खोज शुरू करें",
-      "description": "ऊपर जॉब टाइटल, हुनर, या कीवर्ड डालें — हम मिलती-जुलती नौकरियां दिखाएंगे।"
-    },
+    "heroTitle": "अपनी अगली नौकरी खोजें",
+    "heroSubtitle": "भारत भर की वेरिफ़ाइड फुल-टाइम, कॉन्ट्रैक्ट और रिमोट नौकरियां खोजें।",
     "searching": "खोजा जा रहा है…",
     "showingCount": "आपके लिए {{count}} नौकरियां दिखाई जा रही हैं",
     "sortBy": "इस क्रम में लगाएं",
@@ -96,8 +94,11 @@
     "previousPage": "← पिछला",
     "nextPage": "अगला →",
     "pageLabel": "पृष्ठ {{page}} / {{total}}",
-    "skillsPlaceholder": "जॉब टाइटल, हुनर, या कीवर्ड जोड़ें",
-    "locationsPlaceholder": "शहर या रिमोट जोड़ें",
+    "skillsPlaceholder": "जॉब टाइटल, हुनर, या कीवर्ड",
+    "locationsPlaceholder": "शहर या रिमोट",
+    "whatLabel": "क्या",
+    "whereLabel": "कहाँ",
+    "popularSearches": "लोकप्रिय खोजें",
     "removeSkill": "{{value}} हटाएं",
     "removeLocation": "{{value}} हटाएं"
   },
